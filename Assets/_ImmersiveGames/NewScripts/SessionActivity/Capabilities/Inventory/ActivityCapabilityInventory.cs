@@ -51,6 +51,37 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             return true;
         }
 
+        public IReadOnlyList<TReference> GetRuntimeReferences<TReference>()
+            where TReference : class, IActivityCapabilityRuntimeReference
+        {
+            if (RuntimeReferences == null || RuntimeReferences.Count == 0)
+            {
+                return Array.Empty<TReference>();
+            }
+
+            List<string> capabilityIds = new(RuntimeReferences.Keys);
+            capabilityIds.Sort(StringComparer.Ordinal);
+
+            List<TReference> typedReferences = new(capabilityIds.Count);
+            for (int index = 0; index < capabilityIds.Count; index++)
+            {
+                string capabilityId = capabilityIds[index];
+                if (RuntimeReferences.TryGetValue(capabilityId, out IActivityCapabilityRuntimeReference runtimeReference) &&
+                    runtimeReference is TReference typedReference)
+                {
+                    typedReferences.Add(typedReference);
+                }
+            }
+
+            return typedReferences;
+        }
+
+        public IReadOnlyList<TReference> EnumerateRuntimeReferences<TReference>()
+            where TReference : class, IActivityCapabilityRuntimeReference
+        {
+            return GetRuntimeReferences<TReference>();
+        }
+
         public override string ToString()
         {
             return $"id='{Id}', owners='{OwnerCount}', capabilities='{CapabilityCount}', source='{Source}', reason='{Reason}'";

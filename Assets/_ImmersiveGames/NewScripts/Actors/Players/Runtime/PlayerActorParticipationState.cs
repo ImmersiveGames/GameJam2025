@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             if (context.Group != ActorResetGroup.ActivityParticipation)
             {
                 throw new InvalidOperationException(
-                    $"PlayerActorParticipationState received unsupported reset group='{context.Group}' for actorId='{context.Actor.ActorId}'.");
+                    $"PlayerActorParticipationState received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
             }
 
             MarkActiveInActivity(context.PipelineIdentity);

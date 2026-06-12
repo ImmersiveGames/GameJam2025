@@ -409,8 +409,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activityPlayerActorRegistry = new ActivityPlayerActorRegistry();
             _activitySceneActorRegistry = new ActivitySceneActorRegistry();
             _sessionActorRuntimeStore = new SessionActorRuntimeStore();
-            _actorResetAdapter = new ActorResetAdapter(
-                new PlayerActorResetEndpointResolver(_activityPlayerActorRegistry, _sessionActorRuntimeStore));
+            _actorResetAdapter = new ActorResetAdapter();
             _movementBindingAdapter = new MovementBindingAdapter(_permissionRuntime);
             _playerMovementControlAdapter = new PlayerMovementControlAdapter(_permissionRuntime);
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
@@ -4483,25 +4482,52 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
+            ActivityCapabilityInventory capabilityInventoryPreview = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
+            ActivityCapabilityInventoryValidationResult capabilityInventoryValidation = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreviewValidation();
+            if (!capabilityInventoryPreview.IsValid ||
+                !capabilityInventoryValidation.IsValid ||
+                capabilityInventoryValidation.Status != ActivityCapabilityInventoryValidationStatus.Passed)
+            {
+                outcomeReason = "actor_reset_qa_inventory_not_ready";
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaRejected' reason='{outcomeReason}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
+
+            IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences = ResolveActorResetReferencesFromInventory(
+                capabilityInventoryPreview,
+                selectedPlayerInstance.ActorId,
+                selectedPlayerInstance.ActorInstanceRuntimeId);
+            if (resetReferences == null || resetReferences.Count == 0)
+            {
+                outcomeReason = "actor_reset_qa_inventory_reference_missing";
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaRejected' reason='{outcomeReason}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
+
             Vector3 placementPosition = instance.transform.localPosition;
             Vector3 placementEulerAngles = instance.transform.localEulerAngles;
-            ActorResetTargetRef target = new(
-                new ActorResetActorRef(
-                    commandIdentity,
-                    new ActorId(selectedPlayerInstance.ActorId),
-                    selectedPlayerInstance.ActorInstanceRuntimeId,
-                    selectedPlayerInstance.Kind,
-                    observedIdentity.PlayerActorId,
-                    observedIdentity.PlayerSlotId),
-                new[] { ActorResetGroup.Placement, ActorResetGroup.ActivityParticipation },
-                placementId: string.Empty,
+            ActivityParticipantResetCommand resetCommand = new(
+                commandIdentity,
+                requirementId: "qa_current_player_actor",
+                selected.ParticipantBinding,
+                placementRequirementId: string.Empty,
+                selected,
+                resetReferences,
+                required: true,
                 placementDeclared: true,
                 placementRequired: true,
                 placementOptional: false,
                 hasPlacement: true,
                 placementPosition,
-                placementEulerAngles);
-            ActorResetCommand resetCommand = new(commandIdentity, new[] { target }, normalizedSource, normalizedReason);
+                placementEulerAngles,
+                normalizedSource,
+                normalizedReason);
             IReadOnlyList<ActorResetResult> results;
             try
             {
@@ -4527,13 +4553,52 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            outcomeReason = "actor_reset_qa_applied";
+            outcomeReason = "actor_reset_qa_applied_from_inventory";
             ActorResetResult result = results[0];
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaApplied' reason='{outcomeReason}' playerSlotId='{selected.PlayerSlotId}' playerActorId='{selected.PlayerActorId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' appliedGroups='{result.AppliedGroups.Count}' skippedGroups='{result.SkippedGroups.Count}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaAppliedFromInventory' reason='{outcomeReason}' playerSlotId='{selected.PlayerSlotId}' playerActorId='{selected.PlayerActorId}' observedPlayerSlotId='{observedIdentity.PlayerSlotId}' observedPlayerActorId='{observedIdentity.PlayerActorId}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' appliedGroups='{result.AppliedGroups.Count}' skippedGroups='{result.SkippedGroups.Count}' referenceCount='{resetReferences.Count}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
             return true;
+        }
+
+        private static IReadOnlyList<ActorCapabilityResetEndpointReference> ResolveActorResetReferencesFromInventory(
+            ActivityCapabilityInventory capabilityInventoryPreview,
+            string actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId)
+        {
+            if (!capabilityInventoryPreview.IsValid || !new ActorId(actorId).IsValid || !actorInstanceRuntimeId.IsValid)
+            {
+                return Array.Empty<ActorCapabilityResetEndpointReference>();
+            }
+
+            IReadOnlyList<ActorCapabilityResetEndpointReference> allReferences =
+                capabilityInventoryPreview.GetRuntimeReferences<ActorCapabilityResetEndpointReference>();
+            if (allReferences == null || allReferences.Count == 0)
+            {
+                return Array.Empty<ActorCapabilityResetEndpointReference>();
+            }
+
+            List<ActorCapabilityResetEndpointReference> resolved = new(allReferences.Count);
+            for (int index = 0; index < allReferences.Count; index++)
+            {
+                ActorCapabilityResetEndpointReference reference = allReferences[index];
+                if (reference == null || !reference.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(reference.ActorId.Value, actorId, StringComparison.Ordinal) ||
+                    reference.ActorInstanceRuntimeId != actorInstanceRuntimeId)
+                {
+                    continue;
+                }
+
+                resolved.Add(reference);
+            }
+
+            resolved.Sort(static (left, right) => string.Compare(left.CapabilityId, right.CapabilityId, StringComparison.Ordinal));
+            return resolved;
         }
 
         public bool TryQaResetCurrentActivityObjects(

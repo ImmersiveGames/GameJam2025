@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
@@ -9,6 +8,7 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
@@ -31,11 +31,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivitySetupInventory inventory,
             IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
             IPlayerActorParticipationAdapter playerActorParticipationAdapter,
-            IActorResetAdapter actorResetAdapter,
             IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
             ActivityPlayerActorRegistry playerActorRegistry,
             SessionActorRuntimeStore sessionActorRuntimeStore,
-            IActivityEntryPlacementMarkerLookup placementMarkerLookup,
             ActivityParticipationRuntimeState activityParticipationRuntimeState,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
             List<SessionActivityFact> facts,
@@ -61,21 +59,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(playerActorParticipationAdapter));
             }
 
-            if (actorResetAdapter == null)
-            {
-                throw new ArgumentNullException(nameof(actorResetAdapter));
-            }
-
             actorMaterializationPlanEntries ??= Array.Empty<SessionActivityActorMaterializationPlanEntry>();
 
             if (sessionActorRuntimeStore == null)
             {
                 throw new ArgumentNullException(nameof(sessionActorRuntimeStore));
-            }
-
-            if (placementMarkerLookup == null)
-            {
-                throw new ArgumentNullException(nameof(placementMarkerLookup));
             }
 
             if (activityParticipationRuntimeState == null)
@@ -388,8 +376,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<ActivityEntryParticipantBindingResolvedRecord> resolvedParticipants = new(participantRequirements.Count);
             List<ActivityParticipantBindCommand> bindCommands = new(participantRequirements.Count);
             List<ActivityParticipantMaterializationCommand> materializationCommands = new(participantRequirements.Count);
-            List<ActivityParticipantPlacementCommand> placementCommands = new(participantRequirements.Count);
-            List<ActivityParticipantResetCommand> resetCommands = new(participantRequirements.Count);
             List<PlayerActivityParticipantBinding> activityParticipantBindings = new(participantRequirements.Count);
 
             for (int index = 0; index < participantRequirements.Count; index++)
@@ -566,23 +552,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     ActivityParticipantMaterializationNeedKind.EnsureRouteSessionParticipantAvailable,
                     command.Source,
                     command.Reason);
-                ActivityParticipantPlacementCommand placementCommand = new(
-                    startedIdentity,
-                    requirement.Requirement.RequirementId,
-                    activityParticipantBinding,
-                    requirement.PlacementRequirementId,
-                    command.Source,
-                    command.Reason);
-                ActivityParticipantResetCommand resetCommand = new(
-                    startedIdentity,
-                    requirement.Requirement.RequirementId,
-                    activityParticipantBinding,
-                    requirement.PlacementRequirementId,
-                    BuildDefaultParticipantResetGroups(),
-                    command.Source,
-                    command.Reason);
-
-                if (!bindCommand.IsValid || !materializationCommand.IsValid || !placementCommand.IsValid || !resetCommand.IsValid)
+                if (!bindCommand.IsValid || !materializationCommand.IsValid)
                 {
                     SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingFailed);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
@@ -605,8 +575,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 bindCommands.Add(bindCommand);
                 materializationCommands.Add(materializationCommand);
-                placementCommands.Add(placementCommand);
-                resetCommands.Add(resetCommand);
             }
 
             if (bindCommands.Count > 0)
@@ -617,18 +585,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     endpoint,
                     playerActorMaterializationAdapter,
                     playerActorParticipationAdapter,
-                    actorResetAdapter,
                     playerActorRegistry,
                     sessionActorRuntimeStore,
-                    placementMarkerLookup,
                     facts,
                     snapshots,
                     startedIdentity,
                     materializationPlanByParticipantId,
                     bindCommands,
-                    materializationCommands,
-                    placementCommands,
-                    resetCommands);
+                    materializationCommands);
             }
 
             SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingCompleted);
@@ -685,25 +649,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IActivityEntryRuntimeBridge endpoint,
             IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
             IPlayerActorParticipationAdapter playerActorParticipationAdapter,
-            IActorResetAdapter actorResetAdapter,
             ActivityPlayerActorRegistry playerActorRegistry,
             SessionActorRuntimeStore sessionActorRuntimeStore,
-            IActivityEntryPlacementMarkerLookup placementMarkerLookup,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
             SessionActivityIdentity identity,
             Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId,
             IReadOnlyList<ActivityParticipantBindCommand> bindCommands,
-            IReadOnlyList<ActivityParticipantMaterializationCommand> materializationCommands,
-            IReadOnlyList<ActivityParticipantPlacementCommand> placementCommands,
-            IReadOnlyList<ActivityParticipantResetCommand> resetCommands)
+            IReadOnlyList<ActivityParticipantMaterializationCommand> materializationCommands)
         {
             ActivityParticipantCommandPlan plan = new(
                 identity,
                 bindCommands,
                 materializationCommands,
-                placementCommands,
-                resetCommands,
                 command.Source,
                 command.Reason);
 
@@ -726,7 +684,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity,
                 command.Source,
                 command.Reason,
-                $"'{activityId}' participant command plan ready totalCommands='{plan.TotalCommandCount}' bind='{bindCommands.Count}' materialization='{materializationCommands.Count}' placement='{placementCommands.Count}' reset='{resetCommands.Count}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='ActivityEntryPipeline' status='AdaptersConnected'.");
+                $"'{activityId}' participant command plan ready totalCommands='{plan.TotalCommandCount}' bind='{bindCommands.Count}' materialization='{materializationCommands.Count}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='ActivityEntryPipeline' status='AdaptersConnected'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_participant_command_plan_ready",
@@ -757,40 +715,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{activityId}' participant materialization command issued requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' role='{materializationCommand.ParticipantBinding.Role}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' participantKind='{materializationCommand.ParticipantKind}' needKind='{materializationCommand.NeedKind}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='ActivityEntryPipeline'.");
             }
 
-            for (int index = 0; index < placementCommands.Count; index++)
-            {
-                ActivityParticipantPlacementCommand placementCommand = placementCommands[index];
-                endpoint.EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityParticipantPlacementCommandIssued,
-                    placementCommand.Identity,
-                    placementCommand.Source,
-                    placementCommand.Reason,
-                    $"'{activityId}' participant placement command issued requirementId='{placementCommand.RequirementId}' participantId='{placementCommand.ParticipantBinding.ParticipantId}' role='{placementCommand.ParticipantBinding.Role}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{placementCommand.ParticipantBinding.ActorDefinitionId}' actorId='{placementCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' placementScope='ActivityLocal' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='ActivityEntryPipeline'.");
-            }
-
-            for (int index = 0; index < resetCommands.Count; index++)
-            {
-                ActivityParticipantResetCommand resetCommand = resetCommands[index];
-                endpoint.EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityParticipantResetCommandIssued,
-                    resetCommand.Identity,
-                    resetCommand.Source,
-                    resetCommand.Reason,
-                    $"'{activityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='ActivityEntryPipeline'.");
-            }
-
             ExecuteParticipantCommandPlan(
                 activityId,
                 command,
                 endpoint,
                 playerActorMaterializationAdapter,
                 playerActorParticipationAdapter,
-                actorResetAdapter,
                 playerActorRegistry,
                 sessionActorRuntimeStore,
-                placementMarkerLookup,
                 facts,
                 snapshots,
                 identity,
@@ -804,10 +736,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IActivityEntryRuntimeBridge endpoint,
             IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
             IPlayerActorParticipationAdapter playerActorParticipationAdapter,
-            IActorResetAdapter actorResetAdapter,
             ActivityPlayerActorRegistry playerActorRegistry,
             SessionActorRuntimeStore sessionActorRuntimeStore,
-            IActivityEntryPlacementMarkerLookup placementMarkerLookup,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
             SessionActivityIdentity identity,
@@ -818,6 +748,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 BeginPlayerActorActivityScope(playerActorRegistry, identity);
                 Dictionary<PlayerSessionParticipantId, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant = new();
+                int skippedCount = 0;
 
                 for (int index = 0; index < plan.MaterializationCommands.Count; index++)
                 {
@@ -866,120 +797,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         $"'{activityId}' participant bind applied requirementId='{bindCommand.RequirementId}' participantId='{bindCommand.ParticipantBinding.ParticipantId}' role='{bindCommand.ParticipantBinding.Role}' playerSlotId='{bindCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{bindCommand.ParticipantBinding.ActorDefinitionId}' actorId='{bindCommand.ParticipantBinding.ActorId}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
-                for (int index = 0; index < plan.PlacementCommands.Count; index++)
-                {
-                    ActivityParticipantPlacementCommand placementCommand = plan.PlacementCommands[index];
-                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(placementCommand.ParticipantBinding, ensuredActorsByActivityParticipant, activityId, "placement");
-                    SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
-                        ResolveMaterializationPlanEntryForActivityParticipantOrFail(activityId, placementCommand.ParticipantBinding, materializationPlanByParticipantId, "placement");
-
-                    string placementId = ResolvePlacementIdForCommand(placementCommand, materializationPlanEntry);
-                    ResolvePlacementPlanForEntry(
-                        activityId,
-                        identity,
-                        placementMarkerLookup,
-                        playerActorRegistry,
-                        materializationPlanEntry,
-                        placementId,
-                        placementCommand.RequirementId,
-                        placementCommand.ParticipantBinding,
-                        "placement",
-                        out bool placementDeclared,
-                        out bool placementRequired,
-                        out bool placementOptional,
-                        out bool hasPlacement,
-                        out Vector3 placementPosition,
-                        out Vector3 placementEuler);
-
-                    ActorResetTargetRef placementTarget = new(
-                        BuildActorResetActorRef(identity, actorIdentity, activityId, playerActorRegistry, "placement"),
-                        new[] { ActorResetGroup.Placement },
-                        placementId,
-                        placementDeclared,
-                        placementRequired,
-                        placementOptional,
-                        hasPlacement,
-                        placementPosition,
-                        placementEuler);
-                    ActorResetCommand placementResetCommand = new(identity, new[] { placementTarget }, placementCommand.Source, placementCommand.Reason);
-                    IReadOnlyList<ActorResetResult> placementRecords = actorResetAdapter.Execute(placementResetCommand, identity);
-                    if (placementRecords.Count != 1 || !placementRecords[0].IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            $"Invalid participant placement apply record for participantId='{placementCommand.ParticipantBinding.ParticipantId}' requirementId='{placementCommand.RequirementId}'.");
-                    }
-
-                    endpoint.EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityParticipantPlacementApplied,
-                        identity,
-                        command.Source,
-                        command.Reason,
-                        $"'{command.ActivityId}' participant placement applied requirementId='{placementCommand.RequirementId}' participantId='{placementCommand.ParticipantBinding.ParticipantId}' role='{placementCommand.ParticipantBinding.Role}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{placementCommand.ParticipantBinding.ActorDefinitionId}' actorId='{placementCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
-                    DebugUtility.Log(typeof(ActivityEntryParticipantBindingStage),
-                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantPlacementApplied' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{placementCommand.RequirementId}' actorId='{placementCommand.ParticipantBinding.ActorId}' actorScope='{placementCommand.ParticipantBinding.ActorScope}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
-                        DebugUtility.Colors.Success);
-                }
-
-                for (int index = 0; index < plan.ResetCommands.Count; index++)
-                {
-                    ActivityParticipantResetCommand resetCommand = plan.ResetCommands[index];
-                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(
-                        resetCommand.ParticipantBinding,
-                        ensuredActorsByActivityParticipant,
-                        activityId,
-                        "reset");
-                    SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
-                        ResolveMaterializationPlanEntryForActivityParticipantOrFail(activityId, resetCommand.ParticipantBinding, materializationPlanByParticipantId, "reset");
-
-                    string placementId = ResolvePlacementIdForResetCommand(resetCommand, materializationPlanEntry);
-                    ResolvePlacementPlanForEntry(
-                        activityId,
-                        identity,
-                        placementMarkerLookup,
-                        playerActorRegistry,
-                        materializationPlanEntry,
-                        placementId,
-                        resetCommand.RequirementId,
-                        resetCommand.ParticipantBinding,
-                        "reset",
-                        out bool placementDeclared,
-                        out bool placementRequired,
-                        out bool placementOptional,
-                        out bool hasPlacement,
-                        out Vector3 placementPosition,
-                        out Vector3 placementEuler);
-
-                    ActorResetTargetRef resetTarget = new(
-                        BuildActorResetActorRef(identity, actorIdentity, resetCommand.ParticipantBinding, activityId, playerActorRegistry, "reset"),
-                        MapResetGroupsOrFail(resetCommand.ResetGroups),
-                        placementId,
-                        placementDeclared,
-                        placementRequired,
-                        placementOptional,
-                        hasPlacement,
-                        placementPosition,
-                        placementEuler);
-                    ActorResetCommand actorResetCommand = new(identity, new[] { resetTarget }, resetCommand.Source, resetCommand.Reason);
-                    IReadOnlyList<ActorResetResult> resetRecords = actorResetAdapter.Execute(actorResetCommand, identity);
-                    if (resetRecords.Count != 1 || !resetRecords[0].IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            $"Invalid participant reset apply record for participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' requirementId='{resetCommand.RequirementId}'.");
-                    }
-                    ValidateRequiredResetGroupsOrFail(resetCommand, resetRecords[0]);
-
-                    endpoint.EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityParticipantResetApplied,
-                        identity,
-                        command.Source,
-                        command.Reason,
-                        $"'{command.ActivityId}' participant reset applied requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
-                    DebugUtility.Log(typeof(ActivityEntryParticipantBindingStage),
-                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantResetApplied' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resetCommand.RequirementId}' actorId='{resetCommand.ParticipantBinding.ActorId}' actorScope='{resetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
-                        DebugUtility.Colors.Success);
-                }
             }
             catch (Exception exception)
             {
@@ -1000,13 +817,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
         }
 
-        private static IReadOnlyList<ActivityStateResetGroup> BuildDefaultParticipantResetGroups()
+        private static PlayerActorRuntimeHandle EnsureResolvedPlayerActorHandleForActivityParticipantOrFail(
+            PlayerActivityParticipantBinding participantBinding,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            string activityId,
+            string operation)
         {
-            return new[]
+            if (!participantBinding.IsValid)
             {
-                ActivityStateResetGroup.Placement,
-                ActivityStateResetGroup.ActivityParticipation,
-            };
+                throw new InvalidOperationException("Activity participant binding is invalid for player actor handle resolution.");
+            }
+
+            if (!TryResolvePlayerActorHandleForParticipant(playerActorRegistry, participantBinding.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+                !handle.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Activity participant '{participantBinding.ParticipantId}' is not available for operation='{operation}' activityId='{activityId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}'.");
+            }
+
+            return handle;
         }
 
         private static Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> BuildMaterializationPlanMap(IReadOnlyList<SessionActivityActorMaterializationPlanEntry> materializationPlanEntries)
@@ -1257,147 +1086,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"missing_activity_participant_materialization_plan: activityId='{activityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}' resolutionKey='SessionParticipantId'.");
         }
 
-        private static string ResolvePlacementIdForCommand(
-            ActivityParticipantPlacementCommand placementCommand,
-            SessionActivityActorMaterializationPlanEntry materializationPlanEntry)
-        {
-            string commandPlacementId = placementCommand.IsValid ? Normalize(placementCommand.PlacementRequirementId) : string.Empty;
-            if (!string.IsNullOrWhiteSpace(commandPlacementId))
-            {
-                return commandPlacementId;
-            }
-
-            return Normalize(materializationPlanEntry.PlacementId);
-        }
-
-        private static string ResolvePlacementIdForResetCommand(
-            ActivityParticipantResetCommand resetCommand,
-            SessionActivityActorMaterializationPlanEntry materializationPlanEntry)
-        {
-            string commandPlacementId = Normalize(resetCommand.PlacementRequirementId);
-            if (!string.IsNullOrWhiteSpace(commandPlacementId))
-            {
-                return commandPlacementId;
-            }
-
-            return Normalize(materializationPlanEntry.PlacementId);
-        }
-
-        private static void ResolvePlacementPlanForEntry(
-            string activityId,
-            SessionActivityIdentity identity,
-            IActivityEntryPlacementMarkerLookup placementMarkerLookup,
-            ActivityPlayerActorRegistry playerActorRegistry,
-            SessionActivityActorMaterializationPlanEntry materializationPlanEntry,
-            string placementId,
-            string requirementId,
-            PlayerActivityParticipantBinding participantBinding,
-            string operation,
-            out bool placementDeclared,
-            out bool placementRequired,
-            out bool placementOptional,
-            out bool hasPlacement,
-            out Vector3 placementPosition,
-            out Vector3 placementEuler)
-        {
-            ResolvePlacementPlanFromDefinition(
-                materializationPlanEntry,
-                out placementDeclared,
-                out placementRequired,
-                out placementOptional,
-                out hasPlacement,
-                out placementPosition,
-                out placementEuler);
-
-            if (materializationPlanEntry.PlacementMode != ActorPlacementMode.SceneMarker)
-            {
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(placementId))
-            {
-                if (placementRequired)
-                {
-                    throw new InvalidOperationException(
-                        $"invalid_required_placement: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{participantBinding.ParticipantId}' actorId='{participantBinding.ActorId}' operation='{operation}' reason='scene_marker_placement_id_missing'.");
-                }
-
-                return;
-            }
-
-            if (!placementMarkerLookup.TryResolvePlacementMarker(identity, placementId, out Vector3 markerPosition, out Vector3 markerEuler, out string resolutionReason))
-            {
-                if (placementRequired)
-                {
-                    throw new InvalidOperationException(
-                        $"invalid_required_placement: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{participantBinding.ParticipantId}' actorId='{participantBinding.ActorId}' placementId='{placementId}' operation='{operation}' reason='{resolutionReason}'.");
-                }
-
-                return;
-            }
-
-            hasPlacement = true;
-            if (!playerActorRegistry.TryGetActiveHandleByParticipant(participantBinding.ParticipantId, out PlayerActorRuntimeHandle handle) ||
-                !handle.IsValid ||
-                handle.Instance == null)
-            {
-                throw new InvalidOperationException(
-                    $"invalid_required_placement: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{participantBinding.ParticipantId}' actorId='{participantBinding.ActorId}' placementId='{placementId}' operation='{operation}' reason='actor_handle_missing_for_placement_space_resolution'.");
-            }
-
-            Transform parent = handle.Instance.transform.parent;
-            placementPosition = parent == null ? markerPosition : parent.InverseTransformPoint(markerPosition);
-            Quaternion markerRotation = Quaternion.Euler(markerEuler);
-            Quaternion localRotation = parent == null ? markerRotation : Quaternion.Inverse(parent.rotation) * markerRotation;
-            placementEuler = localRotation.eulerAngles;
-        }
-
-        private static void ResolvePlacementPlanFromDefinition(
-            SessionActivityActorMaterializationPlanEntry materializationPlanEntry,
-            out bool placementDeclared,
-            out bool placementRequired,
-            out bool placementOptional,
-            out bool hasPlacement,
-            out Vector3 placementPosition,
-            out Vector3 placementEuler)
-        {
-            placementDeclared = materializationPlanEntry.PlacementMode != ActorPlacementMode.None;
-            hasPlacement = materializationPlanEntry.PlacementMode == ActorPlacementMode.FixedTransform;
-            placementRequired =
-                materializationPlanEntry.PlacementMode == ActorPlacementMode.FixedTransform ||
-                materializationPlanEntry.PlacementMode == ActorPlacementMode.SceneMarker;
-            placementOptional = placementDeclared && !placementRequired;
-            placementPosition = hasPlacement ? materializationPlanEntry.LocalPosition : Vector3.zero;
-            placementEuler = hasPlacement ? materializationPlanEntry.LocalEulerAngles : Vector3.zero;
-        }
-
-        private static IReadOnlyList<ActorResetGroup> MapResetGroupsOrFail(IReadOnlyList<ActivityStateResetGroup> groups)
-        {
-            if (groups == null || groups.Count == 0)
-            {
-                throw new InvalidOperationException("Participant reset command requires at least one reset group.");
-            }
-
-            List<ActorResetGroup> mapped = new(groups.Count);
-            for (int index = 0; index < groups.Count; index++)
-            {
-                mapped.Add(MapResetGroupOrFail(groups[index]));
-            }
-
-            return mapped;
-        }
-
-        private static ActorResetGroup MapResetGroupOrFail(ActivityStateResetGroup group)
-        {
-            return group switch
-            {
-                ActivityStateResetGroup.Placement => ActorResetGroup.Placement,
-                ActivityStateResetGroup.ActivityParticipation => ActorResetGroup.ActivityParticipation,
-                ActivityStateResetGroup.RuntimeTransient => ActorResetGroup.MovementTransient,
-                _ => throw new InvalidOperationException($"Unsupported participant reset group mapping '{group}'."),
-            };
-        }
-
         private static PlayerActorIdentityRecord EnsureResolvedActorIdentityForActivityParticipantOrFail(
             PlayerActivityParticipantBinding participantBinding,
             Dictionary<PlayerSessionParticipantId, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant,
@@ -1510,119 +1198,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     "RegisterRetainedPlayerActorParticipation"))
             {
                 playerActorRegistry.IndexRouteScopedHandle(handle);
-            }
-        }
-
-        private static ActorResetActorRef BuildActorResetActorRef(
-            SessionActivityIdentity identity,
-            PlayerActorIdentityRecord actorIdentity,
-            string activityId,
-            ActivityPlayerActorRegistry playerActorRegistry,
-            string operation)
-        {
-            if (!actorIdentity.IsValid)
-            {
-                throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid PlayerActorIdentityRecord.");
-            }
-
-            if (!TryResolvePlayerActorHandleForParticipant(playerActorRegistry, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) ||
-                !handle.IsValid)
-            {
-                throw new InvalidOperationException(
-                    $"Actor reset {operation} requires active player actor instance. activityId='{activityId}' playerSlotId='{actorIdentity.PlayerSlotId}' playerActorId='{actorIdentity.PlayerActorId}'.");
-            }
-
-            GameObject actorInstance = handle.Instance;
-            PlayerActorIdentityRecord observedIdentity = handle.ActorIdentity;
-            Actor runtimeActor = actorInstance.GetComponent<Actor>();
-            if (runtimeActor == null || !runtimeActor.RuntimeActorInstanceId.IsValid || string.IsNullOrWhiteSpace(runtimeActor.ActorId))
-            {
-                throw new InvalidOperationException(
-                    $"Actor reset {operation} requires valid runtime actor identity. activityId='{activityId}' playerSlotId='{actorIdentity.PlayerSlotId}' playerActorId='{actorIdentity.PlayerActorId}'.");
-            }
-
-            return new ActorResetActorRef(
-                identity,
-                new ActorId(runtimeActor.ActorId),
-                runtimeActor.RuntimeActorInstanceId,
-                ActorKind.Player,
-                observedIdentity.PlayerActorId,
-                observedIdentity.PlayerSlotId);
-        }
-
-        private static ActorResetActorRef BuildActorResetActorRef(
-            SessionActivityIdentity identity,
-            PlayerActorIdentityRecord actorIdentity,
-            PlayerActivityParticipantBinding participantBinding,
-            string activityId,
-            ActivityPlayerActorRegistry playerActorRegistry,
-            string operation)
-        {
-            if (!actorIdentity.IsValid)
-            {
-                throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid PlayerActorIdentityRecord.");
-            }
-
-            if (!participantBinding.IsValid)
-            {
-                throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid ActivityParticipantBinding.");
-            }
-
-            if (!TryResolvePlayerActorHandleForParticipant(playerActorRegistry, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) ||
-                !handle.IsValid)
-            {
-                throw new InvalidOperationException(
-                    $"Actor reset {operation} requires active player actor instance. activityId='{activityId}' participantId='{participantBinding.ParticipantId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}' playerActorId='{actorIdentity.PlayerActorId}'.");
-            }
-
-            GameObject actorInstance = handle.Instance;
-            PlayerActorIdentityRecord observedIdentity = handle.ActorIdentity;
-            Actor runtimeActor = actorInstance.GetComponent<Actor>();
-            if (runtimeActor == null || !runtimeActor.RuntimeActorInstanceId.IsValid || string.IsNullOrWhiteSpace(runtimeActor.ActorId))
-            {
-                throw new InvalidOperationException(
-                    $"Actor reset {operation} requires valid runtime actor identity. activityId='{activityId}' participantId='{participantBinding.ParticipantId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}' playerActorId='{actorIdentity.PlayerActorId}'.");
-            }
-
-            return new ActorResetActorRef(
-                identity,
-                new ActorId(runtimeActor.ActorId),
-                runtimeActor.RuntimeActorInstanceId,
-                ActorKind.Player,
-                observedIdentity.PlayerActorId,
-                observedIdentity.PlayerSlotId);
-        }
-
-        private static void ValidateRequiredResetGroupsOrFail(
-            ActivityParticipantResetCommand resetCommand,
-            ActorResetResult record)
-        {
-            if (record.SkippedGroups == null || record.SkippedGroups.Count == 0)
-            {
-                return;
-            }
-
-            if (record.SkippedGroupReasons == null || record.SkippedGroupReasons.Count == 0)
-            {
-                throw new InvalidOperationException(
-                    $"required_reset_group_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' skippedGroups='{record.SkippedGroups.Count}' reason='missing_skip_reason'.");
-            }
-
-            for (int index = 0; index < record.SkippedGroupReasons.Count; index++)
-            {
-                ActorResetSkippedGroupReason reason = record.SkippedGroupReasons[index];
-                if (!reason.IsValid)
-                {
-                    continue;
-                }
-
-                if (string.Equals(reason.ReasonCode, "optional_placement_missing", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                throw new InvalidOperationException(
-                    $"required_reset_group_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' group='{reason.Group}' reason='{reason.ReasonCode}'.");
             }
         }
 
@@ -1878,15 +1453,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return string.Join(" | ", segments);
         }
 
-        private static string FormatActivityStateResetGroups(IReadOnlyList<ActivityStateResetGroup> resetGroups)
-        {
-            if (resetGroups == null || resetGroups.Count == 0)
-            {
-                return "<none>";
-            }
-
-            return string.Join(",", resetGroups);
-        }
 
         private static bool TryResolvePlayerActorHandleForParticipant(
             ActivityPlayerActorRegistry playerActorRegistry,
@@ -1910,6 +1476,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static string FormatSessionParticipantId(PlayerSessionParticipantId participantId)
         {
             return participantId.IsValid ? participantId.ToString() : "<none>";
+        }
+
+        private static string BuildTransformPath(Transform transform)
+        {
+            if (transform == null)
+            {
+                return string.Empty;
+            }
+
+            string parentPath = BuildTransformPath(transform.parent);
+            return string.IsNullOrWhiteSpace(parentPath)
+                ? transform.name
+                : $"{parentPath}/{transform.name}";
         }
 
         private static string Normalize(string value)

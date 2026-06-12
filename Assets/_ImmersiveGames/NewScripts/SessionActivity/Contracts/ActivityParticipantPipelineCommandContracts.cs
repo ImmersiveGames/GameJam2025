@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -109,48 +113,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
-    public readonly struct ActivityParticipantPlacementCommand
-    {
-        public ActivityParticipantPlacementCommand(
-            SessionActivityIdentity identity,
-            string requirementId,
-            ActivityParticipantBinding participantBinding,
-            string placementRequirementId,
-            string source,
-            string reason)
-        {
-            Identity = identity;
-            RequirementId = Normalize(requirementId);
-            ParticipantBinding = participantBinding;
-            PlacementRequirementId = Normalize(placementRequirementId);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-        }
-
-        public SessionActivityIdentity Identity { get; }
-        public string RequirementId { get; }
-        public ActivityParticipantBinding ParticipantBinding { get; }
-        public string PlacementRequirementId { get; }
-        public string Source { get; }
-        public string Reason { get; }
-
-        public bool IsValid =>
-            Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(RequirementId) &&
-            ParticipantBinding.IsValid &&
-            !string.IsNullOrWhiteSpace(Source);
-
-        public override string ToString()
-        {
-            return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', placementScope='ActivityLocal', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
-
     public readonly struct ActivityParticipantResetCommand
     {
         public ActivityParticipantResetCommand(
@@ -158,7 +120,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string requirementId,
             ActivityParticipantBinding participantBinding,
             string placementRequirementId,
-            IReadOnlyList<ActivityStateResetGroup> resetGroups,
+            PlayerActorIdentityRecord actorIdentity,
+            IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences,
+            bool required,
+            bool placementDeclared,
+            bool placementRequired,
+            bool placementOptional,
+            bool hasPlacement,
+            Vector3 placementPosition,
+            Vector3 placementEulerAngles,
             string source,
             string reason)
         {
@@ -166,7 +136,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             RequirementId = Normalize(requirementId);
             ParticipantBinding = participantBinding;
             PlacementRequirementId = Normalize(placementRequirementId);
-            ResetGroups = resetGroups ?? Array.Empty<ActivityStateResetGroup>();
+            ActorIdentity = actorIdentity;
+            ResetReferences = resetReferences ?? Array.Empty<ActorCapabilityResetEndpointReference>();
+            Required = required;
+            PlacementDeclared = placementDeclared;
+            PlacementRequired = placementRequired;
+            PlacementOptional = placementOptional;
+            HasPlacement = hasPlacement;
+            PlacementPosition = placementPosition;
+            PlacementEulerAngles = placementEulerAngles;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -175,7 +153,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string RequirementId { get; }
         public ActivityParticipantBinding ParticipantBinding { get; }
         public string PlacementRequirementId { get; }
-        public IReadOnlyList<ActivityStateResetGroup> ResetGroups { get; }
+        public PlayerActorIdentityRecord ActorIdentity { get; }
+        public IReadOnlyList<ActorCapabilityResetEndpointReference> ResetReferences { get; }
+        public bool Required { get; }
+        public bool PlacementDeclared { get; }
+        public bool PlacementRequired { get; }
+        public bool PlacementOptional { get; }
+        public bool HasPlacement { get; }
+        public Vector3 PlacementPosition { get; }
+        public Vector3 PlacementEulerAngles { get; }
+        public IReadOnlyList<ActorResetGroup> ResetGroups => DeriveResetGroups(ResetReferences);
         public string Source { get; }
         public string Reason { get; }
 
@@ -185,14 +172,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             get
             {
-                if (!Identity.IsValid || string.IsNullOrWhiteSpace(RequirementId) || !ParticipantBinding.IsValid || ResetGroups == null || ResetGroups.Count == 0 || string.IsNullOrWhiteSpace(Source))
+                if (!Identity.IsValid || string.IsNullOrWhiteSpace(RequirementId) || !ParticipantBinding.IsValid || !ActorIdentity.IsValid || ResetReferences == null || string.IsNullOrWhiteSpace(Source))
                 {
                     return false;
                 }
 
-                for (int index = 0; index < ResetGroups.Count; index++)
+                for (int index = 0; index < ResetReferences.Count; index++)
                 {
-                    if (ResetGroups[index] == ActivityStateResetGroup.Unknown)
+                    if (ResetReferences[index] == null || !ResetReferences[index].IsValid)
                     {
                         return false;
                     }
@@ -207,7 +194,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', resetGroups='{FormatResetGroups(ResetGroups)}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
-        private static string FormatResetGroups(IReadOnlyList<ActivityStateResetGroup> resetGroups)
+        private static IReadOnlyList<ActorResetGroup> DeriveResetGroups(IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences)
+        {
+            if (resetReferences == null || resetReferences.Count == 0)
+            {
+                return Array.Empty<ActorResetGroup>();
+            }
+
+            List<ActorResetGroup> groups = new();
+            HashSet<ActorResetGroup> unique = new();
+            for (int referenceIndex = 0; referenceIndex < resetReferences.Count; referenceIndex++)
+            {
+                ActorCapabilityResetEndpointReference resetReference = resetReferences[referenceIndex];
+                if (resetReference == null || !resetReference.IsValid || resetReference.SupportedGroups == null)
+                {
+                    continue;
+                }
+
+                for (int groupIndex = 0; groupIndex < resetReference.SupportedGroups.Length; groupIndex++)
+                {
+                    ActorResetGroup group = resetReference.SupportedGroups[groupIndex];
+                    if (group == ActorResetGroup.Unknown || !unique.Add(group))
+                    {
+                        continue;
+                    }
+
+                    groups.Add(group);
+                }
+            }
+
+            return groups;
+        }
+
+        private static string FormatResetGroups(IReadOnlyList<ActorResetGroup> resetGroups)
         {
             if (resetGroups == null || resetGroups.Count == 0)
             {
@@ -229,16 +248,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             IReadOnlyList<ActivityParticipantBindCommand> bindCommands,
             IReadOnlyList<ActivityParticipantMaterializationCommand> materializationCommands,
-            IReadOnlyList<ActivityParticipantPlacementCommand> placementCommands,
-            IReadOnlyList<ActivityParticipantResetCommand> resetCommands,
             string source,
             string reason)
         {
             Identity = identity;
             BindCommands = bindCommands ?? Array.Empty<ActivityParticipantBindCommand>();
             MaterializationCommands = materializationCommands ?? Array.Empty<ActivityParticipantMaterializationCommand>();
-            PlacementCommands = placementCommands ?? Array.Empty<ActivityParticipantPlacementCommand>();
-            ResetCommands = resetCommands ?? Array.Empty<ActivityParticipantResetCommand>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -246,16 +261,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public IReadOnlyList<ActivityParticipantBindCommand> BindCommands { get; }
         public IReadOnlyList<ActivityParticipantMaterializationCommand> MaterializationCommands { get; }
-        public IReadOnlyList<ActivityParticipantPlacementCommand> PlacementCommands { get; }
-        public IReadOnlyList<ActivityParticipantResetCommand> ResetCommands { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public int TotalCommandCount =>
             BindCommands.Count +
-            MaterializationCommands.Count +
-            PlacementCommands.Count +
-            ResetCommands.Count;
+            MaterializationCommands.Count;
 
         public bool HasCommands => TotalCommandCount > 0;
 
@@ -263,13 +274,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             BindCommands != null &&
             MaterializationCommands != null &&
-            PlacementCommands != null &&
-            ResetCommands != null &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', totalCommands='{TotalCommandCount}', bind='{BindCommands.Count}', materialization='{MaterializationCommands.Count}', placement='{PlacementCommands.Count}', reset='{ResetCommands.Count}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', totalCommands='{TotalCommandCount}', bind='{BindCommands.Count}', materialization='{MaterializationCommands.Count}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)

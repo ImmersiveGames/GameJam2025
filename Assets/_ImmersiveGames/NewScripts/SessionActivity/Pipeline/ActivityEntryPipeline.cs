@@ -306,6 +306,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline capability object setup failed. reason='{capabilityObjectSetupResult.Reason}' identity='{capabilityObjectSetupResult.Identity}'.");
                 }
 
+                ActivityEntryParticipantResetStage.Execute(
+                    command,
+                    participantBindingResult,
+                    _activityInventoryRuntimeState.CurrentActorInventoryFeedResult,
+                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
+                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation,
+                    _actorResetAdapter,
+                    _activityPlayerActorRegistry,
+                    _currentActorMaterializationPlanEntries,
+                    _placementMarkerLookup,
+                    _runtimeBridge,
+                    _logSink,
+                    facts,
+                    snapshots);
+
                 ActivityObjectExitCorrelationBundle exitCorrelation = BuildActivityObjectExitCorrelationBundle();
 
                 ActivityEntryActorPresentationSetupResult actorPresentationSetupResult = ExecuteActorPresentationSetup(
@@ -987,11 +1002,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _activityInventoryRuntimeState.CurrentActivitySetupInventory,
                     _playerActorMaterializationAdapter,
                     _playerActorParticipationAdapter,
-                    _actorResetAdapter,
                     _currentActorMaterializationPlanEntries,
                     _activityPlayerActorRegistry,
                     _sessionActorRuntimeStore,
-                    _placementMarkerLookup,
                     _activityParticipationRuntimeState,
                     _activityActorExitRuntimeState,
                     facts,

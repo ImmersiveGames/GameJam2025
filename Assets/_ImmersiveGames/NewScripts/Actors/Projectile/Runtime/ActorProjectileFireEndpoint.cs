@@ -21,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         private Actor _actor;
         private IActorProjectileSpawnAdapter _spawnAdapter;
         private string _spawnAdapterName = string.Empty;
+        private ActorProjectileSpawnRuntimeTracker _spawnRuntimeTracker;
         private bool _projectileFireEnabled;
         private readonly Dictionary<ActorProjectileFireModeId, float> _nextAllowedFireTimeByMode = new();
 
@@ -162,6 +163,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     : adapterResult.Reason;
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(failureReason);
             }
+
+            TryTrackSpawnedRuntimeObject(adapterResult, command.Source, command.Reason);
 
             if (fireMode.HasCooldown)
             {
@@ -352,6 +355,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 string origin = string.IsNullOrWhiteSpace(source) ? nameof(ActorProjectileFireEndpoint) : source.Trim();
                 throw new InvalidOperationException($"{origin} invalid projectile fire endpoint: kind='{readiness.Kind}' reason='{readiness.Reason}' message='{readiness.Message}'.");
             }
+
+            if (ResolveSpawnRuntimeTracker() == null)
+            {
+                string origin = string.IsNullOrWhiteSpace(source) ? nameof(ActorProjectileFireEndpoint) : source.Trim();
+                throw new InvalidOperationException($"{origin} requires ActorProjectileSpawnRuntimeTracker.");
+            }
         }
 
         private bool TryBuildDescriptor(
@@ -443,6 +452,56 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             _actor = GetComponentInParent<Actor>(includeInactive: true);
             return _actor;
+        }
+
+        private ActorProjectileSpawnRuntimeTracker ResolveSpawnRuntimeTracker()
+        {
+            if (_spawnRuntimeTracker != null)
+            {
+                return _spawnRuntimeTracker;
+            }
+
+            Actor actor = ResolveActor();
+            if (actor == null)
+            {
+                return null;
+            }
+
+            _spawnRuntimeTracker = actor.GetComponentInChildren<ActorProjectileSpawnRuntimeTracker>(includeInactive: true);
+            return _spawnRuntimeTracker;
+        }
+
+        private void TryTrackSpawnedRuntimeObject(ActorProjectileSpawnAdapterResult adapterResult, string source, string reason)
+        {
+            if (!adapterResult.IsAccepted || adapterResult.SpawnedInstance == null || adapterResult.SpawnedActor == null)
+            {
+                return;
+            }
+
+            RuntimeSpawnedActor spawnedActor = adapterResult.SpawnedActor as RuntimeSpawnedActor;
+            if (spawnedActor == null)
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawned_actor_not_runtime_spawned_actor'.");
+                return;
+            }
+
+            ActorProjectileSpawnRuntimeTracker spawnRuntimeTracker = ResolveSpawnRuntimeTracker();
+            if (spawnRuntimeTracker == null)
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_missing'.");
+                return;
+            }
+
+            if (!spawnRuntimeTracker.TryTrackSpawnedRuntimeObject(adapterResult.SpawnedInstance, spawnedActor, source, reason))
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_rejected_spawn'.");
+            }
         }
 
         private static ActorProjectileFireBlockedReasonKind ToBlockedReason(ActorProjectileFireEndpointReadinessKind readinessKind)

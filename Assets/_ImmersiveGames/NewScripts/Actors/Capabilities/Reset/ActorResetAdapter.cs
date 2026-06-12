@@ -1,193 +1,164 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 {
     public sealed class ActorResetAdapter : IActorResetAdapter
     {
-        private readonly IActorResetEndpointResolver _resolver;
-
-        public ActorResetAdapter(IActorResetEndpointResolver resolver)
+        public ActorResetAdapter()
         {
-            _resolver = resolver ?? throw new InvalidOperationException("ActorResetAdapter requires non-null endpoint resolver.");
         }
 
         public IReadOnlyList<ActorResetResult> Execute(
-            ActorResetCommand command,
+            ActivityParticipantResetCommand command,
             SessionActivityIdentity activeIdentity)
         {
             if (!command.IsValid)
             {
-                throw new InvalidOperationException("ActorResetCommand is invalid.");
+                throw new InvalidOperationException("ActivityParticipantResetCommand is invalid.");
             }
 
             if (!activeIdentity.IsValid)
             {
-                throw new InvalidOperationException("Active identity is invalid for player actor reset.");
+                throw new InvalidOperationException("Active identity is invalid for participant actor reset.");
             }
 
-            if (!IsSameActivityCycle(command.PipelineIdentity, activeIdentity))
+            if (!IsSameActivityCycle(command.Identity, activeIdentity))
             {
-                throw new InvalidOperationException("stale_or_foreign_player_actor_reset_command: command identity does not match active identity.");
+                throw new InvalidOperationException("stale_or_foreign_participant_actor_reset_command: command identity does not match active identity.");
             }
 
-            List<ActorResetResult> records = new(command.Targets.Count);
-            for (int index = 0; index < command.Targets.Count; index++)
+            ActorId actorId = command.ActorIdentity.ActorId;
+            ActorKind actorKind = ActorKind.Player;
+            List<ActorResetGroup> appliedGroups = new();
+            List<ActorResetGroup> skippedGroups = new();
+            List<ActorResetSkippedGroupReason> skippedReasons = new();
+            HashSet<ActorResetGroup> appliedGroupSet = new();
+            HashSet<ActorResetGroup> skippedGroupSet = new();
+            ActorInstanceRuntimeId expectedActorInstanceRuntimeId = default;
+            ActorInstanceRuntimeId actorInstanceRuntimeId = default;
+            bool actorCaptured = false;
+
+            for (int referenceIndex = 0; referenceIndex < command.ResetReferences.Count; referenceIndex++)
             {
-                ActorResetTargetRef target = command.Targets[index];
-                if (!target.IsValid)
+                ActorCapabilityResetEndpointReference resetReference = command.ResetReferences[referenceIndex];
+                if (resetReference == null || !resetReference.IsValid)
                 {
-                    throw new InvalidOperationException($"ActorResetTargetRef at index '{index}' is invalid.");
+                    throw new InvalidOperationException($"Invalid actor reset inventory reference at index '{referenceIndex}' requirementId='{command.RequirementId}'.");
                 }
 
-                if (!IsSameActivityCycle(target.Actor.Identity, activeIdentity))
+                if (!actorCaptured)
                 {
-                    throw new InvalidOperationException("stale_or_foreign_player_actor_reset_plan: plan identity does not match active identity.");
+                    expectedActorInstanceRuntimeId = resetReference.ActorInstanceRuntimeId;
+                    actorInstanceRuntimeId = resetReference.ActorInstanceRuntimeId;
+                    actorCaptured = true;
                 }
 
-                GameObject instance = _resolver.ResolveOrFail(activeIdentity, target.Actor);
-                _resolver.EnsureIdentityMatchesOrFail(instance, activeIdentity, target.Actor);
-                IReadOnlyList<IActorResetEndpoint> endpoints = _resolver.ResolveEndpointsOrFail(instance, activeIdentity, target.Actor);
-
-                List<ActorResetGroup> appliedGroups = new();
-                List<ActorResetGroup> skippedGroups = new();
-                List<ActorResetSkippedGroupReason> skippedReasons = new();
-                for (int groupIndex = 0; groupIndex < target.Groups.Count; groupIndex++)
+                if (resetReference.ActorId != command.ActorIdentity.ActorId)
                 {
-                    ActorResetGroup group = target.Groups[groupIndex];
+                    throw new InvalidOperationException(
+                        $"stale_or_foreign_actor_reset_inventory_reference: capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' expectedActorId='{command.ActorIdentity.ActorId}'.");
+                }
+
+                if (resetReference.ActorInstanceRuntimeId != expectedActorInstanceRuntimeId)
+                {
+                    throw new InvalidOperationException(
+                        $"stale_or_foreign_actor_reset_inventory_reference: capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{resetReference.ActorInstanceRuntimeId}' expectedActorInstanceRuntimeId='{expectedActorInstanceRuntimeId}'.");
+                }
+
+                Debug.Log(
+                    $"[OBS][ActorResetAdapter] event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' supportedGroups='{FormatActorResetGroups(resetReference.SupportedGroups)}' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.");
+
+                IReadOnlyList<ActorResetGroup> supportedGroups = resetReference.SupportedGroups;
+                for (int groupIndex = 0; groupIndex < supportedGroups.Count; groupIndex++)
+                {
+                    ActorResetGroup group = supportedGroups[groupIndex];
                     if (group == ActorResetGroup.Unknown)
                     {
-                        throw new InvalidOperationException($"Unknown reset group at index '{groupIndex}' for actorId='{target.Actor.ActorId}'.");
+                        throw new InvalidOperationException($"Unknown reset group at index '{groupIndex}' for capabilityId='{resetReference.CapabilityId}'.");
                     }
 
                     ActorResetContext context = new(
                         activeIdentity,
-                        target.Actor,
+                        actorId,
+                        actorInstanceRuntimeId,
+                        actorKind,
                         group,
-                        target.PlacementId,
-                        target.HasPlacement,
-                        target.PlacementRequired,
-                        target.PlacementOptional,
-                        target.PlacementDeclared,
-                        target.PlacementPosition,
-                        target.PlacementEulerAngles,
+                        command.PlacementRequirementId,
+                        command.HasPlacement,
+                        command.PlacementRequired,
+                        command.PlacementOptional,
+                        command.PlacementDeclared,
+                        command.PlacementPosition,
+                        command.PlacementEulerAngles,
                         command.Source,
                         command.Reason);
 
                     if (group == ActorResetGroup.Placement)
                     {
-                        if (target is { PlacementRequired: true, HasPlacement: false } && string.IsNullOrWhiteSpace(target.PlacementId))
+                        if (command.PlacementRequired && !command.HasPlacement && string.IsNullOrWhiteSpace(command.PlacementRequirementId))
                         {
-                            throw new InvalidOperationException($"invalid_required_placement: actorId='{target.Actor.ActorId}'.");
+                            throw new InvalidOperationException($"invalid_required_placement: actorId='{command.ActorIdentity.ActorId}'.");
                         }
 
-                        if (!target.PlacementDeclared)
+                        if (!command.PlacementDeclared)
                         {
-                            skippedGroups.Add(group);
-                            skippedReasons.Add(new ActorResetSkippedGroupReason(group, "no_placement_declared"));
-                            continue;
-                        }
-
-                        if (target is { PlacementOptional: true, HasPlacement: false })
-                        {
-                            skippedGroups.Add(group);
-                            skippedReasons.Add(new ActorResetSkippedGroupReason(group, "optional_placement_missing"));
-                            continue;
-                        }
-
-                        if (target is { HasPlacement: true, PlacementRequired: false })
-                        {
-                            skippedGroups.Add(group);
-                            skippedReasons.Add(new ActorResetSkippedGroupReason(group, "placement_not_required"));
-                            continue;
-                        }
-
-                        if (!target.HasPlacement && !string.IsNullOrWhiteSpace(target.PlacementId))
-                        {
-                            ActorResetPlacementResolution resolution = _resolver.ResolvePlacementFromMarker(instance.scene, target.PlacementId);
-                            if (resolution.Status == ActorResetPlacementResolutionStatus.Duplicate)
+                            if (skippedGroupSet.Add(group))
                             {
-                                throw new InvalidOperationException(
-                                    $"duplicate_placement_marker: actorId='{target.Actor.ActorId}' placementId='{target.PlacementId}'.");
-                            }
-
-                            if (resolution.Status == ActorResetPlacementResolutionStatus.NotFound)
-                            {
-                                if (target.PlacementRequired)
-                                {
-                                    throw new InvalidOperationException(
-                                        $"invalid_required_placement: actorId='{target.Actor.ActorId}' placementId='{target.PlacementId}' reason='no_placement_marker_found'.");
-                                }
-
                                 skippedGroups.Add(group);
-                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "no_placement_marker_found"));
-                                continue;
+                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "no_placement_declared"));
                             }
 
-                            context = new ActorResetContext(
-                                activeIdentity,
-                                target.Actor,
-                                group,
-                                target.PlacementId,
-                                hasPlacement: true,
-                                target.PlacementRequired,
-                                target.PlacementOptional,
-                                target.PlacementDeclared,
-                                ToLocalPosition(instance.transform.parent, resolution.Position),
-                                ToLocalEulerAngles(instance.transform.parent, resolution.Rotation),
-                                command.Source,
-                                command.Reason);
-                        }
-                    }
-
-                    bool applied = false;
-                    for (int endpointIndex = 0; endpointIndex < endpoints.Count; endpointIndex++)
-                    {
-                        IActorResetEndpoint endpoint = endpoints[endpointIndex];
-                        if (endpoint == null || !endpoint.Supports(group))
-                        {
                             continue;
                         }
 
-                        endpoint.ApplyReset(context);
-                        applied = true;
+                        if (command.PlacementOptional && !command.HasPlacement)
+                        {
+                            if (skippedGroupSet.Add(group))
+                            {
+                                skippedGroups.Add(group);
+                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "optional_placement_missing"));
+                            }
+
+                            continue;
+                        }
+
+                        if (command.HasPlacement && !command.PlacementRequired)
+                        {
+                            if (skippedGroupSet.Add(group))
+                            {
+                                skippedGroups.Add(group);
+                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "placement_not_required"));
+                            }
+
+                            continue;
+                        }
                     }
 
-                    if (applied)
+                    resetReference.Endpoint.ApplyReset(context);
+                    Debug.Log(
+                        $"[OBS][ActorResetAdapter] event='ActorResetEndpointAppliedFromInventory' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' group='{group}' source='{command.Source}' reason='{command.Reason}'.");
+
+                    if (appliedGroupSet.Add(group))
                     {
                         appliedGroups.Add(group);
                     }
-                    else
-                    {
-                        skippedGroups.Add(group);
-                        skippedReasons.Add(new ActorResetSkippedGroupReason(group, "no_endpoint_supports_group"));
-                    }
                 }
-
-                records.Add(new ActorResetResult(target.Actor, appliedGroups, skippedGroups, skippedReasons));
             }
 
-            return records;
-        }
+            if (!actorCaptured)
+            {
+                throw new InvalidOperationException("ActivityParticipantResetCommand did not resolve any actor reset reference.");
+            }
 
-        private static Vector3 ToLocalPosition(Transform parent, Vector3 worldPosition)
-        {
-            return parent == null ? worldPosition : parent.InverseTransformPoint(worldPosition);
-        }
-
-        private static Vector3 ToLocalEulerAngles(Transform parent, Quaternion worldRotation)
-        {
-            Quaternion localRotation = parent == null
-                ? worldRotation
-                : Quaternion.Inverse(parent.rotation) * worldRotation;
-            return localRotation.eulerAngles;
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            return new[]
+            {
+                new ActorResetResult(actorId, actorInstanceRuntimeId, actorKind, appliedGroups, skippedGroups, skippedReasons),
+            };
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
@@ -200,44 +171,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 left.ActivityOrdinal == right.ActivityOrdinal &&
                 left.EntrySequence == right.EntrySequence;
         }
-    }
 
-    public interface IActorResetEndpointResolver
-    {
-        GameObject ResolveOrFail(SessionActivityIdentity activeIdentity, ActorResetActorRef actor);
-        void EnsureIdentityMatchesOrFail(GameObject instance, SessionActivityIdentity activeIdentity, ActorResetActorRef actor);
-        IReadOnlyList<IActorResetEndpoint> ResolveEndpointsOrFail(GameObject instance, SessionActivityIdentity activeIdentity, ActorResetActorRef actor);
-        ActorResetPlacementResolution ResolvePlacementFromMarker(Scene scopeScene, string placementId);
-    }
-
-    public enum ActorResetPlacementResolutionStatus
-    {
-        Unknown = 0,
-        Found = 1,
-        NotFound = 2,
-        Duplicate = 3,
-    }
-
-    public readonly struct ActorResetPlacementResolution
-    {
-        public ActorResetPlacementResolution(ActorResetPlacementResolutionStatus status, Vector3 position, Quaternion rotation)
+        private static string FormatActorResetGroups(IReadOnlyList<ActorResetGroup> groups)
         {
-            Status = status;
-            Position = position;
-            Rotation = rotation;
+            if (groups == null || groups.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(",", groups);
         }
-
-        public ActorResetPlacementResolutionStatus Status { get; }
-        public Vector3 Position { get; }
-        public Quaternion Rotation { get; }
-
-        public static ActorResetPlacementResolution Found(Vector3 position, Quaternion rotation) =>
-            new(ActorResetPlacementResolutionStatus.Found, position, rotation);
-
-        public static ActorResetPlacementResolution NotFound() =>
-            new(ActorResetPlacementResolutionStatus.NotFound, Vector3.zero, Quaternion.identity);
-
-        public static ActorResetPlacementResolution Duplicate() =>
-            new(ActorResetPlacementResolutionStatus.Duplicate, Vector3.zero, Quaternion.identity);
     }
 }

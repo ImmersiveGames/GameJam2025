@@ -10,6 +10,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     [DisallowMultipleComponent]
     public sealed class RuntimeSpawnedActor : Actor, IPoolableObject
     {
+        public event Action<RuntimeSpawnedActor> PoolReturned;
+        public event Action<RuntimeSpawnedActor> PoolDestroyed;
+
         private ActorId runtimeActorId;
         private ActorRole runtimeActorRole;
         private ActorScope runtimeActorScope;
@@ -104,11 +107,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public void OnPoolReturn()
         {
+            RaisePoolLifecycleEvent(PoolReturned, "pool_return");
             ClearRuntimeMetadata();
         }
 
         public void OnPoolDestroyed()
         {
+            RaisePoolLifecycleEvent(PoolDestroyed, "pool_destroyed");
             ClearRuntimeMetadata();
         }
 
@@ -130,6 +135,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             runtimeParticipationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
             runtimeSpawnOrigin = default;
             SetRuntimeActorInstanceId(default);
+        }
+
+        private void RaisePoolLifecycleEvent(Action<RuntimeSpawnedActor> subscribers, string reason)
+        {
+            if (subscribers == null)
+            {
+                return;
+            }
+
+            Delegate[] invocationList = subscribers.GetInvocationList();
+            for (int index = 0; index < invocationList.Length; index++)
+            {
+                if (invocationList[index] is not Action<RuntimeSpawnedActor> callback)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    callback(this);
+                }
+                catch (Exception exception)
+                {
+                    DebugUtility.LogError(
+                        typeof(RuntimeSpawnedActor),
+                        $"[OBS][ActorProjectileFire] event='RuntimeSpawnedActorPoolLifecycleCallbackFailed' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' instanceName='{name}' lifecycleReason='{Normalize(reason)}' message='{Normalize(exception.Message)}'.");
+                }
+            }
         }
     }
 }

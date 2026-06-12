@@ -17,6 +17,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
             IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
             IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions,
+            int activityObjectLifecycleCapabilityCount,
+            string activityObjectLifecycleCapabilityKindsSummary,
+            int actorLifecycleCapabilityCount,
+            string actorLifecycleCapabilityKindsSummary,
             int objectTargetCount,
             int unresolvedReportCount,
             string source,
@@ -28,6 +32,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
             PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
+            ActivityObjectLifecycleCapabilityCount = activityObjectLifecycleCapabilityCount < 0 ? 0 : activityObjectLifecycleCapabilityCount;
+            ActivityObjectLifecycleCapabilityKindsSummary = Normalize(activityObjectLifecycleCapabilityKindsSummary);
+            ActorLifecycleCapabilityCount = actorLifecycleCapabilityCount < 0 ? 0 : actorLifecycleCapabilityCount;
+            ActorLifecycleCapabilityKindsSummary = Normalize(actorLifecycleCapabilityKindsSummary);
             ObjectTargetCount = objectTargetCount < 0 ? 0 : objectTargetCount;
             UnresolvedReportCount = unresolvedReportCount < 0 ? 0 : unresolvedReportCount;
             Source = Normalize(source);
@@ -40,6 +48,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
         public IReadOnlyList<ActorPresentationSetupContribution> PresentationSetupContributions { get; }
         public IReadOnlyList<ActivityPermissionReceiverContribution> PermissionReceiverContributions { get; }
+        public int ActivityObjectLifecycleCapabilityCount { get; }
+        public string ActivityObjectLifecycleCapabilityKindsSummary { get; }
+        public int ActorLifecycleCapabilityCount { get; }
+        public string ActorLifecycleCapabilityKindsSummary { get; }
         public int ObjectTargetCount { get; }
         public int UnresolvedReportCount { get; }
         public string Source { get; }
@@ -56,6 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     {
         private readonly ActivityObjectCapabilityScanTargetAdapter _objectTargetAdapter;
         private readonly ActivityObjectCapabilityScanner _objectScanner;
+        private readonly ActivityCapabilityActorLifecycleScanner _actorLifecycleScanner;
         private readonly ActivityCapabilityInventoryBuilder _inventoryBuilder;
         private readonly ActivityCapabilityInventoryValidator _inventoryValidator;
 
@@ -63,10 +76,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             _objectTargetAdapter = new ActivityObjectCapabilityScanTargetAdapter();
             _objectScanner = new ActivityObjectCapabilityScanner();
+            _actorLifecycleScanner = new ActivityCapabilityActorLifecycleScanner();
             IPlayerActorCapabilityIdentityResolver playerIdentityResolver = new PlayerActorCapabilityIdentityResolver();
 
             ActivityCapabilityScannerRegistry scannerRegistry = new ActivityCapabilityScannerRegistry();
             scannerRegistry.Register(_objectScanner);
+            scannerRegistry.Register(_actorLifecycleScanner);
             scannerRegistry.Register(new ActivityCapabilityPermissionScanner(playerIdentityResolver));
             scannerRegistry.Register(new ActivityCapabilityActorPresentationScanner());
             scannerRegistry.Register(new ActivityCapabilityActorAttributeScanner());
@@ -77,6 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         }
 
         public string ActivityObjectScannerId => _objectScanner.ScannerId;
+        public string ActorLifecycleScannerId => _actorLifecycleScanner.ScannerId;
 
         public ActivityCapabilityInventoryBuildResult BuildForEntry(
             SessionActivityIdentity identity,
@@ -116,6 +132,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 out IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
                 out IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions);
             ActivityCapabilityInventoryValidationResult validation = _inventoryValidator.Validate(inventory, source, reason);
+            CollectLifecycleCapabilitySummaries(
+                inventory,
+                out int activityObjectLifecycleCapabilityCount,
+                out string activityObjectLifecycleCapabilityKindsSummary,
+                out int actorLifecycleCapabilityCount,
+                out string actorLifecycleCapabilityKindsSummary);
             return new ActivityCapabilityInventoryBuildResult(
                 inventory,
                 validation,
@@ -123,10 +145,115 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 attributeSetupContributions,
                 presentationSetupContributions,
                 permissionReceiverContributions,
+                activityObjectLifecycleCapabilityCount,
+                activityObjectLifecycleCapabilityKindsSummary,
+                actorLifecycleCapabilityCount,
+                actorLifecycleCapabilityKindsSummary,
                 objectTargets.Count,
                 unresolvedReportCount,
                 source,
                 reason);
+        }
+
+        private static void CollectLifecycleCapabilitySummaries(
+            ActivityCapabilityInventory inventory,
+            out int activityObjectLifecycleCapabilityCount,
+            out string activityObjectLifecycleCapabilityKindsSummary,
+            out int actorLifecycleCapabilityCount,
+            out string actorLifecycleCapabilityKindsSummary)
+        {
+            List<ActivityCapabilityDescriptor> activityObjectLifecycleCapabilities = new();
+            List<ActivityCapabilityDescriptor> actorLifecycleCapabilities = new();
+            if (inventory.IsValid && inventory.Capabilities.Count > 0 && inventory.Owners.Count > 0)
+            {
+                Dictionary<string, ActivityCapabilityOwnerKind> ownerKindsById = new(StringComparer.Ordinal);
+                for (int index = 0; index < inventory.Owners.Count; index++)
+                {
+                    ActivityCapabilityOwnerDescriptor owner = inventory.Owners[index];
+                    if (!owner.IsValid || string.IsNullOrWhiteSpace(owner.OwnerId))
+                    {
+                        continue;
+                    }
+
+                    if (!ownerKindsById.ContainsKey(owner.OwnerId))
+                    {
+                        ownerKindsById.Add(owner.OwnerId, owner.OwnerKind);
+                    }
+                }
+
+                for (int index = 0; index < inventory.Capabilities.Count; index++)
+                {
+                    ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
+                    if (!IsLifecycleCapability(capability.CapabilityKind) ||
+                        string.IsNullOrWhiteSpace(capability.OwnerId) ||
+                        !ownerKindsById.TryGetValue(capability.OwnerId, out ActivityCapabilityOwnerKind ownerKind))
+                    {
+                        continue;
+                    }
+
+                    if (IsActivityObjectLifecycleOwnerKind(ownerKind))
+                    {
+                        activityObjectLifecycleCapabilities.Add(capability);
+                    }
+                    else if (IsActorLifecycleOwnerKind(ownerKind))
+                    {
+                        actorLifecycleCapabilities.Add(capability);
+                    }
+                }
+            }
+
+            activityObjectLifecycleCapabilityCount = activityObjectLifecycleCapabilities.Count;
+            activityObjectLifecycleCapabilityKindsSummary = FormatCapabilityKindsSummary(activityObjectLifecycleCapabilities);
+            actorLifecycleCapabilityCount = actorLifecycleCapabilities.Count;
+            actorLifecycleCapabilityKindsSummary = FormatCapabilityKindsSummary(actorLifecycleCapabilities);
+        }
+
+        private static bool IsLifecycleCapability(ActivityCapabilityKind kind)
+        {
+            return kind == ActivityCapabilityKind.ResetEndpoint ||
+                   kind == ActivityCapabilityKind.SnapshotProvider ||
+                   kind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
+                   kind == ActivityCapabilityKind.ReleaseEndpoint;
+        }
+
+        private static bool IsActivityObjectLifecycleOwnerKind(ActivityCapabilityOwnerKind ownerKind)
+        {
+            return ownerKind == ActivityCapabilityOwnerKind.ActivityObject ||
+                   ownerKind == ActivityCapabilityOwnerKind.SceneContributor;
+        }
+
+        private static bool IsActorLifecycleOwnerKind(ActivityCapabilityOwnerKind ownerKind)
+        {
+            return ownerKind == ActivityCapabilityOwnerKind.PlayerActor ||
+                   ownerKind == ActivityCapabilityOwnerKind.Actor ||
+                   ownerKind == ActivityCapabilityOwnerKind.RuntimeSpawnedActor;
+        }
+
+        private static string FormatCapabilityKindsSummary(IReadOnlyList<ActivityCapabilityDescriptor> capabilities)
+        {
+            if (capabilities == null || capabilities.Count == 0)
+            {
+                return "<none>";
+            }
+
+            Dictionary<ActivityCapabilityKind, int> countsByKind = new();
+            for (int index = 0; index < capabilities.Count; index++)
+            {
+                ActivityCapabilityKind kind = capabilities[index].CapabilityKind;
+                countsByKind.TryGetValue(kind, out int count);
+                countsByKind[kind] = count + 1;
+            }
+
+            List<ActivityCapabilityKind> kinds = new(countsByKind.Keys);
+            kinds.Sort();
+            List<string> segments = new(kinds.Count);
+            for (int index = 0; index < kinds.Count; index++)
+            {
+                ActivityCapabilityKind kind = kinds[index];
+                segments.Add($"{kind}:{countsByKind[kind]}");
+            }
+
+            return string.Join(",", segments);
         }
     }
 }

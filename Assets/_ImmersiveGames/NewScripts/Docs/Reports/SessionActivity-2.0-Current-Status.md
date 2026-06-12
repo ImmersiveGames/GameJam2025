@@ -108,6 +108,19 @@ Fontes normativas e de evidência:
 - Critério de aceite observado: `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` passaram sem `error CS`, `FATAL`, `Exception`, `route_transition_failed`, `checkpointStatus='Failed'`, `ActivityGateBindingFailed` ou `Duplicate player participant registration`.
 - A frente `IActivityEntryParticipantBindingRuntimeBridge` está fechada; o próximo foco volta aos resíduos gerais de ownership do `SessionActivityPipeline`.
 
+## RESET-INVENTORY-5 - Inventory-driven actor reset closure
+
+- Status: CLOSED / CODE CLEANUP + DOC CLOSURE.
+- `ActivityCapabilityInventory` ficou como fonte transversal de descoberta para reset participante e QA reset.
+- `ActivityEntryParticipantResetStage` é o owner da execução de reset participante.
+- `SessionActivityPipeline` mantém somente o caminho de QA inventory-driven.
+- `ActivityEntryParticipantBindingStage` não emite mais `ActivityParticipantPlacementCommandIssued` nem executa placement/reset.
+- O caminho antigo `PlayerActorResetEndpointResolver` / `ActivityResetScopeResolver` / `ActorResetScopeResolver` não voltou.
+- `ActorResetGroup` permanece como o domínio tipado do reset de Actor: contribution, endpoint reference e `ActivityParticipantResetCommand.ResetGroups`.
+- `ActivityStateResetGroup` permanece restrito ao reset de `ActivityObject`; o reset participante não faz mais mapping `ActorResetGroup -> ActivityStateResetGroup`.
+- `ActivityParticipantPlacementApplied` não é mais emitido pelo binding stage; a aplicação de Placement passa pelo reset stage inventariado.
+- Smoke de fechamento esperado: `ActivityCapabilityInventoryPreviewObserved`, `ActivityParticipantResetAppliedFromInventory` com `Placement`, `ActivityParticipation`, `MovementTransient` e `SpawnedRuntimeObjects`, `ActorResetQaAppliedFromInventory`, `RestartCurrentActivity PASS`, `Activity01ToActivity02 PASS`, `RouteExitBackToMenu PASS`.
+
 ## Matriz consolidada SA-0 a SA-8
 
 | Corte | Status | Leitura objetiva | Evidência principal |

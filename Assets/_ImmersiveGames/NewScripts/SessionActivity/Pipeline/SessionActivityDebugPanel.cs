@@ -2768,7 +2768,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 else if (fact.Kind == SessionActivityFactKind.ActivityParticipantCommandPlanReady ||
                          fact.Kind == SessionActivityFactKind.ActivityParticipantBindCommandIssued ||
                          fact.Kind == SessionActivityFactKind.ActivityParticipantMaterializationCommandIssued ||
-                         fact.Kind == SessionActivityFactKind.ActivityParticipantPlacementCommandIssued ||
                          fact.Kind == SessionActivityFactKind.ActivityParticipantResetCommandIssued)
                 {
                     participantCommandsForActivity02Observed = true;

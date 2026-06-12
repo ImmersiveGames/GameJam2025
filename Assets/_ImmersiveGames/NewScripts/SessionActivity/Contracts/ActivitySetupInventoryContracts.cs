@@ -109,6 +109,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         RuntimeTransient = 4,
         InteractionState = 5,
         ObjectiveState = 6,
+        SpawnedRuntimeObjects = 7,
     }
 
     public enum ActivitySetupInventoryBuildResultKind

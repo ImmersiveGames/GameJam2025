@@ -860,11 +860,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityParticipantCommandPlanReady = 106,
         ActivityParticipantBindCommandIssued = 107,
         ActivityParticipantMaterializationCommandIssued = 108,
-        ActivityParticipantPlacementCommandIssued = 109,
         ActivityParticipantResetCommandIssued = 110,
         ActivityParticipantBindApplied = 111,
         ActivityParticipantMaterialized = 112,
-        ActivityParticipantPlacementApplied = 113,
         ActivityParticipantResetApplied = 114,
         ActivityParticipantSetupFailed = 115,
     }

@@ -7,90 +7,22 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 {
-    public readonly struct ActorResetActorRef
-    {
-        public ActorResetActorRef(
-            SessionActivityIdentity identity,
-            ActorId actorId,
-            ActorInstanceRuntimeId actorInstanceRuntimeId,
-            ActorKind actorKind,
-            PlayerActorId playerActorId,
-            PlayerSlotId playerSlotId)
-        {
-            Identity = identity;
-            ActorId = actorId;
-            ActorInstanceRuntimeId = actorInstanceRuntimeId;
-            ActorKind = actorKind;
-            PlayerActorId = playerActorId;
-            PlayerSlotId = playerSlotId;
-        }
-
-        public SessionActivityIdentity Identity { get; }
-        public ActorId ActorId { get; }
-        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
-        public ActorKind ActorKind { get; }
-        public PlayerActorId PlayerActorId { get; }
-        public PlayerSlotId PlayerSlotId { get; }
-        public bool IsPlayer => ActorKind == ActorKind.Player;
-        public bool IsValid =>
-            Identity.IsValid &&
-            ActorId.IsValid &&
-            ActorInstanceRuntimeId.IsValid &&
-            ActorKind != ActorKind.Unknown;
-    }
-
     public enum ActorResetGroup
     {
         Unknown = 0,
         Placement = 1,
         ActivityParticipation = 2,
         MovementTransient = 3,
-    }
-
-    public readonly struct ActorResetTargetRef
-    {
-        public ActorResetTargetRef(
-            ActorResetActorRef actor,
-            IReadOnlyList<ActorResetGroup> groups,
-            string placementId,
-            bool placementDeclared,
-            bool placementRequired,
-            bool placementOptional,
-            bool hasPlacement,
-            Vector3 placementPosition,
-            Vector3 placementEulerAngles)
-        {
-            Actor = actor;
-            Groups = groups ?? Array.Empty<ActorResetGroup>();
-            PlacementId = Normalize(placementId);
-            PlacementDeclared = placementDeclared;
-            PlacementRequired = placementRequired;
-            PlacementOptional = placementOptional;
-            HasPlacement = hasPlacement;
-            PlacementPosition = placementPosition;
-            PlacementEulerAngles = placementEulerAngles;
-        }
-
-        public ActorResetActorRef Actor { get; }
-        public IReadOnlyList<ActorResetGroup> Groups { get; }
-        public string PlacementId { get; }
-        public bool PlacementDeclared { get; }
-        public bool PlacementRequired { get; }
-        public bool PlacementOptional { get; }
-        public bool HasPlacement { get; }
-        public Vector3 PlacementPosition { get; }
-        public Vector3 PlacementEulerAngles { get; }
-
-        public bool IsValid => Actor.IsValid && Groups is { Count: > 0 };
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        SpawnedRuntimeObjects = 4,
     }
 
     public readonly struct ActorResetContext
     {
         public ActorResetContext(
             SessionActivityIdentity pipelineIdentity,
-            ActorResetActorRef actor,
+            ActorId actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            ActorKind actorKind,
             ActorResetGroup group,
             string placementId,
             bool hasPlacement,
@@ -103,7 +35,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             string reason)
         {
             PipelineIdentity = pipelineIdentity;
-            Actor = actor;
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
+            ActorKind = actorKind;
             Group = group;
             PlacementId = Normalize(placementId);
             HasPlacement = hasPlacement;
@@ -117,7 +51,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
-        public ActorResetActorRef Actor { get; }
+        public ActorId ActorId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
+        public ActorKind ActorKind { get; }
         public ActorResetGroup Group { get; }
         public string PlacementId { get; }
         public bool HasPlacement { get; }
@@ -129,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         public string Source { get; }
         public string Reason { get; }
 
-        public bool IsValid => PipelineIdentity.IsValid && Actor.IsValid && Group != ActorResetGroup.Unknown;
+        public bool IsValid => PipelineIdentity.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown && Group != ActorResetGroup.Unknown;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -138,29 +74,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
     {
         bool Supports(ActorResetGroup group);
         void ApplyReset(ActorResetContext context);
-    }
-
-    public readonly struct ActorResetCommand
-    {
-        public ActorResetCommand(
-            SessionActivityIdentity pipelineIdentity,
-            IReadOnlyList<ActorResetTargetRef> targets,
-            string source,
-            string reason)
-        {
-            PipelineIdentity = pipelineIdentity;
-            Targets = targets ?? Array.Empty<ActorResetTargetRef>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-        }
-
-        public SessionActivityIdentity PipelineIdentity { get; }
-        public IReadOnlyList<ActorResetTargetRef> Targets { get; }
-        public string Source { get; }
-        public string Reason { get; }
-        public bool IsValid => PipelineIdentity.IsValid && Targets != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     public readonly struct ActorResetSkippedGroupReason
@@ -181,28 +94,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
     public readonly struct ActorResetResult
     {
         public ActorResetResult(
-            ActorResetActorRef actor,
+            ActorId actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            ActorKind actorKind,
             IReadOnlyList<ActorResetGroup> appliedGroups,
             IReadOnlyList<ActorResetGroup> skippedGroups,
             IReadOnlyList<ActorResetSkippedGroupReason> skippedGroupReasons)
         {
-            Actor = actor;
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
+            ActorKind = actorKind;
             AppliedGroups = appliedGroups ?? Array.Empty<ActorResetGroup>();
             SkippedGroups = skippedGroups ?? Array.Empty<ActorResetGroup>();
             SkippedGroupReasons = skippedGroupReasons ?? Array.Empty<ActorResetSkippedGroupReason>();
         }
 
-        public ActorResetActorRef Actor { get; }
+        public ActorId ActorId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
+        public ActorKind ActorKind { get; }
         public IReadOnlyList<ActorResetGroup> AppliedGroups { get; }
         public IReadOnlyList<ActorResetGroup> SkippedGroups { get; }
         public IReadOnlyList<ActorResetSkippedGroupReason> SkippedGroupReasons { get; }
-        public bool IsValid => Actor.IsValid && AppliedGroups != null && SkippedGroups != null && SkippedGroupReasons != null;
+        public bool IsValid => ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown && AppliedGroups != null && SkippedGroups != null && SkippedGroupReasons != null;
     }
 
     public interface IActorResetAdapter
     {
         IReadOnlyList<ActorResetResult> Execute(
-            ActorResetCommand command,
+            ActivityParticipantResetCommand command,
             SessionActivityIdentity activeIdentity);
     }
 }

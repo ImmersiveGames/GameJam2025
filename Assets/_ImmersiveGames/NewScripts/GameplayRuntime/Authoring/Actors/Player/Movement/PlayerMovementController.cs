@@ -111,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             if (context.Group != ActorResetGroup.MovementTransient)
             {
                 throw new InvalidOperationException(
-                    $"PlayerMovementController received unsupported reset group='{context.Group}' for actorId='{context.Actor.ActorId}'.");
+                    $"PlayerMovementController received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
             }
 
             ClearMovementState();

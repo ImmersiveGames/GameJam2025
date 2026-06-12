@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
 
@@ -75,6 +76,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
+
+            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out ActorProjectileFireEndpoint projectileFireEndpoint))
+            {
+                projectileFireEndpoint.ValidateLocalConfigurationOrThrow($"{origin}/{nameof(ActorCapabilitySurface)}.{nameof(ActorCapabilitySurface.ActorProjectileFireEndpoint)}");
+            }
         }
 
         public bool TryCreateResetContribution(
@@ -106,12 +112,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             if (context.Group != ActorResetGroup.Placement)
             {
                 throw new InvalidOperationException(
-                    $"PlayerActor received unsupported reset group='{context.Group}' for actorId='{context.Actor.ActorId}'.");
+                    $"PlayerActor received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
             }
 
             if (context is { PlacementRequired: true, HasPlacement: false })
             {
-                throw new InvalidOperationException($"Placement reset is required but missing for actorId='{context.Actor.ActorId}'.");
+                throw new InvalidOperationException($"Placement reset is required but missing for actorId='{context.ActorId}'.");
             }
 
             if (!context.HasPlacement)

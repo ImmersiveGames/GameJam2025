@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     issues.Add(Issue("capability_component_type_missing", error: true, ownerId: capability.OwnerId, capabilityId: capability.CapabilityId, detail: "Capability componentType is empty."));
                 }
 
-                string semanticKey = $"{capability.OwnerId}|{capability.CapabilityKind}|{capability.ModuleId}|{capability.ComponentPath}";
+                string semanticKey = $"{capability.OwnerId}|{capability.CapabilityKind}|{capability.ModuleId}|{capability.ComponentPath}|{capability.ComponentType}";
                 if (!semanticKeys.Add(semanticKey))
                 {
                     issues.Add(Issue("capability_semantic_duplicate", error: false, ownerId: capability.OwnerId, capabilityId: capability.CapabilityId, detail: $"Duplicate semantic capability key '{semanticKey}'."));
@@ -155,14 +155,54 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return capabilityKind switch
             {
-                ActivityCapabilityKind.ResetEndpoint => runtimeReference is ActivityObjectResetEndpointReference { Endpoint: not null },
-                ActivityCapabilityKind.SnapshotProvider => runtimeReference is ActivityObjectSnapshotProviderReference { Provider: not null },
-                ActivityCapabilityKind.SnapshotRestoreEndpoint => runtimeReference is ActivityObjectSnapshotRestoreEndpointReference { Endpoint: not null },
-                ActivityCapabilityKind.ReleaseEndpoint => runtimeReference is ActivityObjectReleaseEndpointReference { Endpoint: not null },
+                ActivityCapabilityKind.ResetEndpoint => runtimeReference is ActivityObjectResetEndpointReference { Endpoint: not null } ||
+                    IsActorResetRuntimeReference(runtimeReference),
+                ActivityCapabilityKind.SnapshotProvider => runtimeReference is ActivityObjectSnapshotProviderReference { Provider: not null } ||
+                    IsActorSnapshotRuntimeReference(runtimeReference),
+                ActivityCapabilityKind.SnapshotRestoreEndpoint => runtimeReference is ActivityObjectSnapshotRestoreEndpointReference { Endpoint: not null } ||
+                    IsActorRestoreRuntimeReference(runtimeReference),
+                ActivityCapabilityKind.ReleaseEndpoint => runtimeReference is ActivityObjectReleaseEndpointReference { Endpoint: not null } ||
+                    IsActorReleaseRuntimeReference(runtimeReference),
                 ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference { Receiver: not null } permissionReference &&
                     permissionReference.PermissionId != ActivityCapabilityPermissionId.Unknown,
                 _ => true,
             };
+        }
+
+        private static bool IsActorResetRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
+        {
+            return runtimeReference is ActorCapabilityResetEndpointReference actorResetReference &&
+                   actorResetReference.Endpoint != null &&
+                   actorResetReference.Contribution != null &&
+                   actorResetReference.ActorId.IsValid &&
+                   actorResetReference.ActorInstanceRuntimeId.IsValid;
+        }
+
+        private static bool IsActorSnapshotRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
+        {
+            return runtimeReference is ActorCapabilitySnapshotContributionReference actorSnapshotReference &&
+                   actorSnapshotReference.Contribution != null &&
+                   actorSnapshotReference.SnapshotEndpoint != null &&
+                   actorSnapshotReference.ActorId.IsValid &&
+                   actorSnapshotReference.ActorInstanceRuntimeId.IsValid;
+        }
+
+        private static bool IsActorRestoreRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
+        {
+            return runtimeReference is ActorCapabilitySnapshotRestoreContributionReference actorRestoreReference &&
+                   actorRestoreReference.Contribution != null &&
+                   actorRestoreReference.RestoreEndpoint != null &&
+                   actorRestoreReference.ActorId.IsValid &&
+                   actorRestoreReference.ActorInstanceRuntimeId.IsValid;
+        }
+
+        private static bool IsActorReleaseRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
+        {
+            return runtimeReference is ActorCapabilityReleaseEndpointReference actorReleaseReference &&
+                   actorReleaseReference.Contribution != null &&
+                   actorReleaseReference.ReleaseEndpoint != null &&
+                   actorReleaseReference.ActorId.IsValid &&
+                   actorReleaseReference.ActorInstanceRuntimeId.IsValid;
         }
     }
 }

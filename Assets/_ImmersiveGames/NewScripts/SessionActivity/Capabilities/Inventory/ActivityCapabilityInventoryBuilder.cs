@@ -157,15 +157,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     throw new InvalidOperationException($"Activity capability at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
                 }
 
-                string derivedCapabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
-                    inventoryId,
-                    capability.OwnerId,
-                    capability.CapabilityKind,
-                    capability.ModuleId,
-                    capability.ComponentPath);
-
                 capabilities.Add(new ActivityCapabilityDescriptor(
-                    derivedCapabilityId,
+                    capability.CapabilityId,
                     capability.CapabilityKind,
                     capability.ModuleId,
                     capability.OwnerId,
@@ -256,7 +249,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return moduleCompare;
             }
 
-            return string.Compare(left.ComponentPath, right.ComponentPath, StringComparison.Ordinal);
+            int componentTypeCompare = string.Compare(left.ComponentType, right.ComponentType, StringComparison.Ordinal);
+            if (componentTypeCompare != 0)
+            {
+                return componentTypeCompare;
+            }
+
+            int componentPathCompare = string.Compare(left.ComponentPath, right.ComponentPath, StringComparison.Ordinal);
+            if (componentPathCompare != 0)
+            {
+                return componentPathCompare;
+            }
+
+            return string.Compare(left.CapabilityId, right.CapabilityId, StringComparison.Ordinal);
         }
     }
 }
