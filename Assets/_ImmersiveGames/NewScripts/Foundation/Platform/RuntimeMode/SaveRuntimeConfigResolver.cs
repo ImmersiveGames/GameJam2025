@@ -12,15 +12,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][SaveRuntime] RuntimeModeConfig obrigatorio ausente para resolver SaveConfig.");
             }
 
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SaveRuntime] RuntimeConfigRegistry snapshot obrigatorio ausente para SaveConfig migrado.");
             }
 
-            ISaveRuntimeConfigGroupReadOnly saveRuntime = snapshot.SaveRuntime
+            var saveRuntime = snapshot.SaveRuntime
                 ?? throw new InvalidOperationException("[FATAL][Config][SaveRuntime] RuntimeConfigRegistry invariant breach: snapshot.SaveRuntime obrigatorio ausente.");
 
-            SaveConfigAsset saveConfig = saveRuntime.SaveConfig
+            var saveConfig = saveRuntime.SaveConfig
                 ?? throw new InvalidOperationException("[FATAL][Config][SaveRuntime] RuntimeConfigRegistry invariant breach: SaveConfig obrigatorio ausente no snapshot.");
 
             try

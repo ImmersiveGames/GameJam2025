@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
             for (int i = 0; i < poolDefinitions.Count; i++)
             {
-                PoolDefinitionAsset definition = poolDefinitions[i];
+                var definition = poolDefinitions[i];
                 if (definition == null)
                 {
                     LogDependencyInfo($"skip index={i} reason='null-definition'");
@@ -581,7 +581,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             int removedCount = 0;
             for (int i = _rented.Count - 1; i >= 0; i--)
             {
-                GameObject instance = _rented[i];
+                var instance = _rented[i];
                 if (instance == null || !instance.activeSelf)
                 {
                     _rented.RemoveAt(i);
@@ -672,7 +672,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             try
             {
                 const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-                FieldInfo poolsField = typeof(PoolService).GetField("_pools", flags);
+                var poolsField = typeof(PoolService).GetField("_pools", flags);
                 if (poolsField == null)
                 {
                     return false;

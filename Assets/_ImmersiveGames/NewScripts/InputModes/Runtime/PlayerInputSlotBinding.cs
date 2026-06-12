@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 throw new System.InvalidOperationException("PlayerInputSlotBinding.Initialize requires explicit valid PlayerSlotId.");
             }
 
-            PlayerSlotId currentSlotId = PlayerSlotId;
+            var currentSlotId = PlayerSlotId;
             if (currentSlotId.IsValid && currentSlotId != slotId)
             {
                 throw new System.InvalidOperationException(

@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Core
             }
 
             var identity = new SaveIdentity(profileId, address.SlotId);
-            if (!TryLoadByIdentity(identity, shouldUpdateCurrentState: ShouldUpdateCurrentState(address), out SaveRecord record, out reason) || record == null)
+            if (!TryLoadByIdentity(identity, shouldUpdateCurrentState: ShouldUpdateCurrentState(address), out var record, out reason) || record == null)
             {
                 result = new SaveResult(SaveResultKind.Failed, reason);
                 return false;

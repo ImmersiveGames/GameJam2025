@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         [ContextMenu("QA/Audio/EntityEmitter/Validate Setup")]
         private void ValidateSetup()
         {
-            Transform effectiveOwner = ResolveOwner(out string ownerSource);
+            var effectiveOwner = ResolveOwner(out string ownerSource);
             LogInfo("ValidateSetup",
                 $"emitter='{SafeName(emitterUnderTest)}' explicitCue='{SafeName(explicitCue)}' configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}'");
         }
@@ -75,9 +75,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            Transform owner = ResolveOwner(out string ownerSource);
-            Vector3 position = owner != null ? owner.position : fallbackSpatialPosition;
-            AudioPlaybackContext context = AudioPlaybackContext.Spatial(
+            var owner = ResolveOwner(out string ownerSource);
+            var position = owner != null ? owner.position : fallbackSpatialPosition;
+            var context = AudioPlaybackContext.Spatial(
                 worldPosition: position,
                 followTarget: owner,
                 reason: "qa_entity_emitter_cue_spatial");
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         {
             bool handleValid = _lastHandle is { IsValid: true };
             bool handlePlaying = _lastHandle is { IsPlaying: true };
-            Transform effectiveOwner = ResolveOwner(out string ownerSource);
+            var effectiveOwner = ResolveOwner(out string ownerSource);
 
             DebugUtility.Log(typeof(AudioEntityEmitterQaSceneHarness),
                 $"[QA][Audio][EntityEmitter] action='LogHarnessState' emitter='{SafeName(emitterUnderTest)}' explicitCue='{SafeName(explicitCue)}' configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}' autoStopDelaySeconds={autoStopDelaySeconds:0.###} autoStopUseUnscaledTime={autoStopUseUnscaledTime} lastHandleValid={handleValid} lastHandlePlaying={handlePlaying}.",

@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 (string.IsNullOrWhiteSpace(signature) ? string.Empty : $" signature='{signature}'") +
                 (string.IsNullOrWhiteSpace(profile) ? string.Empty : $" profile='{profile}'");
 
-            EffectiveRuntimePolicySettings settings = ResolveRuntimePolicySettingsOrFail();
+            var settings = ResolveRuntimePolicySettingsOrFail();
 
             float now = Time.realtimeSinceStartup;
 
@@ -219,15 +219,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
         private EffectiveRuntimePolicySettings ResolveRuntimePolicySettingsOrFail()
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     throw new InvalidOperationException("[FATAL][RuntimeMode][Degraded] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                EffectiveRuntimePolicySettings settings = EffectiveRuntimePolicySettings.FromRegistry(runtimePolicy);
+                var settings = EffectiveRuntimePolicySettings.FromRegistry(runtimePolicy);
                 if (!settings.IsValid)
                 {
                     throw new InvalidOperationException("[FATAL][RuntimeMode][Degraded] RuntimeConfigRegistry invariant breach: RuntimePolicy reporter/strictness invalidos no snapshot.");

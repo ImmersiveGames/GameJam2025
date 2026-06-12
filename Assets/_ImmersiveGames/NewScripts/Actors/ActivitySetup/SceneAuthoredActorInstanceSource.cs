@@ -30,14 +30,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             for (int index = 0; index < _actors.Count; index++)
             {
-                SceneAuthoredActorRuntimeEntry entry = _actors[index];
+                var entry = _actors[index];
                 if (!entry.IsValid)
                 {
                     continue;
                 }
 
-                SceneAuthoredActorIdentityRecord actorIdentity = entry.ActorIdentity;
-                Actor runtimeActor = entry.Actor != null
+                var actorIdentity = entry.ActorIdentity;
+                var runtimeActor = entry.Actor != null
                     ? entry.Actor
                     : entry.ActorInstance != null
                         ? entry.ActorInstance.GetComponent<Actor>()
@@ -48,13 +48,13 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 }
 
                 runtimeActor.ValidateLocalConfigurationOrThrow($"{nameof(SceneAuthoredActorInstanceSource)}:{actorIdentity.ActorId}");
-                ActorCapabilitySurface capabilitySurface = runtimeActor.CapabilitySurface;
+                var capabilitySurface = runtimeActor.CapabilitySurface;
                 if (capabilitySurface == null)
                 {
                     throw new InvalidOperationException($"SceneAuthoredActorInstanceSource requires ActorCapabilitySurface for actorId='{actorIdentity.ActorId}'.");
                 }
 
-                ActorScope runtimeScope = runtimeActor.ActorScopeMetadata;
+                var runtimeScope = runtimeActor.ActorScopeMetadata;
                 if (runtimeScope == ActorScope.Unknown)
                 {
                     throw new InvalidOperationException($"SceneAuthoredActorInstanceSource requires known ActorScope for actorId='{actorIdentity.ActorId}'.");
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 string stableActorId = !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
                     ? runtimeActor.ActorId
                     : actorIdentity.ActorId;
-                ActorInstanceRuntimeId actorInstanceRuntimeId = actorIdentity.ActorInstanceRuntimeId;
+                var actorInstanceRuntimeId = actorIdentity.ActorInstanceRuntimeId;
                 runtimeActor.SetRuntimeActorInstanceId(actorInstanceRuntimeId);
                 ActorInstanceRecord instance = new(
                     identity,

@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            Vector2 input = _moveInput;
+            var input = _moveInput;
             if (input == Vector2.zero)
             {
                 HaltHorizontalVelocity();
@@ -188,8 +188,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
             if (_rigidbody != null)
             {
-                Vector3 current = _rigidbody.linearVelocity;
-                Vector3 target = direction * moveSpeed;
+                var current = _rigidbody.linearVelocity;
+                var target = direction * moveSpeed;
                 _rigidbody.linearVelocity = new Vector3(target.x, current.y, target.z);
                 return;
             }
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
         }
 
@@ -215,7 +215,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            Vector3 current = _rigidbody.linearVelocity;
+            var current = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
             _rigidbody.angularVelocity = Vector3.zero;
         }

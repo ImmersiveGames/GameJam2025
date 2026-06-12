@@ -39,39 +39,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             for (int index = 0; index < _playerActors.Count; index++)
             {
-                PlayerActorIdentityRecord player = _playerActors[index];
+                var player = _playerActors[index];
                 if (!player.IsValid)
                 {
                     continue;
                 }
 
-                if (!TryResolveHandle(identity, player, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolveHandle(identity, player, out var handle) || !handle.IsValid)
                 {
                     continue;
                 }
 
-                GameObject actorRoot = handle.Instance;
-                PlayerActorIdentityRecord resolvedIdentity = handle.ActorIdentity;
-                Actor runtimeActor = actorRoot.GetComponent<Actor>();
+                var actorRoot = handle.Instance;
+                var resolvedIdentity = handle.ActorIdentity;
+                var runtimeActor = actorRoot.GetComponent<Actor>();
                 if (runtimeActor == null)
                 {
                     throw new InvalidOperationException($"PlayerActorInstanceSource requires Actor root for playerActorId='{resolvedIdentity.PlayerActorId}'.");
                 }
 
                 runtimeActor.ValidateLocalConfigurationOrThrow($"{nameof(PlayerActorInstanceSource)}:{resolvedIdentity.PlayerActorId}");
-                ActorCapabilitySurface capabilitySurface = runtimeActor.CapabilitySurface;
+                var capabilitySurface = runtimeActor.CapabilitySurface;
                 if (capabilitySurface == null)
                 {
                     throw new InvalidOperationException($"PlayerActorInstanceSource requires ActorCapabilitySurface for playerActorId='{resolvedIdentity.PlayerActorId}'.");
                 }
 
-                ActorScope actorScope = runtimeActor.ActorScopeMetadata;
+                var actorScope = runtimeActor.ActorScopeMetadata;
                 if (actorScope == ActorScope.Unknown)
                 {
                     throw new InvalidOperationException($"PlayerActorInstanceSource requires known ActorScope for playerActorId='{resolvedIdentity.PlayerActorId}'.");
                 }
 
-                ActorParticipationRecord.ActorParticipationPolicy participationPolicy = runtimeActor.ActorParticipationPolicy;
+                var participationPolicy = runtimeActor.ActorParticipationPolicy;
                 if (!Enum.IsDefined(typeof(ActorParticipationRecord.ActorParticipationPolicy), participationPolicy) ||
                     participationPolicy == ActorParticipationRecord.ActorParticipationPolicy.None)
                 {
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 string stableActorId = resolvedIdentity.ActorId.ToString();
-                ActorInstanceRuntimeId actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
+                var actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                     identity,
                     stableActorId,
                     actorScope,
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             if (_sessionActorStore != null &&
-                _sessionActorStore.TryGetByParticipantId(identity, player.ParticipantId, out SessionActorRuntimeEntry stored) &&
+                _sessionActorStore.TryGetByParticipantId(identity, player.ParticipantId, out var stored) &&
                 stored.IsValid)
             {
                 handle = new PlayerActorRuntimeHandle(player, stored.Instance, stored.Actor);

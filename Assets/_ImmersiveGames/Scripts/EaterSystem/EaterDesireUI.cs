@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            if (!TryGetResourceIcon(_currentInfo.Resource!.Value, out Sprite icon))
+            if (!TryGetResourceIcon(_currentInfo.Resource!.Value, out var icon))
             {
                 if (_pendingIconResolve)
                 {
@@ -348,12 +348,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         {
             icon = null;
 
-            if (!TryGetPlanetsManager(out PlanetsManager manager))
+            if (!TryGetPlanetsManager(out var manager))
             {
                 return false;
             }
 
-            if (!manager.TryGetResourceDefinition(resource, out PlanetResourcesSo definition) || definition == null)
+            if (!manager.TryGetResourceDefinition(resource, out var definition) || definition == null)
             {
                 if (_missingDefinitionWarnings.Add(resource))
                 {
@@ -511,7 +511,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return false;
             }
 
-            Transform eaterTransform = _gameplayManager.WorldEater;
+            var eaterTransform = _gameplayManager.WorldEater;
             if (eaterTransform == null)
             {
                 // Eater ainda não registrou no domínio (ou não existe neste momento).

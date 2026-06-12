@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return Failed(command, "invalid_command", "OperationalPreviousRouteExitBoundaryCommand invalido.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             DebugUtility.Log(typeof(OperationalPreviousRouteExitBoundary),
                 $"[OBS][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return Failed(command, "invalid_command", "OperationalPreviousRouteExitBoundaryCommand invalido.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             DebugUtility.Log(typeof(OperationalPreviousRouteExitBoundary),
                 $"[OBS][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",

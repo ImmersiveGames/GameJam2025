@@ -216,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!_activityCameraAdapter.TryPrepareActivityCamera(
                     prepareCommand,
-                    out SessionOperationalActivityCameraPrepareResult prepareResult,
+                    out var prepareResult,
                     out string prepareReason))
             {
                 string failureReason = string.IsNullOrWhiteSpace(prepareReason)

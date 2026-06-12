@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         {
             try
             {
-                ActivityContentSceneLoadResult result = await _activityContentSceneAdapter.LoadAdditiveAsync(command);
+                var result = await _activityContentSceneAdapter.LoadAdditiveAsync(command);
                 if (!result.IsValid)
                 {
                     callback.FailPendingOperation(operation, operation.Source, operation.Reason, "activity_content_scene_load_result_invalid");
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         {
             try
             {
-                ActivityContentSceneUnloadResult result = await _activityContentSceneReleaseAdapter.UnloadAdditiveAsync(command);
+                var result = await _activityContentSceneReleaseAdapter.UnloadAdditiveAsync(command);
                 if (!result.IsValid)
                 {
                     callback.FailPendingOperation(operation, operation.Source, operation.Reason, "activity_content_scene_unload_result_invalid");

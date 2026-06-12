@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     "Projectile spawn adapter received an invalid command.");
             }
 
-            PoolDefinitionAsset poolDefinition = command.PoolDefinition;
+            var poolDefinition = command.PoolDefinition;
             if (poolDefinition == null)
             {
                 DebugUtility.Log(
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     throw new InvalidOperationException($"PoolService returned null instance for poolDefinition='{poolDefinition.name}'.");
                 }
 
-                Quaternion targetRotation = Quaternion.LookRotation(command.Direction.normalized, Vector3.up);
+                var targetRotation = Quaternion.LookRotation(command.Direction.normalized, Vector3.up);
                 instance.transform.SetPositionAndRotation(command.Origin, targetRotation);
 
                 runtimeSpawnedActor = instance.GetComponent<RuntimeSpawnedActor>();
@@ -101,13 +101,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     throw new InvalidOperationException($"Projectile spawn prefab requires RuntimeSpawnedActor. poolDefinition='{poolDefinition.name}' instance='{instance.name}'.");
                 }
 
-                ActorId spawnedActorId = BuildSpawnedActorId(command);
-                ActorInstanceRuntimeId spawnedRuntimeId = ActorInstanceRuntimeId.FromRuntimeSpawnedActorIdentity(
+                var spawnedActorId = BuildSpawnedActorId(command);
+                var spawnedRuntimeId = ActorInstanceRuntimeId.FromRuntimeSpawnedActorIdentity(
                     command.ActorInstanceRuntimeId,
                     spawnedActorId.Value,
                     command.CommandEnvelope.Sequence);
 
-                RuntimeSpawnOriginMetadata spawnOrigin = new RuntimeSpawnOriginMetadata(
+                var spawnOrigin = new RuntimeSpawnOriginMetadata(
                     command.ActorId,
                     command.ActorInstanceRuntimeId,
                     new RuntimeSpawnProfileId(command.SpawnProfileId.ToString()),
@@ -224,8 +224,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            Vector3 actualPosition = instance.transform.position;
-            Quaternion actualRotation = instance.transform.rotation;
+            var actualPosition = instance.transform.position;
+            var actualRotation = instance.transform.rotation;
             bool positionApplied = Vector3.Distance(actualPosition, expectedPosition) <= TransformPositionTolerance;
             bool rotationApplied = Quaternion.Angle(actualRotation, expectedRotation) <= TransformRotationTolerance;
 
@@ -255,7 +255,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 for (int i = 0; i < renderers.Length; i++)
                 {
-                    Renderer renderer = renderers[i];
+                    var renderer = renderers[i];
                     if (renderer == null)
                     {
                         continue;
@@ -282,7 +282,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     materialCount += sharedMaterials.Length;
                     for (int j = 0; j < sharedMaterials.Length; j++)
                     {
-                        Material material = sharedMaterials[j];
+                        var material = sharedMaterials[j];
                         if (material == null)
                         {
                             continue;
@@ -392,7 +392,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             System.Collections.Generic.Stack<string> segments = new();
-            Transform current = transform;
+            var current = transform;
             while (current != null)
             {
                 segments.Push(current.name);

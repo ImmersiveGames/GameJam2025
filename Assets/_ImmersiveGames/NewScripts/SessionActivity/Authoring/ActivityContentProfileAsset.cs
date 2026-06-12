@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < contentScenes.Count; index++)
             {
-                ActivityContentSceneEntry entry = contentScenes[index];
+                var entry = contentScenes[index];
                 if (entry == null)
                 {
                     throw new InvalidOperationException($"{validationSource} has null content scene entry at index {index}.");

@@ -52,8 +52,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
         private static void PublishInputModeRequest(OperationalInputModeRequest request)
         {
-            InputModeRequestKind kind = MapInputModeKindOrFail(request.InitialInputMode, request.ContextSignature);
-            SessionOperationalIdentity identity = request.Identity;
+            var kind = MapInputModeKindOrFail(request.InitialInputMode, request.ContextSignature);
+            var identity = request.Identity;
 
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(

@@ -30,12 +30,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalAudio] OperationalRouteAudioRequest invalido.");
             }
 
-            SessionOperationalRouteCommand command = request.RouteCommand;
+            var command = request.RouteCommand;
 
             ValidateCommandOrFail(command);
             EnsureAudioConfigSourceOrFail();
 
-            AudioCueAsset cue = command.Audio.RouteAudioCue;
+            var cue = command.Audio.RouteAudioCue;
             string cueName = cue != null ? cue.name : "<none>";
             string cueType = ResolveCueTypeOrFail(cue);
 
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Info);
 
-            PlaybackKind playbackKind = DispatchCueOrFail(command, cue, cueType);
+            var playbackKind = DispatchCueOrFail(command, cue, cueType);
 
             lock (_sync)
             {
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] IGlobalAudioService obrigatorio ausente para routeAudio cue do tipo SFX.");
             }
 
-            IAudioPlaybackHandle handle = audioService.Play(cue, AudioPlaybackContext.Global(BuildReason(command, cueType)));
+            var handle = audioService.Play(cue, AudioPlaybackContext.Global(BuildReason(command, cueType)));
             if (handle == null || !handle.IsValid)
             {
                 throw new InvalidOperationException($"[FATAL][Audio][SessionOperationalPipeline] SFX submission not confirmed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' cue='{cue.name}'.");
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                AudioDefaultsAsset registryAudioDefaults = snapshot.PreferencesRuntime.AudioDefaults;
+                var registryAudioDefaults = snapshot.PreferencesRuntime.AudioDefaults;
                 if (registryAudioDefaults == null)
                 {
                     throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] RuntimeConfigRegistry contract broken: snapshot.PreferencesRuntime.AudioDefaults obrigatorio ausente.");

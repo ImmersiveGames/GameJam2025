@@ -27,8 +27,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
             }
 
             _ = runtimeModeConfig ?? throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para instalar Audio.");
-            RuntimeModeConfig resolvedRuntimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            AudioDefaultsAsset audioDefaults = ResolveAudioDefaultsOrFail(resolvedRuntimeModeConfig);
+            var resolvedRuntimeModeConfig = ResolveRuntimeModeConfigOrFail();
+            var audioDefaults = ResolveAudioDefaultsOrFail(resolvedRuntimeModeConfig);
 
             RegisterAudioDefaults(audioDefaults);
             RegisterAudioSettings();
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para resolver AudioDefaultsAsset.");
             }
 
-            AudioDefaultsAsset registryAudioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
+            var registryAudioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
 
             DebugUtility.Log(typeof(AudioInstaller),
                 $"[OBS][Audio][Config] AudioDefaults seed resolved via PreferencesRuntimeConfigGroup/RuntimeConfigRegistry. asset='{registryAudioDefaults.name}'.",

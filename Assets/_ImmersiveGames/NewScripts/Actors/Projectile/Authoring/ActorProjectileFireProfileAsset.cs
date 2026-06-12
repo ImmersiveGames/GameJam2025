@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     return false;
                 }
 
-                ActorProjectileSpawnPattern pattern = BuildSpawnPattern();
+                var pattern = BuildSpawnPattern();
                 if (!pattern.IsValid)
                 {
                     reason = "spawn_pattern_invalid";
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                 return false;
             }
 
-            foreach (FireModeAuthoring entry in fireModes)
+            foreach (var entry in fireModes)
             {
                 if (entry == null)
                 {
@@ -220,7 +220,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             bool defaultFireModeFound = false;
             for (int i = 0; i < fireModes.Length; i++)
             {
-                FireModeAuthoring fireMode = fireModes[i];
+                var fireMode = fireModes[i];
                 if (fireMode == null)
                 {
                     reason = $"fire_mode_null:{i}";
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 
                 for (int j = i + 1; j < fireModes.Length; j++)
                 {
-                    FireModeAuthoring other = fireModes[j];
+                    var other = fireModes[j];
                     if (other != null && string.Equals(fireMode.FireModeId, other.FireModeId, StringComparison.Ordinal))
                     {
                         reason = $"fire_mode_duplicate:{fireMode.FireModeId}";
@@ -269,7 +269,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                 return;
             }
 
-            foreach (FireModeAuthoring fireMode in fireModes)
+            foreach (var fireMode in fireModes)
             {
                 fireMode?.NormalizeForEditor();
             }

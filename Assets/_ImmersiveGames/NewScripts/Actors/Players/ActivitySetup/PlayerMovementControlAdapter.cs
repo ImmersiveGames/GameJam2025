@@ -51,13 +51,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<MovementControlRecord> records = new(command.Actors.Count);
             for (int index = 0; index < command.Actors.Count; index++)
             {
-                PlayerActorIdentityRecord actor = command.Actors[index];
+                var actor = command.Actors[index];
                 if (!actor.IsValid)
                 {
                     throw new InvalidOperationException($"Movement control actor identity invalid at index '{index}'.");
                 }
 
-                if ((!registry.TryGetActiveHandleByParticipant(actor.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+                if ((!registry.TryGetActiveHandleByParticipant(actor.ParticipantId, out var handle) ||
                     !handle.IsValid) &&
                     (!registry.TryGetRouteScopedHandleByParticipant(actor.ParticipantId, out handle) ||
                      !handle.IsValid))
@@ -70,16 +70,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement control failed: handle mismatch participantId='{actor.ParticipantId}' playerActorId='{actor.PlayerActorId}' playerSlotId='{actor.PlayerSlotId}'.");
                 }
 
-                ActorInstanceRuntimeId actorInstanceRuntimeId = handle.ActorInstanceRuntimeId;
+                var actorInstanceRuntimeId = handle.ActorInstanceRuntimeId;
                 if (!actorInstanceRuntimeId.IsValid)
                 {
                     throw new InvalidOperationException($"Movement control failed: actorId='{actor.ActorId}' participantId='{actor.ParticipantId}' missing ActorInstanceRuntimeId.");
                 }
 
-                ActorCapabilitySurface capabilitySurface = handle.CapabilitySurface ?? throw new InvalidOperationException($"Movement control failed: actor not found capability surface for playerActorId='{actor.PlayerActorId}'.");
-                IActorMovementEndpoint movementEndpoint = capabilitySurface.ActorMovementEndpoint ?? throw new InvalidOperationException($"Movement control failed: actor not found movement endpoint for playerActorId='{actor.PlayerActorId}'.");
+                var capabilitySurface = handle.CapabilitySurface ?? throw new InvalidOperationException($"Movement control failed: actor not found capability surface for playerActorId='{actor.PlayerActorId}'.");
+                var movementEndpoint = capabilitySurface.ActorMovementEndpoint ?? throw new InvalidOperationException($"Movement control failed: actor not found movement endpoint for playerActorId='{actor.PlayerActorId}'.");
 
-                ActivityCapabilityPermissionState permissionState = command.Enable
+                var permissionState = command.Enable
                     ? ActivityCapabilityPermissionState.Allowed
                     : ActivityCapabilityPermissionState.Blocked;
 
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     command.Source,
                     command.Reason);
 
-                ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
+                var fact = _permissionRuntime.Publish(permissionCommand);
                 if (IsRejected(fact))
                 {
                     throw new InvalidOperationException($"Movement control permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actor.PlayerActorId}'.");

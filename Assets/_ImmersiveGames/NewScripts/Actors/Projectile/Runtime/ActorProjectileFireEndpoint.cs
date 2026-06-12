@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedInactive("projectile_fire_endpoint_inactive");
             }
 
-            Vector3 direction = transform.forward;
+            var direction = transform.forward;
             if (direction.sqrMagnitude <= 0f)
             {
                 direction = Vector3.forward;
@@ -94,8 +94,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 DefaultFireModeId,
                 transform.position,
                 direction,
-                out ActorProjectileFireCommand fireCommand,
-                out ActorProjectileFireEndpointReadiness readiness))
+                out var fireCommand,
+                out var readiness))
             {
                 string blockedReason = string.IsNullOrWhiteSpace(readiness.Reason)
                     ? "projectile_fire_command_build_failed"
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
             }
 
-            if (!fireProfile.TryGetFireMode(fireCommand.FireModeId, out ActorProjectileFireMode fireMode, out string fireModeReason))
+            if (!fireProfile.TryGetFireMode(fireCommand.FireModeId, out var fireMode, out string fireModeReason))
             {
                 string blockedReason = string.IsNullOrWhiteSpace(fireModeReason)
                     ? "projectile_fire_mode_missing"
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_spawn_adapter_missing");
             }
 
-            ActorProjectileSpawnAdapterResult adapterResult = _spawnAdapter.Execute(fireCommand);
+            var adapterResult = _spawnAdapter.Execute(fireCommand);
 
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
@@ -202,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            if (!TryBuildDescriptor(commandId, out ActorProjectileFireEndpointDescriptor descriptor, out ActorProjectileFireEndpointReadinessKind descriptorFailureKind, out string descriptorFailureReason))
+            if (!TryBuildDescriptor(commandId, out var descriptor, out var descriptorFailureKind, out string descriptorFailureReason))
             {
                 if (!required && descriptorFailureKind == ActorProjectileFireEndpointReadinessKind.MissingProfile)
                 {
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return !required;
             }
 
-            if (!fireProfile.TryGetFireMode(DefaultFireModeId, out ActorProjectileFireMode fireMode, out string fireModeReason))
+            if (!fireProfile.TryGetFireMode(DefaultFireModeId, out var fireMode, out string fireModeReason))
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.MissingFireMode,
@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            ActorProjectileFireModeId resolvedFireModeId = fireModeId.IsValid ? fireModeId : DefaultFireModeId;
+            var resolvedFireModeId = fireModeId.IsValid ? fireModeId : DefaultFireModeId;
             if (!TryGetReadiness(commandEnvelope.CommandId, out readiness) || !readiness.IsPrepared)
             {
                 return false;
@@ -305,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            if (!fireProfile.TryGetFireMode(resolvedFireModeId, out ActorProjectileFireMode fireMode, out string fireModeReason))
+            if (!fireProfile.TryGetFireMode(resolvedFireModeId, out var fireMode, out string fireModeReason))
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.MissingFireMode,
@@ -350,7 +350,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public void ValidateLocalConfigurationOrThrow(string source)
         {
-            if (!TryGetReadiness(ActorCommandId.FirePrimary, out ActorProjectileFireEndpointReadiness readiness) && required)
+            if (!TryGetReadiness(ActorCommandId.FirePrimary, out var readiness) && required)
             {
                 string origin = string.IsNullOrWhiteSpace(source) ? nameof(ActorProjectileFireEndpoint) : source.Trim();
                 throw new InvalidOperationException($"{origin} invalid projectile fire endpoint: kind='{readiness.Kind}' reason='{readiness.Reason}' message='{readiness.Message}'.");
@@ -461,7 +461,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return _spawnRuntimeTracker;
             }
 
-            Actor actor = ResolveActor();
+            var actor = ResolveActor();
             if (actor == null)
             {
                 return null;
@@ -478,7 +478,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            RuntimeSpawnedActor spawnedActor = adapterResult.SpawnedActor as RuntimeSpawnedActor;
+            var spawnedActor = adapterResult.SpawnedActor as RuntimeSpawnedActor;
             if (spawnedActor == null)
             {
                 DebugUtility.LogWarning(
@@ -487,7 +487,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            ActorProjectileSpawnRuntimeTracker spawnRuntimeTracker = ResolveSpawnRuntimeTracker();
+            var spawnRuntimeTracker = ResolveSpawnRuntimeTracker();
             if (spawnRuntimeTracker == null)
             {
                 DebugUtility.LogWarning(

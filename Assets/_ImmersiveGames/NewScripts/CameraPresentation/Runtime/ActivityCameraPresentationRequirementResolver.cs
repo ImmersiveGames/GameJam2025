@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             if (!anchorHost.TryResolve(
                     profile.TrackingAnchorId,
-                    out Transform trackingTarget,
+                    out var trackingTarget,
                     out string trackingReason))
             {
                 reason = trackingReason;

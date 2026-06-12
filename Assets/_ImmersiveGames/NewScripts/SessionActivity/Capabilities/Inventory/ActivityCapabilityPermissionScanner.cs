@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 throw new InvalidOperationException("Activity capability scan context is invalid.");
             }
 
-            ActivityCapabilityInventoryId inventoryId = context.InventoryId;
+            var inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
             List<ActivityPermissionReceiverContribution> contributions = new();
@@ -47,30 +47,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < context.ActorTargets.Count; index++)
             {
-                ActorScanTarget target = context.ActorTargets[index];
+                var target = context.ActorTargets[index];
                 if (!target.IsValid)
                 {
                     continue;
                 }
 
-                ActorCapabilitySurface surface = target.CapabilitySurface;
+                var surface = target.CapabilitySurface;
                 if (surface == null)
                 {
                     throw new InvalidOperationException(
                         $"ActivityCapabilityPermissionScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}'.");
                 }
 
-                IActorMovementEndpoint movementEndpoint = surface.ActorMovementEndpoint;
-                IActorProjectileFireEndpoint projectileFireEndpoint = surface.ActorProjectileFireEndpoint;
-                IActorPermissionReceiver directPermissionReceiver = surface.ActorPermissionReceiver;
+                var movementEndpoint = surface.ActorMovementEndpoint;
+                var projectileFireEndpoint = surface.ActorProjectileFireEndpoint;
+                var directPermissionReceiver = surface.ActorPermissionReceiver;
                 if (movementEndpoint == null && projectileFireEndpoint == null && directPermissionReceiver == null)
                 {
                     continue;
                 }
 
-                if (!_identityResolver.TryResolve(target, out PlayerActorCapabilityIdentity playerIdentity))
+                if (!_identityResolver.TryResolve(target, out var playerIdentity))
                 {
-                    Component endpointComponent = (movementEndpoint as Component) ?? (projectileFireEndpoint as Component);
+                    var endpointComponent = (movementEndpoint as Component) ?? (projectileFireEndpoint as Component);
                     string unresolvedComponentPath = endpointComponent != null
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;
@@ -326,7 +326,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return;
             }
 
-            Component receiverComponent = directPermissionReceiver as Component;
+            var receiverComponent = directPermissionReceiver as Component;
             string componentPath = receiverComponent != null
                 ? ActivityCapabilityTransformPathUtility.BuildTransformPath(receiverComponent.transform)
                 : string.Empty;

@@ -40,9 +40,9 @@
             string source,
             string reason)
         {
-            RouteCameraPresentationCommand command = result?.Command;
+            var command = result?.Command;
 
-            RouteCameraPresentationRequirement requirement = command?.Requirement;
+            var requirement = command?.Requirement;
 
             return new RouteCameraFailureFact(
                 command != null ? command.RouteIdentity : string.Empty,

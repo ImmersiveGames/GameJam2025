@@ -25,8 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public bool IsValid =>
             Command.Identity.IsValid &&
-            Operation.IsValid &&
-            Operation.OperationKind == SessionActivityPendingOperationKind.ActivityContentSceneUnload &&
+            Operation is { IsValid: true, OperationKind: SessionActivityPendingOperationKind.ActivityContentSceneUnload } &&
             !string.IsNullOrWhiteSpace(Source);
     }
 
@@ -55,13 +54,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityDefinition definition = context.Definition;
+            var definition = context.Definition;
             int entrySequence = context.EntrySequence;
-            SessionActivityPendingOperation operation = command.Operation;
+            var operation = command.Operation;
 
             endpoint.ClearPendingOperation();
 
-            SessionActivityIdentity unloadedIdentity = endpoint.BuildIdentity(
+            var unloadedIdentity = endpoint.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityContentSceneUnloaded,
                 entrySequence);

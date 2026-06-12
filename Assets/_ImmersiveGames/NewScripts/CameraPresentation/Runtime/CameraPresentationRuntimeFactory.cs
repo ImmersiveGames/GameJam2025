@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public static IActivityCameraPreparationExecutor CreateDefaultPreparationExecutor(IOperationalCameraProvider operationalCameraProvider)
         {
-            IActivityCameraDirector director = CreateActivityDirector(operationalCameraProvider);
+            var director = CreateActivityDirector(operationalCameraProvider);
             return new ActivityCameraPreparationExecutor(director);
         }
 
@@ -23,13 +23,13 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public static IRouteCameraPreparationExecutor CreateRoutePreparationExecutor(IOperationalCameraProvider operationalCameraProvider)
         {
-            IRouteCameraDirector director = CreateRouteDirector(operationalCameraProvider);
+            var director = CreateRouteDirector(operationalCameraProvider);
             return CreateRoutePreparationExecutor(director);
         }
 
         public static IRouteCameraPreparationExecutor CreateRoutePreparationExecutor(IRouteCameraDirector director)
         {
-            RouteCameraPresentationCommandValidator validator = new RouteCameraPresentationCommandValidator();
+            var validator = new RouteCameraPresentationCommandValidator();
             return new RouteCameraPreparationExecutor(director, validator);
         }
     }

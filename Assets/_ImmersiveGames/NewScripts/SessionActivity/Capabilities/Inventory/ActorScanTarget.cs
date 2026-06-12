@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return false;
             }
 
-            ActorInstanceRuntimeId runtimeActorInstanceId = instance.ActorInstanceRuntimeId;
+            var runtimeActorInstanceId = instance.ActorInstanceRuntimeId;
             if (!runtimeActorInstanceId.IsValid)
             {
                 return false;

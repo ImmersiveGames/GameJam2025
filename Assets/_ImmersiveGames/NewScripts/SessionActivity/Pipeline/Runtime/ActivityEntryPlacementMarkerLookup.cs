@@ -54,19 +54,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string missingScenes = string.Empty;
             string searchedSources = string.Empty;
 
-            ActivityContentLoadedSet loadedSet = _activityContentRuntimeState.CurrentLoadedSet;
+            var loadedSet = _activityContentRuntimeState.CurrentLoadedSet;
             if (loadedSet.IsValid && loadedSet.Identity.CycleKey == identity.CycleKey)
             {
                 for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
                 {
-                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
+                    var record = loadedSet.Scenes[sceneIndex];
                     if (!record.IsValid || string.IsNullOrWhiteSpace(record.SceneName))
                     {
                         continue;
                     }
 
                     searchedSources = AppendCsv(searchedSources, $"ActivityContent:{record.SceneName}");
-                    Scene scene = SceneManager.GetSceneByName(record.SceneName);
+                    var scene = SceneManager.GetSceneByName(record.SceneName);
                     if (!scene.IsValid() || !scene.isLoaded)
                     {
                         missingScenes = AppendCsv(missingScenes, record.SceneName);
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 searchedSources = AppendCsv(searchedSources, "ActivityContent:<missing_or_stale>");
             }
 
-            Scene routeScene = SceneManager.GetActiveScene();
+            var routeScene = SceneManager.GetActiveScene();
             if (routeScene.IsValid() && routeScene.isLoaded)
             {
                 searchedSources = AppendCsv(searchedSources, $"RouteScene:{routeScene.name}");
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             GameObject[] roots = scene.GetRootGameObjects();
             for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
             {
-                GameObject root = roots[rootIndex];
+                var root = roots[rootIndex];
                 if (root == null)
                 {
                     continue;
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 PlayerActorPlacementMarker[] markers = root.GetComponentsInChildren<PlayerActorPlacementMarker>(true);
                 for (int markerIndex = 0; markerIndex < markers.Length; markerIndex++)
                 {
-                    PlayerActorPlacementMarker marker = markers[markerIndex];
+                    var marker = markers[markerIndex];
                     if (marker == null || !marker.IsValid)
                     {
                         continue;

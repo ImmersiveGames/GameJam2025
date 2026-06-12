@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 return false;
             }
 
-            Type type = typeof(T);
+            var type = typeof(T);
             if (!_services.TryGetValue(type, out object existing) || existing == null)
             {
                 return false;

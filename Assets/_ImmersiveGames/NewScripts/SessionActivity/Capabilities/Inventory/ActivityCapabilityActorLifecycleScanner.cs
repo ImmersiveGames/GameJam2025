@@ -9,7 +9,6 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
-using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -28,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 throw new InvalidOperationException("Activity capability scan context is invalid.");
             }
 
-            ActivityCapabilityInventoryId inventoryId = context.InventoryId;
+            var inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
             List<IActivityCapabilityRuntimeReference> runtimeReferences = new();
@@ -37,13 +36,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < context.ActorTargets.Count; index++)
             {
-                ActorScanTarget target = context.ActorTargets[index];
+                var target = context.ActorTargets[index];
                 if (!target.IsValid)
                 {
                     continue;
                 }
 
-                ActorCapabilitySurface surface = target.CapabilitySurface;
+                var surface = target.CapabilitySurface;
                 if (surface == null)
                 {
                     throw new InvalidOperationException(
@@ -143,15 +142,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorResetContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
                 string providerTypeName = provider.GetType().FullName ?? provider.GetType().Name;
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "reset");
-                if (!provider.TryCreateResetContribution(contributionContext, out IActorResetContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "reset");
+                if (!provider.TryCreateResetContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -213,14 +212,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorSnapshotContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "snapshot");
-                if (!provider.TryCreateSnapshotContribution(contributionContext, out IActorSnapshotContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "snapshot");
+                if (!provider.TryCreateSnapshotContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -280,14 +279,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorRestoreContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "restore");
-                if (!provider.TryCreateRestoreContribution(contributionContext, out IActorRestoreContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "restore");
+                if (!provider.TryCreateRestoreContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -347,14 +346,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorReleaseContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "release");
-                if (!provider.TryCreateReleaseContribution(contributionContext, out IActorReleaseContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "release");
+                if (!provider.TryCreateReleaseContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -438,7 +437,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 BuildPolicyMetadata(target, provider, contribution, providerComponentPath),
                 contribution.Descriptor.Source));
 
-            if (runtimeReference != null && runtimeReference.IsValid)
+            if (runtimeReference is { IsValid: true })
             {
                 runtimeReferences.Add(runtimeReference);
             }
@@ -489,7 +488,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 new("capabilitySource", contribution.Descriptor.Source),
             };
 
-            if (contribution is IActorResetContribution resetContribution && resetContribution.SupportedGroups != null)
+            if (contribution is IActorResetContribution { SupportedGroups: not null } resetContribution)
             {
                 for (int index = 0; index < resetContribution.SupportedGroups.Length; index++)
                 {

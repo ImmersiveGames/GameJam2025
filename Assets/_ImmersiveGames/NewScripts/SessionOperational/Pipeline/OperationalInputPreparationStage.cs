@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalInputPreparationCommand is invalid.");
             }
 
-            SessionOperationalInputModeKind initialInputMode = ResolveInitialInputModeFromPolicyOrFail(command);
+            var initialInputMode = ResolveInitialInputModeFromPolicyOrFail(command);
 
             UnityOperationalInputRuntimeAdapter.PrepareOrFail(
                 command.RuntimeModeConfig,
@@ -184,10 +184,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalInputModeKind initialInputMode)
         {
             EnsureInitialInputModePreparedFactOrFail(command);
-            OperationalInputModeRequest request = BuildInitialInputModeRequest(command, initialInputMode);
+            var request = BuildInitialInputModeRequest(command, initialInputMode);
 
-            IOperationalInputModeRequestPort inputModeRequestPort = ResolveInputModeRequestPortOrFail(command);
-            OperationalInputModeRequestResult result = inputModeRequestPort.SubmitInitialInputMode(request);
+            var inputModeRequestPort = ResolveInputModeRequestPortOrFail(command);
+            var result = inputModeRequestPort.SubmitInitialInputMode(request);
             if (!result.IsSubmitted)
             {
                 throw new InvalidOperationException(
@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private void EnsureInitialInputModePreparedFactOrFail(OperationalInputPreparationCommand command)
         {
-            SessionOperationalIdentity currentIdentity = _factRecorder.CurrentIdentity;
+            var currentIdentity = _factRecorder.CurrentIdentity;
             if (currentIdentity.Stage != SessionOperationalStage.InitialInputModePrepared ||
                 !string.Equals(currentIdentity.RouteOperationId, command.RouteOperationId, StringComparison.Ordinal) ||
                 !string.Equals(currentIdentity.TransitionId, command.TransitionId, StringComparison.Ordinal) ||
@@ -245,7 +245,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IOperationalInputModeRequestPort ResolveInputModeRequestPortOrFail(OperationalInputPreparationCommand command)
         {
-            IOperationalInputModeRequestPort inputModeRequestPort = _inputModeRequestPortResolver();
+            var inputModeRequestPort = _inputModeRequestPortResolver();
             if (inputModeRequestPort == null)
             {
                 throw new InvalidOperationException($"[FATAL][H1][SessionOperationalPipeline][InputMode] IOperationalInputModeRequestPort is required routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.");

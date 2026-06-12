@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Adapters
                     "ActorPresentation materialization command is invalid.");
             }
 
-            ActorPresentationResolvedPlan plan = command.ResolvedPlan;
+            var plan = command.ResolvedPlan;
 
             if (plan.VisualPrefab == null)
             {
@@ -49,27 +49,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Adapters
                     "ActorPresentation plan requires explicit primary slot to materialize visualPrefab.");
             }
 
-            if (!plan.TryGetPrimarySlot(out ActorPresentationSlotBinding primarySlot))
+            if (!plan.TryGetPrimarySlot(out var primarySlot))
             {
                 return ActorPresentationResult.Failed(
                     ReasonPrimaryContainerMissing,
                     $"ActorPresentation plan could not resolve primary container '{plan.PrimarySlotKind}:{plan.PrimarySlotId}'.");
             }
 
-            GameObject instance = Object.Instantiate(plan.VisualPrefab, primarySlot.Container, false);
+            var instance = Object.Instantiate(plan.VisualPrefab, primarySlot.Container, false);
             instance.name = $"{plan.VisualPrefab.name}::{plan.ActorId}::Presentation";
-            Transform instanceTransform = instance.transform;
+            var instanceTransform = instance.transform;
             instanceTransform.localPosition = Vector3.zero;
             instanceTransform.localRotation = Quaternion.identity;
             instanceTransform.localScale = Vector3.one;
 
-            ActorPresentationRuntimeHandle handle = new ActorPresentationRuntimeHandle(
+            var handle = new ActorPresentationRuntimeHandle(
                 plan,
                 instance,
                 nameof(UnityActorPresentationMaterializationAdapter),
                 ReasonMaterialized);
 
-            ActorPresentationReadyFact readyFact = new ActorPresentationReadyFact(
+            var readyFact = new ActorPresentationReadyFact(
                 handle,
                 nameof(UnityActorPresentationMaterializationAdapter),
                 ReasonMaterialized);
@@ -88,11 +88,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Adapters
                     "ActorPresentation release command is invalid.");
             }
 
-            ActorPresentationRuntimeHandle handle = command.RuntimeHandle;
+            var handle = command.RuntimeHandle;
 
             if (handle.ResolvedPlan.ReleasePolicy == ActorPresentationReleasePolicy.KeepBound)
             {
-                ActorPresentationReleasedFact keptFact = new ActorPresentationReleasedFact(
+                var keptFact = new ActorPresentationReleasedFact(
                     handle,
                     nameof(UnityActorPresentationMaterializationAdapter),
                     ReasonReleaseKeptBound);
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Adapters
                 Object.Destroy(handle.PresentationInstance);
             }
 
-            ActorPresentationReleasedFact releasedFact = new ActorPresentationReleasedFact(
+            var releasedFact = new ActorPresentationReleasedFact(
                 handle,
                 nameof(UnityActorPresentationMaterializationAdapter),
                 ReasonReleased);

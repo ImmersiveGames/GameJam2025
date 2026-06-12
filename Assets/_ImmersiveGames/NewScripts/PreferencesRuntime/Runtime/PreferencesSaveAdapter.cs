@@ -39,14 +39,14 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             out Contracts.AudioPreferencesSnapshot snapshot,
             out string reason)
         {
-            SaveAddress address = BuildAddress(
+            var address = BuildAddress(
                 SaveGroup.PreferencesAudio,
                 profileId,
                 AudioRecordId,
                 slotId,
                 AudioSchemaId);
 
-            if (!_saveService.TryLoad(address, out SaveResult loadResult, out reason) ||
+            if (!_saveService.TryLoad(address, out var loadResult, out reason) ||
                 loadResult == null ||
                 !loadResult.HasEntries)
             {
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
             try
             {
-                AudioPayloadDto dto = JsonUtility.FromJson<AudioPayloadDto>(payload);
+                var dto = JsonUtility.FromJson<AudioPayloadDto>(payload);
                 snapshot = new Contracts.AudioPreferencesSnapshot(
                     profileId,
                     slotId,
@@ -93,14 +93,14 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             out Contracts.VideoPreferencesSnapshot snapshot,
             out string reason)
         {
-            SaveAddress address = BuildAddress(
+            var address = BuildAddress(
                 SaveGroup.PreferencesVideo,
                 profileId,
                 VideoRecordId,
                 slotId,
                 VideoSchemaId);
 
-            if (!_saveService.TryLoad(address, out SaveResult loadResult, out reason) ||
+            if (!_saveService.TryLoad(address, out var loadResult, out reason) ||
                 loadResult == null ||
                 !loadResult.HasEntries)
             {
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
             try
             {
-                VideoPayloadDto dto = JsonUtility.FromJson<VideoPayloadDto>(payload);
+                var dto = JsonUtility.FromJson<VideoPayloadDto>(payload);
                 snapshot = new Contracts.VideoPreferencesSnapshot(
                     profileId,
                     slotId,
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new ArgumentNullException(nameof(snapshot));
             }
 
-            SaveAddress address = BuildAddress(
+            var address = BuildAddress(
                 SaveGroup.PreferencesAudio,
                 snapshot.ProfileId,
                 AudioRecordId,
@@ -165,13 +165,13 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                     sfxVolume = snapshot.SfxVolume,
                 }),
             };
-            SaveRequest request = new SaveRequest(
+            var request = new SaveRequest(
                 address,
                 entries,
                 revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 savedAtUtc: DateTime.UtcNow.ToString("O"));
 
-            return _saveService.TrySave(request, out SaveResult _, out reason);
+            return _saveService.TrySave(request, out var _, out reason);
         }
 
         public bool TrySaveVideo(Contracts.VideoPreferencesSnapshot snapshot, out string reason)
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new ArgumentNullException(nameof(snapshot));
             }
 
-            SaveAddress address = BuildAddress(
+            var address = BuildAddress(
                 SaveGroup.PreferencesVideo,
                 snapshot.ProfileId,
                 VideoRecordId,
@@ -198,13 +198,13 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                     fullscreen = snapshot.Fullscreen,
                 }),
             };
-            SaveRequest request = new SaveRequest(
+            var request = new SaveRequest(
                 address,
                 entries,
                 revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 savedAtUtc: DateTime.UtcNow.ToString("O"));
 
-            return _saveService.TrySave(request, out SaveResult _, out reason);
+            return _saveService.TrySave(request, out var _, out reason);
         }
 
         private SaveAddress BuildAddress(

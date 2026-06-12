@@ -166,7 +166,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
         private void HandlePlanetResourcesDetection(IDetectable detectable)
         {
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            if (!TryResolvePlanetMaster(detectable, out var planetMaster))
             {
                 DebugUtility.LogWarning<PlayerDetectionController>(
                     "Detecção de recurso planetário sem PlanetsMaster associado.", this);
@@ -197,7 +197,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
                 return;
             }
 
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            if (!TryResolvePlanetMaster(detectable, out var planetMaster))
             {
                 _activeDefenseDetections.Remove(detectable);
                 DebugUtility.LogWarning<PlayerDetectionController>(
@@ -220,7 +220,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
                 return;
             }
 
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            if (!TryResolvePlanetMaster(detectable, out var planetMaster))
             {
                 return;
             }

@@ -22,8 +22,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             {
                 reason = "activity_camera_director_missing";
 
-                ActivityCameraBindingResult failedBinding = ActivityCameraBindingResult.Failed(command, reason);
-                ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
+                var failedBinding = ActivityCameraBindingResult.Failed(command, reason);
+                var failureFact = ActivityCameraFailureFact.FromResult(
                     failedBinding,
                     nameof(ActivityCameraPreparationExecutor),
                     "activity_camera_prepare_failed");
@@ -36,8 +36,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             {
                 reason = "active_camera_binding_already_exists";
 
-                ActivityCameraBindingResult failedBinding = ActivityCameraBindingResult.Failed(command, reason);
-                ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
+                var failedBinding = ActivityCameraBindingResult.Failed(command, reason);
+                var failureFact = ActivityCameraFailureFact.FromResult(
                     failedBinding,
                     nameof(ActivityCameraPreparationExecutor),
                     "activity_camera_prepare_failed");
@@ -46,9 +46,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!_director.TryPrepareActivityCamera(command, out ActivityCameraBindingResult bindingResult, out reason))
+            if (!_director.TryPrepareActivityCamera(command, out var bindingResult, out reason))
             {
-                ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
+                var failureFact = ActivityCameraFailureFact.FromResult(
                     bindingResult,
                     nameof(ActivityCameraPreparationExecutor),
                     "activity_camera_prepare_failed");
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             _activeBinding = bindingResult;
 
-            ActivityCameraReadyFact readyFact = ActivityCameraReadyFact.FromResult(
+            var readyFact = ActivityCameraReadyFact.FromResult(
                 bindingResult,
                 nameof(ActivityCameraPreparationExecutor),
                 "activity_camera_prepare_ready");
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             _activeBinding = null;
 
-            ActivityCameraReleasedFact releasedFact = ActivityCameraReleasedFact.FromCommand(
+            var releasedFact = ActivityCameraReleasedFact.FromCommand(
                 command,
                 nameof(ActivityCameraPreparationExecutor),
                 "activity_camera_release_completed");
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             ActivityCameraReleaseCommand command,
             string failureReason)
         {
-            ActivityCameraReleaseFailureFact failureFact = ActivityCameraReleaseFailureFact.FromCommand(
+            var failureFact = ActivityCameraReleaseFailureFact.FromCommand(
                 command,
                 failureReason,
                 nameof(ActivityCameraPreparationExecutor),

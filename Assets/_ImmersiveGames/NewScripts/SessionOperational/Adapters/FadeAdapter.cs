@@ -2,7 +2,6 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Bindings;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -43,8 +42,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             ValidateCommandOrFail(command);
 
             string sceneName = ResolveFadeSceneNameOrFail();
-            FadeController controller = ResolveControllerOrFail(sceneName);
-            SceneTransitionProfile transitionProfile = command.TransitionProfile;
+            var controller = ResolveControllerOrFail(sceneName);
+            var transitionProfile = command.TransitionProfile;
             transitionProfile.ValidateOrFail(
                 nameof(FadeAdapter),
                 $"{(isFadeIn ? "fadeIn" : "fadeOut")} routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeIdentity='{command.RouteIdentity}' routeSequence='{command.RouteSequence}'.");
@@ -98,19 +97,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
 
             string sceneName = persistentScenesPolicy.ResolveSceneNameByRoleOrFail(
                 RuntimePersistentSceneRole.Fade,
                 nameof(FadeAdapter));
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] FadeScene obrigatoria nao esta carregada. scene='{sceneName}'.");
             }
 
-            FadeController controller = FindControllerInSceneOrFail(scene, sceneName);
+            var controller = FindControllerInSceneOrFail(scene, sceneName);
 
             lock (_sync)
             {
@@ -131,13 +130,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] FadeScene obrigatoria nao esta carregada. scene='{sceneName}'.");
             }
 
-            FadeController controller = FindControllerInSceneOrFail(scene, sceneName);
+            var controller = FindControllerInSceneOrFail(scene, sceneName);
 
             lock (_sync)
             {
@@ -151,9 +150,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         private static FadeController FindControllerInSceneOrFail(Scene scene, string sceneName)
         {
             GameObject[] roots = scene.GetRootGameObjects();
-            for (int i = 0; i < roots.Length; i++)
+            foreach (var t in roots)
             {
-                FadeController controller = roots[i].GetComponentInChildren<FadeController>(true);
+                var controller = t.GetComponentInChildren<FadeController>(true);
                 if (controller != null)
                 {
                     return controller;
@@ -196,15 +195,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail()
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                var registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string policyValidationError = string.Empty;
                 bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
                 if (!registryPolicyValid)

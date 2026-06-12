@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalSceneCompositionCommand is invalid.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             string source = Normalize(command.Source);
             string reason = Normalize(command.Reason);
 
@@ -82,8 +82,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][SceneComposition] OperationalSceneCompositionStarted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' completionHandoff='{routeCommand.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            IOperationalSceneCompositionPort sceneCompositionPort = ResolveSceneCompositionPortOrFail(routeCommand);
-            OperationalSceneCompositionResult result = await sceneCompositionPort.ApplyAsync(
+            var sceneCompositionPort = ResolveSceneCompositionPortOrFail(routeCommand);
+            var result = await sceneCompositionPort.ApplyAsync(
                 new OperationalSceneCompositionRequest(
                     routeCommand,
                     source,
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IOperationalSceneCompositionPort ResolveSceneCompositionPortOrFail(SessionOperationalRouteCommand routeCommand)
         {
-            IOperationalSceneCompositionPort sceneCompositionPort = _sceneCompositionPortResolver();
+            var sceneCompositionPort = _sceneCompositionPortResolver();
             if (sceneCompositionPort == null)
             {
                 throw new InvalidOperationException($"[FATAL][SessionOperationalPipeline][SceneComposition] IOperationalSceneCompositionPort is required routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}'.");

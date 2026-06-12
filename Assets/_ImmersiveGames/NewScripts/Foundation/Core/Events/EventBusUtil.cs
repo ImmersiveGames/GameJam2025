@@ -49,12 +49,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
 
         private static void ClearEventBuses()
         {
-            foreach (Type eventType in _eventTypes)
+            foreach (var eventType in _eventTypes)
             {
                 try
                 {
-                    Type busType = typeof(EventBus<>).MakeGenericType(eventType);
-                    MethodInfo clearMethod = busType.GetMethod("Clear", BindingFlags.Static | BindingFlags.Public);
+                    var busType = typeof(EventBus<>).MakeGenericType(eventType);
+                    var clearMethod = busType.GetMethod("Clear", BindingFlags.Static | BindingFlags.Public);
                     clearMethod?.Invoke(null, null);
                 }
                 catch (Exception ex)
@@ -66,12 +66,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
 
         private static void ClearFilteredEventBuses()
         {
-            foreach ((Type scope, Type evt) in _filteredEventTypes)
+            foreach ((var scope, var evt) in _filteredEventTypes)
             {
                 try
                 {
-                    Type busType = typeof(FilteredEventBus<,>).MakeGenericType(scope, evt);
-                    MethodInfo clearAllMethod = busType.GetMethod("ClearAll", BindingFlags.Static | BindingFlags.Public);
+                    var busType = typeof(FilteredEventBus<,>).MakeGenericType(scope, evt);
+                    var clearAllMethod = busType.GetMethod("ClearAll", BindingFlags.Static | BindingFlags.Public);
                     clearAllMethod?.Invoke(null, null);
                 }
                 catch (Exception ex)

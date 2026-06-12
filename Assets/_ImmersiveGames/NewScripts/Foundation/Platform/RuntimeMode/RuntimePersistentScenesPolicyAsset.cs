@@ -112,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
             for (int i = 0; i < entries.Count; i++)
             {
-                RuntimePersistentSceneEntry entry = entries[i];
+                var entry = entries[i];
                 if (entry == null || entry.Role != role)
                 {
                     continue;
@@ -161,7 +161,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 return false;
             }
 
-            SceneKeyAsset sceneKey = entry.SceneKey;
+            var sceneKey = entry.SceneKey;
             if (sceneKey == null)
             {
                 errorMessage = $"{fieldName}.sceneKey is required.";

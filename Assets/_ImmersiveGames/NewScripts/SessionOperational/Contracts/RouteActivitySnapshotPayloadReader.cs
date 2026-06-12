@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.UnsupportedLegacyPayload, "legacy_snapshot_payload_not_supported");
             }
 
-            CapabilitySnapshotEnvelopeDto envelopeDto = dto.capabilitySnapshotEnvelope;
+            var envelopeDto = dto.capabilitySnapshotEnvelope;
             if (envelopeDto == null || envelopeDto.records == null || envelopeDto.records.Length == 0)
             {
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.MissingCapabilitySnapshotEnvelope, "missing_capability_snapshot_envelope_records");
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             List<ActivityCapabilitySnapshotRecord> records = new(envelopeDto.records.Length);
             for (int index = 0; index < envelopeDto.records.Length; index++)
             {
-                CapabilitySnapshotRecordDto recordDto = envelopeDto.records[index];
+                var recordDto = envelopeDto.records[index];
                 if (recordDto == null)
                 {
                     continue;

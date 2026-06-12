@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                     $"{origin} has no ActorPresentation slot requirements.");
             }
 
-            ActorPresentationContainerResolutionResult containerIndexResult = BuildContainerIndex(
+            var containerIndexResult = BuildContainerIndex(
                 endpoint,
                 origin,
                 out Dictionary<string, ActorPresentationContainer> containerIndex);
@@ -58,13 +58,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 return containerIndexResult;
             }
 
-            List<ActorPresentationSlotBinding> bindings = new List<ActorPresentationSlotBinding>();
-            List<ActorPresentationSkippedSlot> skippedOptionalSlots = new List<ActorPresentationSkippedSlot>();
-            HashSet<string> observedRequirements = new HashSet<string>(StringComparer.Ordinal);
+            var bindings = new List<ActorPresentationSlotBinding>();
+            var skippedOptionalSlots = new List<ActorPresentationSkippedSlot>();
+            var observedRequirements = new HashSet<string>(StringComparer.Ordinal);
 
             for (int index = 0; index < requirements.Count; index++)
             {
-                ActorPresentationSlotRequirement requirement = requirements[index];
+                var requirement = requirements[index];
 
                 if (!requirement.IsValid)
                 {
@@ -81,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                         $"{origin} has duplicate slot requirement '{requirementKey}'.");
                 }
 
-                if (containerIndex.TryGetValue(requirementKey, out ActorPresentationContainer container))
+                if (containerIndex.TryGetValue(requirementKey, out var container))
                 {
                     bindings.Add(container.ToBinding());
                     continue;
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
             for (int index = 0; index < containers.Count; index++)
             {
-                ActorPresentationContainer container = containers[index];
+                var container = containers[index];
 
                 if (container == null || !container.IsValid)
                 {

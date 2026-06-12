@@ -637,7 +637,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             }
 
             IReadOnlyDictionary<RuntimeAttributeType, IRuntimeAttributeValue> all = _runtimeAttributeContext.GetAll();
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine($"📊 RESOURCES FOR ACTOR: {_actor?.ActorId}");
             sb.AppendLine($"Total Resources: {all.Count}");
             sb.AppendLine("────────────────────────");

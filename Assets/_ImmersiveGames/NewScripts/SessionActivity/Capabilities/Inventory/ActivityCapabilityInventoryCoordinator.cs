@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             _actorLifecycleScanner = new ActivityCapabilityActorLifecycleScanner();
             IPlayerActorCapabilityIdentityResolver playerIdentityResolver = new PlayerActorCapabilityIdentityResolver();
 
-            ActivityCapabilityScannerRegistry scannerRegistry = new ActivityCapabilityScannerRegistry();
+            var scannerRegistry = new ActivityCapabilityScannerRegistry();
             scannerRegistry.Register(_objectScanner);
             scannerRegistry.Register(_actorLifecycleScanner);
             scannerRegistry.Register(new ActivityCapabilityPermissionScanner(playerIdentityResolver));
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             int unresolvedReportCount = 0;
             if (activityObjectDiscovery.IsValid)
             {
-                ActivityObjectCapabilityScanTargetAdaptationResult objectAdaptation = _objectTargetAdapter.Adapt(
+                var objectAdaptation = _objectTargetAdapter.Adapt(
                     activityObjectDiscovery,
                     source,
                     reason);
@@ -125,13 +125,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source,
                 reason);
 
-            ActivityCapabilityInventory inventory = _inventoryBuilder.Build(
+            var inventory = _inventoryBuilder.Build(
                 scanContext,
                 out IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
                 out IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
                 out IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
                 out IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions);
-            ActivityCapabilityInventoryValidationResult validation = _inventoryValidator.Validate(inventory, source, reason);
+            var validation = _inventoryValidator.Validate(inventory, source, reason);
             CollectLifecycleCapabilitySummaries(
                 inventory,
                 out int activityObjectLifecycleCapabilityCount,
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 Dictionary<string, ActivityCapabilityOwnerKind> ownerKindsById = new(StringComparer.Ordinal);
                 for (int index = 0; index < inventory.Owners.Count; index++)
                 {
-                    ActivityCapabilityOwnerDescriptor owner = inventory.Owners[index];
+                    var owner = inventory.Owners[index];
                     if (!owner.IsValid || string.IsNullOrWhiteSpace(owner.OwnerId))
                     {
                         continue;
@@ -183,10 +183,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
                 for (int index = 0; index < inventory.Capabilities.Count; index++)
                 {
-                    ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
+                    var capability = inventory.Capabilities[index];
                     if (!IsLifecycleCapability(capability.CapabilityKind) ||
                         string.IsNullOrWhiteSpace(capability.OwnerId) ||
-                        !ownerKindsById.TryGetValue(capability.OwnerId, out ActivityCapabilityOwnerKind ownerKind))
+                        !ownerKindsById.TryGetValue(capability.OwnerId, out var ownerKind))
                     {
                         continue;
                     }
@@ -239,7 +239,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Dictionary<ActivityCapabilityKind, int> countsByKind = new();
             for (int index = 0; index < capabilities.Count; index++)
             {
-                ActivityCapabilityKind kind = capabilities[index].CapabilityKind;
+                var kind = capabilities[index].CapabilityKind;
                 countsByKind.TryGetValue(kind, out int count);
                 countsByKind[kind] = count + 1;
             }
@@ -249,7 +249,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             List<string> segments = new(kinds.Count);
             for (int index = 0; index < kinds.Count; index++)
             {
-                ActivityCapabilityKind kind = kinds[index];
+                var kind = kinds[index];
                 segments.Add($"{kind}:{countsByKind[kind]}");
             }
 

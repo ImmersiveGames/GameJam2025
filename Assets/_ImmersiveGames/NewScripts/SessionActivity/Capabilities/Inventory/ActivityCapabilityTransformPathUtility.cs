@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             }
 
             string path = target.name;
-            Transform current = target.parent;
+            var current = target.parent;
             while (current != null)
             {
                 path = $"{current.name}/{path}";

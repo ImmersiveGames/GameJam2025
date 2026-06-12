@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
 
         public override int GetHashCode()
         {
-            HashCode hash = new HashCode();
+            var hash = new HashCode();
             hash.Add(PhaseEntryIdentity, StringComparer.Ordinal);
             hash.Add(SessionSignature, StringComparer.Ordinal);
             hash.Add(EntrySignature, StringComparer.Ordinal);

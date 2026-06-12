@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             for (int index = 0; index < receivers.Count; index++)
             {
-                ActivityCapabilityPermissionReceiverReference reference = receivers[index];
+                var reference = receivers[index];
                 if (reference == null ||
                     !reference.IsValid ||
                     reference.Receiver == null)
@@ -100,30 +100,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             if (!command.IsValid)
             {
-                ActivityCapabilityPermissionFact rejectedInvalid = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedInvalidCommand, "rejected_invalid_command", "Permission command is invalid.");
+                var rejectedInvalid = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedInvalidCommand, "rejected_invalid_command", "Permission command is invalid.");
                 LogOutcome("ActivityCapabilityPermissionRejectedInvalidCommand", rejectedInvalid);
                 return rejectedInvalid;
             }
 
             if (!MatchesActiveIdentity(command))
             {
-                ActivityCapabilityPermissionFact rejectedStale = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedStaleIdentity, "rejected_stale_or_foreign", "Permission command identity does not match active identity.");
+                var rejectedStale = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedStaleIdentity, "rejected_stale_or_foreign", "Permission command identity does not match active identity.");
                 LogOutcome("ActivityCapabilityPermissionRejectedStaleOrForeign", rejectedStale);
                 return rejectedStale;
             }
 
             if (RequiresReceiverForFunctionalSuccess(command) && _receivers.Count <= 0)
             {
-                ActivityCapabilityPermissionFact rejectedMissingReceiver = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedMissingRequiredReceiver, "rejected_missing_required_receiver", "Permission command requires at least one registered receiver.");
+                var rejectedMissingReceiver = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedMissingRequiredReceiver, "rejected_missing_required_receiver", "Permission command requires at least one registered receiver.");
                 LogOutcome("ActivityCapabilityPermissionRejectedMissingReceiver", rejectedMissingReceiver);
                 return rejectedMissingReceiver;
             }
 
-            PermissionKey key = PermissionKey.From(command);
-            if (_bindingsByKey.TryGetValue(key, out ActivityCapabilityPermissionBinding current) &&
+            var key = PermissionKey.From(command);
+            if (_bindingsByKey.TryGetValue(key, out var current) &&
                 current.State == command.State)
             {
-                ActivityCapabilityPermissionFact idempotent = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.AcceptedIdempotentNoop, "accepted_idempotent_noop", "Permission command is idempotent; no state change applied.");
+                var idempotent = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.AcceptedIdempotentNoop, "accepted_idempotent_noop", "Permission command is idempotent; no state change applied.");
                 LogOutcome("ActivityCapabilityPermissionSkippedIdempotent", idempotent);
                 return idempotent;
             }
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             _bindingsByKey[key] = updatedBinding;
 
-            ActivityCapabilityPermissionFact fact = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.AcceptedStateChanged, "accepted_state_changed", "Permission state updated.");
+            var fact = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.AcceptedStateChanged, "accepted_state_changed", "Permission state updated.");
             LogOutcome("ActivityCapabilityPermissionApplied", fact);
             NotifyReceivers(fact);
             return fact;
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             foreach (KeyValuePair<string, IActivityCapabilityPermissionReceiver> pair in _receivers)
             {
-                IActivityCapabilityPermissionReceiver receiver = pair.Value;
+                var receiver = pair.Value;
                 if (receiver == null)
                 {
                     continue;

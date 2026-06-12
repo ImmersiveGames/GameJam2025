@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
         public ActorPresentationPlanResolutionResult ResolvePlan(string reason)
         {
-            ActorPresentationPlanResolutionResult result = _planResolver.Resolve(
+            var result = _planResolver.Resolve(
                 profile,
                 endpoint,
                 activityIdentity,
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
         {
             if (!_hasResolvedPlan)
             {
-                ActorPresentationPlanResolutionResult planResult = ResolvePlan($"{reason}/ResolveBeforeMaterialize");
+                var planResult = ResolvePlan($"{reason}/ResolveBeforeMaterialize");
                 if (!planResult.IsSuccess)
                 {
                     return ActorPresentationResult.Failed(
@@ -141,12 +141,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 Release($"{reason}/ReleasePreviousInstance");
             }
 
-            ActorPresentationMaterializationCommand command = new ActorPresentationMaterializationCommand(
+            var command = new ActorPresentationMaterializationCommand(
                 _lastResolvedPlan,
                 nameof(ActorPresentationManualProbe),
                 reason);
 
-            ActorPresentationResult result = _adapter.Materialize(command);
+            var result = _adapter.Materialize(command);
 
             if (result is { Kind: ActorPresentationResultKind.Materialized, ReadyFact: { IsValid: true } })
             {
@@ -205,12 +205,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                     "ActorPresentation probe has no runtime handle to release.");
             }
 
-            ActorPresentationReleaseCommand command = new ActorPresentationReleaseCommand(
+            var command = new ActorPresentationReleaseCommand(
                 _lastRuntimeHandle,
                 nameof(ActorPresentationManualProbe),
                 reason);
 
-            ActorPresentationResult result = _adapter.Release(command);
+            var result = _adapter.Release(command);
 
             if (result is { Kind: ActorPresentationResultKind.Released, ReleasedFact: { IsValid: true } })
             {
@@ -249,7 +249,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 $"reason='{reason}'.",
                 this);
 
-            ActorPresentationPlanResolutionResult planResult = ResolvePlan($"{reason}/ResolvePlan");
+            var planResult = ResolvePlan($"{reason}/ResolvePlan");
             if (!planResult.IsSuccess)
             {
                 UDebug.LogError(
@@ -261,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 return;
             }
 
-            ActorPresentationResult materializeResult = Materialize($"{reason}/Materialize");
+            var materializeResult = Materialize($"{reason}/Materialize");
             if (materializeResult.Kind != ActorPresentationResultKind.Materialized)
             {
                 UDebug.LogError(
@@ -275,7 +275,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
             if (releaseAfterFullProbe)
             {
-                ActorPresentationResult releaseResult = Release($"{reason}/Release");
+                var releaseResult = Release($"{reason}/Release");
                 if (releaseResult.Kind != ActorPresentationResultKind.Released)
                 {
                     UDebug.LogError(

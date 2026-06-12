@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             var pool = GetOrCreatePool(definition);
             try
             {
-                GameObject instance = pool.Rent(parent);
+                var instance = pool.Rent(parent);
 
                 DebugUtility.LogVerbose(typeof(PoolService),
                     $"[OBS][Pooling] Rent asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",

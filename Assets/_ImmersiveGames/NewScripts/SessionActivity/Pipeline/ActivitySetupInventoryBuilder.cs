@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     "ActivitySetupInventory build context is invalid.");
             }
 
-            ActivitySetupRequirementsAuthoring requirements = plan.SetupRequirements;
+            var requirements = plan.SetupRequirements;
 
             string inventoryId = $"{plan.ActivityId}|{plan.Identity.EntrySequence}|activity_setup_inventory";
 
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"ActivitySetupInventory built invalid inventory for activityId='{plan.ActivityId}' entrySequence='{plan.Identity.EntrySequence}'.");
             }
 
-            ActivitySetupInventoryBuildResultKind kind = inventory.HasRequirements
+            var kind = inventory.HasRequirements
                 ? ActivitySetupInventoryBuildResultKind.Built
                 : ActivitySetupInventoryBuildResultKind.SkippedNoRequirements;
 
@@ -70,8 +70,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ParticipantRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityParticipantRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Participant requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Participant, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Participant requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Participant, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new ParticipantRequirement(requirement, entry.ParticipantKind, entry.SessionParticipantId, entry.ExpectedSessionRole, entry.PlacementRequirementId));
             }
 
@@ -88,8 +88,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ObjectEntryRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityObjectEntryRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Object entry requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.ObjectEntry, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Object entry requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.ObjectEntry, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new ObjectEntryRequirement(requirement, entry.ObjectEntryKind, entry.ObjectId, entry.ObjectTypeId, entry.PlacementRequirementId));
             }
 
@@ -106,8 +106,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SceneContributorRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivitySceneContributorRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Scene contributor requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.SceneContributor, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Scene contributor requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.SceneContributor, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new SceneContributorRequirement(requirement, entry.ContributorId, entry.ContributorRole, entry.SceneName));
             }
 
@@ -124,8 +124,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<PlacementRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityPlacementRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Placement requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Placement, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Placement requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Placement, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new PlacementRequirement(requirement, entry.PlacementKind, entry.TargetId, entry.MarkerId, entry.SceneName));
             }
 
@@ -142,8 +142,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<CameraBindingRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityCameraBindingRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Camera binding requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.CameraBinding, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Camera binding requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.CameraBinding, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new CameraBindingRequirement(requirement, entry.CameraBindingKind, entry.BindingId, entry.TargetId, entry.ProfileId));
             }
 
@@ -160,8 +160,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<InteractionBindingRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityInteractionBindingRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Interaction binding requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.InteractionBinding, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Interaction binding requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.InteractionBinding, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new InteractionBindingRequirement(requirement, entry.InteractionBindingKind, entry.BindingId, entry.TargetId, entry.ProfileId));
             }
 
@@ -178,8 +178,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<HudBindingRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityHudBindingRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Hud binding requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.HudBinding, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Hud binding requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.HudBinding, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new HudBindingRequirement(requirement, entry.HudBindingKind, entry.BindingId, entry.TargetId, entry.ProfileId));
             }
 
@@ -196,8 +196,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<WarmupRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityWarmupRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Warmup requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Warmup, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Warmup requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Warmup, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new WarmupRequirement(requirement, entry.WarmupKind, entry.TargetId, entry.ProfileId));
             }
 
@@ -214,8 +214,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<StateResetRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityStateResetRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"State reset requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.StateReset, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"State reset requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.StateReset, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new StateResetRequirement(requirement, entry.TargetId, entry.ResetGroups));
             }
 
@@ -232,8 +232,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ReleaseRequirement> requirements = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                ActivityReleaseRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Release requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Release, entry.RequirementId, entry.Requiredness);
+                var entry = entries[index] ?? throw new InvalidOperationException($"Release requirement at index '{index}' cannot be null.");
+                var requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Release, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new ReleaseRequirement(requirement, entry.ReleaseKind, entry.TargetId, entry.PolicyId));
             }
 
@@ -305,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"ActivitySetupInventory validation failed errors='{errors.Count}'.");
             }
 
-            ActivitySetupInventoryValidationResultKind kind = skippedRequirementIds.Count > 0
+            var kind = skippedRequirementIds.Count > 0
                 ? ActivitySetupInventoryValidationResultKind.ValidWithSkips
                 : ActivitySetupInventoryValidationResultKind.Valid;
 

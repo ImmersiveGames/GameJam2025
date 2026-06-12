@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
@@ -87,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(placementMarkerLookup));
             }
 
-            SessionActivityIdentity identity = command.Identity;
+            var identity = command.Identity;
             logSink.LogEntryOwnerEvent(
                 "ActivityEntryParticipantResetStarted",
                 identity,
@@ -112,14 +110,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int participantIndex = 0; participantIndex < resolvedParticipants.Count; participantIndex++)
             {
-                ActivityEntryParticipantBindingResolvedRecord resolvedParticipant = resolvedParticipants[participantIndex];
+                var resolvedParticipant = resolvedParticipants[participantIndex];
                 if (!resolvedParticipant.IsValid)
                 {
                     continue;
                 }
 
-                PlayerActivityParticipantBinding participantBinding = resolvedParticipant.ParticipantBinding;
-                if (!TryResolveActivePlayerActorHandleForParticipant(playerActorRegistry, participantBinding.ParticipantId, out PlayerActorRuntimeHandle actorHandle))
+                var participantBinding = resolvedParticipant.ParticipantBinding;
+                if (!TryResolveActivePlayerActorHandleForParticipant(playerActorRegistry, participantBinding.ParticipantId, out var actorHandle))
                 {
                     throw new InvalidOperationException(
                         $"Activity participant '{participantBinding.ParticipantId}' is not available for operation='reset' activityId='{command.ActivityId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}'.");
@@ -152,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
+                var materializationPlanEntry =
                     ResolveMaterializationPlanEntryForActivityParticipantOrFail(
                         command.ActivityId,
                         participantBinding,
@@ -174,8 +172,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     out bool placementRequired,
                     out bool placementOptional,
                     out bool hasPlacement,
-                    out Vector3 placementPosition,
-                    out Vector3 placementEuler);
+                    out var placementPosition,
+                    out var placementEuler);
 
                 ActivityParticipantResetCommand resolvedResetCommand = new(
                     identity,
@@ -275,7 +273,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<ActorCapabilityResetEndpointReference> resolved = new(allReferences.Count);
             for (int index = 0; index < allReferences.Count; index++)
             {
-                ActorCapabilityResetEndpointReference reference = allReferences[index];
+                var reference = allReferences[index];
                 if (reference == null || !reference.IsValid)
                 {
                     continue;
@@ -304,7 +302,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<string> capabilityIds = new(references.Count);
             for (int index = 0; index < references.Count; index++)
             {
-                ActorCapabilityResetEndpointReference reference = references[index];
+                var reference = references[index];
                 if (reference == null || !reference.IsValid)
                 {
                     continue;
@@ -333,7 +331,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 for (int index = 0; index < materializationPlanEntries.Count; index++)
                 {
-                    SessionActivityActorMaterializationPlanEntry entry = materializationPlanEntries[index];
+                    var entry = materializationPlanEntries[index];
                     if (entry.IsValid && entry.ParticipantId == participant.ParticipantId)
                     {
                         return entry;
@@ -389,7 +387,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return;
             }
 
-            if (!placementMarkerLookup.TryResolvePlacementMarker(identity, placementId, out Vector3 markerPosition, out Vector3 markerEuler, out string resolutionReason))
+            if (!placementMarkerLookup.TryResolvePlacementMarker(identity, placementId, out var markerPosition, out var markerEuler, out string resolutionReason))
             {
                 if (placementRequired)
                 {
@@ -401,7 +399,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             hasPlacement = true;
-            if (!playerActorRegistry.TryGetActiveHandleByParticipant(participantBinding.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+            if (!playerActorRegistry.TryGetActiveHandleByParticipant(participantBinding.ParticipantId, out var handle) ||
                 !handle.IsValid ||
                 handle.Instance == null)
             {
@@ -409,10 +407,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"invalid_required_placement: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{participantBinding.ParticipantId}' actorId='{participantBinding.ActorId}' placementId='{placementId}' operation='{operation}' reason='actor_handle_missing_for_placement_space_resolution'.");
             }
 
-            Transform parent = handle.Instance.transform.parent;
+            var parent = handle.Instance.transform.parent;
             placementPosition = parent == null ? markerPosition : parent.InverseTransformPoint(markerPosition);
-            Quaternion markerRotation = Quaternion.Euler(markerEuler);
-            Quaternion localRotation = parent == null ? markerRotation : Quaternion.Inverse(parent.rotation) * markerRotation;
+            var markerRotation = Quaternion.Euler(markerEuler);
+            var localRotation = parent == null ? markerRotation : Quaternion.Inverse(parent.rotation) * markerRotation;
             placementEuler = localRotation.eulerAngles;
         }
 
@@ -452,7 +450,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < record.SkippedGroupReasons.Count; index++)
             {
-                ActorResetSkippedGroupReason reason = record.SkippedGroupReasons[index];
+                var reason = record.SkippedGroupReasons[index];
                 if (!reason.IsValid)
                 {
                     continue;

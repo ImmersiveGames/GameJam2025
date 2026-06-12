@@ -22,15 +22,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][CameraRuntime] RuntimeModeConfig obrigatorio ausente para resolver camera runtime config.");
             }
 
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][CameraRuntime] RuntimeConfigRegistry snapshot obrigatorio ausente para camera runtime config.");
             }
 
-            ICameraRuntimeConfigGroupReadOnly cameraRuntime = snapshot.CameraRuntime
+            var cameraRuntime = snapshot.CameraRuntime
                 ?? throw new InvalidOperationException("[FATAL][Config][CameraRuntime] RuntimeConfigRegistry invariant breach: snapshot.CameraRuntime obrigatorio ausente.");
 
-            GameObject operationalCameraPrefab = cameraRuntime.OperationalCameraPrefab;
+            var operationalCameraPrefab = cameraRuntime.OperationalCameraPrefab;
             if (operationalCameraPrefab == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][CameraRuntime] RuntimeConfigRegistry invariant breach: operationalCameraPrefab obrigatorio ausente.");

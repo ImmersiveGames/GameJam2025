@@ -490,7 +490,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
                 for (int index = 0; index < Scenes.Count; index++)
                 {
-                    ActivityContentLoadedSceneRecord scene = Scenes[index];
+                    var scene = Scenes[index];
                     if (!scene.IsValid ||
                         scene.Identity.Stage != SessionActivityStage.ActivityContentSceneLoaded ||
                         !string.Equals(scene.Identity.PipelineId, Identity.PipelineId, StringComparison.Ordinal) ||

@@ -68,15 +68,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityPipeline.PendingActivityContentReleaseContext context = releaseRuntimeState.PendingReleaseContext;
+            var context = releaseRuntimeState.PendingReleaseContext;
             if (context == null || !context.IsValid)
             {
                 throw new InvalidOperationException("Pending activity content release context is invalid for scene unload dispatch.");
             }
 
-            SessionActivityDefinition definition = context.Definition;
+            var definition = context.Definition;
             int entrySequence = context.EntrySequence;
-            ActivityContentLoadedSet loadedSet = contentRuntimeState.CurrentLoadedSet;
+            var loadedSet = contentRuntimeState.CurrentLoadedSet;
             int nextSceneIndex = context.NextSceneIndex;
 
             if (nextSceneIndex >= loadedSet.Scenes.Count)
@@ -92,21 +92,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     reason: "no_more_scenes");
             }
 
-            ActivityContentLoadedSceneRecord record = loadedSet.Scenes[nextSceneIndex];
+            var record = loadedSet.Scenes[nextSceneIndex];
             if (!record.IsValid)
             {
                 throw new InvalidOperationException(
                     $"Activity content loaded scene record is invalid at index='{nextSceneIndex}'.");
             }
 
-            ActivityContentSceneRuntimeReference sceneReference = record.SceneReference;
+            var sceneReference = record.SceneReference;
             if (!sceneReference.IsValid)
             {
                 throw new InvalidOperationException(
                     $"Activity content scene runtime reference is invalid for scene='{record.SceneName}' index='{nextSceneIndex}'.");
             }
 
-            ActivityContentSceneUnloadCommand unloadCommand = new ActivityContentSceneUnloadCommand(
+            var unloadCommand = new ActivityContentSceneUnloadCommand(
                 Guid.NewGuid().ToString("N"),
                 record.Identity,
                 record.ContentProfileId,
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"ActivityContentSceneUnloadCommand is invalid for scene='{record.SceneName}'.");
             }
 
-            SessionActivityPendingOperation pendingOperation = BuildActivityContentReleasePendingOperation(
+            var pendingOperation = BuildActivityContentReleasePendingOperation(
                 endpoint,
                 definition,
                 entrySequence,
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             ActivityContentSceneUnloadCommand command)
         {
-            SessionActivityIdentity identity = endpoint.BuildIdentity(
+            var identity = endpoint.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityContentSceneUnloading,
                 entrySequence);
@@ -200,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             SessionActivityPendingOperation operation)
         {
-            SessionActivityIdentity unloadingIdentity = endpoint.BuildIdentity(
+            var unloadingIdentity = endpoint.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityContentSceneUnloading,
                 entrySequence);

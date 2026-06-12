@@ -137,22 +137,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             LogPlayerParticipationStarted(command, playerParticipationIdentity);
 
-            IRoutePlayerParticipationEndpoint routePlayerParticipationEndpoint = ResolveRoutePlayerParticipationEndpointOrFail(command);
-            PlayerParticipationResult playerParticipationResult = routePlayerParticipationEndpoint.Execute(playerParticipationPlan);
+            var routePlayerParticipationEndpoint = ResolveRoutePlayerParticipationEndpointOrFail(command);
+            var playerParticipationResult = routePlayerParticipationEndpoint.Execute(playerParticipationPlan);
             if (!playerParticipationResult.IsValid)
             {
                 throw new InvalidOperationException("PlayerParticipationStage returned an invalid result.");
             }
 
-            SessionParticipationContext candidateSessionParticipationContext = BuildSessionParticipationContext(command, playerParticipationResult);
+            var candidateSessionParticipationContext = BuildSessionParticipationContext(command, playerParticipationResult);
             if (candidateSessionParticipationContext == null || !candidateSessionParticipationContext.IsValid)
             {
                 throw new InvalidOperationException(
                     $"[FATAL][SessionOperationalPipeline][PlayerParticipation] SessionParticipationContext candidate invalid routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
             }
 
-            IPlayerParticipationRuntime playerParticipationRuntime = ResolvePlayerParticipationRuntimeOrFail(command);
-            PlayerParticipationRuntimeContextResult runtimeContextResult = playerParticipationRuntime.ResolveOrStoreSessionContext(
+            var playerParticipationRuntime = ResolvePlayerParticipationRuntimeOrFail(command);
+            var runtimeContextResult = playerParticipationRuntime.ResolveOrStoreSessionContext(
                 command.RouteCommand.HandoffSessionStateId,
                 candidateSessionParticipationContext,
                 command.RouteIdentity,
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"[FATAL][SessionOperationalPipeline][PlayerParticipation] PlayerParticipationRuntime returned invalid context routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
             }
 
-            SessionParticipationContext sessionParticipationContext = runtimeContextResult.Context;
+            var sessionParticipationContext = runtimeContextResult.Context;
 
             LogPlayerParticipationSeedResolved(command, playerParticipationIdentity, playerParticipationResult, sessionParticipationContext);
             LogPlayerParticipationRuntimeContextResolved(command, runtimeContextResult);
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IRoutePlayerParticipationEndpoint ResolveRoutePlayerParticipationEndpointOrFail(OperationalPlayerParticipationCommand command)
         {
-            IRoutePlayerParticipationEndpoint routePlayerParticipationEndpoint = _routePlayerParticipationEndpointResolver();
+            var routePlayerParticipationEndpoint = _routePlayerParticipationEndpointResolver();
             if (routePlayerParticipationEndpoint == null)
             {
                 throw new InvalidOperationException(
@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IPlayerParticipationRuntime ResolvePlayerParticipationRuntimeOrFail(OperationalPlayerParticipationCommand command)
         {
-            IPlayerParticipationRuntime playerParticipationRuntime = _playerParticipationRuntimeResolver();
+            var playerParticipationRuntime = _playerParticipationRuntimeResolver();
             if (playerParticipationRuntime == null)
             {
                 throw new InvalidOperationException(
@@ -225,18 +225,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             for (int i = 0; i < seedEntries.Count; i++)
             {
-                PlayerParticipationSeedEntry entry = seedEntries[i];
+                var entry = seedEntries[i];
                 if (!entry.IsValid)
                 {
                     continue;
                 }
 
-                PlayerSlotId slotId = entry.PlayerSlotId;
-                PlayerSelectionId selectionId = entry.PlayerSelectionId;
-                ActorDefinitionId actorDefinitionId = entry.ActorDefinitionId;
-                ActorId actorId = entry.ActorId;
-                SessionParticipantId participantId = ResolveParticipantId(slotId);
-                SessionParticipantRole role = ResolveParticipantRole(entry, i);
+                var slotId = entry.PlayerSlotId;
+                var selectionId = entry.PlayerSelectionId;
+                var actorDefinitionId = entry.ActorDefinitionId;
+                var actorId = entry.ActorId;
+                var participantId = ResolveParticipantId(slotId);
+                var role = ResolveParticipantRole(entry, i);
 
                 if (!observedSlotIds.Add(slotId))
                 {
@@ -439,7 +439,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             List<string> values = new(slotReservations.Count);
             for (int i = 0; i < slotReservations.Count; i++)
             {
-                PlayerSlotReservation reservation = slotReservations[i];
+                var reservation = slotReservations[i];
                 values.Add($"slot='{reservation.SlotId}' required='{reservation.Required}' sourceKind='{reservation.SourceKind}'");
             }
 
@@ -456,7 +456,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             List<string> values = new(selections.Count);
             for (int i = 0; i < selections.Count; i++)
             {
-                PlayerSelection selection = selections[i];
+                var selection = selections[i];
                 values.Add($"slot='{selection.SlotId}' selection='{selection.SelectionId}' actorDefinitionId='{selection.ActorDefinitionId}' sourceKind='{selection.SourceKind}'");
             }
 
@@ -473,7 +473,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             List<string> values = new(participants.Count);
             for (int i = 0; i < participants.Count; i++)
             {
-                SessionParticipantBinding participant = participants[i];
+                var participant = participants[i];
                 values.Add(
                     $"participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' scope='{participant.ActorScope}' materializationPolicy='{participant.MaterializationPolicy}' requiresPlayerInput='{participant.RequiresPlayerInput}'");
             }

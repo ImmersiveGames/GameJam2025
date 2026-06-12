@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return false;
             }
 
-            PlayerActorIdentity playerIdentity = target.ActorRoot.GetComponent<PlayerActorIdentity>();
+            var playerIdentity = target.ActorRoot.GetComponent<PlayerActorIdentity>();
             if (playerIdentity == null)
             {
                 return false;

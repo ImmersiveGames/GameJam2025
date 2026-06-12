@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -62,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IReadOnlyList<PlayerActorRuntimeHandle> handles = activityPlayerActorRegistry.GetIndexedRouteScopedHandles();
             for (int index = 0; index < handles.Count; index++)
             {
-                PlayerActorRuntimeHandle handle = handles[index];
+                var handle = handles[index];
                 if (!handle.IsValid || handle.Instance == null)
                 {
                     continue;
@@ -87,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             for (int index = 0; index < entries.Count; index++)
             {
-                SessionActorRuntimeEntry entry = entries[index];
+                var entry = entries[index];
                 if (!entry.IsValid)
                 {
                     continue;

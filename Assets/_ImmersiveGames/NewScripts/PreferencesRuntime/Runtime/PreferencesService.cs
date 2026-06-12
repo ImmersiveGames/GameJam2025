@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 return new VideoPreferencesSnapshot(profileId, slotId, width, height, fullscreen);
             }
 
-            Vector2Int resolved = ResolveFallbackVideoResolution();
+            var resolved = ResolveFallbackVideoResolution();
             DebugUtility.Log<PreferencesService>(
                 $"[Preferences] video resolution normalized. reason='{NormalizeReason(reason)}' requested={width}x{height} selected={resolved.x}x{resolved.y}.",
                 DebugUtility.Colors.Info);
@@ -266,7 +266,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             Resolution[] resolutions = Screen.resolutions;
             for (int i = 0; i < resolutions.Length; i++)
             {
-                Resolution resolution = resolutions[i];
+                var resolution = resolutions[i];
                 if (resolution.width == preset.x && resolution.height == preset.y)
                 {
                     return true;

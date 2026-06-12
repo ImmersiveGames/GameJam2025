@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return OperationalRouteCompletionResult.Failed("invalid_command", "OperationalRouteCompletionCommand is invalid for TransitionPlanReady.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             DebugUtility.Log(typeof(OperationalRouteCompletionStage),
                 $"[OBS][SessionOperationalPipeline][Transition] command='TransitionPlanReady' transitionMode='{routeCommand.TransitionMode}' transitionProfile='{routeCommand.TransitionProfileLabel}' routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
@@ -109,9 +109,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return OperationalRouteCompletionResult.Failed("invalid_command", "OperationalRouteCompletionCommand is invalid for route completion.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
-            SessionOperationalResult operationalResult = ApplyCompletedState(command);
-            SessionOperationalRouteSnapshot routeSnapshot = BuildCompletedRouteSnapshot(routeCommand);
+            var routeCommand = command.RouteCommand;
+            var operationalResult = ApplyCompletedState(command);
+            var routeSnapshot = BuildCompletedRouteSnapshot(routeCommand);
 
             DebugUtility.Log(typeof(OperationalRouteCompletionStage),
                 $"[OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='{completionFact.RouteIdentity}' routeOperationId='{completionFact.RouteOperationId}' transitionId='{completionFact.TransitionId}' routeSequence='{completionFact.RouteSequence}' correlationId='{completionFact.CorrelationId}' message='{completionFact.Message}' transitionMode='{routeCommand.TransitionMode}' transitionProfile='{routeCommand.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}'.",

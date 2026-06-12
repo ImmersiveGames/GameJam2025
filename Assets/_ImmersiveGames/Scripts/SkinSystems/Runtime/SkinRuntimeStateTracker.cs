@@ -229,7 +229,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
                 return;
             }
 
-            GameObject root = skinController.OwnerActor.Transform.gameObject;
+            var root = skinController.OwnerActor.Transform.gameObject;
             if (root == null)
             {
                 return;

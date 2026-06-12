@@ -40,15 +40,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("Cannot index invalid player actor runtime handle.");
             }
 
-            PlayerActorIdentityRecord actorIdentity = handle.ActorIdentity;
-            if (_activeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out PlayerActorRuntimeHandle existingActive) &&
+            var actorIdentity = handle.ActorIdentity;
+            if (_activeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out var existingActive) &&
                 existingActive.IsValid &&
                 existingActive.Instance != handle.Instance)
             {
                 throw new InvalidOperationException($"Duplicate player participant registration detected. participantId='{actorIdentity.ParticipantId}'.");
             }
 
-            if (_routeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out PlayerActorRuntimeHandle existing) &&
+            if (_routeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out var existing) &&
                 existing.IsValid &&
                 existing.Instance != handle.Instance)
             {
@@ -77,8 +77,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("Cannot index invalid player actor runtime handle.");
             }
 
-            PlayerActorIdentityRecord actorIdentity = handle.ActorIdentity;
-            if (_routeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out PlayerActorRuntimeHandle existing) &&
+            var actorIdentity = handle.ActorIdentity;
+            if (_routeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out var existing) &&
                 existing.IsValid &&
                 existing.Instance != handle.Instance)
             {
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("participantId is required.");
             }
 
-            if (!_activeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle activeHandle) || !activeHandle.IsValid)
+            if (!_activeHandlesByParticipantId.TryGetValue(participantId, out var activeHandle) || !activeHandle.IsValid)
             {
                 LogRegistryEvent(
                     "ActivityPlayerActorRegistryLookupMissed",
@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("participantId is required.");
             }
 
-            return _activeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle activeHandle) &&
+            return _activeHandlesByParticipantId.TryGetValue(participantId, out var activeHandle) &&
                    activeHandle.IsValid;
         }
 
@@ -202,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("participantId is required.");
             }
 
-            if (!_routeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle retained) || !retained.IsValid)
+            if (!_routeHandlesByParticipantId.TryGetValue(participantId, out var retained) || !retained.IsValid)
             {
                 LogRegistryEvent(
                     "ActivityPlayerActorRegistryLookupMissed",
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _activeHandlesByParticipantId)
             {
-                PlayerActorRuntimeHandle active = pair.Value;
+                var active = pair.Value;
                 if (active.IsValid &&
                     active.ActorInstanceRuntimeId == actorInstanceRuntimeId)
                 {
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
             {
-                PlayerActorRuntimeHandle retained = pair.Value;
+                var retained = pair.Value;
                 if (!retained.IsValid ||
                     retained.ActorInstanceRuntimeId != actorInstanceRuntimeId)
                 {
@@ -324,7 +324,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<PlayerActorIdentityRecord> records = new();
             foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
             {
-                PlayerActorRuntimeHandle retained = pair.Value;
+                var retained = pair.Value;
                 if (!retained.IsValid ||
                     retained.ActorIdentity.Identity.PipelineId != expectedIdentity.PipelineId ||
                     retained.ActorIdentity.Identity.SessionId != expectedIdentity.SessionId)

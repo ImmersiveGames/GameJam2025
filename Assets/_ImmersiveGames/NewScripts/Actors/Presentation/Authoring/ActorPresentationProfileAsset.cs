@@ -92,12 +92,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Authoring
                 throw new InvalidOperationException($"{origin} requires slotRequirements list.");
             }
 
-            HashSet<string> observedKeys = new HashSet<string>(StringComparer.Ordinal);
+            var observedKeys = new HashSet<string>(StringComparer.Ordinal);
             bool hasPrimarySlotRequirement = false;
 
             for (int index = 0; index < slotRequirements.Count; index++)
             {
-                ActorPresentationSlotRequirement requirement = slotRequirements[index];
+                var requirement = slotRequirements[index];
                 if (!requirement.IsValid)
                 {
                     throw new InvalidOperationException($"{origin} has invalid slot requirement at index '{index}'.");

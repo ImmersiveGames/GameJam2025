@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void EnsureOperationalCameraProviderRegisteredOrFail()
         {
-            DependencyManager dependencyManager = DependencyManager.Instance;
+            var dependencyManager = DependencyManager.Instance;
             if (dependencyManager == null)
             {
                 throw new System.InvalidOperationException("[FATAL][Config][OperationalCameraRuntimeComposition] DependencyManager.Instance obrigatorio ausente para registrar IOperationalCameraProvider.");

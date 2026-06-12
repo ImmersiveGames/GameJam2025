@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
         {
             try
             {
-                SaveRecordDto dto = JsonUtility.FromJson<SaveRecordDto>(payload);
+                var dto = JsonUtility.FromJson<SaveRecordDto>(payload);
                 if (dto == null)
                 {
                     record = null;
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
                 {
                     for (int i = 0; i < dto.entries.Length; i++)
                     {
-                        EntryDto entry = dto.entries[i];
+                        var entry = dto.entries[i];
                         if (entry == null || string.IsNullOrWhiteSpace(entry.key))
                         {
                             continue;

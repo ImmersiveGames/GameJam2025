@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 return false;
             }
 
-            ActorScope actorScope = handle.Actor.ActorScopeMetadata;
+            var actorScope = handle.Actor.ActorScopeMetadata;
             bool shouldRetain = actorScope == ActorScope.SessionScoped;
             LogDecision(
                 "ActorActiveScopeEligibilityEvaluated",
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 return false;
             }
 
-            ActorScope actorScope = handle.Actor.ActorScopeMetadata;
+            var actorScope = handle.Actor.ActorScopeMetadata;
             bool shouldTrack = actorScope == ActorScope.RouteScoped;
             LogDecision(
                 "ActorRouteRetentionEligibilityEvaluated",

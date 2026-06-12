@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.ActivitySetupStarted);
+            var startedIdentity = BuildIdentity(command, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.PermissionTargetPreparationStarted,
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<ActivityCapabilityPermissionReceiverReference> receivers = new(command.PermissionReceiverContributions.Count);
             for (int index = 0; index < command.PermissionReceiverContributions.Count; index++)
             {
-                ActivityPermissionReceiverContribution contribution = command.PermissionReceiverContributions[index];
+                var contribution = command.PermissionReceiverContributions[index];
                 if (!contribution.IsValid)
                 {
                     throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][GateBinding] Invalid permission receiver contribution index='{index}' activityId='{command.ActivityId}' entrySequence='{startedIdentity.EntrySequence}'.");
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         $"[FATAL][ActivityEntryPipeline][GateBinding] permission_receiver_contribution_identity_mismatch activityId='{command.ActivityId}' entrySequence='{startedIdentity.EntrySequence}' receiverId='{contribution.ReceiverId}' contributionIdentity='{contribution.Identity}' receiverIdentity='{contribution.ReceiverIdentity}'.");
                 }
 
-                if (!contribution.Provider.TryCreateReceiver(out IActivityCapabilityPermissionReceiver receiver) || receiver == null)
+                if (!contribution.Provider.TryCreateReceiver(out var receiver) || receiver == null)
                 {
                     if (command.RequireReceivers)
                     {

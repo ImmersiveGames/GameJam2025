@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
         {
             if (useSpatial)
             {
-                Transform anchor = ResolveSpatialAnchor();
+                var anchor = ResolveSpatialAnchor();
                 return AudioPlaybackContext.Spatial(
                     worldPosition: anchor.position,
                     followTarget: anchor,
@@ -164,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
                 return;
             }
 
-            Transform anchor = ResolveSpatialAnchor();
+            var anchor = ResolveSpatialAnchor();
             context.worldPosition = anchor.position;
 
             if (context.followTarget == null)

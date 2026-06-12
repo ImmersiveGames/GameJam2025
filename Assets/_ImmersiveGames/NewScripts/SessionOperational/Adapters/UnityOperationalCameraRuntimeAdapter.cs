@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason);
         }
 
-        public static Camera EnsureOperationalCameraOrFail(
+        private static Camera EnsureOperationalCameraOrFail(
             RuntimeModeConfig runtimeModeConfig,
             string routeIdentity,
             string routeOperationId,
@@ -176,9 +176,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (markers != null)
             {
-                for (int i = 0; i < markers.Length; i++)
+                foreach (var marker in markers)
                 {
-                    var marker = markers[i];
                     if (marker == null || !marker.gameObject.activeInHierarchy)
                     {
                         continue;
@@ -199,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                             $"OperationalCameraRuntimeMarker invalido. marker='{marker.name}' cameraCount='{markerCameraCount}' expected='1'.");
                     }
 
-                    var candidate = markerCameras[0];
+                    var candidate = markerCameras?[0];
                     if (candidate == null || !candidate.gameObject.activeInHierarchy)
                     {
                         continue;

@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -40,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][CameraPresentation] RuntimeModeConfig obrigatorio ausente no bootstrap.");
             }
 
-            DependencyManager dependencyManager = DependencyManager.Instance;
+            var dependencyManager = DependencyManager.Instance;
             if (dependencyManager == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][CameraPresentation] DependencyManager.Instance obrigatorio ausente no bootstrap.");
@@ -51,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
 
             if (!composer.TryCompose(
                     registry,
-                    out CameraPresentationRuntimeCompositionResult result,
+                    out var result,
                     out string reason))
             {
                 throw new InvalidOperationException(

@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 return "trace-0000000000000000";
             }
 
-            using (SHA256 sha256 = SHA256.Create())
+            using (var sha256 = SHA256.Create())
             {
                 byte[] hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(seed));
                 return $"trace-{ToHexLower(hash, 8)}";

@@ -20,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string source,
             string reason)
         {
-            InputModesRuntimeResolvedConfig config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
-            SessionPlayerSlotsValidationContext slotsContext = SessionPlayerSlotsValidator.ValidateOrFail(
+            var config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
+            var slotsContext = SessionPlayerSlotsValidator.ValidateOrFail(
                 runtimeModeConfig,
                 routeIdentity,
                 routeOperationId,
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 source,
                 reason);
 
-            EventSystem eventSystem = ValidateOrCreateEventSystemOnPersistentRoot(
+            var eventSystem = ValidateOrCreateEventSystemOnPersistentRoot(
                 slotsContext.PersistentRoot,
                 routeIdentity,
                 routeOperationId,
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 var eventSystemGo = new GameObject("EventSystem");
                 eventSystemGo.transform.SetParent(persistentRoot, worldPositionStays: false);
-                EventSystem created = eventSystemGo.AddComponent<EventSystem>();
+                var created = eventSystemGo.AddComponent<EventSystem>();
 
                 DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
                     BuildLog("EventSystemCreated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -99,8 +99,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"EventSystem duplicado detectado. count='{eventSystems.Length}'.");
             }
 
-            EventSystem observed = eventSystems[0];
-            Transform observedRoot = observed.transform.root;
+            var observed = eventSystems[0];
+            var observedRoot = observed.transform.root;
             if (!ReferenceEquals(observedRoot, persistentRoot))
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"eventSystem='{eventSystem.name}' persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
 
-            StandaloneInputModule standaloneInputModule = eventSystem.GetComponent<StandaloneInputModule>();
+            var standaloneInputModule = eventSystem.GetComponent<StandaloneInputModule>();
             if (standaloneInputModule != null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"InputSystemUIInputModule duplicado detectado. count='{modules.Length}'.");
             }
 
-            InputSystemUIInputModule moduleOnEventSystem = eventSystem.GetComponent<InputSystemUIInputModule>();
+            var moduleOnEventSystem = eventSystem.GetComponent<InputSystemUIInputModule>();
             if (moduleOnEventSystem != null)
             {
                 BindCanonicalUiInputActionsOrFail(
@@ -181,12 +181,12 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
             if (modules is { Length: 1 })
             {
-                InputSystemUIInputModule observed = modules[0];
+                var observed = modules[0];
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"InputSystemUIInputModule fora do EventSystem persistente. inputModule='{observed.name}' moduleRoot='{observed.transform.root.name}' eventSystem='{eventSystem.name}' expectedRoot='{persistentRoot.name}'.");
             }
 
-            InputSystemUIInputModule created = eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+            var created = eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
 
             DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("InputSystemUIInputModuleCreated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -345,7 +345,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"Post-bind invalid: module.{fieldName}.action ausente.");
             }
 
-            InputActionAsset observedAsset = observed.action.actionMap?.asset;
+            var observedAsset = observed.action.actionMap?.asset;
             if (!ReferenceEquals(observedAsset, expectedAsset))
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -376,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"{fieldName}.action obrigatoria ausente.");
             }
 
-            InputActionAsset actionAsset = reference.action.actionMap?.asset;
+            var actionAsset = reference.action.actionMap?.asset;
             if (!ReferenceEquals(actionAsset, expectedAsset))
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,

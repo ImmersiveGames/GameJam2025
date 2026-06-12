@@ -111,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool awaitingBefore = releaseRuntimeState.IsAwaitingContinuation;
 
             int entrySequence = command.EntrySequence;
-            SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(
+            var completedIdentity = endpoint.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityContentReleaseCompleted,
                 entrySequence);

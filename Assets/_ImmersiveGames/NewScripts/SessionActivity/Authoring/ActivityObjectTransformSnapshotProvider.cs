@@ -67,10 +67,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     $"target_transform_missing targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' providerPath='{BuildTransformPath(transform)}' targetTransformPath='<null>'");
             }
 
-            Transform localTransform = targetTransform;
-            Vector3 position = localTransform.position;
-            Quaternion rotation = localTransform.rotation;
-            Vector3 scale = localTransform.localScale;
+            var localTransform = targetTransform;
+            var position = localTransform.position;
+            var rotation = localTransform.rotation;
+            var scale = localTransform.localScale;
             ActivityObjectSnapshot snapshot = new(
                 command.Identity,
                 command.ContentProfileId,
@@ -142,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             }
 
             string path = current.name;
-            Transform node = current.parent;
+            var node = current.parent;
             while (node != null)
             {
                 path = $"{node.name}/{path}";

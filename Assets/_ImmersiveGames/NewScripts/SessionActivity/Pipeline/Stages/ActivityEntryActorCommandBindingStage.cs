@@ -27,13 +27,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             snapshots ??= new List<SessionActivitySnapshot>();
 
             int entrySequence = command.PipelineIdentity.EntrySequence;
-            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingStarted);
+            var startedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorCommandBindingStarted);
 
             IReadOnlyList<ActorCommandBindingReference> requirements = command.Bindings ?? Array.Empty<ActorCommandBindingReference>();
             if (requirements.Count == 0)
             {
-                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
+                var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
                 return new ActorCommandBindingResult(
                     skippedIdentity,
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < records.Count; index++)
             {
-                ActorCommandBindingRecord record = records[index];
+                var record = records[index];
                 if (!record.IsValid)
                 {
                     throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][ActorCommandBinding] Invalid binding record activityId='{command.PipelineIdentity.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][ActorCommandBinding] Required binding incomplete activityId='{command.PipelineIdentity.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
             }
 
-            SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingCompleted);
+            var completedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingCompleted);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorCommandBindingCompleted);
             return new ActorCommandBindingResult(
                 completedIdentity,

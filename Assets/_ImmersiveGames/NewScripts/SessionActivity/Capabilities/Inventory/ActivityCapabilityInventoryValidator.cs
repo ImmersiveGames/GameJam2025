@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int ownerIndex = 0; ownerIndex < inventory.Owners.Count; ownerIndex++)
             {
-                ActivityCapabilityOwnerDescriptor owner = inventory.Owners[ownerIndex];
+                var owner = inventory.Owners[ownerIndex];
                 if (string.IsNullOrWhiteSpace(owner.OwnerId))
                 {
                     issues.Add(Issue("owner_id_missing", error: true, detail: $"Owner at index '{ownerIndex}' has empty ownerId."));
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int capabilityIndex = 0; capabilityIndex < inventory.Capabilities.Count; capabilityIndex++)
             {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[capabilityIndex];
+                var capability = inventory.Capabilities[capabilityIndex];
 
                 if (string.IsNullOrWhiteSpace(capability.CapabilityId))
                 {
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
                 if (RequiresRuntimeReference(capability.CapabilityKind))
                 {
-                    if (!inventory.RuntimeReferences.TryGetValue(capability.CapabilityId, out IActivityCapabilityRuntimeReference runtimeReference) ||
+                    if (!inventory.RuntimeReferences.TryGetValue(capability.CapabilityId, out var runtimeReference) ||
                         runtimeReference == null)
                     {
                         issues.Add(Issue("runtime_reference_missing", error: true, ownerId: capability.OwnerId, capabilityId: capability.CapabilityId, detail: $"Capability kind '{capability.CapabilityKind}' requires runtime reference."));
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 }
             }
 
-            ActivityCapabilityInventoryValidationStatus status = ResolveStatus(issues);
+            var status = ResolveStatus(issues);
             return new ActivityCapabilityInventoryValidationResult(inventory, status, issues, source, reason);
         }
 
@@ -171,38 +171,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         private static bool IsActorResetRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
         {
-            return runtimeReference is ActorCapabilityResetEndpointReference actorResetReference &&
-                   actorResetReference.Endpoint != null &&
-                   actorResetReference.Contribution != null &&
-                   actorResetReference.ActorId.IsValid &&
-                   actorResetReference.ActorInstanceRuntimeId.IsValid;
+            return runtimeReference is ActorCapabilityResetEndpointReference { Endpoint: not null, Contribution: not null, ActorId: { IsValid: true }, ActorInstanceRuntimeId: { IsValid: true } };
         }
 
         private static bool IsActorSnapshotRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
         {
-            return runtimeReference is ActorCapabilitySnapshotContributionReference actorSnapshotReference &&
-                   actorSnapshotReference.Contribution != null &&
-                   actorSnapshotReference.SnapshotEndpoint != null &&
-                   actorSnapshotReference.ActorId.IsValid &&
-                   actorSnapshotReference.ActorInstanceRuntimeId.IsValid;
+            return runtimeReference is ActorCapabilitySnapshotContributionReference { Contribution: not null, SnapshotEndpoint: not null, ActorId: { IsValid: true }, ActorInstanceRuntimeId: { IsValid: true } };
         }
 
         private static bool IsActorRestoreRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
         {
-            return runtimeReference is ActorCapabilitySnapshotRestoreContributionReference actorRestoreReference &&
-                   actorRestoreReference.Contribution != null &&
-                   actorRestoreReference.RestoreEndpoint != null &&
-                   actorRestoreReference.ActorId.IsValid &&
-                   actorRestoreReference.ActorInstanceRuntimeId.IsValid;
+            return runtimeReference is ActorCapabilitySnapshotRestoreContributionReference { Contribution: not null, RestoreEndpoint: not null, ActorId: { IsValid: true }, ActorInstanceRuntimeId: { IsValid: true } };
         }
 
         private static bool IsActorReleaseRuntimeReference(IActivityCapabilityRuntimeReference runtimeReference)
         {
-            return runtimeReference is ActorCapabilityReleaseEndpointReference actorReleaseReference &&
-                   actorReleaseReference.Contribution != null &&
-                   actorReleaseReference.ReleaseEndpoint != null &&
-                   actorReleaseReference.ActorId.IsValid &&
-                   actorReleaseReference.ActorInstanceRuntimeId.IsValid;
+            return runtimeReference is ActorCapabilityReleaseEndpointReference { Contribution: not null, ReleaseEndpoint: not null, ActorId: { IsValid: true }, ActorInstanceRuntimeId: { IsValid: true } };
         }
     }
 }

@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public void RefreshFromLocalActorRoot()
         {
-            Transform actorRoot = ResolveActorRootTransform();
+            var actorRoot = ResolveActorRootTransform();
 
             // Trilho concreto ainda ativo. Deve ser removido quando scanners migrarem para contributions homogêneas.
             _presentationEndpoint = ResolveSingleInActorRoot<ActorPresentationEndpoint>(actorRoot);
@@ -183,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         private Transform ResolveActorRootTransform()
         {
-            Actor actor = GetComponentInParent<Actor>(includeInactive: true);
+            var actor = GetComponentInParent<Actor>(includeInactive: true);
             if (actor != null && actor.transform != null)
             {
                 return actor.transform;
@@ -254,7 +254,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 return Array.Empty<TInterface>();
             }
 
-            List<TInterface> results = new List<TInterface>();
+            var results = new List<TInterface>();
             for (int index = 0; index < components.Length; index++)
             {
                 if (components[index] is TInterface candidate)

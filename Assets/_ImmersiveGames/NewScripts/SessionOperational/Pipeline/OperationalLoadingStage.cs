@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public async Task<OperationalLoadingResult> ExecuteStartAsync(OperationalLoadingCommand command)
         {
             ValidateCommand(command);
-            SessionOperationalLoadingCommand loadingCommand = command.LoadingCommand;
+            var loadingCommand = command.LoadingCommand;
             if (!loadingCommand.IsEnabled)
             {
                 return new OperationalLoadingResult(
@@ -178,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"Blackout result is not accepted. kind='{blackoutResult.Kind}' reason='{blackoutResult.Reason}'.");
             }
 
-            SessionOperationalLoadingCommand loadingCommand = command.LoadingCommand;
+            var loadingCommand = command.LoadingCommand;
             if (!loadingCommand.IsEnabled)
             {
                 return new OperationalLoadingResult(
@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "Route loading is disabled by route policy.");
             }
 
-            SessionOperationalLoadingStage stage = blackoutResult.IsCompleted
+            var stage = blackoutResult.IsCompleted
                 ? SessionOperationalLoadingStage.FadeInCompleted
                 : SessionOperationalLoadingStage.TransitionSkipped;
             string stepLabel = blackoutResult.IsCompleted
@@ -230,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public async Task<OperationalLoadingResult> ExecuteSceneCompositionCompletedAsync(OperationalLoadingCommand command)
         {
             ValidateCommand(command);
-            SessionOperationalLoadingCommand loadingCommand = command.LoadingCommand;
+            var loadingCommand = command.LoadingCommand;
             if (!loadingCommand.IsEnabled)
             {
                 return new OperationalLoadingResult(
@@ -272,7 +272,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public async Task<OperationalLoadingCompletionState> ExecuteClosedWindowCompletionAsync(OperationalLoadingCommand command)
         {
             ValidateCommand(command);
-            SessionOperationalLoadingCommand loadingCommand = command.LoadingCommand;
+            var loadingCommand = command.LoadingCommand;
             bool loadingCompleted = false;
             bool loadingHidden = false;
             if (!loadingCommand.IsEnabled)
@@ -353,7 +353,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             bool loadingCompleted)
         {
             ValidateCommand(command);
-            SessionOperationalLoadingCommand loadingCommand = command.LoadingCommand;
+            var loadingCommand = command.LoadingCommand;
             if (!loadingCommand.IsEnabled)
             {
                 return new OperationalLoadingResult(

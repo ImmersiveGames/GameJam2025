@@ -199,7 +199,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                     _originalScales[instance] = instance.transform.localScale;
                 }
 
-                Vector3 originalScale = _originalScales[instance];
+                var originalScale = _originalScales[instance];
                 instance.transform.localScale = new Vector3(
                     originalScale.x * _currentRandomScale.x,
                     originalScale.y * _currentRandomScale.y,
@@ -224,8 +224,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 _originalRotations[instance] = instance.transform.localRotation;
             }
 
-            Quaternion originalRotation = _originalRotations[instance];
-            Quaternion randomRotation = Quaternion.Euler(_currentRandomRotation);
+            var originalRotation = _originalRotations[instance];
+            var randomRotation = Quaternion.Euler(_currentRandomRotation);
             instance.transform.localRotation = originalRotation * randomRotation;
         }
         #endregion

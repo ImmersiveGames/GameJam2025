@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             for (int i = 0; i < anchors.Length; i++)
             {
-                ActivityCameraAnchorBinding binding = anchors[i];
+                var binding = anchors[i];
 
                 if (binding == null)
                 {
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             for (int i = 0; i < anchors.Length; i++)
             {
-                ActivityCameraAnchorBinding binding = anchors[i];
+                var binding = anchors[i];
 
                 if (binding == null)
                 {
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
                 for (int j = i + 1; j < anchors.Length; j++)
                 {
-                    ActivityCameraAnchorBinding other = anchors[j];
+                    var other = anchors[j];
 
                     if (other == null)
                     {

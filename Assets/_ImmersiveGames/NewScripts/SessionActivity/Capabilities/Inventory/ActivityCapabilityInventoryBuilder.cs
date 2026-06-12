@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 throw new InvalidOperationException("Activity capability inventory scan context is invalid.");
             }
 
-            ActivityCapabilityInventoryId inventoryId = context.InventoryId;
+            var inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
             Dictionary<string, IActivityCapabilityRuntimeReference> runtimeReferences = new(StringComparer.Ordinal);
@@ -40,8 +40,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int scannerIndex = 0; scannerIndex < _registry.OrderedScanners.Count; scannerIndex++)
             {
-                IActivityCapabilityScanner scanner = _registry.OrderedScanners[scannerIndex];
-                ActivityCapabilityScanResult scanResult = scanner.Scan(context);
+                var scanner = _registry.OrderedScanners[scannerIndex];
+                var scanResult = scanner.Scan(context);
                 if (!scanResult.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability scanner '{scanner.ScannerId}' returned invalid result.");
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.CameraBindingContributions.Count; index++)
             {
-                ActorCameraBindingContribution contribution = scanResult.CameraBindingContributions[index];
+                var contribution = scanResult.CameraBindingContributions[index];
                 if (!contribution.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability camera binding contribution at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.AttributeSetupContributions.Count; index++)
             {
-                ActorAttributeSetupContribution contribution = scanResult.AttributeSetupContributions[index];
+                var contribution = scanResult.AttributeSetupContributions[index];
                 if (!contribution.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability attribute setup contribution at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.PresentationSetupContributions.Count; index++)
             {
-                ActorPresentationSetupContribution contribution = scanResult.PresentationSetupContributions[index];
+                var contribution = scanResult.PresentationSetupContributions[index];
                 if (!contribution.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability presentation setup contribution at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
@@ -120,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.PermissionReceiverContributions.Count; index++)
             {
-                ActivityPermissionReceiverContribution contribution = scanResult.PermissionReceiverContributions[index];
+                var contribution = scanResult.PermissionReceiverContributions[index];
                 if (!contribution.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability permission receiver contribution at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.Owners.Count; index++)
             {
-                ActivityCapabilityOwnerDescriptor owner = scanResult.Owners[index];
+                var owner = scanResult.Owners[index];
                 if (!owner.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability owner at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.Capabilities.Count; index++)
             {
-                ActivityCapabilityDescriptor capability = scanResult.Capabilities[index];
+                var capability = scanResult.Capabilities[index];
                 if (!capability.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
@@ -177,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             for (int index = 0; index < scanResult.RuntimeReferences.Count; index++)
             {
-                IActivityCapabilityRuntimeReference runtimeReference = scanResult.RuntimeReferences[index];
+                var runtimeReference = scanResult.RuntimeReferences[index];
                 if (runtimeReference == null || !runtimeReference.IsValid)
                 {
                     throw new InvalidOperationException($"Activity capability runtime reference at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");

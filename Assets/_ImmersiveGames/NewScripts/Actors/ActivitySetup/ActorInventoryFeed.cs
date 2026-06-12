@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             List<ActorScanTarget> targets = new();
             for (int index = 0; index < ActorInstances.Count; index++)
             {
-                if (ActorScanTarget.TryFromInstance(ActorInstances[index], source, out ActorScanTarget target))
+                if (ActorScanTarget.TryFromInstance(ActorInstances[index], source, out var target))
                 {
                     targets.Add(target);
                 }
@@ -91,13 +91,13 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             {
                 for (int index = 0; index < sources.Count; index++)
                 {
-                    IActivityActorInstanceSource actorInstanceSource = sources[index];
+                    var actorInstanceSource = sources[index];
                     if (actorInstanceSource == null)
                     {
                         continue;
                     }
 
-                    ActivityActorInstanceSourceResult sourceResult = actorInstanceSource.Collect(identity, source, reason);
+                    var sourceResult = actorInstanceSource.Collect(identity, source, reason);
                     AppendRecords(sourceResult.ActorInstances, actorInstances);
                     AppendRecords(sourceResult.ActorParticipations, actorParticipations);
                 }
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             for (int index = 0; index < actorInstances.Count; index++)
             {
-                ActorInstanceRecord instance = actorInstances[index];
+                var instance = actorInstances[index];
                 if (!instance.IsValid)
                 {
                     continue;

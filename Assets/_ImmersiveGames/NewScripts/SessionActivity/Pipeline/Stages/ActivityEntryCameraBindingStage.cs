@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IReadOnlyList<ActorCameraBindingContribution> bindingContributions = cameraBindingContributions ?? Array.Empty<ActorCameraBindingContribution>();
 
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingStarted);
+            var startedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.CameraBindingStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingStarted, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding stage started.");
             DebugUtility.Log(
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (!hasActivityCameraRequirement)
             {
-                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
+                var skippedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
                 endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingSkippedNoRequiredCamera, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding skipped reason='no_activity_camera_requirement'.");
                 endpoint.EmitSnapshot(snapshots, "camera_binding_skipped_no_required_camera", command.Source, command.Reason, $"'{command.ActivityId}' camera binding skipped reason='no_activity_camera_requirement'.");
@@ -77,14 +77,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 if (requiredCameraCount > 0)
                 {
-                    SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
+                    var failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.CameraBindingFailed);
                     endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='camera_inventory_missing_or_invalid'.");
                     endpoint.EmitSnapshot(snapshots, "camera_binding_failed", command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='camera_inventory_missing_or_invalid'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][CameraBinding] Missing valid camera inventory activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
                 }
 
-                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
+                var skippedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
                 endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingSkippedNoRequiredCamera, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding skipped reason='camera_inventory_missing_or_invalid'.");
                 endpoint.EmitSnapshot(snapshots, "camera_binding_skipped_no_required_camera", command.Source, command.Reason, $"'{command.ActivityId}' camera binding skipped reason='camera_inventory_missing_or_invalid'.");
@@ -95,18 +95,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return new ActivityEntryCameraBindingResult(true, skippedIdentity, requiredCameraCount, false, true, "camera_inventory_missing_or_invalid");
             }
 
-            if (!TryResolveCameraBindingContribution(bindingContributions, startedIdentity, bridge, participantBindings, out ActorCameraBindingContribution selectedCameraBinding))
+            if (!TryResolveCameraBindingContribution(bindingContributions, startedIdentity, bridge, participantBindings, out var selectedCameraBinding))
             {
                 if (requiredCameraCount > 0)
                 {
-                    SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
+                    var failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.CameraBindingFailed);
                     endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='camera_target_missing_in_binding_contributions'.");
                     endpoint.EmitSnapshot(snapshots, "camera_binding_failed", command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='camera_target_missing_in_binding_contributions'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][CameraBinding] Missing camera binding contribution activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
                 }
 
-                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
+                var skippedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.CameraBindingSkippedNoRequiredCamera);
                 endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingSkippedNoRequiredCamera, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding skipped reason='camera_target_missing_in_binding_contributions'.");
                 endpoint.EmitSnapshot(snapshots, "camera_binding_skipped_no_required_camera", command.Source, command.Reason, $"'{command.ActivityId}' camera binding skipped reason='camera_target_missing_in_binding_contributions'.");
@@ -130,9 +130,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 DebugUtility.Colors.Info);
 
             ActivityCameraRebindTargetsCommand rebindCommand = new(startedIdentity.SessionId, selectedCameraBinding.Endpoint.FollowTarget, selectedCameraBinding.Endpoint.LookAtTarget, command.Source, command.Reason);
-            if (!cameraExecutor.TryRebindTargets(rebindCommand, out ActivityCameraRebindTargetsResult rebindResult, out string rebindReason) || rebindResult is not { Success: true })
+            if (!cameraExecutor.TryRebindTargets(rebindCommand, out var rebindResult, out string rebindReason) || rebindResult is not { Success: true })
             {
-                SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
+                var failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.CameraBindingFailed);
                 endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='{Normalize(rebindReason)}'.");
                 endpoint.EmitSnapshot(snapshots, "camera_binding_failed", command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='{Normalize(rebindReason)}'.");
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"[OBS][ActivityEntryPipeline][CameraBinding] event='ActivityCameraTargetBound' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryCameraBindingStage' entryPipelineOwner='ActivityEntryPipeline' playerSlotId='{selectedCameraBinding.PlayerSlotId}' playerActorId='{selectedCameraBinding.PlayerActorId}' followTarget='{selectedCameraBinding.Endpoint.FollowTarget.name}' lookAtTarget='{selectedCameraBinding.Endpoint.LookAtTarget?.name ?? "<none>"}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
 
-            SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingCompleted);
+            var completedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingCompleted);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.CameraBindingCompleted);
             endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingCompleted, completedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding completed.");
             endpoint.EmitSnapshot(snapshots, "camera_binding_completed", command.Source, command.Reason, $"'{command.ActivityId}' camera binding completed.");
@@ -192,13 +192,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int participantIndex = 0; participantIndex < participants.Count; participantIndex++)
             {
-                PlayerActivityParticipantBinding binding = participants[participantIndex];
+                var binding = participants[participantIndex];
                 if (!binding.IsValid || !binding.RequiresPlayerActor)
                 {
                     continue;
                 }
 
-                if (!bridge.TryResolvePlayerActorHandle(activeIdentity, binding, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!bridge.TryResolvePlayerActorHandle(activeIdentity, binding, out var handle) || !handle.IsValid)
                 {
                     continue;
                 }
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int contributionIndex = 0; contributionIndex < bindingContributions.Count; contributionIndex++)
             {
-                ActorCameraBindingContribution contribution = bindingContributions[contributionIndex];
+                var contribution = bindingContributions[contributionIndex];
                 if (!contribution.Matches(handle))
                 {
                     continue;

@@ -670,10 +670,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            Type type = target.GetType();
+            var type = target.GetType();
             while (type != null)
             {
-                FieldInfo field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+                var field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
                 if (field != null)
                 {
                     field.SetValue(target, value);

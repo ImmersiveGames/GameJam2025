@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.DamageSystem;
-using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using UnityEngine;
@@ -30,7 +29,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return false;
             }
 
-            if (!TryGetSelfDamageReceiver(out IDamageReceiver damageReceiver))
+            if (!TryGetSelfDamageReceiver(out var damageReceiver))
             {
                 if (logStateTransitions && !_missingSelfDamageReceiverLogged)
                 {
@@ -54,7 +53,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
             string attackerId = Master != null ? Master.ActorId : string.Empty;
             string targetId = damageReceiver.GetReceiverId();
-            Vector3 hitPosition = transform.position;
+            var hitPosition = transform.position;
 
             var context = new DamageContext(attackerId, targetId, -clampedAmount, runtimeAttributeType, healDamageType, hitPosition);
             damageReceiver.ReceiveDamage(context);
@@ -201,7 +200,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return false;
             }
 
-            RuntimeAttributeContext runtimeAttributeContext = _autoFlowBridge.GetResourceSystem();
+            var runtimeAttributeContext = _autoFlowBridge.GetResourceSystem();
             if (runtimeAttributeContext == null)
             {
                 LogAutoFlowIssue(

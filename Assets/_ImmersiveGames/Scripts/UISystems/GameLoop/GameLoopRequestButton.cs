@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.UISystems.GameLoop
         // Método chamado pelo UnityEvent do botão para acionar o evento correspondente.
         public void RaiseRequest()
         {
-            IGameManager manager = ResolvedGameManager;
+            var manager = ResolvedGameManager;
             switch (requestType)
             {
                 case GameLoopRequestType.Start:

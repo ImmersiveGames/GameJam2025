@@ -168,13 +168,13 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             IReadOnlyList<ActorParticipationRecord> participations = command.InventoryFeed.ActorParticipations;
             for (int index = 0; index < participations.Count; index++)
             {
-                ActorParticipationRecord participation = participations[index];
+                var participation = participations[index];
                 if (!participation.IsValid || !participation.ParticipatesInCurrentEntry)
                 {
                     continue;
                 }
 
-                if (!instancesByRuntimeId.TryGetValue(participation.ActorInstanceRuntimeId, out ActorInstanceRecord instance) || !instance.IsValid)
+                if (!instancesByRuntimeId.TryGetValue(participation.ActorInstanceRuntimeId, out var instance) || !instance.IsValid)
                 {
                     continue;
                 }
@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                ActorParticipationReadinessEvaluation readiness = _readinessPolicy.Evaluate(command.Identity, instance);
+                var readiness = _readinessPolicy.Evaluate(command.Identity, instance);
                 if (!readiness.IsReady)
                 {
                     if (readiness.IsFailure)
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             for (int index = 0; index < instances.Count; index++)
             {
-                ActorInstanceRecord instance = instances[index];
+                var instance = instances[index];
                 if (!instance.IsValid)
                 {
                     continue;

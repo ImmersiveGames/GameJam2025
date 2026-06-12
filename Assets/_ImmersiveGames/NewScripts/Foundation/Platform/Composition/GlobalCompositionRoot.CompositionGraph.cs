@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrap: null,
                 bootstrapDependencies: Array.Empty<string>()));
 
-            CompositionProfileKind compositionProfile = runtimeModeConfig.compositionProfile;
+            var compositionProfile = runtimeModeConfig.compositionProfile;
 
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
             {

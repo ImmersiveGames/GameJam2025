@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
 
             for (int index = 0; index < Slots.Count; index++)
             {
-                ActorPresentationSlotBinding current = Slots[index];
+                var current = Slots[index];
                 if (current.SlotKind == PrimarySlotKind &&
                     string.Equals(current.SlotId, PrimarySlotId, StringComparison.Ordinal))
                 {

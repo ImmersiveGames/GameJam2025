@@ -46,8 +46,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             EnsureDependencyManagerOrFail();
-            IActivityCameraPreparationExecutor activityCameraPreparationExecutor = ResolveActivityCameraPreparationExecutorOrFail();
-            InputActionAsset canonicalPlayerInputActionsAsset = ResolveCanonicalPlayerInputActionsAssetOrFail();
+            var activityCameraPreparationExecutor = ResolveActivityCameraPreparationExecutorOrFail();
+            var canonicalPlayerInputActionsAsset = ResolveCanonicalPlayerInputActionsAssetOrFail();
 
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 windowSceneAdapter,
                 pendingOperationRunner);
 
-            ActivityEntryPipeline activityEntryPipeline = new ActivityEntryPipeline(
+            var activityEntryPipeline = new ActivityEntryPipeline(
                 _pipeline,
                 _pipeline.EntryPlayerActorMaterializationAdapter,
                 _pipeline.EntryPlayerActorParticipationAdapter,
@@ -142,12 +142,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static InputActionAsset ResolveCanonicalPlayerInputActionsAssetOrFail()
         {
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry snapshot obrigatorio ausente para PlayerInput canonical actions.");
             }
 
-            IInputModesRuntimeConfigGroupReadOnly inputModesRuntime = snapshot.InputModesRuntime
+            var inputModesRuntime = snapshot.InputModesRuntime
                 ?? throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: snapshot.InputModesRuntime obrigatorio ausente.");
 
             if (inputModesRuntime.OperationalInputRuntimeProfile == null)
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: operationalInputRuntimeProfile.profileId obrigatorio ausente.");
             }
 
-            InputActionAsset canonicalActionsAsset = inputModesRuntime.UiActionsAsset;
+            var canonicalActionsAsset = inputModesRuntime.UiActionsAsset;
             if (canonicalActionsAsset == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: uiActionsAsset canonico obrigatorio ausente.");

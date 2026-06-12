@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             }
 
             resolution.FadeProfile.ValidateOrFail(nameof(SessionActivityTransitionAdapter), close ? "close_curtain" : "open_curtain");
-            FadeController controller = ResolveFadeControllerOrFail();
+            var controller = ResolveFadeControllerOrFail();
             FadeConfig fadeConfig = new(
                 resolution.FadeProfile.FadeInDuration,
                 resolution.FadeProfile.FadeOutDuration,
@@ -71,15 +71,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 }
             }
 
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
             string fadeSceneName = persistentScenesPolicy.ResolveSceneNameByRoleOrFail(RuntimePersistentSceneRole.Fade, nameof(SessionActivityTransitionAdapter));
-            Scene scene = SceneManager.GetSceneByName(fadeSceneName);
+            var scene = SceneManager.GetSceneByName(fadeSceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionActivityTransition] FadeScene obrigatoria nao esta carregada. scene='{fadeSceneName}'.");
             }
 
-            FadeController controller = FindControllerInSceneOrFail(scene, fadeSceneName);
+            var controller = FindControllerInSceneOrFail(scene, fadeSceneName);
             lock (_sync)
             {
                 _cachedFadeSceneName = fadeSceneName;
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             GameObject[] roots = scene.GetRootGameObjects();
             for (int i = 0; i < roots.Length; i++)
             {
-                FadeController controller = roots[i].GetComponentInChildren<FadeController>(true);
+                var controller = roots[i].GetComponentInChildren<FadeController>(true);
                 if (controller != null)
                 {
                     return controller;
@@ -106,12 +106,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 
         private static RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail()
         {
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityTransition] RuntimeConfigRegistry snapshot obrigatorio ausente.");
             }
 
-            IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+            var runtimePolicy = snapshot.RuntimePolicy;
             if (runtimePolicy == null || runtimePolicy.RuntimePersistentScenesPolicy == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityTransition] RuntimePersistentScenesPolicy obrigatoria ausente.");

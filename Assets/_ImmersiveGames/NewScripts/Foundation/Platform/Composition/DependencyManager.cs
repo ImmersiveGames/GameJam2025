@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             services.Clear();
 
-            foreach (T service in _sceneRegistry.GetAll<T>(sceneName))
+            foreach (var service in _sceneRegistry.GetAll<T>(sceneName))
             {
                 services.Add(service);
             }

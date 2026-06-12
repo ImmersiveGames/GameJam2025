@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             snapshots ??= new List<SessionActivitySnapshot>();
 
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingStarted);
+            var startedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.MovementBindingStarted);
             endpoint.EmitFact(
                 facts,
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     bridge.SetMovementControlTargets(retainedTargets, enableAllowed: true);
                     for (int index = 0; index < retainedTargets.Count; index++)
                     {
-                        PlayerActorIdentityRecord retained = retainedTargets[index];
+                        var retained = retainedTargets[index];
                         endpoint.EmitFact(
                             facts,
                             SessionActivityFactKind.MovementBindingRetained,
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             DebugUtility.Colors.Info);
                     }
 
-                    SessionActivityIdentity retainedCompletedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
+                    var retainedCompletedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
                     endpoint.SetCurrentIdentity(retainedCompletedIdentity, SessionActivityStage.MovementBindingCompleted);
                     endpoint.EmitFact(
                         facts,
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 bridge.SetMovementControlTargets(Array.Empty<PlayerActorIdentityRecord>(), enableAllowed: false);
-                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
+                var skippedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
                 endpoint.EmitFact(
                     facts,
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{command.ActivityId}' movement binding skipped because no movement capability target is required or retained.");
 
-                SessionActivityIdentity skippedCompletedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
+                var skippedCompletedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
                 endpoint.SetCurrentIdentity(skippedCompletedIdentity, SessionActivityStage.MovementBindingCompleted);
                 endpoint.EmitFact(
                     facts,
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < requirements.Count; index++)
             {
-                MovementBindingRequirement requirement = requirements[index];
+                var requirement = requirements[index];
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.MovementBindingCommandIssued,
@@ -188,10 +188,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<PlayerActorIdentityRecord> boundTargets = new(records.Count);
             for (int index = 0; index < records.Count; index++)
             {
-                MovementBindingRecord record = records[index];
+                var record = records[index];
                 if (!record.IsValid)
                 {
-                    SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingFailed);
+                    var failedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingFailed);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
                     endpoint.EmitFact(
                         facts,
@@ -234,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < records.Count; index++)
             {
-                MovementBindingRecord record = records[index];
+                var record = records[index];
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerMovementBound,
@@ -250,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (requiredBoundCount < requiredCount)
             {
-                SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingFailed);
+                var failedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingFailed);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
                 endpoint.EmitFact(
                     facts,
@@ -268,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][MovementBinding] Required binding incomplete activityId='{command.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
             }
 
-            SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
+            var completedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.MovementBindingCompleted);
             endpoint.EmitFact(
                 facts,
@@ -322,7 +322,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IReadOnlyList<ActivityEntryMovementBindingReference> bindings = command.ParticipantBindings ?? Array.Empty<ActivityEntryMovementBindingReference>();
             for (int index = 0; index < bindings.Count; index++)
             {
-                ActivityEntryMovementBindingReference binding = bindings[index];
+                var binding = bindings[index];
                 if (!binding.IsValid || binding.ParticipantKind != ActivityParticipantRequirementKind.ControllablePlayer)
                 {
                     continue;

@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             HashSet<string> dedupe = new(StringComparer.Ordinal);
             for (int index = 0; index < participatingActivities.Count; index++)
             {
-                ActivityAsset activity = participatingActivities[index];
+                var activity = participatingActivities[index];
                 if (activity == null)
                 {
                     throw new InvalidOperationException($"{origin} has null participatingActivities[{index}] with ActorParticipationPolicy=ExplicitActivityIds.");
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 throw new InvalidOperationException($"{origin} has invalid participatingActivities when ActorParticipationPolicy=ExplicitActivityIds.");
             }
 
-            ActorCapabilitySurface surface = CapabilitySurface;
+            var surface = CapabilitySurface;
             if (surface == null)
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
             for (int index = 0; index < participatingActivities.Count; index++)
             {
-                ActivityAsset activity = participatingActivities[index];
+                var activity = participatingActivities[index];
                 if (activity == null)
                 {
                     return false;

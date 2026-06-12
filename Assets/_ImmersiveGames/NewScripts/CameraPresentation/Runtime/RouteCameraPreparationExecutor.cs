@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             if (!_director.TryPrepareRouteCamera(
                     command,
-                    out RouteCameraBindingResult bindingResult,
+                    out var bindingResult,
                     out string directorReason))
             {
                 reason = directorReason;
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             _activeBinding = bindingResult;
 
-            RouteCameraReadyFact readyFact = RouteCameraReadyFact.FromResult(
+            var readyFact = RouteCameraReadyFact.FromResult(
                 bindingResult,
                 nameof(RouteCameraPreparationExecutor),
                 "route_camera_prepare_ready");
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             _activeBinding = null;
 
-            RouteCameraReleasedFact releasedFact = RouteCameraReleasedFact.FromCommand(
+            var releasedFact = RouteCameraReleasedFact.FromCommand(
                 command,
                 nameof(RouteCameraPreparationExecutor),
                 "route_camera_release_completed");
@@ -175,11 +175,11 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             RouteCameraPresentationCommand command,
             string failureReason)
         {
-            RouteCameraBindingResult bindingResult = RouteCameraBindingResult.Failed(
+            var bindingResult = RouteCameraBindingResult.Failed(
                 command,
                 failureReason);
 
-            RouteCameraFailureFact failureFact = RouteCameraFailureFact.FromResult(
+            var failureFact = RouteCameraFailureFact.FromResult(
                 bindingResult,
                 failureReason,
                 nameof(RouteCameraPreparationExecutor),
@@ -194,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             RouteCameraReleaseCommand command,
             string failureReason)
         {
-            RouteCameraReleaseFailureFact failureFact = RouteCameraReleaseFailureFact.FromCommand(
+            var failureFact = RouteCameraReleaseFailureFact.FromCommand(
                 command,
                 failureReason,
                 nameof(RouteCameraPreparationExecutor),

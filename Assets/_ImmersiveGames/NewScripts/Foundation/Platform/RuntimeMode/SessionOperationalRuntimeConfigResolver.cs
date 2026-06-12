@@ -16,16 +16,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeModeConfig obrigatorio ausente para resolver loading defaults.");
             }
 
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                ISessionOperationalRuntimeConfigGroupReadOnly group = snapshot.SessionOperationalRuntime;
+                var group = snapshot.SessionOperationalRuntime;
                 if (group == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: snapshot.SessionOperationalRuntime obrigatorio ausente.");
                 }
 
-                SessionOperationalRouteLoadingMode mode = group.DefaultLoadingMode;
-                RuntimeLoadingProfileAsset profile = group.DefaultLoadingProfile;
+                var mode = group.DefaultLoadingMode;
+                var profile = group.DefaultLoadingProfile;
                 if (!TryValidate(mode, profile, out string validationError))
                 {
                     throw new InvalidOperationException($"[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: loading config invalida no snapshot. detail='{validationError}'.");
@@ -45,15 +45,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeModeConfig obrigatorio ausente para resolver StartupRouteDefinition.");
             }
 
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                ISessionOperationalRuntimeConfigGroupReadOnly group = snapshot.SessionOperationalRuntime;
+                var group = snapshot.SessionOperationalRuntime;
                 if (group == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: snapshot.SessionOperationalRuntime obrigatorio ausente.");
                 }
 
-                OperationalRouteAsset startupRoute = group.StartupRouteDefinition;
+                var startupRoute = group.StartupRouteDefinition;
                 if (startupRoute == null || !startupRoute.IsValid)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: StartupRouteDefinition ausente/invalida no snapshot.");

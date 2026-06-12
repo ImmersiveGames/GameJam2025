@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
             for (int index = 0; index < containers.Count; index++)
             {
-                ActorPresentationContainer current = containers[index];
+                var current = containers[index];
                 if (current == null)
                 {
                     continue;
@@ -83,11 +83,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 throw new InvalidOperationException($"{origin} requires containers list.");
             }
 
-            HashSet<string> observedKeys = new HashSet<string>(StringComparer.Ordinal);
+            var observedKeys = new HashSet<string>(StringComparer.Ordinal);
 
             for (int index = 0; index < containers.Count; index++)
             {
-                ActorPresentationContainer container = containers[index];
+                var container = containers[index];
                 if (container == null)
                 {
                     throw new InvalidOperationException($"{origin} has null container at index '{index}'.");

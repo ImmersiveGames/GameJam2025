@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return false;
             }
 
-            if (!_activeActorPresentationByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out ActorPresentationCapabilityState state) || !state.IsValid)
+            if (!_activeActorPresentationByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out var state) || !state.IsValid)
             {
                 return false;
             }
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             List<ActorPresentationCapabilityState> activeStates = new();
             if (targetActorInstanceRuntimeId.IsValid)
             {
-                if (_activeActorPresentationByActorInstanceId.TryGetValue(targetActorInstanceRuntimeId, out ActorPresentationCapabilityState targetedState) &&
+                if (_activeActorPresentationByActorInstanceId.TryGetValue(targetActorInstanceRuntimeId, out var targetedState) &&
                     targetedState.IsValid)
                 {
                     activeStates.Add(targetedState);
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return activeStates;
             }
 
-            foreach (ActorPresentationCapabilityState state in _activeActorPresentationByActorInstanceId.Values)
+            foreach (var state in _activeActorPresentationByActorInstanceId.Values)
             {
                 if (state.IsValid)
                 {
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return false;
             }
 
-            foreach (SessionActivityPipeline.ActorAttributeCapabilityState candidate in _activeActorAttributeCapabilitiesByActorInstanceId.Values)
+            foreach (var candidate in _activeActorAttributeCapabilitiesByActorInstanceId.Values)
             {
                 if (!candidate.IsValid ||
                     !string.Equals(candidate.ActorId, normalizedActorId, StringComparison.Ordinal))
@@ -234,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public IReadOnlyList<SessionActivityPipeline.ActorAttributeCapabilityState> ResolveActiveActorAttributeStates()
         {
             List<SessionActivityPipeline.ActorAttributeCapabilityState> activeStates = new();
-            foreach (SessionActivityPipeline.ActorAttributeCapabilityState state in _activeActorAttributeCapabilitiesByActorInstanceId.Values)
+            foreach (var state in _activeActorAttributeCapabilitiesByActorInstanceId.Values)
             {
                 if (state.IsValid)
                 {
@@ -351,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
                 for (int index = 0; index < context.Participants.Count; index++)
                 {
-                    PlayerActivityParticipantBinding binding = context.Participants[index];
+                    var binding = context.Participants[index];
                     if (!binding.IsValid || !binding.RequiresPlayerActor || !binding.ActorId.IsValid)
                     {
                         continue;
@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return false;
             }
 
-            if (_activePlayerParticipantBindingsByActorId.TryGetValue(actorId, out PlayerActivityParticipantBinding activeBinding) &&
+            if (_activePlayerParticipantBindingsByActorId.TryGetValue(actorId, out var activeBinding) &&
                 activeBinding.IsValid)
             {
                 binding = activeBinding;
@@ -420,7 +420,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             {
                 for (int index = 0; index < _currentActivityParticipationContext.Participants.Count; index++)
                 {
-                    PlayerActivityParticipantBinding candidate = _currentActivityParticipationContext.Participants[index];
+                    var candidate = _currentActivityParticipationContext.Participants[index];
                     if (!candidate.IsValid || !candidate.RequiresPlayerActor || !candidate.ActorId.IsValid)
                     {
                         continue;

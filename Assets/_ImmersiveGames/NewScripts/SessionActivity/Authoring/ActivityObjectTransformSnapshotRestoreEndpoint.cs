@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             if (!Supports(command.TargetId))
             {
-                Vector3 selfPosition = transform.position;
+                var selfPosition = transform.position;
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
                     command,
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             if (targetTransform == null)
             {
-                Vector3 selfPosition = transform.position;
+                var selfPosition = transform.position;
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.Failed,
                     command,
@@ -80,10 +80,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     $"target_transform_missing targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' restoreEndpointPath='{BuildTransformPath(transform)}' targetTransformPath='<null>'");
             }
 
-            Transform localTransform = targetTransform;
-            Vector3 beforePosition = localTransform.position;
-            Quaternion beforeRotation = localTransform.rotation;
-            Vector3 beforeScale = localTransform.localScale;
+            var localTransform = targetTransform;
+            var beforePosition = localTransform.position;
+            var beforeRotation = localTransform.rotation;
+            var beforeScale = localTransform.localScale;
 
             Vector3 payloadPosition = new(command.PositionX, command.PositionY, command.PositionZ);
             Quaternion payloadRotation = new(command.RotationX, command.RotationY, command.RotationZ, command.RotationW);
@@ -118,9 +118,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     $"unsupported_coordinate_space coordinateSpace='{command.CoordinateSpace}'");
             }
 
-            Vector3 afterPosition = localTransform.position;
-            Quaternion afterRotation = localTransform.rotation;
-            Vector3 afterScale = localTransform.localScale;
+            var afterPosition = localTransform.position;
+            var afterRotation = localTransform.rotation;
+            var afterScale = localTransform.localScale;
             bool verified =
                 IsNearlyEqual(afterPosition, payloadPosition, verificationTolerance) &&
                 IsNearlyEqual(afterRotation, payloadRotation, verificationTolerance) &&
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             }
 
             string path = target.name;
-            Transform current = target.parent;
+            var current = target.parent;
             while (current != null)
             {
                 path = $"{current.name}/{path}";

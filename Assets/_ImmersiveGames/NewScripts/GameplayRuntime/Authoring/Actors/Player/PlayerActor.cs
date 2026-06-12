@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
 
-            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out ActorProjectileFireEndpoint projectileFireEndpoint))
+            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out var projectileFireEndpoint))
             {
                 projectileFireEndpoint.ValidateLocalConfigurationOrThrow($"{origin}/{nameof(ActorCapabilitySurface)}.{nameof(ActorCapabilitySurface.ActorProjectileFireEndpoint)}");
             }

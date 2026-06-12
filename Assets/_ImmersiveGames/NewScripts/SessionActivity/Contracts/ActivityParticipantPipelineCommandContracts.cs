@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             HashSet<ActorResetGroup> unique = new();
             for (int referenceIndex = 0; referenceIndex < resetReferences.Count; referenceIndex++)
             {
-                ActorCapabilityResetEndpointReference resetReference = resetReferences[referenceIndex];
+                var resetReference = resetReferences[referenceIndex];
                 if (resetReference == null || !resetReference.IsValid || resetReference.SupportedGroups == null)
                 {
                     continue;
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
                 for (int groupIndex = 0; groupIndex < resetReference.SupportedGroups.Length; groupIndex++)
                 {
-                    ActorResetGroup group = resetReference.SupportedGroups[groupIndex];
+                    var group = resetReference.SupportedGroups[groupIndex];
                     if (group == ActorResetGroup.Unknown || !unique.Add(group))
                     {
                         continue;

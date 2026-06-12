@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
@@ -15,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 throw new InvalidOperationException("ActivityContentSceneUnloadCommand is invalid.");
             }
 
-            Scene loadedScene = SceneManager.GetSceneByName(command.SceneName);
+            var loadedScene = SceneManager.GetSceneByName(command.SceneName);
             if (!loadedScene.IsValid() || !loadedScene.isLoaded)
             {
                 return new ActivityContentSceneUnloadResult(
@@ -26,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                     $"Activity content scene '{command.SceneName}' is not loaded.");
             }
 
-            AsyncOperation operation = SceneManager.UnloadSceneAsync(command.SceneName);
+            var operation = SceneManager.UnloadSceneAsync(command.SceneName);
             if (operation == null)
             {
                 return new ActivityContentSceneUnloadResult(

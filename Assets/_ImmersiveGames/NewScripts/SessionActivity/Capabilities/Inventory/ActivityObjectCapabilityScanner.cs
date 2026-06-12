@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 throw new InvalidOperationException("Activity capability scan context is invalid.");
             }
 
-            ActivityCapabilityInventoryId inventoryId = context.InventoryId;
+            var inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
             List<IActivityCapabilityRuntimeReference> runtimeReferences = new();
@@ -33,13 +33,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < context.ActivityObjectTargets.Count; index++)
             {
-                ActivityObjectCapabilityScanTarget target = context.ActivityObjectTargets[index];
+                var target = context.ActivityObjectTargets[index];
                 if (!target.IsValid)
                 {
                     continue;
                 }
 
-                ActivityCapabilityOwnerKind ownerKind = ResolveOwnerKind(target.Contribution.ContributorKind);
+                var ownerKind = ResolveOwnerKind(target.Contribution.ContributorKind);
                 string ownerPath = target.HasTargetObjectPath
                     ? target.TargetObjectPath
                     : ActivityCapabilityTransformPathUtility.BuildTransformPath(target.TargetObject.transform);
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 MonoBehaviour[] behaviours = ResolveBehaviours(target);
                 for (int behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
                 {
-                    MonoBehaviour behaviour = behaviours[behaviourIndex];
+                    var behaviour = behaviours[behaviourIndex];
                     if (behaviour is not IActivityObjectLifecycleContributionProvider provider)
                     {
                         continue;
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return;
             }
 
-            if (!TryResolveCapabilityKind(contribution, out ActivityCapabilityKind capabilityKind))
+            if (!TryResolveCapabilityKind(contribution, out var capabilityKind))
             {
                 return;
             }
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 metadata,
                 source));
 
-            if (contribution is IActivityObjectResetContribution resetContribution && resetContribution.ResetEndpoint != null)
+            if (contribution is IActivityObjectResetContribution { ResetEndpoint: not null } resetContribution)
             {
                 runtimeReferences.Add(new ActivityObjectResetEndpointReference(
                     capabilityId,
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     resetContribution.ResetEndpoint));
             }
 
-            if (contribution is IActivityObjectSnapshotContribution snapshotContribution && snapshotContribution.SnapshotProvider != null)
+            if (contribution is IActivityObjectSnapshotContribution { SnapshotProvider: not null } snapshotContribution)
             {
                 runtimeReferences.Add(new ActivityObjectSnapshotProviderReference(
                     capabilityId,
@@ -170,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     snapshotContribution.SnapshotProvider));
             }
 
-            if (contribution is IActivityObjectSnapshotRestoreContribution restoreContribution && restoreContribution.RestoreEndpoint != null)
+            if (contribution is IActivityObjectSnapshotRestoreContribution { RestoreEndpoint: not null } restoreContribution)
             {
                 runtimeReferences.Add(new ActivityObjectSnapshotRestoreEndpointReference(
                     capabilityId,
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     restoreContribution.RestoreEndpoint));
             }
 
-            if (contribution is IActivityObjectReleaseContribution releaseContribution && releaseContribution.ReleaseEndpoint != null)
+            if (contribution is IActivityObjectReleaseContribution { ReleaseEndpoint: not null } releaseContribution)
             {
                 runtimeReferences.Add(new ActivityObjectReleaseEndpointReference(
                     capabilityId,
@@ -231,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         private static IReadOnlyList<ActivityCapabilityPolicyEntry> BuildPolicyMetadata(ActivityObjectCapabilityScanTarget target)
         {
-            ActivityObjectContributionReport contribution = target.Contribution;
+            var contribution = target.Contribution;
             List<ActivityCapabilityPolicyEntry> metadata = new(8)
             {
                 new("targetId", contribution.TargetId),

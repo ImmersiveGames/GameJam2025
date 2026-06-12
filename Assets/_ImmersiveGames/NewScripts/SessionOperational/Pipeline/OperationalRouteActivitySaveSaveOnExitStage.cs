@@ -142,9 +142,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "OperationalRouteActivitySaveSaveOnExitCommand invalido.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
-            RouteActivitySaveOnExitPlan saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
-            RouteActivitySaveContributorScopePolicy contributorScopePolicy = saveOnExitPlan.PreviousRouteContributorScopePolicy;
+            var routeCommand = command.RouteCommand;
+            var saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
+            var contributorScopePolicy = saveOnExitPlan.PreviousRouteContributorScopePolicy;
             DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveOnExitStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' contributorScopePolicy='{contributorScopePolicy}' saveOnExitSkipKind='{saveOnExitPlan.SkipKind}' saveOnExitSkipReason='{RouteActivitySaveSkipKindMapper.ToCode(saveOnExitPlan.SkipKind)}' saveOnExitSkipDetail='{Normalize(saveOnExitPlan.SkipDetail)}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave][QA] RouteActivitySaveQaSaveStarted sessionStateId='{Normalize(command.SessionStateId)}' saveOwnerActivityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            ISessionActivitySnapshotPayloadProvider provider = _activitySnapshotPayloadProviderResolver();
+            var provider = _activitySnapshotPayloadProviderResolver();
             if (provider == null)
             {
                 DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
@@ -194,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!provider.TryGetSnapshotPayloadForSaveOnExit(
                     command.SessionStateId,
-                    out SessionActivitySnapshotPayload payload,
+                    out var payload,
                     out string failureReason) ||
                 !payload.IsValid)
             {
@@ -255,7 +255,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "snapshot payload serialization failed for QA save.");
             }
 
-            ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
+            var slotContext = ResolveProgressionSlotContextOrFail(
                 _progressionSlotContextResolver,
                 qaRouteIdentity,
                 qaRouteOperationId,
@@ -264,7 +264,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            RouteActivitySaveSaveResult saveResult = _activitySaveAdapter.SaveActivityOnExit(
+            var saveResult = _activitySaveAdapter.SaveActivityOnExit(
                 command.RuntimeModeConfig,
                 slotContext,
                 saveOwnerActivityIdentity,
@@ -316,8 +316,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private void ExecuteSaveOnExitOrFail(OperationalRouteActivitySaveSaveOnExitCommand command)
         {
-            RouteActivitySaveOnExitPlan saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
-            RouteActivitySaveContributorScopePolicy contributorScopePolicy = saveOnExitPlan.PreviousRouteContributorScopePolicy;
+            var saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
+            var contributorScopePolicy = saveOnExitPlan.PreviousRouteContributorScopePolicy;
             string currentRouteIdentity = saveOnExitPlan.CurrentRouteIdentity;
             string currentRouteOperationId = saveOnExitPlan.CurrentRouteOperationId;
             string currentTransitionId = saveOnExitPlan.CurrentTransitionId;
@@ -339,11 +339,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string previousActivityIdentity = saveOnExitPlan.PreviousActivityIdentity;
             string previousActivitySaveKey = saveOnExitPlan.PreviousActivitySaveKey;
 
-            if (!TryResolvePreviousActivitySnapshotPayload(command, contributorScopePolicy, out string activitySnapshotPayload, out RouteActivitySnapshotPayloadResolution payloadResolution))
+            if (!TryResolvePreviousActivitySnapshotPayload(command, contributorScopePolicy, out string activitySnapshotPayload, out var payloadResolution))
             {
                 bool isCaptureFailed = payloadResolution.FailureKind == RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed;
                 bool isNoContent = payloadResolution.FailureKind == RouteActivitySaveSnapshotFailureKind.NoActivityContentContributors;
-                RouteActivitySaveSkipKind skipKind = ResolveSnapshotPayloadSkipReason(payloadResolution.FailureKind);
+                var skipKind = ResolveSnapshotPayloadSkipReason(payloadResolution.FailureKind);
                 string checkpointStatus = isCaptureFailed ? "Failed" : isNoContent ? "SkippedNoContent" : "Waiting";
                 DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
                     $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='{checkpointStatus}' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' recordCount='0' payloadKind='<none>' targetIds='<none>' payloadSize='0' failureReason='{Normalize(payloadResolution.FailureReason)}'.",
@@ -393,7 +393,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return;
             }
 
-            ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
+            var slotContext = ResolveProgressionSlotContextOrFail(
                 _progressionSlotContextResolver,
                 currentRouteIdentity,
                 currentRouteOperationId,
@@ -406,7 +406,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveStarted previousRouteIdentity='{saveOnExitPlan.PreviousRouteIdentity}' previousRouteOperationId='{saveOnExitPlan.PreviousRouteOperationId}' previousRouteSequence='{saveOnExitPlan.PreviousRouteSequence}' previousActivityIdentity='{Normalize(previousActivityIdentity)}' previousActivitySaveKey='{previousActivitySaveKey}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            RouteActivitySaveSaveResult saveResult = _activitySaveAdapter.SaveActivityOnExit(
+            var saveResult = _activitySaveAdapter.SaveActivityOnExit(
                 command.RuntimeModeConfig,
                 slotContext,
                 previousActivityIdentity,
@@ -464,7 +464,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            ProgressionSlotContext observedSlotContext = ResolveProgressionSlotContextOrFail(
+            var observedSlotContext = ResolveProgressionSlotContextOrFail(
                 _progressionSlotContextResolver,
                 routeIdentity,
                 routeOperationId,
@@ -473,16 +473,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 source,
                 reason);
 
-            string expectedSnapshotId = expectedSlotContext != null && expectedSlotContext.SnapshotId.IsValid
+            string expectedSnapshotId = expectedSlotContext is { SnapshotId: { IsValid: true } }
                 ? expectedSlotContext.SnapshotId.Value
                 : string.Empty;
-            string observedSnapshotId = observedSlotContext != null && observedSlotContext.SnapshotId.IsValid
+            string observedSnapshotId = observedSlotContext is { SnapshotId: { IsValid: true } }
                 ? observedSlotContext.SnapshotId.Value
                 : string.Empty;
-            string expectedSlotId = expectedSlotContext != null && expectedSlotContext.SlotId.IsValid
+            string expectedSlotId = expectedSlotContext is { SlotId: { IsValid: true } }
                 ? expectedSlotContext.SlotId.Value
                 : string.Empty;
-            string observedSlotId = observedSlotContext != null && observedSlotContext.SlotId.IsValid
+            string observedSlotId = observedSlotContext is { SlotId: { IsValid: true } }
                 ? observedSlotContext.SlotId.Value
                 : string.Empty;
             bool snapshotIdMatches = !string.IsNullOrWhiteSpace(expectedSnapshotId) &&
@@ -528,7 +528,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             activitySnapshotPayload = string.Empty;
             resolution = default;
-            RouteActivitySaveOnExitPlan saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
+            var saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
 
             if (!saveOnExitPlan.HasPreviousRoute)
             {
@@ -576,7 +576,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            ISessionActivitySnapshotPayloadProvider provider = _activitySnapshotPayloadProviderResolver();
+            var provider = _activitySnapshotPayloadProviderResolver();
             if (provider == null)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
@@ -594,7 +594,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             bool resolved = provider.TryGetSnapshotPayloadForSaveOnExit(
                 sessionStateId,
-                out SessionActivitySnapshotPayload payload,
+                out var payload,
                 out string failureReason);
 
             if (!resolved)
@@ -801,7 +801,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 routeSequence,
                 source,
                 reason,
-                out ProgressionSlotContext slotContext,
+                out var slotContext,
                 out string failureReason);
 
             if (!resolved || slotContext == null || !slotContext.IsValid)
@@ -834,7 +834,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static string SerializeCapabilitySnapshotEnvelopePayload(SessionActivitySnapshotPayload payload)
         {
-            ActivityCapabilitySnapshotEnvelope envelope = payload.CapabilitySnapshotEnvelope;
+            var envelope = payload.CapabilitySnapshotEnvelope;
             StringBuilder builder = new(1024);
             builder.Append('{');
             AppendJsonField(builder, "schemaId", payload.SchemaId);
@@ -868,7 +868,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             for (int index = 0; index < envelope.Records.Count; index++)
             {
-                ActivityCapabilitySnapshotRecord record = envelope.Records[index];
+                var record = envelope.Records[index];
                 if (index > 0)
                 {
                     builder.Append(',');
@@ -940,7 +940,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static int ResolveSnapshotPayloadRecordCount(SessionActivitySnapshotPayload payload)
         {
-            if (payload.HasCapabilitySnapshotEnvelope && payload.CapabilitySnapshotEnvelope.Records != null)
+            if (payload is { HasCapabilitySnapshotEnvelope: true, CapabilitySnapshotEnvelope: { Records: not null } })
             {
                 return payload.CapabilitySnapshotEnvelope.Records.Count;
             }

@@ -396,7 +396,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             _sceneRoots.Clear();
             _monoBuffer.Clear();
 
-            Scene scene = SceneManager.GetSceneByName(_sceneName);
+            var scene = SceneManager.GetSceneByName(_sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 return;

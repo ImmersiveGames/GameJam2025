@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private void PrepareRouteCameraOrFail(OperationalRouteCameraPresentationCommand command)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             if (ShouldSkipRouteCameraByPolicy(command, out string skipReason))
             {
                 DebugUtility.Log(typeof(OperationalRouteCameraPresentationStage),
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            if (!_routeCameraAdapter.TryPrepareRouteCamera(prepareCommand, out SessionOperationalRouteCameraPrepareResult prepareResult, out string prepareReason))
+            if (!_routeCameraAdapter.TryPrepareRouteCamera(prepareCommand, out var prepareResult, out string prepareReason))
             {
                 bool required = routeCommand.SurfacePresentationProfile != null && routeCommand.SurfacePresentationProfile.Required;
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' required='{required}' reason='{Normalize(prepareReason)}'.");
@@ -168,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalRouteCameraPresentationCommand command,
             out string skipReason)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             var profile = routeCommand.SurfacePresentationProfile;
             var activityProfile = routeCommand.ActivityPresentationProfile;
             bool isSessionActivityEntry =

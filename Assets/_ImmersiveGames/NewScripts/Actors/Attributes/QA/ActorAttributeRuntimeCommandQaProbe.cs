@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
                 return false;
             }
 
-            ActorAttributeId runtimeId = ActorAttributeId.FromDefinition(attributeDefinition);
+            var runtimeId = ActorAttributeId.FromDefinition(attributeDefinition);
             if (!runtimeId.IsValid)
             {
                 Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{Normalize(sceneActorId)}'.");

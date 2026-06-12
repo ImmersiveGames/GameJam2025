@@ -113,12 +113,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "OperationalRouteActivitySaveLoadOnEnterCommand invalido.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadOnEnterStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext = ExecuteLoadOnEnterOrFail(command);
+            var loadedSnapshotPayloadContext = ExecuteLoadOnEnterOrFail(command);
 
             DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadOnEnterStageCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}' loadedSnapshotPayload='{(loadedSnapshotPayloadContext.HasPayload ? "present" : "absent")}' loadedSnapshotPayloadRecordCount='{(loadedSnapshotPayloadContext.HasPayload ? loadedSnapshotPayloadContext.Payload.RecordCount : 0)}' loadedSnapshotPayloadSourceActivityId='{(loadedSnapshotPayloadContext.HasPayload ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId) : "<none>")}' loadedSnapshotPayloadSourceEntrySequence='{(loadedSnapshotPayloadContext.HasPayload ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence : 0)}'.",
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private ActivityEntryObjectSnapshotRestorePayloadContext ExecuteLoadOnEnterOrFail(OperationalRouteActivitySaveLoadOnEnterCommand command)
         {
-            RouteActivitySaveLoadPlan loadOnEnterPlan = command.RouteActivitySavePlan.LoadOnEnter;
+            var loadOnEnterPlan = command.RouteActivitySavePlan.LoadOnEnter;
             string activityIdentity = loadOnEnterPlan.ActivityIdentity;
             string routeIdentity = loadOnEnterPlan.RouteIdentity;
             string routeOperationId = loadOnEnterPlan.RouteOperationId;
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             _loadedSnapshotStore.ClearPendingLoadedSnapshotPayload();
-            ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
+            var slotContext = ResolveProgressionSlotContextOrFail(
                 _progressionSlotContextResolver,
                 routeIdentity,
                 routeOperationId,
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            RouteActivitySaveLoadResult result = _activitySaveAdapter.LoadActivitySaveOnEnter(
+            var result = _activitySaveAdapter.LoadActivitySaveOnEnter(
                 command.RuntimeModeConfig,
                 command.RouteCommand,
                 slotContext,
@@ -194,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException(message);
             }
 
-            RouteActivitySnapshotPayloadReadResult readResult =
+            var readResult =
                 RouteActivitySnapshotPayloadReader.Read(result.ActivitySnapshotPayload, _routeActivitySnapshotSchemaId);
             if (!readResult.Succeeded)
             {
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] payload invalido no load-on-enter routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' failureKind='{readResult.FailureKind}' failureReason='{Normalize(readResult.FailureReason)}'.");
             }
 
-            LoadedRouteActivitySnapshotPayload loadedPayload = readResult.Payload;
+            var loadedPayload = readResult.Payload;
             _loadedSnapshotStore.SetPendingLoadedSnapshotPayload(
                 Normalize(activityIdentity),
                 loadedPayload,
@@ -240,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 routeSequence,
                 source,
                 reason,
-                out ProgressionSlotContext slotContext,
+                out var slotContext,
                 out string failureReason);
 
             if (!resolved || slotContext == null || !slotContext.IsValid)

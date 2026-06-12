@@ -95,10 +95,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityIdentity identity = command.Identity;
+            var identity = command.Identity;
             int entrySequence = command.EntrySequence;
-            ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
-            SessionActivityIdentity captureIdentity = endpoint.BuildIdentity(
+            var discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
+            var captureIdentity = endpoint.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityObjectSnapshotCaptureStarted,
                 entrySequence);
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     entrySequence,
                     "ActivityObjectSnapshotCaptureStage",
                     "activity_object_snapshot_capture_skipped_no_discovery");
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                var skippedIdentity = endpoint.BuildIdentity(
                     definition,
                     SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders,
                     entrySequence);
@@ -183,8 +183,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string captureFailureDetail = string.Empty;
             HashSet<string> capturedTargetIds = new(StringComparer.Ordinal);
             List<ActivityCapabilitySnapshotRecord> capturedCapabilitySnapshots = new();
-            ActivityCapabilityInventory snapshotInventory = runtimeState.CurrentInventoryPreview;
-            ActivityCapabilityInventoryValidationResult snapshotInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
+            var snapshotInventory = runtimeState.CurrentInventoryPreview;
+            var snapshotInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
             bool hasValidSnapshotInventory =
                 snapshotInventory.IsValid &&
                 snapshotInventoryValidation.IsValid &&
@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                var report = discoveryResult.Reports[reportIndex];
                 if (!report.IsValid || !IsReportForCurrentEntry(report, captureIdentity, entrySequence))
                 {
                     continue;
@@ -227,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 IActivityObjectSnapshotProvider[] providers = ResolveObjectSnapshotProvidersFromInventory(snapshotInventory, report);
                 if (providers.Length == 0)
                 {
-                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                    var skippedIdentity = endpoint.BuildIdentity(
                         definition,
                         SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders,
                         entrySequence);
@@ -270,7 +270,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                ActivityObjectSnapshotCaptureResult captureResult = ExecuteObjectSnapshotCaptureCommand(captureCommand, providers);
+                var captureResult = ExecuteObjectSnapshotCaptureCommand(captureCommand, providers);
                 if (!captureResult.IsValid || !IsObjectSnapshotCaptureResultForCurrentEntry(captureResult, captureIdentity, entrySequence))
                 {
                     failedIdentity = endpoint.BuildIdentity(
@@ -295,7 +295,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 if (captureResult.IsCaptured)
                 {
-                    SessionActivityIdentity capturedIdentity = endpoint.BuildIdentity(
+                    var capturedIdentity = endpoint.BuildIdentity(
                         definition,
                         SessionActivityStage.ActivityObjectSnapshotCaptured,
                         entrySequence);
@@ -303,8 +303,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     capturedCount += 1;
                     hasTransformPayload |= captureResult.HasTransformPayload;
                     capturedTargetIds.Add(captureResult.Command.TargetId);
-                    ActivityObjectSnapshot snapshotData = captureResult.Snapshot;
-                    ActivityCapabilityDescriptor snapshotCapability = ResolveSnapshotCapabilityDescriptor(snapshotInventory, report);
+                    var snapshotData = captureResult.Snapshot;
+                    var snapshotCapability = ResolveSnapshotCapabilityDescriptor(snapshotInventory, report);
                     string snapshotCapabilityId = !string.IsNullOrWhiteSpace(snapshotCapability.CapabilityId)
                         ? snapshotCapability.CapabilityId
                         : $"activity_object.snapshot_provider:{captureResult.Command.TargetId}";
@@ -336,7 +336,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 if (captureResult.IsSkippedOptional)
                 {
-                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                    var skippedIdentity = endpoint.BuildIdentity(
                         definition,
                         SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders,
                         entrySequence);
@@ -470,7 +470,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<string> ownerKinds = new(StringComparer.Ordinal);
             for (int index = 0; index < records.Count; index++)
             {
-                ActivityCapabilitySnapshotOwnerKind ownerKind = records[index].OwnerKind;
+                var ownerKind = records[index].OwnerKind;
                 if (ownerKind != ActivityCapabilitySnapshotOwnerKind.Unknown)
                 {
                     ownerKinds.Add(ownerKind.ToString());
@@ -493,7 +493,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<IActivityObjectSnapshotProvider> unique = new();
             for (int index = 0; index < inventory.Capabilities.Count; index++)
             {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
+                var capability = inventory.Capabilities[index];
                 if (capability.CapabilityKind != ActivityCapabilityKind.SnapshotProvider)
                 {
                     continue;
@@ -505,7 +505,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!inventory.TryGetRuntimeReference<ActivityObjectSnapshotProviderReference>(capability.CapabilityId, out ActivityObjectSnapshotProviderReference runtimeReference) ||
+                if (!inventory.TryGetRuntimeReference<ActivityObjectSnapshotProviderReference>(capability.CapabilityId, out var runtimeReference) ||
                     runtimeReference.Provider == null)
                 {
                     continue;
@@ -531,7 +531,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < inventory.Capabilities.Count; index++)
             {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
+                var capability = inventory.Capabilities[index];
                 if (capability.CapabilityKind != ActivityCapabilityKind.SnapshotProvider)
                 {
                     continue;
@@ -594,13 +594,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < providers.Length; index++)
             {
-                IActivityObjectSnapshotProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null || !provider.Supports(command.TargetId))
                 {
                     continue;
                 }
 
-                ActivityObjectSnapshotCaptureResult result = provider.CaptureSnapshot(command);
+                var result = provider.CaptureSnapshot(command);
                 if (!result.IsValid)
                 {
                     return new ActivityObjectSnapshotCaptureResult(
@@ -631,13 +631,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
@@ -645,13 +644,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   report.Identity.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                report.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsObjectSnapshotCaptureResultForCurrentEntry(
@@ -659,7 +657,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            SessionActivityIdentity resultIdentity = result.Command.Identity;
+            var resultIdentity = result.Command.Identity;
             if (!result.IsValid ||
                 !resultIdentity.IsValid ||
                 !string.Equals(resultIdentity.PipelineId, identity.PipelineId, StringComparison.Ordinal) ||
@@ -690,7 +688,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < metadata.Count; index++)
             {
-                ActivityCapabilityPolicyEntry entry = metadata[index];
+                var entry = metadata[index];
                 if (!entry.IsValid || !string.Equals(entry.Key, key, StringComparison.Ordinal))
                 {
                     continue;

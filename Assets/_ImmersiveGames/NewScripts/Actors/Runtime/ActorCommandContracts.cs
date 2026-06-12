@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             ActorCommandTriggerKind triggerKind)
         {
             return IsActive &&
-                TryResolveCommandId(out ActorCommandId declaredCommandId) &&
+                TryResolveCommandId(out var declaredCommandId) &&
                 declaredCommandId == commandId &&
                 TriggerKind == triggerKind;
         }
@@ -158,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public ActorCommandId ResolveCommandIdOrFail()
         {
-            if (!TryResolveCommandId(out ActorCommandId commandId))
+            if (!TryResolveCommandId(out var commandId))
             {
                 throw new InvalidOperationException($"ActorCommandInputBinding requires a supported command kind for binding '{BindingId}'.");
             }

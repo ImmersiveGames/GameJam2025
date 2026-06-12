@@ -53,14 +53,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < discoveryResult.Reports.Count; index++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[index];
+                var report = discoveryResult.Reports[index];
                 if (!report.IsValid)
                 {
                     unresolved.Add(report);
                     continue;
                 }
 
-                if (!TryResolveContributorObject(report, out ActivityObjectContributor contributor, out GameObject targetObject))
+                if (!TryResolveContributorObject(report, out var contributor, out var targetObject))
                 {
                     unresolved.Add(report);
                     continue;
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             resolvedContributor = null;
             resolvedObject = null;
 
-            Scene scene = SceneManager.GetSceneByName(report.SceneName);
+            var scene = SceneManager.GetSceneByName(report.SceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 return false;
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
                 for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
                 {
-                    ActivityObjectContributor contributor = contributors[contributorIndex];
+                    var contributor = contributors[contributorIndex];
                     if (contributor == null)
                     {
                         continue;

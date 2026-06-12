@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityHost requires activityCatalog.");
             }
 
-            SessionActivityCompositionInstaller installer = GetOrCreateCompositionInstaller();
+            var installer = GetOrCreateCompositionInstaller();
             installer.Compose(this, activityCatalog.BuildRuntimeCatalog(), sessionStateId);
         }
 
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            SessionActivityStage stage = _pipeline.State.CurrentStage;
+            var stage = _pipeline.State.CurrentStage;
             if (stage == SessionActivityStage.Deactivation ||
                 stage == SessionActivityStage.Completed ||
                 stage == SessionActivityStage.ClosedForRouteExit ||
@@ -124,28 +124,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void CompleteCurrentActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
+            var result = _pipeline.CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
             LogResult("CompleteCurrentActivity", result);
         }
 
         public void CompleteActivationWindow()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.CompleteActivationWindow(QaSource("CompleteActivationWindow"), QaReason("CompleteActivationWindow"));
+            var result = _pipeline.CompleteActivationWindow(QaSource("CompleteActivationWindow"), QaReason("CompleteActivationWindow"));
             LogResult("CompleteActivationWindow", result);
         }
 
         public void CompleteDeactivationWindow()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.CompleteDeactivationWindow(QaSource("CompleteDeactivationWindow"), QaReason("CompleteDeactivationWindow"));
+            var result = _pipeline.CompleteDeactivationWindow(QaSource("CompleteDeactivationWindow"), QaReason("CompleteDeactivationWindow"));
             LogResult("CompleteDeactivationWindow", result);
         }
 
         public void ContinueToNextActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.ContinueToNextActivity(QaSource("ContinueToNextActivity"), QaReason("ContinueToNextActivity"));
+            var result = _pipeline.ContinueToNextActivity(QaSource("ContinueToNextActivity"), QaReason("ContinueToNextActivity"));
             LogResult("ContinueToNextActivity", result);
         }
 
@@ -164,14 +164,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void RestartCurrentActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
+            var result = _pipeline.RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
             LogResult("RestartCurrentActivity", result);
         }
 
         public void ResetSession()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.ResetSession(QaSource("ResetSession"), QaReason("ResetSession"));
+            var result = _pipeline.ResetSession(QaSource("ResetSession"), QaReason("ResetSession"));
             LogResult("ResetSession", result);
         }
 
@@ -193,14 +193,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void RequestPause()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
+            var result = _pipeline.PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
             LogResult("RequestPause", result);
         }
 
         public void RequestResume()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
+            var result = _pipeline.ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
             LogResult("RequestResume", result);
         }
 
@@ -334,7 +334,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.Execute(command);
+            var result = _pipeline.Execute(command);
             LogResult(actionLabel, result);
             return result;
         }
@@ -370,7 +370,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine("checkpointEvidenceFacts(all):");
             for (int index = 0; index < State.Facts.Count; index++)
             {
-                SessionActivityFact fact = State.Facts[index];
+                var fact = State.Facts[index];
                 if (fact.Kind == SessionActivityFactKind.ActivityContentLoadSkippedNoContent ||
                     fact.Kind == SessionActivityFactKind.ActivitySetupStarted ||
                     fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuildStarted ||
@@ -417,8 +417,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             StringBuilder builder = new();
-            SessionActivityRuntimeState state = State;
-            SessionActivityPendingOperation pendingOperation = state.CurrentPendingOperation;
+            var state = State;
+            var pendingOperation = state.CurrentPendingOperation;
 
             int currentEntrySequence = state.CurrentEntrySequence;
             int pendingReleaseEntrySequence = _pipeline.PendingActivityContentReleaseEntrySequence;
@@ -443,7 +443,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int factsCount = 0;
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!ShouldIncludeReleaseEvidenceFact(fact))
                 {
                     continue;
@@ -639,7 +639,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string GetNextExpectedQaAction()
         {
-            SessionActivityStage stage = State.CurrentStage;
+            var stage = State.CurrentStage;
             bool hasPendingHandoff = State.CurrentHandoff.IsValid;
 
             if (stage == SessionActivityStage.ActivityContentProfileResolved ||
@@ -694,7 +694,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string BuildStateObservationToken()
         {
-            SessionActivityPendingOperation pending = State.CurrentPendingOperation;
+            var pending = State.CurrentPendingOperation;
             string pendingToken = pending.IsValid
                 ? $"{pending.OperationKind}/{pending.OperationId}/{pending.WindowKind}"
                 : "<none>";
@@ -721,7 +721,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private SessionActivityCompositionInstaller GetOrCreateCompositionInstaller()
         {
-            SessionActivityCompositionInstaller installer = GetComponent<SessionActivityCompositionInstaller>();
+            var installer = GetComponent<SessionActivityCompositionInstaller>();
             if (installer != null)
             {
                 return installer;
@@ -745,7 +745,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "false";
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName.Trim());
+            var scene = SceneManager.GetSceneByName(sceneName.Trim());
             return (scene.IsValid() && scene.isLoaded) ? "true" : "false";
         }
 
@@ -840,7 +840,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int count = 0;
             for (int i = 0; i < State.Facts.Count; i++)
             {
-                SessionActivityFact fact = State.Facts[i];
+                var fact = State.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid || !includePredicate(fact))
                 {
                     continue;
@@ -867,7 +867,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int count = 0;
             for (int i = 0; i < State.Facts.Count; i++)
             {
-                SessionActivityFact fact = State.Facts[i];
+                var fact = State.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid || !includePredicate(fact))
                 {
                     continue;
@@ -888,7 +888,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             const string preferredActivityId = "activity_01";
             for (int i = state.Facts.Count - 1; i >= 0; i--)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -908,7 +908,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             for (int i = state.Facts.Count - 1; i >= 0; i--)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -928,7 +928,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             for (int i = state.Facts.Count - 1; i >= 0; i--)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -970,7 +970,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 setValue,
                 QaSource(action),
                 QaReason(action),
-                out ActorAttributeApplyResult result);
+                out var result);
 
             string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
             Debug.Log(
@@ -978,7 +978,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (applied && result.HasFact)
             {
-                ActorAttributeChangedFact fact = result.Fact;
+                var fact = result.Fact;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][Host][ActorAttributeFact] operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
@@ -993,7 +993,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
         {
-            SessionActivityDefinition current = State.CurrentDefinition;
+            var current = State.CurrentDefinition;
             return current.IsValid
                 ? current.NextActivityTransitionContinuePolicy
                 : ActivityTransitionContinuePolicy.Unknown;
@@ -1006,7 +1006,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "<none>";
             }
 
-            ActivitySetupInventory inventory = _pipeline.EntryPipeline.GetCurrentActivitySetupInventory();
+            var inventory = _pipeline.EntryPipeline.GetCurrentActivitySetupInventory();
             if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
             {
                 return "<none>";

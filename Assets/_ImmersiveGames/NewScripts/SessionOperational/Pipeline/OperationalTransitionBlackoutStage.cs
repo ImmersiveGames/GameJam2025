@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public void Begin(OperationalTransitionBlackoutCommand command)
         {
             Validate(command);
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             string source = Normalize(command.Source);
             string reason = Normalize(command.Reason);
 
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public OperationalTransitionBlackoutResult Complete(OperationalTransitionBlackoutCommand command, bool fadeInCompleted)
         {
             Validate(command);
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             string source = Normalize(command.Source);
             string reason = Normalize(command.Reason);
 

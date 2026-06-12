@@ -12,11 +12,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 throw new System.InvalidOperationException("PlayerParticipationPlan is invalid.");
             }
 
-            PlayerParticipationKind participationKind = ResolveParticipationKind(plan);
+            var participationKind = ResolveParticipationKind(plan);
             IReadOnlyList<PlayerParticipationSeedEntry> seedEntries = BuildSeedEntries(plan.PlayerSet);
             IReadOnlyList<PlayerMaterializationEntry> materializationEntries = BuildMaterializationEntries(seedEntries, materializationRecords);
             IReadOnlyList<PlayerReadinessEntry> readinessEntries = BuildReadinessEntries(materializationEntries);
-            PlayerParticipationOutcome outcome = ResolveOutcome(plan.PlayerSet, materializationEntries);
+            var outcome = ResolveOutcome(plan.PlayerSet, materializationEntries);
             string message = BuildOutcomeMessage(outcome);
             PlayerParticipationSeedSnapshot snapshot = new(
                 plan.Identity,
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             List<PlayerParticipationSeedEntry> seedEntries = new(playerSet.Entries.Count);
             for (int i = 0; i < playerSet.Entries.Count; i++)
             {
-                PlayerSetEntry sourceEntry = playerSet.Entries[i];
+                var sourceEntry = playerSet.Entries[i];
                 seedEntries.Add(new PlayerParticipationSeedEntry(
                     sourceEntry.PlayerSlotId,
                     sourceEntry.PlayerSelectionId,
@@ -114,8 +114,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             List<PlayerMaterializationEntry> materializationEntries = new(seedEntries.Count);
             for (int i = 0; i < seedEntries.Count; i++)
             {
-                PlayerParticipationSeedEntry seedEntry = seedEntries[i];
-                PlayerMaterializationRecord record = ResolveRecord(seedEntry, materializationRecords);
+                var seedEntry = seedEntries[i];
+                var record = ResolveRecord(seedEntry, materializationRecords);
                 bool isMaterialized = record.MaterializationStatus == PlayerMaterializationStatus.Materialized;
                 bool isSkipped = record.MaterializationStatus == PlayerMaterializationStatus.Skipped;
                 materializationEntries.Add(new PlayerMaterializationEntry(
@@ -146,8 +146,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             List<PlayerReadinessEntry> readinessEntries = new(materializationEntries.Count);
             for (int i = 0; i < materializationEntries.Count; i++)
             {
-                PlayerMaterializationEntry materializationEntry = materializationEntries[i];
-                PlayerReadinessStatus readinessStatus = materializationEntry.Required
+                var materializationEntry = materializationEntries[i];
+                var readinessStatus = materializationEntry.Required
                     ? PlayerReadinessStatus.PendingMaterialization
                     : PlayerReadinessStatus.OptionalPending;
 
@@ -292,7 +292,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
             for (int i = 0; i < materializationRecords.Count; i++)
             {
-                PlayerMaterializationRecord candidate = materializationRecords[i];
+                var candidate = materializationRecords[i];
                 if (!candidate.IsValid)
                 {
                     continue;

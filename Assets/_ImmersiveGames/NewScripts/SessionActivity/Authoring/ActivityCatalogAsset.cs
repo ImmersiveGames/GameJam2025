@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             string source = $"ActivityCatalogAsset:{CatalogId}";
             for (int index = 0; index < activities.Count; index++)
             {
-                ActivityAsset current = activities[index];
+                var current = activities[index];
                 string nextActivityId = current.HasNextActivity ? current.NextActivityId : string.Empty;
                 definitions.Add(new SessionActivityDefinition(
                     activityId: current.ActivityId,
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < activities.Count; index++)
             {
-                ActivityAsset activity = activities[index];
+                var activity = activities[index];
                 if (activity == null)
                 {
                     throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has null activity at index {index}.");
@@ -78,13 +78,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < activities.Count; index++)
             {
-                ActivityAsset activity = activities[index];
+                var activity = activities[index];
                 if (activity == null || !activity.HasNextActivity)
                 {
                     continue;
                 }
 
-                ActivityAsset next = activity.NextActivity;
+                var next = activity.NextActivity;
                 if (next == null)
                 {
                     throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has activity '{activity.ActivityId}' with null nextActivity reference.");

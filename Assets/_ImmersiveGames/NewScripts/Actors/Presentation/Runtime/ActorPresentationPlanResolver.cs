@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                     $"{origin} requires ActorPresentationEndpoint.");
             }
 
-            ActorPresentationContainerResolutionResult containerResult = _containerResolver.Resolve(
+            var containerResult = _containerResolver.Resolve(
                 endpoint,
                 profile.SlotRequirements,
                 origin,
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                     $"{origin} failed container resolution: {containerResult.ReasonCode} - {containerResult.Message}");
             }
 
-            ActorPresentationResolvedPlan plan = new ActorPresentationResolvedPlan(
+            var plan = new ActorPresentationResolvedPlan(
                 activityIdentity,
                 actorId,
                 actorKind,

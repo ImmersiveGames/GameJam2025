@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            DependencyManager dependencyManager = DependencyManager.Instance;
+            var dependencyManager = DependencyManager.Instance;
             if (dependencyManager == null)
             {
                 reason = "dependency_manager_instance_missing";
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            IActivityCameraDirector director = CameraPresentationRuntimeFactory.CreateActivityDirector(operationalCameraProvider);
+            var director = CameraPresentationRuntimeFactory.CreateActivityDirector(operationalCameraProvider);
 
             if (!registry.TryRegister<IActivityCameraDirector>(director, out reason))
             {
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            IRouteCameraDirector routeDirector = CameraPresentationRuntimeFactory.CreateRouteDirector(operationalCameraProvider);
+            var routeDirector = CameraPresentationRuntimeFactory.CreateRouteDirector(operationalCameraProvider);
 
             if (!registry.TryRegister<IRouteCameraDirector>(routeDirector, out reason))
             {
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            IRouteCameraPreparationExecutor routePreparationExecutor = CameraPresentationRuntimeFactory.CreateRoutePreparationExecutor(routeDirector);
+            var routePreparationExecutor = CameraPresentationRuntimeFactory.CreateRoutePreparationExecutor(routeDirector);
 
             if (!registry.TryRegister<IRouteCameraPreparationExecutor>(routePreparationExecutor, out reason))
             {

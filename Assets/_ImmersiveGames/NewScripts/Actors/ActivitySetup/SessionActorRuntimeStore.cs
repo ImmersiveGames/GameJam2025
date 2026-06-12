@@ -61,14 +61,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 throw new InvalidOperationException("SessionActorRuntimeStore cannot register invalid entry.");
             }
 
-            if (_entriesByRuntimeId.TryGetValue(entry.ActorInstanceRuntimeId, out SessionActorRuntimeEntry existing) &&
+            if (_entriesByRuntimeId.TryGetValue(entry.ActorInstanceRuntimeId, out var existing) &&
                 existing.IsValid &&
                 existing.Instance != entry.Instance)
             {
                 throw new InvalidOperationException($"Duplicate SessionScoped actor runtime id detected. actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}'.");
             }
 
-            if (_runtimeIdByActorId.TryGetValue(entry.ActorId, out ActorInstanceRuntimeId existingActorRuntimeId) &&
+            if (_runtimeIdByActorId.TryGetValue(entry.ActorId, out var existingActorRuntimeId) &&
                 existingActorRuntimeId.IsValid &&
                 existingActorRuntimeId != entry.ActorInstanceRuntimeId)
             {
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             }
 
             if (entry.HasParticipantId &&
-                _runtimeIdByParticipantId.TryGetValue(entry.ParticipantId, out ActorInstanceRuntimeId existingParticipantRuntimeId) &&
+                _runtimeIdByParticipantId.TryGetValue(entry.ParticipantId, out var existingParticipantRuntimeId) &&
                 existingParticipantRuntimeId.IsValid &&
                 existingParticipantRuntimeId != entry.ActorInstanceRuntimeId)
             {
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             entry = default;
             return identity.IsValid &&
                    actorId.IsValid &&
-                   _runtimeIdByActorId.TryGetValue(actorId, out ActorInstanceRuntimeId runtimeId) &&
+                   _runtimeIdByActorId.TryGetValue(actorId, out var runtimeId) &&
                    TryGetByRuntimeId(identity, runtimeId, out entry);
         }
 
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             entry = default;
             return identity.IsValid &&
                    participantId.IsValid &&
-                   _runtimeIdByParticipantId.TryGetValue(participantId, out ActorInstanceRuntimeId runtimeId) &&
+                   _runtimeIdByParticipantId.TryGetValue(participantId, out var runtimeId) &&
                    TryGetByRuntimeId(identity, runtimeId, out entry);
         }
 
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             }
 
             List<SessionActorRuntimeEntry> entries = new(_entriesByRuntimeId.Count);
-            foreach (SessionActorRuntimeEntry entry in _entriesByRuntimeId.Values)
+            foreach (var entry in _entriesByRuntimeId.Values)
             {
                 if (entry.IsValid && IsSameSessionPipeline(entry.Identity, identity))
                 {
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public IReadOnlyList<SessionActorRuntimeEntry> GetAllEntries()
         {
             List<SessionActorRuntimeEntry> entries = new(_entriesByRuntimeId.Count);
-            foreach (SessionActorRuntimeEntry entry in _entriesByRuntimeId.Values)
+            foreach (var entry in _entriesByRuntimeId.Values)
             {
                 if (entry.IsValid)
                 {
@@ -155,20 +155,20 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public void Remove(ActorInstanceRuntimeId actorInstanceRuntimeId)
         {
             if (!actorInstanceRuntimeId.IsValid ||
-                !_entriesByRuntimeId.TryGetValue(actorInstanceRuntimeId, out SessionActorRuntimeEntry existing))
+                !_entriesByRuntimeId.TryGetValue(actorInstanceRuntimeId, out var existing))
             {
                 return;
             }
 
             _entriesByRuntimeId.Remove(actorInstanceRuntimeId);
-            if (_runtimeIdByActorId.TryGetValue(existing.ActorId, out ActorInstanceRuntimeId actorRuntimeId) &&
+            if (_runtimeIdByActorId.TryGetValue(existing.ActorId, out var actorRuntimeId) &&
                 actorRuntimeId == actorInstanceRuntimeId)
             {
                 _runtimeIdByActorId.Remove(existing.ActorId);
             }
 
             if (existing.HasParticipantId &&
-                _runtimeIdByParticipantId.TryGetValue(existing.ParticipantId, out ActorInstanceRuntimeId participantRuntimeId) &&
+                _runtimeIdByParticipantId.TryGetValue(existing.ParticipantId, out var participantRuntimeId) &&
                 participantRuntimeId == actorInstanceRuntimeId)
             {
                 _runtimeIdByParticipantId.Remove(existing.ParticipantId);
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 return default;
             }
 
-            Actor runtimeActor = handle.Instance != null ? handle.Instance.GetComponent<Actor>() : null;
+            var runtimeActor = handle.Instance != null ? handle.Instance.GetComponent<Actor>() : null;
             if (runtimeActor == null ||
                 runtimeActor.ActorScopeMetadata != ActorScope.SessionScoped ||
                 !runtimeActor.RuntimeActorInstanceId.IsValid)

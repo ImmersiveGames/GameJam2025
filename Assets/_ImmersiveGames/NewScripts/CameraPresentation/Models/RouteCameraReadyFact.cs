@@ -42,9 +42,9 @@
             string source,
             string reason)
         {
-            RouteCameraPresentationCommand command = result?.Command;
+            var command = result?.Command;
 
-            RouteCameraBindingHandle handle = result?.Handle;
+            var handle = result?.Handle;
 
             return new RouteCameraReadyFact(
                 command != null ? command.RouteIdentity : string.Empty,

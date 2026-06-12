@@ -55,12 +55,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][InputModesRuntime] RuntimeModeConfig obrigatorio ausente para resolver InputModes runtime config.");
             }
 
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry snapshot obrigatorio ausente para InputModes runtime config.");
             }
 
-            IInputModesRuntimeConfigGroupReadOnly inputModes = snapshot.InputModesRuntime
+            var inputModes = snapshot.InputModesRuntime
                 ?? throw new InvalidOperationException("[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: snapshot.InputModesRuntime obrigatorio ausente.");
 
             if (inputModes.OperationalInputRuntimeProfile == null)
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException($"[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: {fieldName}.action obrigatoria ausente.");
             }
 
-            InputActionAsset actionAsset = reference.action.actionMap?.asset;
+            var actionAsset = reference.action.actionMap?.asset;
             if (!ReferenceEquals(actionAsset, expectedAsset))
             {
                 throw new InvalidOperationException($"[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: {fieldName} fora do uiActionsAsset canonico.");

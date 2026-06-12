@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static void LogRevealStarted(OperationalRouteRevealCommand command)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             DebugUtility.Log(typeof(OperationalRouteRevealStage),
                 $"[OBS][SessionOperationalPipeline][Route] OperationalRouteRevealStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static void LogRevealCompleted(OperationalRouteRevealCommand command)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             DebugUtility.Log(typeof(OperationalRouteRevealStage),
                 $"[OBS][SessionOperationalPipeline][Route] OperationalRouteRevealCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",

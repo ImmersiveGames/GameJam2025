@@ -97,13 +97,13 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
                 throw new InvalidOperationException("candidate SessionParticipationContext is invalid.");
             }
 
-            if (_statesBySessionId.TryGetValue(normalizedSessionId, out PlayerParticipationRuntimeState existingState) &&
+            if (_statesBySessionId.TryGetValue(normalizedSessionId, out var existingState) &&
                 existingState != null)
             {
                 if (existingState.Context is { IsValid: true } &&
                     SatisfiesRequirement(existingState.Context, candidateContext.RequirementKind))
                 {
-                    SessionParticipationContext reusedSnapshot = BuildRouteSnapshot(
+                    var reusedSnapshot = BuildRouteSnapshot(
                         normalizedSessionId,
                         existingState.Revision,
                         existingState.Context,
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
                 }
 
                 int replacementRevision = existingState.Revision + 1;
-                SessionParticipationContext replacementSnapshot = BuildRouteSnapshot(
+                var replacementSnapshot = BuildRouteSnapshot(
                     normalizedSessionId,
                     replacementRevision,
                     candidateContext,
@@ -152,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
             }
 
             const int initialRevision = 1;
-            SessionParticipationContext createdSnapshot = BuildRouteSnapshot(
+            var createdSnapshot = BuildRouteSnapshot(
                 normalizedSessionId,
                 initialRevision,
                 candidateContext,
@@ -191,7 +191,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
 
             string normalizedSessionId = Normalize(sessionId);
             if (string.IsNullOrWhiteSpace(normalizedSessionId) ||
-                !_statesBySessionId.TryGetValue(normalizedSessionId, out PlayerParticipationRuntimeState state) ||
+                !_statesBySessionId.TryGetValue(normalizedSessionId, out var state) ||
                 state == null ||
                 state.Context == null ||
                 !state.Context.IsValid)
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
                 return false;
             }
 
-            SessionParticipationContext snapshot = BuildRouteSnapshot(
+            var snapshot = BuildRouteSnapshot(
                 normalizedSessionId,
                 state.Revision,
                 state.Context,

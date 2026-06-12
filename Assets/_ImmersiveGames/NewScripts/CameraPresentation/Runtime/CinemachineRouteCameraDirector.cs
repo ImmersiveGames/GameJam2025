@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            RouteCameraPresentationRequirement requirement = command.Requirement;
+            var requirement = command.Requirement;
 
             if (requirement == null)
             {
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             }
 
             if (!_operationalCameraProvider.TryGetCurrent(
-                    out OperationalCameraHandle operationalCamera,
+                    out var operationalCamera,
                     out string providerReason))
             {
                 reason = providerReason;
@@ -83,12 +83,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            GameObject rigInstance = Object.Instantiate(requirement.PresentationRigPrefab);
+            var rigInstance = Object.Instantiate(requirement.PresentationRigPrefab);
             rigInstance.name = BuildRigInstanceName(command);
 
             if (!ValidatePresentationRig(
                     rigInstance,
-                    out CinemachineCamera cinemachineCamera,
+                    out var cinemachineCamera,
                     out reason))
             {
                 SafeDestroy(rigInstance);
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             cinemachineCamera.Priority = requirement.Priority;
 
-            RouteCameraBindingHandle handle = new RouteCameraBindingHandle(
+            var handle = new RouteCameraBindingHandle(
                 command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            RouteCameraBindingHandle handle = activeBinding.Handle;
+            var handle = activeBinding.Handle;
 
             if (handle == null)
             {

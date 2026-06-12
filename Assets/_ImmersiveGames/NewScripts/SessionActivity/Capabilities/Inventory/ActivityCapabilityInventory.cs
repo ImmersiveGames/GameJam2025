@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             runtimeReference = null;
             if (string.IsNullOrWhiteSpace(capabilityId) ||
                 RuntimeReferences == null ||
-                !RuntimeReferences.TryGetValue(capabilityId.Trim(), out IActivityCapabilityRuntimeReference value) ||
+                !RuntimeReferences.TryGetValue(capabilityId.Trim(), out var value) ||
                 value is not TReference typedValue)
             {
                 return false;
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             for (int index = 0; index < capabilityIds.Count; index++)
             {
                 string capabilityId = capabilityIds[index];
-                if (RuntimeReferences.TryGetValue(capabilityId, out IActivityCapabilityRuntimeReference runtimeReference) &&
+                if (RuntimeReferences.TryGetValue(capabilityId, out var runtimeReference) &&
                     runtimeReference is TReference typedReference)
                 {
                     typedReferences.Add(typedReference);

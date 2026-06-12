@@ -23,11 +23,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityResetCommand is invalid.");
             }
 
-            SessionActivityIdentity resetIdentity = command.Identity;
+            var resetIdentity = command.Identity;
             string activityId = command.ActivityId;
             int activityOrdinal = command.ActivityOrdinal;
             int entrySequence = resetIdentity.EntrySequence;
-            ActivityObjectContributorDiscoveryResult discoveryResult = context.DiscoveryResult;
+            var discoveryResult = context.DiscoveryResult;
 
             emitFact(
                 SessionActivityFactKind.ObjectResetStarted,
@@ -82,8 +82,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int noSupportedGroupsCount = 0;
             int reportEvaluatedCount = 0;
 
-            ActivityCapabilityInventory resetInventory = context.ResetInventory;
-            ActivityCapabilityInventoryValidationResult resetInventoryValidation = context.ResetInventoryValidation;
+            var resetInventory = context.ResetInventory;
+            var resetInventoryValidation = context.ResetInventoryValidation;
             bool hasRequiredContributor = hasRequiredResetContributor(discoveryResult, activityId, activityOrdinal, entrySequence);
             bool hasValidResetInventory =
                 resetInventory.IsValid &&
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                var report = discoveryResult.Reports[reportIndex];
                 if (!report.IsValid || !isReportForCurrentEntry(report, activityId, activityOrdinal, entrySequence))
                 {
                     continue;
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 IActivityObjectResetEndpoint[] endpoints = resolveEndpointsFromInventory(resetInventory, report);
                 for (int groupIndex = 0; groupIndex < report.SupportedResetGroups.Count; groupIndex++)
                 {
-                    ActivityStateResetGroup resetGroup = report.SupportedResetGroups[groupIndex];
+                    var resetGroup = report.SupportedResetGroups[groupIndex];
                     if (resetGroup == ActivityStateResetGroup.Unknown)
                     {
                         throw new InvalidOperationException(
@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         SessionActivityFactKind.ObjectResetCommandIssued,
                         $"'{activityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
 
-                    ActivityObjectResetResult result = executeObjectResetCommand(resetCommand, endpoints);
+                    var result = executeObjectResetCommand(resetCommand, endpoints);
                     if (!result.IsValid)
                     {
                         throw new InvalidOperationException(

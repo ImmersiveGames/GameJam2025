@@ -84,10 +84,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             try
             {
-                RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+                var runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
                 await RuntimePersistentScenesComposition.AwaitGuaranteedAsync(runtimeModeConfig);
-                OperationalRouteAsset startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
-                SessionOperationalPipeline pipeline = ResolvePipelineOrFail();
+                var startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
+                var pipeline = ResolvePipelineOrFail();
 
                 DebugUtility.Log(typeof(StartupRouteEmitter),
                     $"[OBS][SessionOperationalPipeline][StartupRoute] event='BootStartPlanRequestedEvent' routeIdentity='{startupRoute.RouteIdentity}' source='StartupRouteEmitter' reason='{StartupReason}'.",

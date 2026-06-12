@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
@@ -214,9 +215,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             var hosts = new List<SurfaceCameraAnchorHost>(4);
             GameObject[] roots = scene.GetRootGameObjects();
-            for (int i = 0; i < roots.Length; i++)
+            foreach (var root in roots)
             {
-                var root = roots[i];
                 if (root == null)
                 {
                     continue;
@@ -228,25 +228,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     continue;
                 }
 
-                for (int j = 0; j < rootHosts.Length; j++)
-                {
-                    if (rootHosts[j] != null)
-                    {
-                        hosts.Add(rootHosts[j]);
-                    }
-                }
+                hosts.AddRange(rootHosts.Where(t => t != null));
             }
 
-            if (hosts.Count == 0)
+            switch (hosts.Count)
             {
-                reason = "surface_camera_anchor_host_not_found";
-                return false;
-            }
-
-            if (hosts.Count > 1)
-            {
-                reason = "surface_camera_anchor_host_multiple_found";
-                return false;
+                case 0:
+                    reason = "surface_camera_anchor_host_not_found";
+                    return false;
+                case > 1:
+                    reason = "surface_camera_anchor_host_multiple_found";
+                    return false;
             }
 
             anchorHost = hosts[0];

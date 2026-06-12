@@ -51,13 +51,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 hasAuthorizedSource = true;
                 for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
                 {
-                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
+                    var record = loadedSet.Scenes[sceneIndex];
                     if (!record.IsValid)
                     {
                         throw new InvalidOperationException($"Invalid loaded scene record at index='{sceneIndex}' for actor scene discovery.");
                     }
 
-                    Scene contentScene = SceneManager.GetSceneByName(record.SceneName);
+                    var contentScene = SceneManager.GetSceneByName(record.SceneName);
                     if (!contentScene.IsValid() || !contentScene.isLoaded)
                     {
                         throw new InvalidOperationException($"Actor scene discovery requires loaded scene='{record.SceneName}' activityId='{activityId}'.");
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
             }
 
-            Scene routeScene = SceneManager.GetActiveScene();
+            var routeScene = SceneManager.GetActiveScene();
             if (routeScene.IsValid() && routeScene.isLoaded)
             {
                 hasAuthorizedSource = true;
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 Actor[] actors = roots[rootIndex].GetComponentsInChildren<Actor>(true);
                 for (int actorIndex = 0; actorIndex < actors.Length; actorIndex++)
                 {
-                    Actor actor = actors[actorIndex];
+                    var actor = actors[actorIndex];
                     if (actor == null || actor is not ISceneAuthoredActor sceneAuthoredActor)
                     {
                         continue;
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     string actorId = Normalize(actor.ActorId);
                     string actorType = nameof(Actor);
-                    ActorInstanceRuntimeId actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
+                    var actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                         identity,
                         actorId,
                         sceneAuthoredActor.SceneActorScope,

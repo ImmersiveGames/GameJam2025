@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     continue;
                 }
 
-                SessionParticipantBinding participant = ResolveSessionParticipantForMaterializationSeedOrFail(entry, sessionParticipationContext);
+                var participant = ResolveSessionParticipantForMaterializationSeedOrFail(entry, sessionParticipationContext);
                 materializationPlanEntries.Add(new SessionActivityActorMaterializationPlanEntry(
                     participant.ParticipantId,
                     entry.Required,
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             IReadOnlyList<SessionParticipantBinding> participants = sessionParticipationContext.Participants ?? Array.Empty<SessionParticipantBinding>();
             for (int index = 0; index < participants.Count; index++)
             {
-                SessionParticipantBinding participant = participants[index];
+                var participant = participants[index];
                 if (!participant.IsValid || !participant.ParticipantId.IsValid)
                 {
                     continue;

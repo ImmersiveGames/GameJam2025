@@ -170,8 +170,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing valid OperationalPlayerParticipationResult for operational consumer entry routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
             }
 
-            PlayerParticipationResult playerParticipationResult = playerParticipationStageResult.PlayerParticipationResult;
-            SessionParticipationContext sessionParticipationContext = playerParticipationStageResult.SessionParticipationContext;
+            var playerParticipationResult = playerParticipationStageResult.PlayerParticipationResult;
+            var sessionParticipationContext = playerParticipationStageResult.SessionParticipationContext;
             if (sessionParticipationContext == null || !sessionParticipationContext.IsValid)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing valid SessionParticipationContext for operational consumer entry routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
@@ -191,8 +191,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            IOperationalRouteConsumerEntryPort entryPort = ResolveEntryPortOrFail(command);
-            OperationalRouteConsumerEntryResult consumerEntryResult = await entryPort
+            var entryPort = ResolveEntryPortOrFail(command);
+            var consumerEntryResult = await entryPort
                 .RequestEntryAsync(consumerEntryRequest, CancellationToken.None);
             if (!consumerEntryResult.IsValid || !consumerEntryResult.IsCompleted)
             {
@@ -244,8 +244,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][ConsumerReadiness] OperationalRouteConsumerReadinessAwaitStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{normalizedConsumerIdentity}' expectedRouteOperationId='{normalizedExpectedRouteOperationId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            IOperationalRouteConsumerReadinessPort readinessPort = ResolveReadinessPortOrFail(command);
-            OperationalRouteConsumerReadinessResult readinessResult = await readinessPort.AwaitReadinessAsync(
+            var readinessPort = ResolveReadinessPortOrFail(command);
+            var readinessResult = await readinessPort.AwaitReadinessAsync(
                 request,
                 CancellationToken.None);
 
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IOperationalRouteConsumerEntryPort ResolveEntryPortOrFail(OperationalConsumerEntryAndReadinessCommand command)
         {
-            IOperationalRouteConsumerEntryPort entryPort = _entryPortResolver();
+            var entryPort = _entryPortResolver();
             if (entryPort == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerEntry] IOperationalRouteConsumerEntryPort obrigatorio ausente para o trilho operacional routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
@@ -292,7 +292,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IOperationalRouteConsumerReadinessPort ResolveReadinessPortOrFail(OperationalConsumerEntryAndReadinessCommand command)
         {
-            IOperationalRouteConsumerReadinessPort readinessPort = _readinessPortResolver();
+            var readinessPort = _readinessPortResolver();
             if (readinessPort == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");

@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "handoff_identity_missing");
             }
 
-            ISessionActivityRouteExitTeardownBoundary boundary = ResolveSessionActivityRouteExitBoundaryOrFail();
+            var boundary = ResolveSessionActivityRouteExitBoundaryOrFail();
             if (boundary.HasPendingOperation)
             {
                 return RejectedPreflight(
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     boundary);
             }
 
-            IOperationalRouteHandoffExitPort handoffExitPort = ResolveHandoffExitPortOrFail();
+            var handoffExitPort = ResolveHandoffExitPortOrFail();
             return handoffExitPort.EvaluatePreflight(new OperationalRouteHandoffExitPreflightRequest(
                 routeIdentity,
                 previousRouteIdentity,
@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return Failed(command, "invalid_command", "OperationalHandoffExitCommand invalido.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             if (!ShouldRequireOperationalRouteHandoffExit(command))
             {
                 DebugUtility.Log(typeof(OperationalHandoffExitStage),
@@ -226,8 +226,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][Route] OperationalHandoffExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            IOperationalRouteHandoffExitPort handoffExitPort = ResolveHandoffExitPortOrFail();
-            OperationalRouteHandoffExitResult exitResult = await handoffExitPort.RequestExitAsync(
+            var handoffExitPort = ResolveHandoffExitPortOrFail();
+            var exitResult = await handoffExitPort.RequestExitAsync(
                 request,
                 CancellationToken.None);
 
@@ -269,7 +269,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IOperationalRouteHandoffExitPort ResolveHandoffExitPortOrFail()
         {
-            IOperationalRouteHandoffExitPort handoffExitPort = _handoffExitPortResolver();
+            var handoffExitPort = _handoffExitPortResolver();
             if (handoffExitPort == null)
             {
                 throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Route] IOperationalRouteHandoffExitPort obrigatorio ausente para handoff exit.");
@@ -280,7 +280,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private ISessionActivityRouteExitTeardownBoundary ResolveSessionActivityRouteExitBoundaryOrFail()
         {
-            ISessionActivityRouteExitTeardownBoundary boundary = _sessionActivityRouteExitBoundaryResolver();
+            var boundary = _sessionActivityRouteExitBoundaryResolver();
             if (boundary == null)
             {
                 throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Route] ISessionActivityRouteExitTeardownBoundary obrigatorio ausente para preflight de handoff exit.");
@@ -333,7 +333,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string blockedDetail,
             OperationalRouteHandoffExitResult exitResult)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             DebugUtility.LogWarning<OperationalHandoffExitStage>(
                 $"[OBS][SessionOperationalPipeline][Route] RouteRequestBlockedByOperationalHandoff routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}' exitResult='{exitResult}' source='{command.Source}' reasonDetail='{command.Reason}'.");
             throw new RouteRequestBlockedByOperationalHandoffException(blockedReason, blockedDetail);
@@ -358,7 +358,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             for (int i = 0; i < command.FinalScenesToUnload.Count; i++)
             {
-                SceneKeyAsset candidate = command.FinalScenesToUnload[i];
+                var candidate = command.FinalScenesToUnload[i];
                 if (candidate == null)
                 {
                     continue;
@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             string detail)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             return new OperationalHandoffExitResult(
                 OperationalHandoffExitResultKind.Failed,
                 routeCommand.RouteIdentity,

@@ -169,8 +169,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new ArgumentException("SessionOperationalRouteCommand invalido para RouteActivitySavePlan.", nameof(command));
             }
 
-            RouteActivitySaveLoadPlan loadOnEnter = ResolveLoadOnEnter(command);
-            RouteActivitySaveOnExitPlan saveOnExit = ResolveSaveOnExit(
+            var loadOnEnter = ResolveLoadOnEnter(command);
+            var saveOnExit = ResolveSaveOnExit(
                 command,
                 hasPreviousRoute,
                 previousRouteIdentity,

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts

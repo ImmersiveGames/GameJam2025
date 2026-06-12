@@ -10,15 +10,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][RuntimePolicy] RuntimeModeConfig obrigatorio ausente para resolver RuntimePersistentScenesPolicyAsset.");
             }
 
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][RuntimePolicy] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                RuntimePersistentScenesPolicyAsset policy = runtimePolicy.RuntimePersistentScenesPolicy;
+                var policy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string validationError = string.Empty;
                 bool valid = policy != null && policy.TryValidate(out validationError);
                 if (!valid)

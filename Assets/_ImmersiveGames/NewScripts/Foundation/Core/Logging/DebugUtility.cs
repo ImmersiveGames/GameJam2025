@@ -376,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 return (int)cachedEffectiveLevel >= (int)messageLevel;
             }
 
-            DebugLevel effectiveLevel = ResolveEffectiveLevel(type);
+            var effectiveLevel = ResolveEffectiveLevel(type);
             _effectiveLevels[type] = effectiveLevel;
             return (int)effectiveLevel >= (int)messageLevel;
         }
@@ -420,7 +420,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             for (int i = 0; i < _activeNamespaceRules.Count; i++)
             {
-                NamespaceRuleEntry entry = _activeNamespaceRules[i];
+                var entry = _activeNamespaceRules[i];
                 if (typeNamespace.StartsWith(entry.NamespacePrefix, StringComparison.Ordinal))
                 {
                     match = new NamespaceRuleMatch(true, entry.RuleId, entry.NamespacePrefix, entry.Level);
@@ -444,7 +444,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             for (int i = 0; i < rules.Count; i++)
             {
-                LoggingConfigAsset.NamespaceRule rule = rules[i];
+                var rule = rules[i];
                 if (rule == null || !rule.enabled)
                 {
                     continue;
@@ -484,7 +484,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             var builder = new StringBuilder(128);
             for (int i = 0; i < rules.Count; i++)
             {
-                NamespaceRuleEntry rule = rules[i];
+                var rule = rules[i];
                 if (i > 0)
                 {
                     builder.Append(',');

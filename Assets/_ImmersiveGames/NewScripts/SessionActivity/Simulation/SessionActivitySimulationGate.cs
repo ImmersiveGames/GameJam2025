@@ -132,7 +132,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 command.Reason,
                 message);
 
-            SimulationGateSnapshot snapshot = BuildSnapshot(command, fact, message);
+            var snapshot = BuildSnapshot(command, fact, message);
             UpdateDiagnostics(fact, snapshot);
             LogResult(command, fact, snapshot, accepted: true);
 
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 rejectionReason,
                 message);
 
-            SimulationGateSnapshot snapshot = BuildSnapshot(command, fact, message);
+            var snapshot = BuildSnapshot(command, fact, message);
             UpdateDiagnostics(fact, snapshot);
             LogResult(command, fact, snapshot, accepted: false);
 

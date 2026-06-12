@@ -74,8 +74,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                     $"[Pooling] Pool limit reached for asset='{Definition.name}'. active={ActiveCount} total={TotalCount} max={Definition.MaxSize}.");
             }
 
-            PoolRuntimeInstance runtimeInstance = _available.Dequeue();
-            GameObject instance = runtimeInstance.Instance;
+            var runtimeInstance = _available.Dequeue();
+            var instance = runtimeInstance.Instance;
 
             runtimeInstance.MarkRented();
             _rentedObjects.Add(instance);
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
             foreach (KeyValuePair<GameObject, PoolRuntimeInstance> kv in _instancesByObject)
             {
-                GameObject instance = kv.Key;
+                var instance = kv.Key;
                 if (instance == null)
                 {
                     continue;
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 return false;
             }
 
-            GameObject instance = Object.Instantiate(Definition.Prefab, Host.AvailableRoot);
+            var instance = Object.Instantiate(Definition.Prefab, Host.AvailableRoot);
             instance.name = $"{Definition.Prefab.name}_Pooled_{TotalCount + 1}";
             instance.SetActive(false);
 
@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 throw new ArgumentNullException(nameof(runtimeInstance));
             }
 
-            GameObject instance = runtimeInstance.Instance;
+            var instance = runtimeInstance.Instance;
             if (instance == null)
             {
                 if (returnReason == PoolReturnReason.Manual)

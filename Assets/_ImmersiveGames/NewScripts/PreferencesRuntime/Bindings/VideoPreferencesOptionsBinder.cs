@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                     throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline ausente no VideoPreferencesOptionsBinder.");
                 }
 
-                Vector2Int selectedPreset = ReadSelectedPreset();
+                var selectedPreset = ReadSelectedPreset();
                 bool fullscreen = ReadFullscreen();
 
                 _runtimePipeline.RequestVideoPreview(

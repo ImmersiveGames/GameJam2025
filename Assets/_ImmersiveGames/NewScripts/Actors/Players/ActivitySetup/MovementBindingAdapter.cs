@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class MovementBindingAdapter : IMovementBindingAdapter
@@ -52,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<MovementBindingRecord> records = new(command.Requirements.Count);
             for (int index = 0; index < command.Requirements.Count; index++)
             {
-                MovementBindingRequirement requirement = command.Requirements[index];
+                var requirement = command.Requirements[index];
                 if (!requirement.IsValid)
                 {
                     throw new InvalidOperationException($"MovementBindingRequirement at index '{index}' is invalid.");
@@ -63,12 +61,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_movement_binding_requirement: requirement identity does not match active identity.");
                 }
 
-                if (!TryResolveHandle(registry, requirement.ParticipantId, out PlayerActorRuntimeHandle actorHandle) || !actorHandle.IsValid)
+                if (!TryResolveHandle(registry, requirement.ParticipantId, out var actorHandle) || !actorHandle.IsValid)
                 {
                     throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' actor handle not found.");
                 }
-                PlayerActorId playerActorId = actorHandle.PlayerActorId;
-                ActorInstanceRuntimeId actorInstanceRuntimeId = actorHandle.ActorInstanceRuntimeId;
+                var playerActorId = actorHandle.PlayerActorId;
+                var actorInstanceRuntimeId = actorHandle.ActorInstanceRuntimeId;
                 if (!actorInstanceRuntimeId.IsValid)
                 {
                     throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorInstanceRuntimeId.");
@@ -79,9 +77,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"stale_or_foreign_movement_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' actorId='{requirement.ActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
                 }
 
-                ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
-                IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
-                IActorMovementEndpoint movementEndpoint = capabilitySurface.ActorMovementEndpoint ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing IActorMovementEndpoint.");
+                var capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
+                var commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
+                var movementEndpoint = capabilitySurface.ActorMovementEndpoint ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing IActorMovementEndpoint.");
                 if (movementEndpoint is not IActorCommandSink commandSink)
                 {
                     throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' movement endpoint does not implement IActorCommandSink.");
@@ -104,8 +102,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 commandHub.BindCommandSink(ActorCommandId.Move, commandSink);
 
-                GameObject actorInstance = actorHandle.Instance;
-                PlayerActorMovementBindingState bindingState = actorInstance.GetComponent<PlayerActorMovementBindingState>();
+                var actorInstance = actorHandle.Instance;
+                var bindingState = actorInstance.GetComponent<PlayerActorMovementBindingState>();
                 if (bindingState == null)
                 {
                     bindingState = actorInstance.AddComponent<PlayerActorMovementBindingState>();

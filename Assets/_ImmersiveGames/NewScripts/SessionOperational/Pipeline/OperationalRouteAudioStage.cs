@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalRouteAudioCommand is invalid.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             if (routeCommand.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
             {
@@ -125,8 +125,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"cueType='{cueType}'"),
                 DebugUtility.Colors.Info);
 
-            IOperationalRouteAudioPort routeAudioPort = ResolveRouteAudioPortOrFail(routeCommand);
-            OperationalRouteAudioResult result = routeAudioPort.SubmitRouteRevealAudio(
+            var routeAudioPort = ResolveRouteAudioPortOrFail(routeCommand);
+            var result = routeAudioPort.SubmitRouteRevealAudio(
                 new OperationalRouteAudioRequest(routeCommand, command.Source, command.Reason));
 
             if (!result.IsCompleted)
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private IOperationalRouteAudioPort ResolveRouteAudioPortOrFail(SessionOperationalRouteCommand routeCommand)
         {
-            IOperationalRouteAudioPort routeAudioPort = _routeAudioPortResolver();
+            var routeAudioPort = _routeAudioPortResolver();
             if (routeAudioPort == null)
             {
                 throw new InvalidOperationException($"[FATAL][SessionOperationalPipeline][Audio] IOperationalRouteAudioPort is required routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}'.");
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalRouteAudioCommand command,
             string extra)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             return $"{prefix} routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' routeAudioMode='{routeCommand.Audio.RouteAudioMode}' routeAudioTiming='{routeCommand.Audio.RouteAudioTiming}' routeAudioCue='{routeCommand.Audio.RouteAudioCueName}' stopPreviousRouteAudio='{routeCommand.Audio.StopPreviousRouteAudio}' source='{command.Source}' reason='{command.Reason}' {extra}.";
         }

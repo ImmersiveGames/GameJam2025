@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return Failed(command, "invalid_command", "OperationalRouteCameraReleasePreviousCommand invalido.");
             }
 
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
 
             DebugUtility.Log(typeof(OperationalRouteCameraReleasePreviousStage),
                 $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousStarted currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!_routeCameraAdapter.TryReleaseRouteCamera(
                     releaseCommand,
-                    out SessionOperationalRouteCameraReleaseResult releaseResult,
+                    out var releaseResult,
                     out string releaseReason))
             {
                 string failureReason = string.IsNullOrWhiteSpace(releaseReason)
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             string detail)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var routeCommand = command.RouteCommand;
             return new OperationalRouteCameraReleasePreviousResult(
                 OperationalRouteCameraReleasePreviousResultKind.Failed,
                 routeCommand.RouteIdentity,

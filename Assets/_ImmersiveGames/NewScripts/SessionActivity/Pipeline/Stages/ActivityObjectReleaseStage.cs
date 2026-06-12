@@ -88,10 +88,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityIdentity identity = command.Identity;
+            var identity = command.Identity;
             int entrySequence = command.EntrySequence;
-            ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
-            SessionActivityIdentity releaseIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseStarted, entrySequence);
+            var discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
+            var releaseIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseStarted, entrySequence);
             endpoint.SetCurrentIdentity(releaseIdentity, SessionActivityStage.ObjectReleaseStarted);
             endpoint.EmitFact(
                 facts,
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 !IsDiscoveryResultForCurrentEntry(discoveryResult, releaseIdentity, entrySequence) ||
                 discoveryResult.Reports.Count == 0)
             {
-                SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
+                var completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
                 endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ObjectReleaseCompleted);
                 endpoint.EmitFact(
                     facts,
@@ -148,8 +148,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int appliedCount = 0;
             int skippedCount = 0;
             int failedCount = 0;
-            ActivityCapabilityInventory releaseInventory = runtimeState.CurrentInventoryPreview;
-            ActivityCapabilityInventoryValidationResult releaseInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
+            var releaseInventory = runtimeState.CurrentInventoryPreview;
+            var releaseInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
             bool hasValidReleaseInventory =
                 releaseInventory.IsValid &&
                 releaseInventoryValidation.IsValid &&
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (!hasValidReleaseInventory)
             {
-                SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseFailed, entrySequence);
+                var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseFailed, entrySequence);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ObjectReleaseFailed);
                 endpoint.EmitFact(
                     facts,
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                var report = discoveryResult.Reports[reportIndex];
                 if (!report.IsValid || !IsReportForCurrentEntry(report, releaseIdentity, entrySequence))
                 {
                     continue;
@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (report.SupportedReleaseKinds == null || report.SupportedReleaseKinds.Count == 0)
                 {
                     skippedCount += 1;
-                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseSkippedOptional, entrySequence);
+                    var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseSkippedOptional, entrySequence);
                     endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ObjectReleaseSkippedOptional);
                     endpoint.EmitFact(
                         facts,
@@ -200,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 for (int kindIndex = 0; kindIndex < report.SupportedReleaseKinds.Count; kindIndex++)
                 {
-                    ActivityReleaseRequirementKind releaseKind = report.SupportedReleaseKinds[kindIndex];
+                    var releaseKind = report.SupportedReleaseKinds[kindIndex];
                     if (releaseKind == ActivityReleaseRequirementKind.Unknown)
                     {
                         throw new InvalidOperationException(
@@ -223,7 +223,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     commandCount += 1;
-                    SessionActivityIdentity issuedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCommandIssued, entrySequence);
+                    var issuedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCommandIssued, entrySequence);
                     endpoint.SetCurrentIdentity(issuedIdentity, SessionActivityStage.ObjectReleaseCommandIssued);
                     endpoint.EmitFact(
                         facts,
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         command.Reason,
                         $"'{definition.ActivityId}' object release command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' releaseKind='{releaseKind}'.");
 
-                    ActivityObjectReleaseResult result = ExecuteObjectReleaseCommand(releaseCommand, endpoints);
+                    var result = ExecuteObjectReleaseCommand(releaseCommand, endpoints);
                     if (!result.IsValid)
                     {
                         throw new InvalidOperationException(
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     if (!IsObjectReleaseResultAcceptedForIssuedCommand(result, releaseCommand, entrySequence, releaseIdentity))
                     {
-                        SessionActivityIdentity rejectedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseRejectedForeignOrStale, entrySequence);
+                        var rejectedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseRejectedForeignOrStale, entrySequence);
                         endpoint.SetCurrentIdentity(rejectedIdentity, SessionActivityStage.ObjectReleaseRejectedForeignOrStale);
                         endpoint.EmitFact(
                             facts,
@@ -257,7 +257,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (result.IsApplied)
                     {
                         appliedCount += 1;
-                        SessionActivityIdentity appliedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseApplied, entrySequence);
+                        var appliedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseApplied, entrySequence);
                         endpoint.SetCurrentIdentity(appliedIdentity, SessionActivityStage.ObjectReleaseApplied);
                         endpoint.EmitFact(
                             facts,
@@ -272,7 +272,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (result.IsSkippedOptional)
                     {
                         skippedCount += 1;
-                        SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseSkippedOptional, entrySequence);
+                        var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseSkippedOptional, entrySequence);
                         endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ObjectReleaseSkippedOptional);
                         endpoint.EmitFact(
                             facts,
@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     failedCount += 1;
-                    SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseFailed, entrySequence);
+                    var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseFailed, entrySequence);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ObjectReleaseFailed);
                     endpoint.EmitFact(
                         facts,
@@ -299,7 +299,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
             }
 
-            SessionActivityIdentity completedIdentityFinal = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
+            var completedIdentityFinal = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
             endpoint.SetCurrentIdentity(completedIdentityFinal, SessionActivityStage.ObjectReleaseCompleted);
             endpoint.EmitFact(
                 facts,
@@ -341,7 +341,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<IActivityObjectReleaseEndpoint> unique = new();
             for (int index = 0; index < inventory.Capabilities.Count; index++)
             {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
+                var capability = inventory.Capabilities[index];
                 if (capability.CapabilityKind != ActivityCapabilityKind.ReleaseEndpoint)
                 {
                     continue;
@@ -353,7 +353,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!inventory.TryGetRuntimeReference<ActivityObjectReleaseEndpointReference>(capability.CapabilityId, out ActivityObjectReleaseEndpointReference runtimeReference) ||
+                if (!inventory.TryGetRuntimeReference<ActivityObjectReleaseEndpointReference>(capability.CapabilityId, out var runtimeReference) ||
                     runtimeReference.Endpoint == null)
                 {
                     continue;
@@ -395,14 +395,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool hasSupportingEndpoint = false;
             for (int index = 0; index < endpoints.Length; index++)
             {
-                IActivityObjectReleaseEndpoint endpoint = endpoints[index];
+                var endpoint = endpoints[index];
                 if (endpoint == null || !endpoint.Supports(command.ReleaseKind))
                 {
                     continue;
                 }
 
                 hasSupportingEndpoint = true;
-                ActivityObjectReleaseResult result = endpoint.ApplyRelease(command);
+                var result = endpoint.ApplyRelease(command);
                 if (!result.IsValid)
                 {
                     return new ActivityObjectReleaseResult(
@@ -451,7 +451,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             SessionActivityIdentity releaseIdentity)
         {
-            SessionActivityIdentity identity = result.Command.Identity;
+            var identity = result.Command.Identity;
             return result.IsValid &&
                    identity.IsValid &&
                    releaseIdentity.IsValid &&
@@ -502,7 +502,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < metadata.Count; index++)
             {
-                ActivityCapabilityPolicyEntry entry = metadata[index];
+                var entry = metadata[index];
                 if (string.Equals(entry.Key, key, StringComparison.Ordinal))
                 {
                     value = entry.Value;

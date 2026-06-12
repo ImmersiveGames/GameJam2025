@@ -86,21 +86,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             HashSet<string> actorDedupe = new(StringComparer.Ordinal);
             for (int i = 0; i < entries.Count; i++)
             {
-                PlayerSlotId playerSlotId = entries[i].PlayerSlotId;
+                var playerSlotId = entries[i].PlayerSlotId;
                 if (!playerSlotId.IsValid)
                 {
                     errorMessage = $"entries[{i}].playerSlotId is required.";
                     return false;
                 }
 
-                PlayerSelectionId playerSelectionId = entries[i].PlayerSelectionId;
+                var playerSelectionId = entries[i].PlayerSelectionId;
                 if (!playerSelectionId.IsValid)
                 {
                     errorMessage = $"entries[{i}].playerSelectionId is required playerSlotId='{playerSlotId}'.";
                     return false;
                 }
 
-                ActorDefinitionAsset actorDefinition = entries[i].ActorDefinition;
+                var actorDefinition = entries[i].ActorDefinition;
                 if (actorDefinition == null)
                 {
                     errorMessage = $"entries[{i}].actorDefinition is required playerSlotId='{playerSlotId}'.";
@@ -119,8 +119,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     return false;
                 }
 
-                ActorDefinitionId actorDefinitionId = entries[i].ActorDefinitionId;
-                ActorId actorId = entries[i].ActorId;
+                var actorDefinitionId = entries[i].ActorDefinitionId;
+                var actorId = entries[i].ActorId;
                 if (!actorDefinitionId.IsValid)
                 {
                     errorMessage = $"entries[{i}].actorDefinition.actorDefinitionId is required playerSlotId='{playerSlotId}'.";

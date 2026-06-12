@@ -52,26 +52,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<PlayerActorParticipationExitRecord> records = new(command.Actors.Count);
             for (int index = 0; index < command.Actors.Count; index++)
             {
-                PlayerActorIdentityRecord actorIdentity = command.Actors[index];
+                var actorIdentity = command.Actors[index];
                 if (!actorIdentity.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerActorIdentityRecord at index '{index}' is invalid.");
                 }
 
-                if (!TryResolveHandle(registry, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolveHandle(registry, actorIdentity.ParticipantId, out var handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
                         $"player_participation_exit_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
-                ActorInstanceRuntimeId actorInstanceRuntimeId = handle.ActorInstanceRuntimeId;
+                var actorInstanceRuntimeId = handle.ActorInstanceRuntimeId;
                 if (!actorInstanceRuntimeId.IsValid)
                 {
                     throw new InvalidOperationException($"player_participation_exit_actor_missing_actor_instance_runtime_id: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
-                GameObject instance = handle.Instance;
-                PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
+                var instance = handle.Instance;
+                var boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerActor identity component is missing or invalid. playerActorId='{actorIdentity.PlayerActorId}'.");
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 EnsureIdentityMatches(instance, boundIdentity, activeIdentity, actorIdentity);
 
-                PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();
+                var participation = instance.GetComponent<PlayerActorParticipationState>();
                 if (participation == null)
                 {
                     participation = instance.AddComponent<PlayerActorParticipationState>();
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     command.Source,
                     command.Reason);
 
-                ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
+                var fact = _permissionRuntime.Publish(permissionCommand);
                 if (IsRejected(fact))
                 {
                     throw new InvalidOperationException($"Player participation exit permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actorIdentity.PlayerActorId}'.");
@@ -142,20 +142,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<PlayerActorParticipationEnterRecord> records = new(command.Actors.Count);
             for (int index = 0; index < command.Actors.Count; index++)
             {
-                PlayerActorIdentityRecord actorIdentity = command.Actors[index];
+                var actorIdentity = command.Actors[index];
                 if (!actorIdentity.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerActorIdentityRecord at index '{index}' is invalid.");
                 }
 
-                if (!TryResolveHandle(registry, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolveHandle(registry, actorIdentity.ParticipantId, out var handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
                         $"player_participation_enter_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
-                GameObject instance = handle.Instance;
-                PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
+                var instance = handle.Instance;
+                var boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerActor identity component is missing or invalid. playerActorId='{actorIdentity.PlayerActorId}'.");
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 EnsureIdentityMatches(instance, boundIdentity, activeIdentity, actorIdentity);
 
-                PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();
+                var participation = instance.GetComponent<PlayerActorParticipationState>();
                 if (participation == null)
                 {
                     participation = instance.AddComponent<PlayerActorParticipationState>();
@@ -210,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     $"stale_or_foreign_player_actor_identity_binding: playerActorId='{expected.PlayerActorId}' reason='actor_instance_null'.");
             }
 
-            Actor runtimeActor = actorInstance.GetComponent<Actor>();
+            var runtimeActor = actorInstance.GetComponent<Actor>();
             bool isRetainedAcrossActivity = runtimeActor != null && ActorLifetimePolicyRuntime.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
 
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||

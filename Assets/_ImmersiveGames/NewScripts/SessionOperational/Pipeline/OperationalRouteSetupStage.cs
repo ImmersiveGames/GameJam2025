@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"[FATAL][Config][SessionOperationalRoute] runtime command invalid routeIdentity='{setupCommand.RouteIdentity}' routeOperationId='{setupCommand.RouteOperationId}' transitionId='{setupCommand.TransitionId}' routeSequence='{setupCommand.RouteSequence}'.");
             }
 
-            RouteActivitySavePlan routeActivitySavePlan = RouteActivitySavePlanResolver.Resolve(
+            var routeActivitySavePlan = RouteActivitySavePlanResolver.Resolve(
                 routeCommand,
                 setupCommand.HasPreviousCompletedRoute,
                 setupCommand.PreviousRouteIdentity,
@@ -173,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlan invalido routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}'.");
             }
 
-            SessionOperationalLoadingCommand loadingCommand = ResolveLoadingCommandOrFail(
+            var loadingCommand = ResolveLoadingCommandOrFail(
                 routeCommand.Plan,
                 setupCommand.RuntimeModeConfig,
                 routeCommand.RouteOperationId,
@@ -253,12 +253,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalRouteSetupStage] RuntimeModeConfig obrigatorio ausente para resolver loading.");
             }
 
-            SessionOperationalRouteLoadingMode effectiveLoadingMode = plan.LoadingMode;
-            RuntimeLoadingProfileAsset effectiveLoadingProfile = plan.LoadingProfile;
+            var effectiveLoadingMode = plan.LoadingMode;
+            var effectiveLoadingProfile = plan.LoadingProfile;
 
             if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault)
             {
-                SessionOperationalRuntimeLoadingDefaults loadingDefaults =
+                var loadingDefaults =
                     SessionOperationalRuntimeConfigResolver.ResolveLoadingDefaultsOrFail(runtimeModeConfig);
 
                 effectiveLoadingMode = loadingDefaults.Mode;
@@ -289,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string loadingSceneName = string.Empty;
             if (effectiveLoadingMode != SessionOperationalRouteLoadingMode.None)
             {
-                RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+                var persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
                 if (persistentScenesPolicy == null)
                 {
                     string message = $"[FATAL][Config][SessionOperationalRouteSetupStage] RuntimePersistentScenesPolicyAsset obrigatorio ausente para loading efetivo routeIdentity='{plan.RouteIdentity}'.";

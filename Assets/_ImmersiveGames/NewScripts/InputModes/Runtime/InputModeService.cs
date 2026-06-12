@@ -165,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 for (int i = 0; i < playerInputs.Length; i++)
                 {
-                    PlayerInput playerInput = playerInputs[i];
+                    var playerInput = playerInputs[i];
                     if (playerInput == null || playerInput.actions == null)
                     {
                         continue;

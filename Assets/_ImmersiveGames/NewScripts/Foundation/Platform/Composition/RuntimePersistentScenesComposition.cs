@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
-using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static class RuntimePersistentScenesComposition
@@ -66,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static async Task EnsurePersistentScenesGuaranteedAsync(RuntimeModeConfig runtimeModeConfig)
         {
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
             if (persistentScenesPolicy == null)
             {
                 DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
@@ -85,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             SceneCompositionExecutor sceneCompositionExecutor = new();
-            SceneCompositionResult result = await sceneCompositionExecutor.ApplyAsync(
+            var result = await sceneCompositionExecutor.ApplyAsync(
                 new SceneCompositionRequest(
                     SceneCompositionScope.Local,
                     reason: $"runtime_persistent_scenes:{persistentScenesPolicy.PolicyId}",
@@ -122,8 +121,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void EnsureStartupRouteCompatibilityOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            OperationalRouteAsset startupRoute = SessionOperationalRuntimeConfigResolver.ResolveStartupRouteOrFail(runtimeModeConfig);
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+            var startupRoute = SessionOperationalRuntimeConfigResolver.ResolveStartupRouteOrFail(runtimeModeConfig);
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
 
             if (startupRoute == null || persistentScenesPolicy == null)
             {
@@ -138,15 +137,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][RuntimeMode][PersistentScenes] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                var registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string policyValidationError = string.Empty;
                 bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
                 if (!registryPolicyValid)

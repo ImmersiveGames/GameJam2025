@@ -145,13 +145,13 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             IReadOnlyList<ActorParticipationRecord> participations = command.InventoryFeed.ActorParticipations;
             for (int index = 0; index < participations.Count; index++)
             {
-                ActorParticipationRecord participation = participations[index];
+                var participation = participations[index];
                 if (!participation.IsValid || !participation.ParticipatesInCurrentEntry)
                 {
                     continue;
                 }
 
-                if (!instancesByRuntimeId.TryGetValue(participation.ActorInstanceRuntimeId, out ActorInstanceRecord instance) || !instance.IsValid)
+                if (!instancesByRuntimeId.TryGetValue(participation.ActorInstanceRuntimeId, out var instance) || !instance.IsValid)
                 {
                     continue;
                 }
@@ -171,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                ActorInstanceRuntimeId runtimeActorInstanceId = instance.ActorInstanceRuntimeId;
+                var runtimeActorInstanceId = instance.ActorInstanceRuntimeId;
                 if (!runtimeActorInstanceId.IsValid)
                 {
                     skipped += 1;
@@ -262,7 +262,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 return false;
             }
 
-            PlayerActorIdentity identity = instance.ActorRoot.GetComponent<PlayerActorIdentity>();
+            var identity = instance.ActorRoot.GetComponent<PlayerActorIdentity>();
             if (identity == null || !identity.IsValid)
             {
                 return false;
@@ -289,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             for (int index = 0; index < instances.Count; index++)
             {
-                ActorInstanceRecord instance = instances[index];
+                var instance = instances[index];
                 if (!instance.IsValid)
                 {
                     continue;
@@ -354,7 +354,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 return false;
             }
 
-            foreach (ActorInstanceRuntimeId current in activeParticipationActorIds)
+            foreach (var current in activeParticipationActorIds)
             {
                 if (current == actorInstanceRuntimeId)
                 {

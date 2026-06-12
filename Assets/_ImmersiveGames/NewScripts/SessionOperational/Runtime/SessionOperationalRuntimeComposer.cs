@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 return;
             }
 
-            SessionOperationalPipelineDependencies dependencies = CreatePipelineDependencies(runtimeModeConfig);
+            var dependencies = CreatePipelineDependencies(runtimeModeConfig);
             _sessionOperationalPipeline = new SessionOperationalPipeline(dependencies);
             DependencyManager.Provider.RegisterGlobal(_sessionOperationalPipeline);
             DependencyManager.Provider.RegisterGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(_sessionOperationalPipeline);
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 
         private static SessionOperationalPipelineDependencies CreatePipelineDependencies(RuntimeModeConfig runtimeModeConfig)
         {
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy =
+            var persistentScenesPolicy =
                 RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
 
             return new SessionOperationalPipelineDependencies(

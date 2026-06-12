@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!_operationalCameraProvider.TryGetCurrent(out OperationalCameraHandle operationalHandle, out reason))
+            if (!_operationalCameraProvider.TryGetCurrent(out var operationalHandle, out reason))
             {
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            GameObject rigInstance = Object.Instantiate(command.Requirement.CameraRigPrefab);
+            var rigInstance = Object.Instantiate(command.Requirement.CameraRigPrefab);
             rigInstance.name = BuildRigInstanceName(command);
 
             if (!EnsurePresentationRigHasNoUnityCamera(rigInstance, out reason))
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!TryGetSingleCinemachineCamera(rigInstance, out CinemachineCamera cinemachineCamera, out reason))
+            if (!TryGetSingleCinemachineCamera(rigInstance, out var cinemachineCamera, out reason))
             {
                 Object.Destroy(rigInstance);
                 result = ActivityCameraBindingResult.Failed(command, reason);
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!TryGetSingleCinemachineCamera(bindingHandle.CameraRigInstance, out CinemachineCamera cinemachineCamera, out reason))
+            if (!TryGetSingleCinemachineCamera(bindingHandle.CameraRigInstance, out var cinemachineCamera, out reason))
             {
                 return false;
             }

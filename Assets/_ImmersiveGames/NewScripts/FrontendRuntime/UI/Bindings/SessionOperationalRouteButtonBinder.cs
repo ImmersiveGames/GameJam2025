@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 
         protected override bool OnClickCore(string actionReason)
         {
-            if (!TryResolveRouteDefinition(out OperationalRouteAsset resolvedRouteDefinition))
+            if (!TryResolveRouteDefinition(out var resolvedRouteDefinition))
             {
                 return false;
             }
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
                 DebugUtility.Colors.Info);
 
             EnsurePipelineSubscription(operationalPipeline);
-            RouteRequestSubmissionResult submission = operationalPipeline.SubmitRouteRequest(
+            var submission = operationalPipeline.SubmitRouteRequest(
                 resolvedRouteDefinition,
                 RouteButtonSource,
                 normalizedReason);

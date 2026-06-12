@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            RouteCameraPresentationRequirement requirement = command.Requirement;
+            var requirement = command.Requirement;
 
             if (requirement == null)
             {

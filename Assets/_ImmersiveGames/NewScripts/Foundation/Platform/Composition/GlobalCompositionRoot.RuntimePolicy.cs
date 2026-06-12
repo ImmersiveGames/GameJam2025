@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -56,14 +55,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void ApplyRuntimePolicyLoggingConfigOrFail()
         {
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 string message = "[FATAL][Config][RuntimePolicy] RuntimeConfigRegistry snapshot obrigatorio ausente para LoggingConfig.";
                 DebugUtility.LogError(typeof(GlobalCompositionRoot), message);
                 throw new InvalidOperationException(message);
             }
 
-            LoggingConfigAsset loggingConfig = snapshot.RuntimePolicy?.LoggingConfig;
+            var loggingConfig = snapshot.RuntimePolicy?.LoggingConfig;
             if (loggingConfig == null)
             {
                 string message =

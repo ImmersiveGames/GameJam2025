@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             bool loaded = _saveAdapter.TryLoadAudio(
                 AudioPreferencesSnapshot.BootstrapProfileId,
                 AudioPreferencesSnapshot.BootstrapSlotId,
-                out AudioPreferencesSnapshot loadedSnapshot,
+                out var loadedSnapshot,
                 out string loadReason);
 
             if (!loaded || loadedSnapshot == null)
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             bool loaded = _saveAdapter.TryLoadVideo(
                 VideoPreferencesSnapshot.BootstrapProfileId,
                 VideoPreferencesSnapshot.BootstrapSlotId,
-                out VideoPreferencesSnapshot loadedSnapshot,
+                out var loadedSnapshot,
                 out string loadReason);
 
             if (!loaded || loadedSnapshot == null)
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Audio commit requested before snapshot seed.");
             }
 
-            AudioPreferencesSnapshot current = _stateService.CurrentSnapshot;
+            var current = _stateService.CurrentSnapshot;
             if (HasSameAudioValues(current, _lastCommittedAudioSnapshot))
             {
                 return true;
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Audio restore defaults requested before snapshot seed.");
             }
 
-            AudioPreferencesSnapshot current = _stateService.CurrentSnapshot;
+            var current = _stateService.CurrentSnapshot;
             var restored = new AudioPreferencesSnapshot(
                 current.ProfileId,
                 current.SlotId,
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Video commit requested before snapshot seed.");
             }
 
-            VideoPreferencesSnapshot current = _stateService.CurrentVideoSnapshot;
+            var current = _stateService.CurrentVideoSnapshot;
             if (HasSameVideoValues(current, _lastCommittedVideoSnapshot))
             {
                 return true;
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Video restore defaults requested before snapshot seed.");
             }
 
-            VideoPreferencesSnapshot current = _stateService.CurrentVideoSnapshot;
+            var current = _stateService.CurrentVideoSnapshot;
             var restored = new VideoPreferencesSnapshot(
                 current.ProfileId,
                 current.SlotId,

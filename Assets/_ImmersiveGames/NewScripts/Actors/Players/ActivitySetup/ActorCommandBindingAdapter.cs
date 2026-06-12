@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<ActorCommandBindingRecord> records = new(command.Bindings.Count);
             for (int index = 0; index < command.Bindings.Count; index++)
             {
-                ActorCommandBindingReference requirement = command.Bindings[index];
+                var requirement = command.Bindings[index];
                 if (!requirement.IsValid)
                 {
                     throw new InvalidOperationException($"ActorCommandBindingReference at index '{index}' is invalid.");
@@ -49,13 +49,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                if (!registry.TryGetActiveHandleByParticipant(requirement.ParticipantBinding.ParticipantId, out PlayerActorRuntimeHandle actorHandle) || !actorHandle.IsValid)
+                if (!registry.TryGetActiveHandleByParticipant(requirement.ParticipantBinding.ParticipantId, out var actorHandle) || !actorHandle.IsValid)
                 {
                     throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' actor handle not found.");
                 }
 
-                ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorCapabilitySurface.");
-                IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing Actor command input hub.");
+                var capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorCapabilitySurface.");
+                var commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing Actor command input hub.");
                 if (!commandHub.IsPrepared)
                 {
                     if (requirement.Required)
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     $"[OBS][ActorCommandHub] event='ActorCommandBindingReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Prepared' hubType='{commandHub.GetType().Name}' hubPrepared='{commandHub.IsPrepared}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
-                IActorProjectileFireEndpoint projectileFireEndpoint = capabilitySurface.ActorProjectileFireEndpoint;
+                var projectileFireEndpoint = capabilitySurface.ActorProjectileFireEndpoint;
                 if (projectileFireEndpoint == null)
                 {
                     if (requirement.Required)
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                if (!projectileFireEndpoint.TryGetReadiness(ActorCommandId.FirePrimary, out ActorProjectileFireEndpointReadiness readiness) || !readiness.IsPrepared)
+                if (!projectileFireEndpoint.TryGetReadiness(ActorCommandId.FirePrimary, out var readiness) || !readiness.IsPrepared)
                 {
                     if (requirement.Required || projectileFireEndpoint.IsRequired)
                     {

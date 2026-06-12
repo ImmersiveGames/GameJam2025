@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
-using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -49,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<PlayerInputBindingRecord> records = new(command.Requirements.Count);
             for (int index = 0; index < command.Requirements.Count; index++)
             {
-                PlayerInputBindingRequirement requirement = command.Requirements[index];
+                var requirement = command.Requirements[index];
                 if (!requirement.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerInputBindingRequirement at index '{index}' is invalid.");
@@ -60,26 +58,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_input_binding_requirement: requirement identity does not match active identity.");
                 }
 
-                if (!registry.TryGetActiveHandleByParticipant(requirement.ParticipantId, out PlayerActorRuntimeHandle actorHandle) || !actorHandle.IsValid)
+                if (!registry.TryGetActiveHandleByParticipant(requirement.ParticipantId, out var actorHandle) || !actorHandle.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' actor handle not found.");
                 }
-                PlayerActorId playerActorId = actorHandle.PlayerActorId;
-                GameObject actorInstance = actorHandle.Instance;
+                var playerActorId = actorHandle.PlayerActorId;
+                var actorInstance = actorHandle.Instance;
                 if (actorHandle.PlayerSlotId != requirement.PlayerSlotId || actorHandle.ActorId != requirement.ActorId)
                 {
                     throw new InvalidOperationException($"stale_or_foreign_player_input_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' actorId='{requirement.ActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
                 }
 
-                PlayerInputResolution resolution = ResolvePlayerInputFromActorOrFail(actorInstance, requirement, _canonicalActionsAsset);
-                PlayerInput resolvedInput = resolution.PlayerInput;
+                var resolution = ResolvePlayerInputFromActorOrFail(actorInstance, requirement, _canonicalActionsAsset);
+                var resolvedInput = resolution.PlayerInput;
 
-                ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
-                IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
+                var capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
+                var commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
 
                 ApplyCurrentInputModeToPlayerInputOrFail(resolvedInput, requirement);
 
-                PlayerActorInputBindingState bindingState = actorInstance.GetComponent<PlayerActorInputBindingState>();
+                var bindingState = actorInstance.GetComponent<PlayerActorInputBindingState>();
                 if (bindingState == null)
                 {
                     bindingState = actorInstance.AddComponent<PlayerActorInputBindingState>();
@@ -128,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' multiple PlayerInput components without explicit endpoint.");
             }
 
-            PlayerInput resolved = inputs[0];
+            var resolved = inputs[0];
             if (resolved == null)
             {
                 throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' invalid PlayerInput.");
@@ -149,13 +147,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing actions asset.");
             }
 
-            PlayerInputSlotBinding slotBinding = resolved.GetComponent<PlayerInputSlotBinding>();
+            var slotBinding = resolved.GetComponent<PlayerInputSlotBinding>();
             if (slotBinding == null)
             {
                 slotBinding = resolved.gameObject.AddComponent<PlayerInputSlotBinding>();
             }
 
-            PlayerSlotId authoredSlotId = slotBinding.PlayerSlotId;
+            var authoredSlotId = slotBinding.PlayerSlotId;
             if (authoredSlotId.IsValid && authoredSlotId != requirement.PlayerSlotId)
             {
                 throw new InvalidOperationException($"PlayerInput binding failed: slot binding conflict actorId='{requirement.ActorId}' expectedSlotId='{requirement.PlayerSlotId}' authoredSlotId='{authoredSlotId}'.");
@@ -181,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             if (!DependencyManager.HasInstance ||
-                !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out IInputModeService inputModeService) ||
+                !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var inputModeService) ||
                 inputModeService == null)
             {
                 throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing IInputModeService for canonical action map ownership.");
