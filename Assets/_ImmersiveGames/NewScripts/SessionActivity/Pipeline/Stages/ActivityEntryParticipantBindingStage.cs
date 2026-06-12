@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
@@ -13,50 +14,27 @@ using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using UnityEngine;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
+using PlayerActivityParticipantRequirementId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantRequirementId;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
+using PlayerSessionParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantBinding;
+using PlayerSessionParticipantRole = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantRole;
 using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
-    internal interface IActivityEntryParticipantBindingRuntimeBridge
-    {
-        IReadOnlyList<SessionActivityActorMaterializationPlanEntry> GetActorMaterializationPlanEntries();
-        bool TryBuildActivityParticipantBinding(
-            ParticipantRequirement requirement,
-            string source,
-            string reason,
-            out PlayerActivityParticipantBinding binding,
-            out string resolutionReason);
-        void LogActivityParticipationBindingSkipped(
-            string activityId,
-            SessionActivityIdentity identity,
-            string requirementId,
-            PlayerSessionParticipantId participantId,
-            string skipReason,
-            string source,
-            string reason);
-        bool TryGetSessionScopedPlayerActorForParticipant(
-            SessionActivityIdentity identity,
-            PlayerActivityParticipantBinding participant,
-            out PlayerActorRuntimeHandle handle);
-        IReadOnlyList<PlayerActorMaterializationRecord> ExecutePlayerActorMaterialization(
-            PlayerActorMaterializationCommand command,
-            SessionActivityIdentity identity);
-        IReadOnlyList<PlayerActorParticipationEnterRecord> ExecutePlayerActorParticipationEnter(
-            PlayerActorParticipationEnterCommand command,
-            SessionActivityIdentity identity);
-        IReadOnlyList<ActorResetResult> ExecuteActorReset(ActorResetCommand command, SessionActivityIdentity identity);
-    }
-
     internal static class ActivityEntryParticipantBindingStage
     {
         public static ActivityEntryParticipantBindingResult Execute(
             ActivityEntryParticipantBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
             ActivitySetupInventory inventory,
-            IActivityEntryParticipantBindingRuntimeBridge bridge,
+            IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
+            IPlayerActorParticipationAdapter playerActorParticipationAdapter,
+            IActorResetAdapter actorResetAdapter,
+            IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
             ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             IActivityEntryPlacementMarkerLookup placementMarkerLookup,
             ActivityParticipationRuntimeState activityParticipationRuntimeState,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
@@ -73,9 +51,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(endpoint));
             }
 
-            if (bridge == null)
+            if (playerActorMaterializationAdapter == null)
             {
-                throw new ArgumentNullException(nameof(bridge));
+                throw new ArgumentNullException(nameof(playerActorMaterializationAdapter));
+            }
+
+            if (playerActorParticipationAdapter == null)
+            {
+                throw new ArgumentNullException(nameof(playerActorParticipationAdapter));
+            }
+
+            if (actorResetAdapter == null)
+            {
+                throw new ArgumentNullException(nameof(actorResetAdapter));
+            }
+
+            actorMaterializationPlanEntries ??= Array.Empty<SessionActivityActorMaterializationPlanEntry>();
+
+            if (sessionActorRuntimeStore == null)
+            {
+                throw new ArgumentNullException(nameof(sessionActorRuntimeStore));
             }
 
             if (placementMarkerLookup == null)
@@ -157,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     Array.Empty<PlayerActivityParticipantBinding>();
                 DebugUtility.Log(
                     typeof(ActivityEntryParticipantBindingStage),
-                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingDiagnostics' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' participantRequirements='0' sessionParticipationContext='present' sessionParticipationRevision='{retainedSessionParticipationContext.Revision}' sessionParticipants='{retainedSessionParticipationContext.ParticipantCount}' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingDiagnostics' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' participantRequirements='0' sessionParticipationContext='present' sessionParticipationRevision='{retainedSessionParticipationContext.Revision}' sessionParticipants='{retainedSessionParticipationContext.ParticipantCount}' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 string retainedBindingSource = activeActors.Count > 0
@@ -172,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     {
                         DebugUtility.Log(
                             typeof(ActivityEntryParticipantBindingStage),
-                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='invalid_active_actor_identity' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' source='{command.Source}' reason='{command.Reason}'.",
+                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='invalid_active_actor_identity' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' source='{command.Source}' reason='{command.Reason}'.",
                             DebugUtility.Colors.Warning);
                         continue;
                     }
@@ -181,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     {
                         DebugUtility.Log(
                             typeof(ActivityEntryParticipantBindingStage),
-                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='invalid_active_actor_binding' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' actorScope='{activeActor.ParticipantBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='invalid_active_actor_binding' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' actorScope='{activeActor.ParticipantBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
                             DebugUtility.Colors.Warning);
                         continue;
                     }
@@ -190,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     {
                         DebugUtility.Log(
                             typeof(ActivityEntryParticipantBindingStage),
-                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='actor_binding' requirementId='{activeActor.ParticipantBinding.RequirementId}' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' actorScope='{activeActor.ParticipantBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='actor_binding' requirementId='{activeActor.ParticipantBinding.RequirementId}' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' actorScope='{activeActor.ParticipantBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
                             DebugUtility.Colors.Warning);
                         continue;
                     }
@@ -213,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         {
                             DebugUtility.Log(
                                 typeof(ActivityEntryParticipantBindingStage),
-                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='invalid_binding' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='invalid_binding' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
                                 DebugUtility.Colors.Warning);
                             continue;
                         }
@@ -222,7 +217,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         {
                             DebugUtility.Log(
                                 typeof(ActivityEntryParticipantBindingStage),
-                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='actor_binding' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='actor_binding' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
                                 DebugUtility.Colors.Warning);
                             continue;
                         }
@@ -231,17 +226,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         {
                             DebugUtility.Log(
                                 typeof(ActivityEntryParticipantBindingStage),
-                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='non_session_scoped_binding' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='non_session_scoped_binding' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
                                 DebugUtility.Colors.Warning);
                             continue;
                         }
 
-                        if (!bridge.TryGetSessionScopedPlayerActorForParticipant(command.Identity, retainedExitBinding, out PlayerActorRuntimeHandle retainedHandle) &&
+                        if (!TryGetSessionScopedPlayerActorForParticipant(sessionActorRuntimeStore, command.Identity, retainedExitBinding, out PlayerActorRuntimeHandle retainedHandle) &&
                             !playerActorRegistry.TryGetIndexedActiveHandleByParticipant(retainedExitBinding.ParticipantId, out retainedHandle))
                         {
                             DebugUtility.Log(
                                 typeof(ActivityEntryParticipantBindingStage),
-                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='session_scoped_handle_missing' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' reason='session_scoped_handle_missing' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
                                 DebugUtility.Colors.Warning);
                             continue;
                         }
@@ -273,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 {
                     DebugUtility.Log(
                         typeof(ActivityEntryParticipantBindingStage),
-                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingChosen' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' retainedBindingSource='{retainedBindingSource}' sessionParticipationContext='present' sessionParticipationRevision='{retainedSessionParticipationContext.Revision}' sessionParticipants='{retainedSessionParticipationContext.ParticipantCount}' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' resolvedParticipants='{retainedParticipants.Count}' finalStatus='ResolvedFromRetainedSessionScopedActor' source='{command.Source}' reason='{command.Reason}'.",
+                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingChosen' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' retainedBindingSource='{retainedBindingSource}' sessionParticipationContext='present' sessionParticipationRevision='{retainedSessionParticipationContext.Revision}' sessionParticipants='{retainedSessionParticipationContext.ParticipantCount}' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' resolvedParticipants='{retainedParticipants.Count}' finalStatus='ResolvedFromRetainedSessionScopedActor' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Success);
                     SessionActivityIdentity completedAfterRetentionIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingCompleted);
                     StoreActivityParticipationBoundary(
@@ -312,7 +307,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements);
                 DebugUtility.Log(
                     typeof(ActivityEntryParticipantBindingStage),
-                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' participantRequirements='0' sessionParticipationContext='not_resolved' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' finalStatus='SkippedNoRequirements' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' participantRequirements='0' sessionParticipationContext='not_resolved' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' finalStatus='SkippedNoRequirements' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Warning);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements);
                 endpoint.EmitFact(
@@ -370,7 +365,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 facts,
                 snapshots);
             Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId =
-                BuildMaterializationPlanMap(bridge.GetActorMaterializationPlanEntries());
+                BuildMaterializationPlanMap(actorMaterializationPlanEntries);
 
             endpoint.EmitFact(
                 facts,
@@ -436,8 +431,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     requiredRequirementCount += 1;
                 }
 
-                if (!bridge.TryBuildActivityParticipantBinding(
+                if (!TryBuildActivityParticipantBinding(
                         requirement,
+                        sessionParticipationContext,
                         command.Source,
                         command.Reason,
                         out PlayerActivityParticipantBinding activityParticipantBinding,
@@ -446,14 +442,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (!requirementRequired)
                     {
                         skippedCount += 1;
-                            bridge.LogActivityParticipationBindingSkipped(
-                            command.ActivityId,
+                        LogActivityParticipationBindingSkipped(
+                            command,
                             startedIdentity,
+                            sessionParticipationContext,
                             requirement.Requirement.RequirementId,
                             requestedParticipantId,
-                            activityParticipationResolutionReason,
-                            command.Source,
-                            command.Reason);
+                            activityParticipationResolutionReason);
                         endpoint.EmitFact(
                             facts,
                             SessionActivityFactKind.ActivityParticipantBindingResolved,
@@ -498,14 +493,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         if (!requirementRequired)
                         {
                             skippedCount += 1;
-                            bridge.LogActivityParticipationBindingSkipped(
-                                command.ActivityId,
+                            LogActivityParticipationBindingSkipped(
+                                command,
                                 startedIdentity,
+                                sessionParticipationContext,
                                 requirement.Requirement.RequirementId,
                                 requestedParticipantId,
-                                exception.Message,
-                                command.Source,
-                                command.Reason);
+                                exception.Message);
                             endpoint.EmitFact(
                                 facts,
                                 SessionActivityFactKind.ActivityParticipantBindingResolved,
@@ -621,8 +615,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.ActivityId,
                     command,
                     endpoint,
-                    bridge,
+                    playerActorMaterializationAdapter,
+                    playerActorParticipationAdapter,
+                    actorResetAdapter,
                     playerActorRegistry,
+                    sessionActorRuntimeStore,
                     placementMarkerLookup,
                     facts,
                     snapshots,
@@ -686,8 +683,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string activityId,
             ActivityEntryParticipantBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
-            IActivityEntryParticipantBindingRuntimeBridge bridge,
+            IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
+            IPlayerActorParticipationAdapter playerActorParticipationAdapter,
+            IActorResetAdapter actorResetAdapter,
             ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             IActivityEntryPlacementMarkerLookup placementMarkerLookup,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
@@ -781,15 +781,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{activityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='ActivityEntryPipeline'.");
             }
 
-            ExecuteParticipantCommandPlan(activityId, command, endpoint, bridge, playerActorRegistry, placementMarkerLookup, facts, snapshots, identity, plan, materializationPlanByParticipantId);
+            ExecuteParticipantCommandPlan(
+                activityId,
+                command,
+                endpoint,
+                playerActorMaterializationAdapter,
+                playerActorParticipationAdapter,
+                actorResetAdapter,
+                playerActorRegistry,
+                sessionActorRuntimeStore,
+                placementMarkerLookup,
+                facts,
+                snapshots,
+                identity,
+                plan,
+                materializationPlanByParticipantId);
         }
 
         private static void ExecuteParticipantCommandPlan(
             string activityId,
             ActivityEntryParticipantBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
-            IActivityEntryParticipantBindingRuntimeBridge bridge,
+            IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
+            IPlayerActorParticipationAdapter playerActorParticipationAdapter,
+            IActorResetAdapter actorResetAdapter,
             ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             IActivityEntryPlacementMarkerLookup placementMarkerLookup,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
@@ -809,8 +826,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         activityId,
                         identity,
                         materializationCommand,
-                        bridge,
+                        playerActorMaterializationAdapter,
                         playerActorRegistry,
+                        sessionActorRuntimeStore,
                         materializationPlanByParticipantId,
                         command.Source,
                         command.Reason);
@@ -832,7 +850,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     ActivityParticipantBindCommand bindCommand = plan.BindCommands[index];
                     PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(bindCommand.ParticipantBinding, ensuredActorsByActivityParticipant, activityId, "bind");
                     PlayerActorParticipationEnterCommand enterCommand = new(identity, new[] { actorIdentity }, bindCommand.Source, bindCommand.Reason);
-                    IReadOnlyList<PlayerActorParticipationEnterRecord> records = bridge.ExecutePlayerActorParticipationEnter(enterCommand, identity);
+                    IReadOnlyList<PlayerActorParticipationEnterRecord> records = playerActorParticipationAdapter.Execute(enterCommand, identity, playerActorRegistry);
                     if (records.Count != 1 || !records[0].IsValid)
                     {
                         throw new InvalidOperationException(
@@ -884,7 +902,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         placementPosition,
                         placementEuler);
                     ActorResetCommand placementResetCommand = new(identity, new[] { placementTarget }, placementCommand.Source, placementCommand.Reason);
-                    IReadOnlyList<ActorResetResult> placementRecords = bridge.ExecuteActorReset(placementResetCommand, identity);
+                    IReadOnlyList<ActorResetResult> placementRecords = actorResetAdapter.Execute(placementResetCommand, identity);
                     if (placementRecords.Count != 1 || !placementRecords[0].IsValid)
                     {
                         throw new InvalidOperationException(
@@ -899,7 +917,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         command.Reason,
                         $"'{command.ActivityId}' participant placement applied requirementId='{placementCommand.RequirementId}' participantId='{placementCommand.ParticipantBinding.ParticipantId}' role='{placementCommand.ParticipantBinding.Role}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{placementCommand.ParticipantBinding.ActorDefinitionId}' actorId='{placementCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                     DebugUtility.Log(typeof(ActivityEntryParticipantBindingStage),
-                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantPlacementApplied' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{placementCommand.RequirementId}' actorId='{placementCommand.ParticipantBinding.ActorId}' actorScope='{placementCommand.ParticipantBinding.ActorScope}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantPlacementApplied' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{placementCommand.RequirementId}' actorId='{placementCommand.ParticipantBinding.ActorId}' actorScope='{placementCommand.ParticipantBinding.ActorScope}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Success);
                 }
 
@@ -943,7 +961,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         placementPosition,
                         placementEuler);
                     ActorResetCommand actorResetCommand = new(identity, new[] { resetTarget }, resetCommand.Source, resetCommand.Reason);
-                    IReadOnlyList<ActorResetResult> resetRecords = bridge.ExecuteActorReset(actorResetCommand, identity);
+                    IReadOnlyList<ActorResetResult> resetRecords = actorResetAdapter.Execute(actorResetCommand, identity);
                     if (resetRecords.Count != 1 || !resetRecords[0].IsValid)
                     {
                         throw new InvalidOperationException(
@@ -959,7 +977,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         command.Reason,
                         $"'{command.ActivityId}' participant reset applied requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                     DebugUtility.Log(typeof(ActivityEntryParticipantBindingStage),
-                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantResetApplied' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resetCommand.RequirementId}' actorId='{resetCommand.ParticipantBinding.ActorId}' actorScope='{resetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantResetApplied' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resetCommand.RequirementId}' actorId='{resetCommand.ParticipantBinding.ActorId}' actorScope='{resetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' owner='ActivityEntryParticipantBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Success);
                 }
             }
@@ -1015,8 +1033,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string activityId,
             SessionActivityIdentity identity,
             ActivityParticipantMaterializationCommand command,
-            IActivityEntryParticipantBindingRuntimeBridge bridge,
+            IPlayerActorMaterializationAdapter playerActorMaterializationAdapter,
             ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId,
             string source,
             string reason)
@@ -1045,7 +1064,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 (routeScopedRetentionAllowed &&
                  playerActorRegistry.TryGetRouteScopedHandleByParticipant(participant.ParticipantId, out retainedHandle)) ||
                 (sessionScopedRetentionAllowed &&
-                 (bridge.TryGetSessionScopedPlayerActorForParticipant(identity, participant, out retainedHandle) ||
+                 (TryGetSessionScopedPlayerActorForParticipant(sessionActorRuntimeStore, identity, participant, out retainedHandle) ||
                   playerActorRegistry.TryGetIndexedActiveHandleByParticipant(participant.ParticipantId, out retainedHandle)));
 
             if (hasRetainedHandle)
@@ -1103,7 +1122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(identity, participant);
             PlayerActorEntryPlan plan = new(actorIdentity, materializationPlanEntry.Prefab, localPosition, localEuler);
             PlayerActorMaterializationCommand playerMaterializationCommand = new(identity, new[] { plan }, source, reason);
-            IReadOnlyList<PlayerActorMaterializationRecord> records = bridge.ExecutePlayerActorMaterialization(playerMaterializationCommand, identity);
+            IReadOnlyList<PlayerActorMaterializationRecord> records = playerActorMaterializationAdapter.Execute(playerMaterializationCommand, identity);
             if (records.Count != 1 || !records[0].IsValid)
             {
                 throw new InvalidOperationException(
@@ -1646,6 +1665,123 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 context.IsValid ? DebugUtility.Colors.Info : DebugUtility.Colors.Warning);
         }
 
+        private static bool TryBuildActivityParticipantBinding(
+            ParticipantRequirement requirement,
+            PlayerSessionParticipationContext sessionParticipationContext,
+            string source,
+            string reason,
+            out PlayerActivityParticipantBinding binding,
+            out string resolutionReason)
+        {
+            binding = default;
+            resolutionReason = "unknown";
+            if (string.IsNullOrWhiteSpace(requirement.Requirement.RequirementId))
+            {
+                resolutionReason = "invalid_requirement_id";
+                return false;
+            }
+
+            if (!TryResolveSessionParticipantBinding(requirement, sessionParticipationContext, out PlayerSessionParticipantBinding sessionParticipant, out resolutionReason))
+            {
+                return false;
+            }
+
+            binding = new PlayerActivityParticipantBinding(
+                new PlayerActivityParticipantRequirementId(requirement.Requirement.RequirementId),
+                sessionParticipant.ParticipantId,
+                sessionParticipant.Role,
+                sessionParticipant.PlayerSlotId,
+                sessionParticipant.PlayerSelectionId,
+                sessionParticipant.ActorDefinitionId,
+                sessionParticipant.ActorId,
+                sessionParticipant.ActorScope,
+                sessionParticipant.MaterializationPolicy,
+                requirement.Requirement.IsRequired,
+                sessionParticipant.RequiresPlayerActor,
+                sessionParticipant.RequiresPlayerInput,
+                source,
+                reason);
+            if (!binding.IsValid)
+            {
+                resolutionReason = "activity_participant_binding_invalid";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryResolveSessionParticipantBinding(
+            ParticipantRequirement requirement,
+            PlayerSessionParticipationContext sessionParticipationContext,
+            out PlayerSessionParticipantBinding binding,
+            out string resolutionReason)
+        {
+            binding = default;
+            resolutionReason = "unknown";
+            if (sessionParticipationContext == null ||
+                !sessionParticipationContext.IsValid ||
+                sessionParticipationContext.Participants == null)
+            {
+                resolutionReason = "session_participation_context_missing";
+                return false;
+            }
+
+            if (!requirement.SessionParticipantId.IsValid)
+            {
+                resolutionReason = "session_participant_id_missing";
+                return false;
+            }
+
+            if (requirement.ExpectedSessionRole == PlayerSessionParticipantRole.Unknown)
+            {
+                resolutionReason = "expected_session_role_missing";
+                return false;
+            }
+
+            IReadOnlyList<PlayerSessionParticipantBinding> participants = sessionParticipationContext.Participants;
+            for (int index = 0; index < participants.Count; index++)
+            {
+                PlayerSessionParticipantBinding candidate = participants[index];
+                if (!candidate.IsValid || candidate.ParticipantId != requirement.SessionParticipantId)
+                {
+                    continue;
+                }
+
+                if (candidate.Role != requirement.ExpectedSessionRole)
+                {
+                    resolutionReason = "session_participant_role_mismatch";
+                    return false;
+                }
+
+                binding = candidate;
+                resolutionReason = "resolved_by_session_participant_id";
+                return true;
+            }
+
+            resolutionReason = "session_participant_id_missing";
+            return false;
+        }
+
+        private static bool TryGetSessionScopedPlayerActorForParticipant(
+            SessionActorRuntimeStore sessionActorRuntimeStore,
+            SessionActivityIdentity identity,
+            PlayerActivityParticipantBinding participant,
+            out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            if (sessionActorRuntimeStore == null ||
+                !participant.IsValid ||
+                !sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) ||
+                !entry.IsValid)
+            {
+                return false;
+            }
+
+            PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
+            handle = new PlayerActorRuntimeHandle(actorIdentity, entry.Instance, entry.Actor);
+            return handle.IsValid;
+        }
+
         private static PlayerSessionParticipationContext ResolveSessionParticipationContextOrFail(
             ActivityEntryParticipantBindingCommand command,
             ActivityParticipationRuntimeState activityParticipationRuntimeState,
@@ -1705,6 +1841,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             return context;
+        }
+
+        private static void LogActivityParticipationBindingSkipped(
+            ActivityEntryParticipantBindingCommand command,
+            SessionActivityIdentity identity,
+            PlayerSessionParticipationContext sessionParticipationContext,
+            string requirementId,
+            PlayerSessionParticipantId participantId,
+            string skipReason)
+        {
+            string sessionParticipationState = sessionParticipationContext != null && sessionParticipationContext.IsValid
+                ? "present"
+                : "absent";
+
+            DebugUtility.Log(
+                typeof(ActivityEntryParticipantBindingStage),
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionId}' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{sessionParticipationState}' skipReason='{skipReason}' owner='ActivityEntryParticipantBindingStage' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Warning);
         }
 
         private static string FormatActivityParticipantBindings(IReadOnlyList<PlayerActivityParticipantBinding> participants)

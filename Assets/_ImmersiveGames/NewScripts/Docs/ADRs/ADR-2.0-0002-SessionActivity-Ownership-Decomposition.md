@@ -6050,6 +6050,16 @@ Activity01ToActivity02 PASS.
 RouteExitBackToMenu PASS.
 RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
 ```
+
+## SA-18A15 - fechamento da frente ParticipantBinding bridge
+
+- `SA-18A15` foi fechado por `PASS funcional + PASS arquitetural do corte`.
+- `IActivityEntryParticipantBindingRuntimeBridge` saiu do runtime ativo.
+- `SessionActivityPipeline` deixou de proxiar `ExecutePlayerActorMaterialization`, `ExecutePlayerActorParticipationEnter` e `ExecuteActorReset`.
+- `ActivityEntryPipeline` passou a injetar dependências explícitas no `ActivityEntryParticipantBindingStage`.
+- O aceite observado preservou `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` sem `error CS`, `FATAL`, `Exception`, `route_transition_failed`, `checkpointStatus='Failed'`, `ActivityGateBindingFailed` ou `Duplicate player participant registration`.
+- Esta frente está fechada; o próximo foco volta aos resíduos gerais de ownership do `SessionActivityPipeline`.
+
 ## SA-16F closure
 
 - `SA-16F` - `Route/session save contributor inventory audit`: `CLOSED / Backlog controlado`.

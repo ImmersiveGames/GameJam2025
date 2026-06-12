@@ -19,7 +19,7 @@ MonoBehaviour:
   defaultLevel: 2
   rules:
   - ruleId: logger.Session.operation
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.SessionOperational
     level: 4
   - ruleId: logger.saveadapter
@@ -31,19 +31,19 @@ MonoBehaviour:
     namespacePrefix: _ImmersiveGames.NewScripts.SessionActivity
     level: 4
   - ruleId: logger.input
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.InputModes
     level: 4
   - ruleId: logger.audio
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.AudioRuntime
     level: 4
   - ruleId: logger.presentation
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.Presentation
     level: 4
   - ruleId: logger.camera
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.CameraPresentation
     level: 4
   - ruleId: logger.player.participation
@@ -59,6 +59,6 @@ MonoBehaviour:
     namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime
     level: 4
   - ruleId: logger.pool
-    enabled: 1
+    enabled: 0
     namespacePrefix: _ImmersiveGames.NewScripts.Foundation.Platform.Pooling
     level: 4

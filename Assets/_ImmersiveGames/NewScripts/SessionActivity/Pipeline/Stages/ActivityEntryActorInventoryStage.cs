@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityContentLoadedSet loadedSet,
             IActivityEntryIdentityRuntimeBridge identityBridge,
             IActivityEntryFactRuntimeBridge factBridge,
-            IActivityEntryLogRuntimeBridge logBridge,
+            ActivityEntryLogSink logSink,
             ActivitySceneActorRegistry sceneActorRegistry,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -42,19 +42,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryPipeline'.");
+                $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
             factBridge.EmitSnapshot(
                 snapshots,
                 "actor_scene_discovery_started",
                 command.Source,
                 command.Reason,
-                $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryPipeline'.");
-            logBridge.LogEntryOwnerEvent(
+                $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
+            logSink.LogEntryOwnerEvent(
                 "ActivityEntryActorSceneDiscoveryStarted",
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='actor_scene_discovery'");
+                "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_scene_discovery'");
 
             try
             {
@@ -76,19 +76,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         skippedIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{command.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryPipeline'.");
+                        $"'{command.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
                     factBridge.EmitSnapshot(
                         snapshots,
                         "actor_scene_discovery_skipped",
                         command.Source,
                         command.Reason,
-                        $"'{command.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryPipeline'.");
-                    logBridge.LogEntryOwnerEvent(
+                        $"'{command.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
+                    logSink.LogEntryOwnerEvent(
                         "ActivityEntryActorSceneDiscoverySkipped",
                         skippedIdentity,
                         command.Source,
                         command.Reason,
-                        "owner='ActivityEntryPipeline' block='actor_scene_discovery' reason='no_authorized_source'");
+                        "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_scene_discovery' reason='no_authorized_source'");
                 }
 
                 SessionActivityIdentity completedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryCompleted);
@@ -99,19 +99,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     completedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryPipeline'.");
+                    $"'{command.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "actor_scene_discovery_completed",
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryPipeline'.");
-                logBridge.LogEntryOwnerEvent(
+                    $"'{command.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
+                logSink.LogEntryOwnerEvent(
                     "ActivityEntryActorSceneDiscoveryCompleted",
                     completedIdentity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='actor_scene_discovery' discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}'");
+                    $"owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_scene_discovery' discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}'");
 
                 return discovery;
             }
@@ -125,26 +125,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryPipeline'.");
+                    $"'{command.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "actor_scene_discovery_failed",
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryPipeline'.");
-                logBridge.LogEntryOwnerEvent(
+                    $"'{command.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
+                logSink.LogEntryOwnerEvent(
                     "ActivityEntryActorSceneDiscoveryFailed",
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='actor_scene_discovery' error='{exception.Message}'");
+                    $"owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_scene_discovery' error='{exception.Message}'");
                 throw;
             }
         }
 
         public static ActorInventoryFeedResult ExecuteActorInventoryFeed(
             ActivityEntryObjectSetupCommand command,
-            IActivityEntryLogRuntimeBridge logBridge,
+            ActivityEntryLogSink logSink,
             ActivityParticipationContext participationContext,
             ActivitySceneActorRegistry sceneActorRegistry,
             ActivityPlayerActorRegistry playerActorRegistry,
@@ -172,12 +172,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             SessionActivityIdentity identity = command.Identity;
-            logBridge.LogEntryOwnerEvent(
+            logSink.LogEntryOwnerEvent(
                 "ActivityEntryActorInventoryFeedStarted",
                 identity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='actor_inventory_feed'");
+                "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_inventory_feed'");
 
             IReadOnlyList<PlayerActorIdentityRecord> playerActors = ResolvePlayerActorCapabilityTargetsForCurrentEntry(
                 participationContext,
@@ -195,22 +195,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorInventoryFeedResult result = feed.BuildFromSources(identity, actorSources, command.Source, command.Reason);
             if (!result.IsValid)
             {
-                logBridge.LogEntryOwnerEvent(
+                logSink.LogEntryOwnerEvent(
                     "ActivityEntryActorInventoryFeedFailed",
                     identity,
                     command.Source,
                     command.Reason,
-                    "owner='ActivityEntryPipeline' block='actor_inventory_feed' reason='invalid_feed_result'");
+                    "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_inventory_feed' reason='invalid_feed_result'");
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][ActorInventoryFeed] Invalid feed result activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}'.");
             }
 
             inventoryState.SetCurrentActorInventoryFeedResult(result);
-            logBridge.LogEntryOwnerEvent(
+            logSink.LogEntryOwnerEvent(
                 "ActivityEntryActorInventoryFeedCompleted",
                 identity,
                 command.Source,
                 command.Reason,
-                $"owner='ActivityEntryPipeline' block='actor_inventory_feed' actorInstances='{result.ActorInstances.Count}' actorEntries='{result.ActorEntries.Count}' actorParticipations='{result.ActorParticipations.Count}'");
+                $"owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_inventory_feed' actorInstances='{result.ActorInstances.Count}' actorEntries='{result.ActorEntries.Count}' actorParticipations='{result.ActorParticipations.Count}'");
             return result;
         }
 

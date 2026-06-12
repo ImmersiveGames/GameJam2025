@@ -99,6 +99,15 @@ Fontes normativas e de evidência:
 - Resultado: `SessionActivityPipeline` saiu do store path e o compile fix de H1 usou `SessionActivityIdentity.SessionId`, não `SessionStateId`.
 - Não houve fallback, compat rail ou novo manager/coordinator.
 
+## SA-18A15 - ParticipantBinding adapter call-through split
+
+- Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+- `IActivityEntryParticipantBindingRuntimeBridge` foi removido do runtime ativo.
+- `SessionActivityPipeline` deixou de ser proxy de `ExecutePlayerActorMaterialization`, `ExecutePlayerActorParticipationEnter` e `ExecuteActorReset`.
+- `ActivityEntryPipeline` passou a injetar dependências explícitas no `ActivityEntryParticipantBindingStage`.
+- Critério de aceite observado: `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` passaram sem `error CS`, `FATAL`, `Exception`, `route_transition_failed`, `checkpointStatus='Failed'`, `ActivityGateBindingFailed` ou `Duplicate player participant registration`.
+- A frente `IActivityEntryParticipantBindingRuntimeBridge` está fechada; o próximo foco volta aos resíduos gerais de ownership do `SessionActivityPipeline`.
+
 ## Matriz consolidada SA-0 a SA-8
 
 | Corte | Status | Leitura objetiva | Evidência principal |

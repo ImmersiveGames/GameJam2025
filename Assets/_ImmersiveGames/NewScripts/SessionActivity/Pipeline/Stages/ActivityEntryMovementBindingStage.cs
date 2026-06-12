@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.ActivityId}' movement binding started.");
             DebugUtility.Log(
                 typeof(ActivityEntryMovementBindingStage),
-                $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingStarted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingStarted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             $"'{command.ActivityId}' movement binding retained playerSlotId='{retained.PlayerSlotId}' playerActorId='{retained.PlayerActorId}'.");
                         DebugUtility.Log(
                             typeof(ActivityEntryMovementBindingStage),
-                            $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingRetained' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' playerSlotId='{retained.PlayerSlotId}' playerActorId='{retained.PlayerActorId}' source='{command.Source}' reason='{command.Reason}'.",
+                            $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingRetained' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' playerSlotId='{retained.PlayerSlotId}' playerActorId='{retained.PlayerActorId}' source='{command.Source}' reason='{command.Reason}'.",
                             DebugUtility.Colors.Info);
                     }
 
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         $"'{command.ActivityId}' movement binding completed status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false'.");
                     DebugUtility.Log(
                         typeof(ActivityEntryMovementBindingStage),
-                        $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
+                        $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Success);
                     endpoint.EmitSnapshot(
                         snapshots,
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' movement binding skipped because no movement capability target is required or retained.");
                 DebugUtility.Log(
                     typeof(ActivityEntryMovementBindingStage),
-                    $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingSkippedNoRequiredMovement' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingSkippedNoRequiredMovement' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 endpoint.EmitSnapshot(
                     snapshots,
@@ -137,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' movement binding completed status='NoMovementCapabilityRequired' controlEnabled='false'.");
                 DebugUtility.Log(
                     typeof(ActivityEntryMovementBindingStage),
-                    $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' status='NoMovementCapabilityRequired' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' status='NoMovementCapabilityRequired' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
                 endpoint.EmitSnapshot(
                     snapshots,
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' movement bound requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' endpoint='{record.ObservedEndpoint}'.");
                 DebugUtility.Log(
                     typeof(ActivityEntryMovementBindingStage),
-                    $"[OBS][ActivityEntryPipeline][MovementBinding] event='PlayerMovementBound' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' endpoint='{record.ObservedEndpoint}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActivityEntryPipeline][MovementBinding] event='PlayerMovementBound' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' endpoint='{record.ObservedEndpoint}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
             }
 
@@ -279,7 +279,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.ActivityId}' movement binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false'.");
             DebugUtility.Log(
                 typeof(ActivityEntryMovementBindingStage),
-                $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][ActivityEntryPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
             endpoint.EmitSnapshot(
                 snapshots,

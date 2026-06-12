@@ -71,7 +71,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             ActivityEntryPipeline activityEntryPipeline = new ActivityEntryPipeline(
                 _pipeline,
-                _pipeline,
+                _pipeline.EntryPlayerActorMaterializationAdapter,
+                _pipeline.EntryPlayerActorParticipationAdapter,
+                _pipeline.EntryActorResetAdapter,
                 _pipeline,
                 _pipeline,
                 _pipeline,

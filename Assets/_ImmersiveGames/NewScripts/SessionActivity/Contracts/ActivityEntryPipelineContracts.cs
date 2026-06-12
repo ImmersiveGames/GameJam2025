@@ -1084,24 +1084,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityEntryContentPendingOperationRuntimeBridge
     {
         void SetPendingOperation(SessionActivityPendingOperation operation);
-    }
-
-    public interface IActivityEntryLogRuntimeBridge
-    {
-        void LogEntryOwnerEvent(
-            string eventName,
-            SessionActivityIdentity identity,
-            string source,
-            string reason,
-            string detail = "");
-
-        void LogPhaseBoundary(
-            string phaseName,
-            SessionActivityIdentity identity,
-            string source,
-            string reason,
-            bool completed = false,
-            string detail = "");
+        void ClearPendingOperation();
     }
 
     public interface IActivityEntryPreparationRuntimeBridge
@@ -1131,14 +1114,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         IActivityEntryIdentityRuntimeBridge,
         IActivityEntryFactRuntimeBridge,
         IActivityEntryContentPendingOperationRuntimeBridge,
-        IActivityEntryLogRuntimeBridge,
         IActivityEntryPreparationRuntimeBridge
     {
     }
 
-    public interface IActivityEntryActorInventoryRuntimeBridge
-    {
-    }
     public interface IActivityEntryActorParticipationRuntimeBridge
     {
         ActorParticipationReadinessEvaluation EvaluateActorParticipationReadiness(

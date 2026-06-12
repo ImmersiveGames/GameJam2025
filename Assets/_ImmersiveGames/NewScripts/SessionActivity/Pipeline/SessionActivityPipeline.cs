@@ -33,10 +33,9 @@ using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
-    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeBridge, IActivityEntryParticipantBindingRuntimeBridge, IActivityEntryActorPresentationRuntimeBridge, IActivityEntryActorParticipationRuntimeBridge, IActivityEntryPermissionTargetRuntimeBridge, IActivityEntryMovementBindingRuntimeBridge, IActivityEntryCameraBindingRuntimeBridge, IActivityExitActorTeardownRuntimeBridge
+    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeBridge, IActivityEntryActorPresentationRuntimeBridge, IActivityEntryActorParticipationRuntimeBridge, IActivityEntryPermissionTargetRuntimeBridge, IActivityEntryMovementBindingRuntimeBridge, IActivityEntryCameraBindingRuntimeBridge, IActivityExitActorTeardownRuntimeBridge
     {
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private const string RouteActivitySnapshotSchemaId = "progression.route_activity.object_snapshot.v1";
@@ -79,7 +78,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
         private PlayerSessionParticipationContext _lastSessionParticipationContext;
-        private IReadOnlyList<SessionActivityActorMaterializationPlanEntry> _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
         private SessionActivityRailKind _activeRailKind;
         private IReadOnlyList<PlayerActorIdentityRecord> _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
         private bool _movementControlEnableAllowedForCurrentEntry;
@@ -464,6 +462,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         internal ActivitySceneActorRegistry EntryActorSceneRegistry => _activitySceneActorRegistry;
         internal ActivityPlayerActorRegistry EntryActorPlayerRegistry => _activityPlayerActorRegistry;
         internal SessionActorRuntimeStore EntrySessionActorRuntimeStore => _sessionActorRuntimeStore;
+        internal IPlayerActorMaterializationAdapter EntryPlayerActorMaterializationAdapter => _playerActorMaterializationAdapter;
+        internal IPlayerActorParticipationAdapter EntryPlayerActorParticipationAdapter => _playerActorParticipationAdapter;
+        internal IActorResetAdapter EntryActorResetAdapter => _actorResetAdapter;
         internal IMovementBindingAdapter EntryMovementBindingAdapter => _movementBindingAdapter;
         public ActivityContentLoadedSet GetCurrentActivityContentLoadedSet()
         {
@@ -746,7 +747,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastVisualReadinessSignal = default;
             _lastSessionParticipationContext = handoff.SessionParticipationContext;
             _activityEntryPipeline.StoreCurrentSessionParticipationContext(handoff.SessionParticipationContext);
-            _lastActorMaterializationPlanEntries = handoff.ActorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
+            _activityEntryPipeline.StoreCurrentActorMaterializationPlanEntries(handoff.ActorMaterializationPlanEntries);
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
@@ -1627,7 +1628,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string normalizedEventName = Normalize(eventName);
             string message =
-                $"[OBS][SessionActivityPipeline][ActivityContentReleaseContinuation] event='{normalizedEventName}' owner='{ActivityContentReleaseContinuationStage.Owner}' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{telemetry.Definition.ActivityId}' entrySequence='{telemetry.EntrySequence}' stage='{_state.CurrentStage}' source='{telemetry.Source}' reason='{telemetry.Reason}' continuationKind='{telemetry.ContinuationKind}' continuationTargetActivityId='{(string.IsNullOrWhiteSpace(telemetry.ContinuationTargetActivityId) ? "<none>" : telemetry.ContinuationTargetActivityId)}' continuationTargetEntrySequence='{telemetry.ContinuationTargetEntrySequence}' hasPendingRestartTransition='{telemetry.HasPendingRestartTransition.ToString().ToLowerInvariant()}' hasPendingRouteExit='{telemetry.HasPendingRouteExit.ToString().ToLowerInvariant()}' hasNextActivity='{telemetry.HasNextActivity.ToString().ToLowerInvariant()}' routeExitRequested='{telemetry.RouteExitRequested.ToString().ToLowerInvariant()}' deactivationCompleted='{telemetry.DeactivationCompleted.ToString().ToLowerInvariant()}' activityCompletionRequested='{telemetry.ActivityCompletionRequested.ToString().ToLowerInvariant()}' releaseStatus='{telemetry.ReleaseStatus}' skippedNoContent='{telemetry.SkippedNoContent.ToString().ToLowerInvariant()}' loadedSceneCount='{telemetry.LoadedSceneCount}' releasedSceneCount='{telemetry.ReleasedSceneCount}' previousStage='{telemetry.PreviousStage}' nextStage='{telemetry.NextStage}'.";
+                $"[OBS][ActivityContentReleaseContinuationStage] event='{normalizedEventName}' owner='{ActivityContentReleaseContinuationStage.Owner}' macroLifecycleOwner='{ActivityContentReleaseContinuationStage.MacroLifecycleOwner}' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{telemetry.Definition.ActivityId}' entrySequence='{telemetry.EntrySequence}' stage='{_state.CurrentStage}' source='{telemetry.Source}' reason='{telemetry.Reason}' continuationKind='{telemetry.ContinuationKind}' continuationTargetActivityId='{(string.IsNullOrWhiteSpace(telemetry.ContinuationTargetActivityId) ? "<none>" : telemetry.ContinuationTargetActivityId)}' continuationTargetEntrySequence='{telemetry.ContinuationTargetEntrySequence}' hasPendingRestartTransition='{telemetry.HasPendingRestartTransition.ToString().ToLowerInvariant()}' hasPendingRouteExit='{telemetry.HasPendingRouteExit.ToString().ToLowerInvariant()}' hasNextActivity='{telemetry.HasNextActivity.ToString().ToLowerInvariant()}' routeExitRequested='{telemetry.RouteExitRequested.ToString().ToLowerInvariant()}' deactivationCompleted='{telemetry.DeactivationCompleted.ToString().ToLowerInvariant()}' activityCompletionRequested='{telemetry.ActivityCompletionRequested.ToString().ToLowerInvariant()}' releaseStatus='{telemetry.ReleaseStatus}' skippedNoContent='{telemetry.SkippedNoContent.ToString().ToLowerInvariant()}' loadedSceneCount='{telemetry.LoadedSceneCount}' releasedSceneCount='{telemetry.ReleasedSceneCount}' previousStage='{telemetry.PreviousStage}' nextStage='{telemetry.NextStage}'.";
 
             ActivityContentReleaseContinuationStage.LogEvent(
                 message,
@@ -1775,17 +1776,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][PendingOperation] event='ActivationWindowSceneUnloadContinuationStarted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
-                DebugUtility.Colors.Info);
+            ActivityWindowSceneUnloadContinuationStage.LogActivationUnloadContinuationStarted(
+                PipelineId,
+                _sessionId,
+                definition,
+                entrySequence,
+                command);
 
             EnterRunning(definition, command, facts, snapshots, entrySequence);
 
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][PendingOperation] event='ActivationWindowSceneUnloadContinuationCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
-                DebugUtility.Colors.Success);
+            ActivityWindowSceneUnloadContinuationStage.LogActivationUnloadContinuationCompleted(
+                PipelineId,
+                _sessionId,
+                definition,
+                entrySequence,
+                command);
         }
 
         private void ContinueAfterDeactivationWindowSceneUnloadCompletion(
@@ -1795,10 +1800,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][PendingOperation] event='DeactivationWindowSceneUnloadContinuationStarted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
-                DebugUtility.Colors.Info);
+            ActivityWindowSceneUnloadContinuationStage.LogDeactivationUnloadContinuationStarted(
+                PipelineId,
+                _sessionId,
+                definition,
+                entrySequence,
+                command);
 
             if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail)
             {
@@ -1818,10 +1825,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _ = FinalizeDeactivationAndContinuation(definition, command, facts, snapshots, entrySequence);
             }
 
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][PendingOperation] event='DeactivationWindowSceneUnloadContinuationCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
-                DebugUtility.Colors.Success);
+            ActivityWindowSceneUnloadContinuationStage.LogDeactivationUnloadContinuationCompleted(
+                PipelineId,
+                _sessionId,
+                definition,
+                entrySequence,
+                command);
         }
 
         public void FailPendingOperation(SessionActivityPendingOperation operation, string source, string reason, string error)
@@ -1893,10 +1902,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Unsupported pending unload completion kind '{operation.OperationKind}'.");
             }
 
-            _state.ClearPendingOperation();
-
-            SessionActivityDefinition definition = _state.CurrentDefinition;
-            int entrySequence = _state.CurrentEntrySequence;
             List<SessionActivityFact> facts = new();
             List<SessionActivitySnapshot> snapshots = new();
             PendingActivityContentReleaseContext context = _activityContentReleaseRuntimeState.PendingReleaseContext;
@@ -1910,19 +1915,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 unloadResult.Source,
                 unloadResult.Reason);
 
-            HandleActivityContentSceneUnloadCompleted(
-                definition,
-                syntheticCommand,
+            ActivityContentSceneUnloadCompletionStage.Execute(
+                new ActivityContentSceneUnloadCompletionStageCommand(
+                    syntheticCommand,
+                    operation,
+                    unloadResult.Kind),
+                this,
+                context,
                 facts,
-                snapshots,
-                entrySequence,
-                operation,
-                unloadResult.Kind);
-
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][ActivityContentRelease] event='ActivityContentUnloadCompletionTechnicalCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{context.Definition.ActivityId}' entrySequence='{context.EntrySequence}' operationId='{operation.OperationId}' unloadKind='{unloadResult.Kind}' source='{Normalize(unloadResult.Source)}' reason='{Normalize(unloadResult.Reason)}' pendingOperationCleared='true'.",
-                DebugUtility.Colors.Info);
+                snapshots);
 
             ContinueAfterActivityContentUnloadCompletion(
                 context,
@@ -1944,10 +1945,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("Pending activity content release context is invalid for unload completion continuation.");
             }
 
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][ActivityContentRelease] event='ActivityContentUnloadCompletionContinuationStarted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{context.Definition.ActivityId}' entrySequence='{context.EntrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' nextSceneIndex='{context.NextSceneIndex}' totalScenes='{(contentRuntimeState.CurrentLoadedSet.Scenes?.Count ?? 0)}'.",
-                DebugUtility.Colors.Info);
+            ActivityContentReleaseContinuationStage.LogUnloadCompletionContinuationStarted(
+                PipelineId,
+                _sessionId,
+                context.Definition,
+                context.EntrySequence,
+                context.NextSceneIndex,
+                command,
+                contentRuntimeState.CurrentLoadedSet.Scenes?.Count ?? 0);
 
             try
             {
@@ -1982,10 +1987,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
             finally
             {
-                DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][ActivityContentRelease] event='ActivityContentUnloadCompletionContinuationCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{context.Definition.ActivityId}' entrySequence='{context.EntrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' nextSceneIndex='{context.NextSceneIndex}' totalScenes='{(contentRuntimeState.CurrentLoadedSet.Scenes?.Count ?? 0)}'.",
-                    DebugUtility.Colors.Info);
+                ActivityContentReleaseContinuationStage.LogUnloadCompletionContinuationCompleted(
+                    PipelineId,
+                    _sessionId,
+                    context.Definition,
+                    context.EntrySequence,
+                    context.NextSceneIndex,
+                    command,
+                    contentRuntimeState.CurrentLoadedSet.Scenes?.Count ?? 0);
             }
         }
 
@@ -2028,60 +2037,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason,
                 $"Pending operation completion rejected as stale/foreign. active='{active}' incoming='{operation}'.");
             return false;
-        }
-
-        private void HandleActivityContentSceneUnloadCompleted(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence,
-            SessionActivityPendingOperation operation,
-            ActivityContentUnloadResultKind unloadKind)
-        {
-            SessionActivityIdentity unloadedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityContentSceneUnloaded, entrySequence);
-            _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.ActivityContentSceneUnloaded);
-            string releaseStatus = unloadKind == ActivityContentUnloadResultKind.SkippedNoContent
-                ? "SkippedNoContent"
-                : "Unloaded";
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityContentSceneUnloaded,
-                unloadedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity content scene unloaded operationId='{operation.OperationId}' sceneName='{operation.SceneName}' releaseStatus='{releaseStatus}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_content_scene_unloaded",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity content scene unloaded operationId='{operation.OperationId}' sceneName='{operation.SceneName}' releaseStatus='{releaseStatus}'.");
-        }
-
-        private void EmitActivityContentSceneUnloadCommandIssued(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence,
-            SessionActivityPendingOperation operation)
-        {
-            SessionActivityIdentity unloadingIdentity = BuildIdentity(definition, SessionActivityStage.ActivityContentSceneUnloading, entrySequence);
-            _state.SetCurrentIdentity(unloadingIdentity, SessionActivityStage.ActivityContentSceneUnloading);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityContentSceneUnloadCommandIssued,
-                unloadingIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity content scene unload command issued operationId='{operation.OperationId}' sceneName='{operation.SceneName}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_content_scene_unload_command_issued",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity content scene unload command issued operationId='{operation.OperationId}' sceneName='{operation.SceneName}'.");
         }
 
         private static SessionActivityCommandResult BuildCommandResult(SessionActivityCommand command, List<SessionActivityFact> emittedFacts)
@@ -2147,8 +2102,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             _state.SetCurrentIdentity(resetIdentity, SessionActivityStage.Completed);
 
-            ReleaseSessionScopedActors(resetIdentity, facts, command.Source, command.Reason);
-            ReleaseIndexedRouteScopedPlayerActors();
+            SessionActivityActorRuntimeReleaseStage.ReleaseSessionScopedActorsForSession(
+                resetIdentity,
+                _sessionActorRuntimeStore,
+                _state,
+                facts,
+                command.Source,
+                command.Reason);
+            SessionActivityActorRuntimeReleaseStage.ReleaseIndexedRouteScopedPlayerActors(
+                _activityPlayerActorRegistry,
+                command.Source,
+                command.Reason);
             _sessionActorRuntimeStore.Clear();
             _activityPlayerActorRegistry.ClearAllRouteScopedIndexes();
             _activitySceneActorRegistry.ClearAllRouteRetained();
@@ -2160,7 +2124,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activityActorExitRuntimeState.ClearAll(resetIdentity.ActivityId, resetIdentity.EntrySequence, "SessionActivityPipeline", "session_reset");
             _lastSessionParticipationContext = null;
             _activityEntryPipeline.ClearCurrentSessionParticipationContext();
-            _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
+            _activityEntryPipeline.ClearCurrentActorMaterializationPlanEntries();
             _pendingContinuationExitTeardownCompleted = false;
             _routeExitActorTeardownCompleted = false;
             _pendingTransitionResolution = default;
@@ -2234,9 +2198,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activityObjectExitRuntimeState.ClearAll(firstDefinition.ActivityId, entrySequence, "SessionActivityPipeline", "pipeline_start_reset");
             _lastSessionParticipationContext = null;
             _activityEntryPipeline.ClearCurrentSessionParticipationContext();
-            _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
-            ReleaseIndexedRouteScopedPlayerActors();
-            ReleaseSessionScopedActors(activationIdentity, facts, command.Source, "pipeline_start_reset");
+            _activityEntryPipeline.ClearCurrentActorMaterializationPlanEntries();
+            SessionActivityActorRuntimeReleaseStage.ReleaseIndexedRouteScopedPlayerActors(
+                _activityPlayerActorRegistry,
+                command.Source,
+                "pipeline_start_reset");
+            SessionActivityActorRuntimeReleaseStage.ReleaseSessionScopedActorsForSession(
+                activationIdentity,
+                _sessionActorRuntimeStore,
+                _state,
+                facts,
+                command.Source,
+                "pipeline_start_reset");
             _activityPlayerActorRegistry.ClearAllRouteScopedIndexes();
             _activitySceneActorRegistry.ClearAllRouteRetained();
             _activityActorExitRuntimeState.ClearAll(firstDefinition.ActivityId, entrySequence, "SessionActivityPipeline", "pipeline_start_reset");
@@ -3358,7 +3331,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline setup/readiness failed. kind='{setupReadinessResult.Kind}' reason='{setupReadinessResult.Reason}' identity='{setupReadinessResult.Identity}'.");
             }
 
-            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, setupReadinessResult.ExitCorrelation, command.Source, command.Reason);
+            ActivityObjectExitCorrelationFreezeStage.Execute(
+                setupReadinessResult.Identity,
+                setupReadinessResult.ExitCorrelation,
+                _activityObjectExitRuntimeState,
+                command.Source,
+                command.Reason);
             EnterActivationFlow(definition, command, facts, snapshots, entrySequence);
         }
 
@@ -3429,52 +3407,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline setup/readiness failed. kind='{setupReadinessResult.Kind}' reason='{setupReadinessResult.Reason}' identity='{setupReadinessResult.Identity}'.");
             }
 
-            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, setupReadinessResult.ExitCorrelation, command.Source, command.Reason);
+            ActivityObjectExitCorrelationFreezeStage.Execute(
+                setupReadinessResult.Identity,
+                setupReadinessResult.ExitCorrelation,
+                _activityObjectExitRuntimeState,
+                command.Source,
+                command.Reason);
             EnterActivationFlow(definition, command, facts, snapshots, entrySequence);
-        }
-
-        private void SyncActivityObjectExitCorrelation(
-            SessionActivityIdentity identity,
-            ActivityObjectExitCorrelationBundle exitCorrelation,
-            string source,
-            string reason)
-        {
-            if (!identity.IsValid)
-            {
-                throw new InvalidOperationException("Activity setup identity is invalid.");
-            }
-
-            string activityId = identity.ActivityId;
-            int entrySequence = identity.EntrySequence;
-
-            _activityObjectExitRuntimeState.ClearAll(
-                activityId,
-                entrySequence,
-                "SessionActivityPipeline",
-                "activity_object_exit_correlation_refresh_by_pipeline_macro");
-
-            ActivityObjectContributorDiscoveryResult discoveryResult = exitCorrelation.ContributorDiscoveryResult;
-            ActivityCapabilityInventory inventoryPreview = exitCorrelation.InventoryPreview;
-            ActivityCapabilityInventoryValidationResult inventoryValidation = exitCorrelation.InventoryPreviewValidation;
-
-            _activityObjectExitRuntimeState.StoreContributorDiscoveryResult(
-                discoveryResult,
-                activityId,
-                entrySequence,
-                "SessionActivityPipeline",
-                "activity_object_exit_correlation_frozen_by_pipeline_macro");
-            _activityObjectExitRuntimeState.StoreInventoryPreview(
-                inventoryPreview,
-                inventoryValidation,
-                activityId,
-                entrySequence,
-                "SessionActivityPipeline",
-                "activity_object_exit_correlation_frozen_by_pipeline_macro");
-
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline] event='ActivityObjectExitCorrelationFrozen' owner='SessionActivityPipeline' technicalStateOwner='ActivityObjectExitRuntimeState' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryOwner='ActivityObjectExitRuntimeState' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='ActivityObjectExitRuntimeState' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}' inventoryValidationValid='{inventoryValidation.IsValid.ToString().ToLowerInvariant()}'.",
-                DebugUtility.Colors.Info);
         }
 
         private void EmitPredefinedVisualSetupReadyFactIfApplicable(
@@ -3658,59 +3597,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
-        private void ReleaseIndexedRouteScopedPlayerActors()
-        {
-            IReadOnlyList<PlayerActorRuntimeHandle> handles = _activityPlayerActorRegistry.GetIndexedRouteScopedHandles();
-            for (int index = 0; index < handles.Count; index++)
-            {
-                PlayerActorRuntimeHandle handle = handles[index];
-                if (handle.Instance != null)
-                {
-                    Object.Destroy(handle.Instance);
-                }
-            }
-        }
-
-        private void ReleaseSessionScopedActors(
-            SessionActivityIdentity identity,
-            List<SessionActivityFact> facts,
-            string source,
-            string reason)
-        {
-            IReadOnlyList<SessionActorRuntimeEntry> entries = _sessionActorRuntimeStore.GetEntriesForSession(identity);
-            for (int index = 0; index < entries.Count; index++)
-            {
-                SessionActorRuntimeEntry entry = entries[index];
-                DebugUtility.LogVerbose<SessionActivityPipeline>(
-                    $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='SessionActivityPipeline' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{source}' reason='{reason}'.",
-                    DebugUtility.Colors.Info);
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActorLifetimeDecisionResolved,
-                    identity,
-                    source,
-                    reason,
-                    $"Actor lifetime decision resolved actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='SessionReset' decision='Release'.");
-
-                if (entry.Instance != null)
-                {
-                    Object.Destroy(entry.Instance);
-                }
-
-                _sessionActorRuntimeStore.Remove(entry.ActorInstanceRuntimeId);
-                DebugUtility.LogVerbose<SessionActivityPipeline>(
-                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='SessionActivityPipeline' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{source}' reason='{reason}'.",
-                    DebugUtility.Colors.Success);
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActorLifetimeReleased,
-                    identity,
-                    source,
-                    reason,
-                    $"Actor lifetime released actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='SessionReset'.");
-            }
-        }
-
         private bool TryGetActivePresentationHandle(ActorInstanceRuntimeId actorInstanceRuntimeId, out ActorPresentationRuntimeHandle handle)
         {
             handle = default;
@@ -3879,8 +3765,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason,
                 $"'{identity.ActivityId}' movement control state changed controlEnabled='false' affectedActors='{records.Count}'.");
             DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlDisabled' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' controlEnabled='false' affectedActors='{records.Count}' source='{source}' reason='{reason}'.",
+                typeof(PlayerMovementControlStage),
+                $"[OBS][PlayerMovementControlStage][MovementControl] event='MovementControlDisabled' owner='PlayerMovementControlStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' controlEnabled='false' affectedActors='{records.Count}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Warning);
         }
 
@@ -3896,8 +3782,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _movementControlTargetsForCurrentEntry.Count == 0)
             {
                 DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlEnableSkippedNoTarget' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                    typeof(PlayerMovementControlStage),
+                    $"[OBS][PlayerMovementControlStage][MovementControl] event='MovementControlEnableSkippedNoTarget' owner='PlayerMovementControlStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Warning);
                 EmitFact(
                     facts,
@@ -3937,8 +3823,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (_movementControlTargetsForCurrentEntry == null || _movementControlTargetsForCurrentEntry.Count == 0)
             {
                 DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlDisableSkippedNoTarget' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                    typeof(PlayerMovementControlStage),
+                    $"[OBS][PlayerMovementControlStage][MovementControl] event='MovementControlDisableSkippedNoTarget' owner='PlayerMovementControlStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 EmitFact(
                     facts,
@@ -3999,8 +3885,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (string.Equals(_lastMovementDisableEmissionKey, disableKey, StringComparison.Ordinal))
                 {
                     DebugUtility.Log(
-                        typeof(SessionActivityPipeline),
-                        $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlDisableSkippedDuplicate' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                        typeof(PlayerMovementControlStage),
+                        $"[OBS][PlayerMovementControlStage][MovementControl] event='MovementControlDisableSkippedDuplicate' owner='PlayerMovementControlStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -4036,8 +3922,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Reason,
                 $"'{definition.ActivityId}' movement control state changed controlEnabled='{stateValue}' affectedActors='{records.Count}'.");
             DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][MovementControl] event='{eventName}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' controlEnabled='{stateValue}' affectedActors='{records.Count}' source='{command.Source}' reason='{command.Reason}'.",
+                typeof(PlayerMovementControlStage),
+                $"[OBS][PlayerMovementControlStage][MovementControl] event='{eventName}' owner='PlayerMovementControlStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' controlEnabled='{stateValue}' affectedActors='{records.Count}' source='{command.Source}' reason='{command.Reason}'.",
                 enable ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
         }
 
@@ -7488,122 +7374,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return snapshot;
         }
 
-        private bool TryBuildActivityParticipantBinding(
-            ParticipantRequirement requirement,
-            string source,
-            string reason,
-            out PlayerActivityParticipantBinding binding,
-            out string resolutionReason)
-        {
-            binding = default;
-            resolutionReason = "unknown";
-            if (string.IsNullOrWhiteSpace(requirement.Requirement.RequirementId))
-            {
-                resolutionReason = "invalid_requirement_id";
-                return false;
-            }
-
-            if (!TryResolveSessionParticipantBinding(requirement, out PlayerSessionParticipantBinding sessionParticipant, out resolutionReason))
-            {
-                return false;
-            }
-
-            binding = new PlayerActivityParticipantBinding(
-                new PlayerActivityParticipantRequirementId(requirement.Requirement.RequirementId),
-                sessionParticipant.ParticipantId,
-                sessionParticipant.Role,
-                sessionParticipant.PlayerSlotId,
-                sessionParticipant.PlayerSelectionId,
-                sessionParticipant.ActorDefinitionId,
-                sessionParticipant.ActorId,
-                sessionParticipant.ActorScope,
-                sessionParticipant.MaterializationPolicy,
-                requirement.Requirement.IsRequired,
-                sessionParticipant.RequiresPlayerActor,
-                sessionParticipant.RequiresPlayerInput,
-                source,
-                reason);
-            if (!binding.IsValid)
-            {
-                resolutionReason = "activity_participant_binding_invalid";
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool TryResolveSessionParticipantBinding(
-            ParticipantRequirement requirement,
-            out PlayerSessionParticipantBinding binding,
-            out string resolutionReason)
-        {
-            binding = default;
-            resolutionReason = "unknown";
-            if (_lastSessionParticipationContext == null ||
-                !_lastSessionParticipationContext.IsValid ||
-                _lastSessionParticipationContext.Participants == null)
-            {
-                resolutionReason = "session_participation_context_missing";
-                return false;
-            }
-
-            if (!requirement.SessionParticipantId.IsValid)
-            {
-                resolutionReason = "session_participant_id_missing";
-                return false;
-            }
-
-            if (requirement.ExpectedSessionRole == PlayerSessionParticipantRole.Unknown)
-            {
-                resolutionReason = "expected_session_role_missing";
-                return false;
-            }
-
-            IReadOnlyList<PlayerSessionParticipantBinding> participants = _lastSessionParticipationContext.Participants;
-            for (int index = 0; index < participants.Count; index++)
-            {
-                PlayerSessionParticipantBinding candidate = participants[index];
-                if (!candidate.IsValid || candidate.ParticipantId != requirement.SessionParticipantId)
-                {
-                    continue;
-                }
-
-                if (candidate.Role != requirement.ExpectedSessionRole)
-                {
-                    resolutionReason = "session_participant_role_mismatch";
-                    return false;
-                }
-
-                binding = candidate;
-                resolutionReason = "resolved_by_session_participant_id";
-                return true;
-            }
-
-            resolutionReason = "session_participant_id_missing";
-            return false;
-        }
-
-        private static string FormatSessionParticipantId(PlayerSessionParticipantId participantId)
-        {
-            return participantId.IsValid ? participantId.ToString() : "<none>";
-        }
-
-        private void LogActivityParticipationBindingSkipped(
-            string activityId,
-            SessionActivityIdentity identity,
-            string requirementId,
-            PlayerSessionParticipantId participantId,
-            string skipReason,
-            string source,
-            string reason)
-        {
-            DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
-                DebugUtility.Colors.Warning);
-        }
-
-
-
         public bool TryGetSnapshotPayloadForSaveOnExit(
             string sessionStateId,
             out SessionActivitySnapshotPayload payload,
@@ -8022,42 +7792,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
-        void IActivityEntryLogRuntimeBridge.LogPhaseBoundary(
-            string phaseName,
-            SessionActivityIdentity identity,
-            string source,
-            string reason,
-            bool completed,
-            string detail)
-        {
-            LogPhaseBoundary(phaseName, identity, source, reason, completed, detail);
-        }
-
-        void IActivityEntryLogRuntimeBridge.LogEntryOwnerEvent(
-            string eventName,
-            SessionActivityIdentity identity,
-            string source,
-            string reason,
-            string detail)
-        {
-            string normalizedEventName = Normalize(eventName);
-            if (string.IsNullOrWhiteSpace(normalizedEventName))
-            {
-                throw new InvalidOperationException("ActivityEntry owner eventName is required.");
-            }
-
-            string normalizedDetail = Normalize(detail);
-            string detailSuffix = string.IsNullOrWhiteSpace(normalizedDetail)
-                ? string.Empty
-                : $" {normalizedDetail}";
-
-            string message =
-                $"[OBS][ActivityEntryPipeline] event='{normalizedEventName}' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{Normalize(source)}' reason='{Normalize(reason)}'{detailSuffix}.";
-
-            DebugUtility.Log(typeof(SessionActivityPipeline), message, DebugUtility.Colors.Info);
-            _state.AppendTrace(message);
-        }
-
         SessionActivityIdentity IActivityEntryIdentityRuntimeBridge.BuildIdentity(SessionActivityDefinition definition, SessionActivityStage stage, int entrySequence)
         {
             return BuildIdentity(definition, stage, entrySequence);
@@ -8092,6 +7826,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         void IActivityEntryContentPendingOperationRuntimeBridge.SetPendingOperation(SessionActivityPendingOperation operation)
         {
             _state.SetPendingOperation(operation);
+        }
+
+        void IActivityEntryContentPendingOperationRuntimeBridge.ClearPendingOperation()
+        {
+            _state.ClearPendingOperation();
         }
 
         void IActivityEntryPreparationRuntimeBridge.ResetMovementControlStateForEntry()
@@ -8139,70 +7878,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string readinessPoint)
         {
             EmitPredefinedVisualSetupReadyFactIfApplicable(definition, facts, readinessIdentity, source, reason, readinessPoint);
-        }
-
-        IReadOnlyList<SessionActivityActorMaterializationPlanEntry> IActivityEntryParticipantBindingRuntimeBridge.GetActorMaterializationPlanEntries()
-        {
-            return _lastActorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
-        }
-
-        bool IActivityEntryParticipantBindingRuntimeBridge.TryBuildActivityParticipantBinding(
-            ParticipantRequirement requirement,
-            string source,
-            string reason,
-            out PlayerActivityParticipantBinding binding,
-            out string resolutionReason)
-        {
-            return TryBuildActivityParticipantBinding(requirement, source, reason, out binding, out resolutionReason);
-        }
-
-        void IActivityEntryParticipantBindingRuntimeBridge.LogActivityParticipationBindingSkipped(
-            string activityId,
-            SessionActivityIdentity identity,
-            string requirementId,
-            PlayerSessionParticipantId participantId,
-            string skipReason,
-            string source,
-            string reason)
-        {
-            LogActivityParticipationBindingSkipped(activityId, identity, requirementId, participantId, skipReason, source, reason);
-        }
-
-        bool IActivityEntryParticipantBindingRuntimeBridge.TryGetSessionScopedPlayerActorForParticipant(
-            SessionActivityIdentity identity,
-            PlayerActivityParticipantBinding participant,
-            out PlayerActorRuntimeHandle handle)
-        {
-            handle = default;
-            if (!participant.IsValid ||
-                !_sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) ||
-                !entry.IsValid)
-            {
-                return false;
-            }
-
-            PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
-            handle = new PlayerActorRuntimeHandle(actorIdentity, entry.Instance, entry.Actor);
-            return handle.IsValid;
-        }
-
-        IReadOnlyList<PlayerActorMaterializationRecord> IActivityEntryParticipantBindingRuntimeBridge.ExecutePlayerActorMaterialization(
-            PlayerActorMaterializationCommand command,
-            SessionActivityIdentity identity)
-        {
-            return _playerActorMaterializationAdapter.Execute(command, identity);
-        }
-
-        IReadOnlyList<PlayerActorParticipationEnterRecord> IActivityEntryParticipantBindingRuntimeBridge.ExecutePlayerActorParticipationEnter(
-            PlayerActorParticipationEnterCommand command,
-            SessionActivityIdentity identity)
-        {
-            return _playerActorParticipationAdapter.Execute(command, identity, _activityPlayerActorRegistry);
-        }
-
-        IReadOnlyList<ActorResetResult> IActivityEntryParticipantBindingRuntimeBridge.ExecuteActorReset(ActorResetCommand command, SessionActivityIdentity identity)
-        {
-            return _actorResetAdapter.Execute(command, identity);
         }
 
         private void TrackSessionScopedHandle(PlayerActorRuntimeHandle handle)

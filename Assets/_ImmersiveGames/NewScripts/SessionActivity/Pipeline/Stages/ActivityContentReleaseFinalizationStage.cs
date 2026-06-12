@@ -189,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 pendingContextPresentAfter,
                 awaitingAfter,
                 DebugUtility.Colors.Success);
-            endpoint.LogPhaseBoundary(
+            new ActivityEntryLogSink().LogPhaseBoundary(
                 "SessionActivityDematerializationCompleted",
                 completedIdentity,
                 command.Source,

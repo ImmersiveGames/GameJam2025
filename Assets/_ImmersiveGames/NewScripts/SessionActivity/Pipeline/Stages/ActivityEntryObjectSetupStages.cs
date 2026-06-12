@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
             IActivityEntryFactRuntimeBridge factBridge,
-            IActivityEntryLogRuntimeBridge logBridge,
+            ActivityEntryLogSink logSink,
             ActivityEntryInventoryRuntimeState inventoryState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -43,12 +43,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.Identity.ActivityId}' activity object contributor discovery started.");
-            logBridge.LogEntryOwnerEvent(
+            logSink.LogEntryOwnerEvent(
                 "ActivityEntryObjectContributorDiscoveryStarted",
                 discoveryIdentity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='object_contributor_discovery'");
+                "owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='object_contributor_discovery'");
 
             if (!HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) || !loadedSet.HasScenes)
             {
@@ -66,12 +66,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Source,
                     command.Reason,
                     $"'{command.Identity.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
-                logBridge.LogEntryOwnerEvent(
+                logSink.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoverySkipped",
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
-                    "owner='ActivityEntryPipeline' block='object_contributor_discovery' reason='no_content_loaded_set'");
+                    "owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='object_contributor_discovery' reason='no_content_loaded_set'");
                 return default;
             }
 
@@ -136,12 +136,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Source,
                     command.Reason,
                     $"'{command.Identity.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
-                logBridge.LogEntryOwnerEvent(
+                logSink.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoveryCompleted",
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='object_contributor_discovery' discovered='{reports.Count}'");
+                    $"owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='object_contributor_discovery' discovered='{reports.Count}'");
                 return result;
             }
             catch (Exception exception)
@@ -160,12 +160,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Source,
                     command.Reason,
                     $"'{command.Identity.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
-                logBridge.LogEntryOwnerEvent(
+                logSink.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoveryFailed",
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='object_contributor_discovery' error='{exception.Message}'");
+                    $"owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='object_contributor_discovery' error='{exception.Message}'");
                 throw;
             }
         }
@@ -688,7 +688,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string message)
         {
             Debug.Log(
-                $"[OBS][ActivityEntryPipeline][CapabilityInventoryPreview] fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' owner='ActivityEntryPipeline' block='capability_inventory_preview' message=\"{message}\"");
+                $"[OBS][ActivityEntryPipeline][CapabilityInventoryPreview] fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='capability_inventory_preview' message=\"{message}\"");
         }
     }
 
