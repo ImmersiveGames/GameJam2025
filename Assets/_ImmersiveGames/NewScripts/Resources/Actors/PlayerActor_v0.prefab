@@ -264,7 +264,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   endpointId: actor.projectile.fire.endpoint.player.primary
   fireProfile: {fileID: 11400000, guid: 6e7909166f3043ce8cdcf2de050620d4, type: 2}
-  required: 0
+  required: 1
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0
