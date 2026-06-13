@@ -470,7 +470,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (Behavior != null && Behavior.ShouldLogStateTransitions && !_hasLoggedRecoveryCompatibility)
             {
                 string status = hasCompatibility
-                    ? (isCompatible ? "compatível" : "incompatível")
+                    ? isCompatible ? "compatível" : "incompatível"
                     : "sem avaliação de compatibilidade";
 
                 DebugUtility.LogVerbose(

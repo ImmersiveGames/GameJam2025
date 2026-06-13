@@ -86,8 +86,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var routeCommand = command.RouteCommand;
 
-            DebugUtility.Log(typeof(OperationalPreviousRouteExitBoundary),
-                $"[OBS][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalPreviousRouteExitBoundary),
+                $"OperationalPreviousRouteExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             return Completed(command, "started", "previous_route_exit_started");
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var routeCommand = command.RouteCommand;
 
             DebugUtility.Log(typeof(OperationalPreviousRouteExitBoundary),
-                $"[OBS][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
+                $"OperationalPreviousRouteExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
 
             return Completed(command, "completed", "previous_route_exit_completed");

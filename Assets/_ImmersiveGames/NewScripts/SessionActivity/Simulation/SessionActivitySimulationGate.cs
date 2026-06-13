@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         private static void LogCommand(ActivityExecutionBlockingCommand command)
         {
             DebugUtility.Log(typeof(SessionActivitySimulationGate),
-                $"[OBS][SimulationGate] commandKind='{command.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command'.",
+                $"commandKind='{command.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -196,11 +196,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             bool accepted)
         {
             DebugUtility.Log(typeof(SessionActivitySimulationGate),
-                $"[OBS][SimulationGate] commandKind='{command.Kind}' factKind='{fact.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command' outcomeKind='{(accepted ? "accepted" : "rejected")}'.",
+                $"commandKind='{command.Kind}' factKind='{fact.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command' outcomeKind='{(accepted ? "accepted" : "rejected")}'.",
                 accepted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
             DebugUtility.Log(typeof(SessionActivitySimulationGate),
-                $"[OBS][SimulationGate] snapshot commandKind='{snapshot.CommandKind}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' sessionIdentity='{snapshot.SessionIdentity}' activityIdentity='{snapshot.ActivityIdentity}' lastFactKind='{snapshot.LastFact.Kind}' lastFactReason='{snapshot.LastFact.Reason}' source='{snapshot.Source}' reason='{snapshot.Reason}' message='{snapshot.Message}'.",
+                $"snapshot commandKind='{snapshot.CommandKind}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' sessionIdentity='{snapshot.SessionIdentity}' activityIdentity='{snapshot.ActivityIdentity}' lastFactKind='{snapshot.LastFact.Kind}' lastFactReason='{snapshot.LastFact.Reason}' source='{snapshot.Source}' reason='{snapshot.Reason}' message='{snapshot.Message}'.",
                 accepted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
         }
     }

@@ -63,9 +63,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                         throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' actor command hub is not prepared.");
                     }
 
-                    DebugUtility.Log(
+                    DebugUtility.LogVerbose(
                         typeof(ActorCommandBindingAdapter),
-                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' state='SkippedOptional' sink='none' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_hub_not_prepared'.",
+                        $"event='ActorCommandBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' state='SkippedOptional' sink='none' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_hub_not_prepared'.",
                         DebugUtility.Colors.Info);
 
                     records.Add(new ActorCommandBindingRecord(
@@ -85,9 +85,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                         throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing active FirePrimary binding on ActorCommandSourceHub.");
                     }
 
-                    DebugUtility.Log(
+                    DebugUtility.LogVerbose(
                         typeof(ActorCommandBindingAdapter),
-                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' state='SkippedOptional' sink='none' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_fireprimary_binding_missing'.",
+                        $"event='ActorCommandBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' state='SkippedOptional' sink='none' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_fireprimary_binding_missing'.",
                         DebugUtility.Colors.Info);
 
                     records.Add(new ActorCommandBindingRecord(
@@ -98,9 +98,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorCommandBindingAdapter),
-                    $"[OBS][ActorCommandHub] event='ActorCommandBindingReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Prepared' hubType='{commandHub.GetType().Name}' hubPrepared='{commandHub.IsPrepared}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActorCommandBindingReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Prepared' hubType='{commandHub.GetType().Name}' hubPrepared='{commandHub.IsPrepared}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 var projectileFireEndpoint = capabilitySurface.ActorProjectileFireEndpoint;
@@ -111,9 +111,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                         throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorProjectileFireEndpoint.");
                     }
 
-                    DebugUtility.Log(
+                    DebugUtility.LogVerbose(
                         typeof(ActorCommandBindingAdapter),
-                        $"[OBS][ActorProjectileFire] event='ActorProjectileFireEndpointSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='SkippedOptional' reason='optional_projectile_fire_endpoint_missing' source='{nameof(ActorCommandBindingAdapter)}'.",
+                        $"event='ActorProjectileFireEndpointSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='SkippedOptional' reason='optional_projectile_fire_endpoint_missing' source='{nameof(ActorCommandBindingAdapter)}'.",
                         DebugUtility.Colors.Info);
 
                     records.Add(new ActorCommandBindingRecord(
@@ -131,9 +131,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                         throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' projectile fire endpoint is not ready. state='{readiness.Kind}' reason='{readiness.Reason}'.");
                     }
 
-                    DebugUtility.Log(
+                    DebugUtility.LogVerbose(
                         typeof(ActorCommandBindingAdapter),
-                        $"[OBS][ActorProjectileFire] event='ActorProjectileFireEndpointReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='False' source='{command.Source}' reason='{readiness.Reason}'.",
+                        $"event='ActorProjectileFireEndpointReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='False' source='{command.Source}' reason='{readiness.Reason}'.",
                         DebugUtility.Colors.Info);
 
                     records.Add(new ActorCommandBindingRecord(
@@ -144,9 +144,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorCommandBindingAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireEndpointReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='True' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActorProjectileFireEndpointReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='True' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
 
                 IActorProjectileSpawnAdapter spawnAdapter = new PooledActorProjectileSpawnAdapter(
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 DebugUtility.Log(
                     typeof(ActorCommandBindingAdapter),
-                    $"[OBS][ActorCommandHub] event='ActorCommandSinkBound' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Executable' sink='{projectileFireEndpoint.GetType().Name}' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' adapter='{projectileFireEndpoint.SpawnAdapterName}' source='{nameof(ActorCommandBindingAdapter)}' reason='projectile_fire_spawn_adapter_sink_bound'.",
+                    $"event='ActorCommandSinkBound' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Executable' sink='{projectileFireEndpoint.GetType().Name}' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' adapter='{projectileFireEndpoint.SpawnAdapterName}' source='{nameof(ActorCommandBindingAdapter)}' reason='projectile_fire_spawn_adapter_sink_bound'.",
                     DebugUtility.Colors.Success);
 
                 records.Add(new ActorCommandBindingRecord(

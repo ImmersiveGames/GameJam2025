@@ -212,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 if (currentRouteLoadSceneSet.Contains(sceneName) ||
-                    (!string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal)) ||
+                    !string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal) ||
                     !dedupe.Add(sceneName))
                 {
                     continue;
@@ -254,7 +254,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 var sceneKey = sceneKeys[i];
                 string sceneName = ResolveSceneName(sceneKey, $"scenesToUnload[{i}]");
                 if (currentRouteLoadSceneSet.Contains(sceneName) ||
-                    (!string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal)) ||
+                    !string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal) ||
                     !dedupe.Add(sceneName))
                 {
                     continue;

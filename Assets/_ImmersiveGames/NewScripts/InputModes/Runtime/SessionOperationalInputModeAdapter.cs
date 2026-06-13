@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public SessionOperationalInputModeAdapter()
         {
             DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
-                "[OBS][InputModes][Adapter] registered source='SessionOperationalPipeline' target='InputModeRequestEvent'.",
+                "registered source='SessionOperationalPipeline' target='InputModeRequestEvent'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -67,8 +67,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     identity.TransitionSequence,
                     request.InitialInputMode.ToString()));
 
-            DebugUtility.Log(typeof(SessionOperationalInputModeAdapter),
-                $"[OBS][InputModes][Adapter] InputModeRequestSubmitted routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' initialInputMode='{request.InitialInputMode}' inputMode='{kind}' source='SessionOperationalPipeline' contextSignature='{request.ContextSignature}' routeClass='{request.RouteClass}' reason='{request.Reason}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
+                $"InputModeRequestSubmitted routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' initialInputMode='{request.InitialInputMode}' inputMode='{kind}' source='SessionOperationalPipeline' contextSignature='{request.ContextSignature}' routeClass='{request.RouteClass}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 

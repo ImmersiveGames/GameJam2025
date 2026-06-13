@@ -122,8 +122,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "Loading started",
                     "LoadingStarted"));
 
-            DebugUtility.Log(typeof(OperationalLoadingStage),
-                $"[OBS][SessionOperationalPipeline][Loading] LoadingStarted routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' showImmediately='{loadingCommand.ShowImmediately}'.",
+            DebugUtility.LogVerbose(typeof(OperationalLoadingStage),
+                $"LoadingStarted routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' showImmediately='{loadingCommand.ShowImmediately}'.",
                 DebugUtility.Colors.Info);
 
             LogLoadingProgress(
@@ -318,7 +318,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Reason);
 
             DebugUtility.Log(typeof(OperationalLoadingStage),
-                $"[OBS][SessionOperationalPipeline][Loading] LoadingCompleted routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' hideAfterCompletion='{loadingCommand.HideAfterCompletion}'.",
+                $"LoadingCompleted routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' hideAfterCompletion='{loadingCommand.HideAfterCompletion}'.",
                 DebugUtility.Colors.Success);
 
             if (loadingCommand.HideAfterCompletion)
@@ -335,13 +335,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 loadingHidden = true;
 
                 DebugUtility.Log(typeof(OperationalLoadingStage),
-                    $"[OBS][SessionOperationalPipeline][Loading] LoadingHidden routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"LoadingHidden routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
             }
             else
             {
-                DebugUtility.Log(typeof(OperationalLoadingStage),
-                    $"[OBS][SessionOperationalPipeline][Loading] LoadingHiddenSkipped routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' hideAfterCompletion='false'.",
+                DebugUtility.LogVerbose(typeof(OperationalLoadingStage),
+                    $"LoadingHiddenSkipped routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' hideAfterCompletion='false'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -388,7 +388,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             catch (Exception cleanupEx)
             {
                 DebugUtility.LogError<OperationalLoadingStage>(
-                    $"[OBS][SessionOperationalPipeline][Loading] hide_cleanup_failed routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' exceptionType='{cleanupEx.GetType().Name}' exceptionMessage='{cleanupEx.Message}'.");
+                    $"hide_cleanup_failed routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' exceptionType='{cleanupEx.GetType().Name}' exceptionMessage='{cleanupEx.Message}'.");
 
                 return new OperationalLoadingResult(
                     OperationalLoadingResultKind.Failed,
@@ -433,7 +433,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             DebugUtility.Log(typeof(OperationalLoadingStage),
-                $"[OBS][SessionOperationalPipeline][Loading] LoadingProgress routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' stage='{stage}' normalizedProgress='{normalizedProgress:0.###}' stepLabel='{stepLabel}' source='{source}' reason='{reason}'.",
+                $"LoadingProgress routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' stage='{stage}' normalizedProgress='{normalizedProgress:0.###}' stepLabel='{stepLabel}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
     }

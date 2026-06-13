@@ -310,9 +310,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string source,
             string reason)
         {
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityObjectExitRuntimeState),
-                $"[OBS][ActivityObjectExitRuntimeState] event='{Normalize(eventName)}' owner='ActivityObjectExitRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasDiscoveryBefore='{ToLowerInvariant(hasDiscoveryBefore)}' hasDiscoveryAfter='{ToLowerInvariant(hasDiscoveryAfter)}' hasInventoryPreviewBefore='{ToLowerInvariant(hasInventoryBefore)}' hasInventoryPreviewAfter='{ToLowerInvariant(hasInventoryAfter)}' hasInventoryValidationBefore='{ToLowerInvariant(hasValidationBefore)}' hasInventoryValidationAfter='{ToLowerInvariant(hasValidationAfter)}' hasSnapshotPayloadBefore='{ToLowerInvariant(hasSnapshotBefore)}' hasSnapshotPayloadAfter='{ToLowerInvariant(hasSnapshotAfter)}' discoveredCount='{discoveredCount}' inventoryCapabilityCount='{inventoryCapabilityCount}' snapshotObjectCount='{snapshotObjectCount}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='{Normalize(eventName)}' owner='ActivityObjectExitRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasDiscoveryBefore='{ToLowerInvariant(hasDiscoveryBefore)}' hasDiscoveryAfter='{ToLowerInvariant(hasDiscoveryAfter)}' hasInventoryPreviewBefore='{ToLowerInvariant(hasInventoryBefore)}' hasInventoryPreviewAfter='{ToLowerInvariant(hasInventoryAfter)}' hasInventoryValidationBefore='{ToLowerInvariant(hasValidationBefore)}' hasInventoryValidationAfter='{ToLowerInvariant(hasValidationAfter)}' hasSnapshotPayloadBefore='{ToLowerInvariant(hasSnapshotBefore)}' hasSnapshotPayloadAfter='{ToLowerInvariant(hasSnapshotAfter)}' discoveredCount='{discoveredCount}' inventoryCapabilityCount='{inventoryCapabilityCount}' snapshotObjectCount='{snapshotObjectCount}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

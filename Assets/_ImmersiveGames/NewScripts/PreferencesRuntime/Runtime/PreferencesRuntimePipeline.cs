@@ -32,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestBootstrapLoadAudio(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioLoadRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioLoadRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             bool loaded = _saveAdapter.TryLoadAudio(
@@ -57,8 +57,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestBootstrapLoadVideo(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoLoadRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoLoadRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             bool loaded = _saveAdapter.TryLoadVideo(
@@ -82,8 +82,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestAudioPreview(float masterVolume, float bgmVolume, float sfxVolume, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioPreviewRequested reason='{Normalize(reason)}' master={masterVolume:0.###} bgm={bgmVolume:0.###} sfx={sfxVolume:0.###}.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioPreviewRequested reason='{Normalize(reason)}' master={masterVolume:0.###} bgm={bgmVolume:0.###} sfx={sfxVolume:0.###}.",
                 DebugUtility.Colors.Info);
 
             return _stateService.TryPreviewAudioVolumes(masterVolume, bgmVolume, sfxVolume, reason, out bool _);
@@ -91,8 +91,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestAudioCommit(string fieldHint, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasSnapshot)
@@ -119,8 +119,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestAudioRestoreDefaults(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioRestoreDefaultsRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioRestoreDefaultsRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasSnapshot)
@@ -162,8 +162,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestVideoPreview(int width, int height, bool fullscreen, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoPreviewRequested reason='{Normalize(reason)}' resolution={width}x{height} fullscreen={fullscreen}.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoPreviewRequested reason='{Normalize(reason)}' resolution={width}x{height} fullscreen={fullscreen}.",
                 DebugUtility.Colors.Info);
 
             return _stateService.TryPreviewVideoResolution(width, height, fullscreen, reason, out bool _);
@@ -171,8 +171,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestVideoCommit(string fieldHint, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasVideoSnapshot)
@@ -199,8 +199,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestVideoRestoreDefaults(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoRestoreDefaultsRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoRestoreDefaultsRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasVideoSnapshot)

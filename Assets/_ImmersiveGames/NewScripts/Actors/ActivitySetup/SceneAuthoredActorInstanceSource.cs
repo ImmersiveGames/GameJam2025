@@ -114,12 +114,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             if (transform.parent == null)
             {
-                return transform.name ?? string.Empty;
+                return transform.name;
             }
 
             string parentPath = BuildTransformPath(transform.parent);
             return string.IsNullOrWhiteSpace(parentPath)
-                ? (transform.name ?? string.Empty)
+                ? transform.name
                 : $"{parentPath}/{transform.name}";
         }
     }

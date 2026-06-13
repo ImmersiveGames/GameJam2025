@@ -10,10 +10,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static void LogEvent(string message, bool completed)
         {
-            DebugUtility.Log(
+            if (completed)
+            {
+                DebugUtility.Log(
+                    typeof(ActivityContentReleaseContinuationStage),
+                    message,
+                    DebugUtility.Colors.Success);
+                return;
+            }
+
+            DebugUtility.LogVerbose(
                 typeof(ActivityContentReleaseContinuationStage),
                 message,
-                completed ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
+                DebugUtility.Colors.Info);
         }
 
         public static void LogUnloadCompletionContinuationStarted(
@@ -75,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             string message =
-                $"[OBS][ActivityContentReleaseContinuationStage] event='{Normalize(eventName)}' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' pipelineId='{Normalize(pipelineId)}' sessionStateId='{Normalize(sessionStateId)}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' nextSceneIndex='{nextSceneIndex}' totalScenes='{totalScenes}'.";
+                $"event='{Normalize(eventName)}' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' pipelineId='{Normalize(pipelineId)}' sessionStateId='{Normalize(sessionStateId)}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' nextSceneIndex='{nextSceneIndex}' totalScenes='{totalScenes}'.";
 
             LogEvent(message, completed);
         }

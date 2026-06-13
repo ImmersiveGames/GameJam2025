@@ -97,8 +97,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 return;
             }
 
-            DebugUtility.Log(typeof(SaveInstaller),
-                $"[OBS][Save][BootstrapStateInit] Initializing CurrentState from SaveConfigAsset defaults profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'.",
+            DebugUtility.LogVerbose(typeof(SaveInstaller),
+                $"Initializing CurrentState from SaveConfigAsset defaults profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'.",
                 DebugUtility.Colors.Info);
 
             var currentState = saveConfig.BuildDefaultCurrentStateOrFail();

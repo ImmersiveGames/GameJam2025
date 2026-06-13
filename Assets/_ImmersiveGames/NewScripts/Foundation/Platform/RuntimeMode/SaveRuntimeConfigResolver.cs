@@ -33,8 +33,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                     $"[FATAL][Config][SaveRuntime] RuntimeConfigRegistry invariant breach: SaveConfig invalido no snapshot. detail='{ex.Message}'.");
             }
 
-            DebugUtility.Log(typeof(SaveRuntimeConfigResolver),
-                $"[OBS][SaveRuntime][Config] SaveConfig resolved via RuntimeConfigRegistry. asset='{saveConfig.name}'.",
+            DebugUtility.LogVerbose(typeof(SaveRuntimeConfigResolver),
+                $"SaveConfig resolved via RuntimeConfigRegistry. asset='{saveConfig.name}'.",
                 DebugUtility.Colors.Info);
 
             return saveConfig;

@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
                     canvasGroup.interactable = false;
                 }
 
-                DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
+                DebugUtility.LogVerbose<FadeController>($"FadeComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
                 SafeNotifyFadeComplete(usedSignature);
                 _activeContextSignature = null;
                 return;
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
 
             float time = 0f;
 
-            DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeStart signature='{usedSignature}' targetAlpha={targetAlpha} dur={duration}");
+            DebugUtility.LogVerbose<FadeController>($"FadeStart signature='{usedSignature}' targetAlpha={targetAlpha} dur={duration}");
 
             try
             {
@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
                     canvasGroup.interactable = false;
                 }
 
-                DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
+                DebugUtility.LogVerbose<FadeController>($"FadeComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
                 SafeNotifyFadeComplete(usedSignature);
             }
             finally
@@ -232,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
                 canvasGroup.interactable = false;
             }
 
-            DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeImmediateComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
+            DebugUtility.LogVerbose<FadeController>($"FadeImmediateComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
             SafeNotifyFadeComplete(usedSignature);
             _activeContextSignature = null;
         }

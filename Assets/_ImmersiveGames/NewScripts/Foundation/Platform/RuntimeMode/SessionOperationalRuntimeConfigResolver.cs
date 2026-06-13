@@ -108,8 +108,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             _loadingConfigSourceLogged = true;
             string profileName = profile != null ? profile.name : "<none>";
 
-            DebugUtility.Log(typeof(SessionOperationalRuntimeConfigResolver),
-                $"[OBS][SessionOperationalRuntime][Config] loading defaults resolved via RuntimeConfigRegistry. defaultLoadingMode='{mode}' defaultLoadingProfile='{profileName}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalRuntimeConfigResolver),
+                $"loading defaults resolved via RuntimeConfigRegistry. defaultLoadingMode='{mode}' defaultLoadingProfile='{profileName}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -123,8 +123,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             _startupRouteSourceLogged = true;
             string routeIdentity = startupRoute != null ? startupRoute.RouteIdentity : "<none>";
 
-            DebugUtility.Log(typeof(SessionOperationalRuntimeConfigResolver),
-                $"[OBS][SessionOperationalRuntime][Config] startupRouteDefinition resolved via RuntimeConfigRegistry. routeIdentity='{routeIdentity}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalRuntimeConfigResolver),
+                $"startupRouteDefinition resolved via RuntimeConfigRegistry. routeIdentity='{routeIdentity}'.",
                 DebugUtility.Colors.Info);
         }
     }

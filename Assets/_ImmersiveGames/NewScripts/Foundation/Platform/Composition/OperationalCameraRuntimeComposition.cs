@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _ = CameraRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
 
             DebugUtility.LogVerbose(typeof(OperationalCameraRuntimeComposition),
-                "[OBS][RuntimeMode][OperationalCamera] installer='validated' status='ready'.",
+                "installer='validated' status='ready'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             dependencyManager.RegisterGlobal<IOperationalCameraProvider>(provider, allowOverride: false);
 
             DebugUtility.Log(typeof(OperationalCameraRuntimeComposition),
-                "[OBS][OperationalCameraRuntime][Composition] provider='UnityOperationalCameraProvider' registered contract='IOperationalCameraProvider'.",
+                "provider='UnityOperationalCameraProvider' registered contract='IOperationalCameraProvider'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -90,9 +90,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object contributor unregister started.");
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityObjectContributorUnregisterStage),
-                $"[OBS][ActivityObjectContributorUnregisterStage] event='ActivityObjectContributorUnregisterStarted' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectContributorUnregisterStarted' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' activity object contributor unregister completed unregisteredCount='0'.");
                 DebugUtility.Log(
                     typeof(ActivityObjectContributorUnregisterStage),
-                    $"[OBS][ActivityObjectContributorUnregisterStage] event='ActivityObjectContributorUnregisterCompleted' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' unregisteredCount='0' skippedNoContributors='True' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActivityObjectContributorUnregisterCompleted' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' unregisteredCount='0' skippedNoContributors='True' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
                 endpoint.EmitSnapshot(
                     snapshots,
@@ -196,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' activity object contributor unregistered contentProfileId='{report.ContentProfileId}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}'.");
                 DebugUtility.Log(
                     typeof(ActivityObjectContributorUnregisterStage),
-                    $"[OBS][ActivityObjectContributorUnregisterStage] event='ActivityObjectContributorUnregistered' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActivityObjectContributorUnregistered' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
             }
 
@@ -230,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{definition.ActivityId}' activity object contributor unregister completed unregisteredCount='{unregisteredCount}'.");
             DebugUtility.Log(
                 typeof(ActivityObjectContributorUnregisterStage),
-                $"[OBS][ActivityObjectContributorUnregisterStage] event='ActivityObjectContributorUnregisterCompleted' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' unregisteredCount='{unregisteredCount}' skippedNoContributors='{skipped}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectContributorUnregisterCompleted' owner='ActivityObjectContributorUnregisterStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' unregisteredCount='{unregisteredCount}' skippedNoContributors='{skipped}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
             endpoint.EmitSnapshot(
                 snapshots,

@@ -85,14 +85,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.UsesTransition)
             {
-                DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
-                    $"[OBS][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalTransitionBlackoutStage),
+                    $"OperationalTransitionBlackoutStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
-                $"[OBS][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalTransitionBlackoutStage),
+                $"OperationalTransitionBlackoutSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (routeCommand.UsesTransition)
             {
                 DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
-                    $"[OBS][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
+                    $"OperationalTransitionBlackoutCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Success);
 
                 return new OperationalTransitionBlackoutResult(

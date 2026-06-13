@@ -50,8 +50,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 
             var registryAudioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
 
-            DebugUtility.Log(typeof(AudioInstaller),
-                $"[OBS][Audio][Config] AudioDefaults seed resolved via PreferencesRuntimeConfigGroup/RuntimeConfigRegistry. asset='{registryAudioDefaults.name}'.",
+            DebugUtility.LogVerbose(typeof(AudioInstaller),
+                $"AudioDefaults seed resolved via PreferencesRuntimeConfigGroup/RuntimeConfigRegistry. asset='{registryAudioDefaults.name}'.",
                 DebugUtility.Colors.Info);
             return registryAudioDefaults;
         }

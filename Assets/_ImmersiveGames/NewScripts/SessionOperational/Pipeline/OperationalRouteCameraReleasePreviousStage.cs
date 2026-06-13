@@ -104,8 +104,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var routeCommand = command.RouteCommand;
 
-            DebugUtility.Log(typeof(OperationalRouteCameraReleasePreviousStage),
-                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousStarted currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalRouteCameraReleasePreviousStage),
+                $"RouteCameraPresentationReleasePreviousStarted currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             SessionOperationalRouteCameraReleaseCommand releaseCommand = new(
@@ -124,15 +124,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     : releaseReason;
 
                 DebugUtility.LogError(typeof(OperationalRouteCameraReleasePreviousStage),
-                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousFailed currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                    $"RouteCameraPresentationReleasePreviousFailed currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
                 return Failed(command, failureReason, "route_camera_release_previous_try_release_failed");
             }
 
             if (releaseResult.IsSkipped)
             {
-                DebugUtility.Log(typeof(OperationalRouteCameraReleasePreviousStage),
-                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousSkipped currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' skipReason='{releaseResult.SkipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalRouteCameraReleasePreviousStage),
+                    $"RouteCameraPresentationReleasePreviousSkipped currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' skipReason='{releaseResult.SkipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return new OperationalRouteCameraReleasePreviousResult(
@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     : string.Empty;
 
                 DebugUtility.Log(typeof(OperationalRouteCameraReleasePreviousStage),
-                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousCompleted currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' releaseRouteIdentity='{releaseRouteIdentity}' releaseRequirementId='{releaseRequirementId}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"RouteCameraPresentationReleasePreviousCompleted currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' releaseRouteIdentity='{releaseRouteIdentity}' releaseRequirementId='{releaseRequirementId}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
 
                 return new OperationalRouteCameraReleasePreviousResult(
@@ -177,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 : releaseResult.Reason;
 
             DebugUtility.LogError(typeof(OperationalRouteCameraReleasePreviousStage),
-                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousFailed currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' reason='{Normalize(reason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                $"RouteCameraPresentationReleasePreviousFailed currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' reason='{Normalize(reason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
             return Failed(command, reason, "route_camera_release_previous_failed");
         }

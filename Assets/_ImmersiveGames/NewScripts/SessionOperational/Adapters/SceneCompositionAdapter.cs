@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             ValidatePersistentScenesPolicyOrFail(command);
 
             DebugUtility.Log(typeof(SceneCompositionAdapter),
-                $"[OBS][SessionOperationalPipeline][Route] adapter='SceneCompositionAdapter' action='ApplyOperationalRoute' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{command.ActiveSceneKey.name}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' completionHandoff='{command.CompletionHandoff}' source='{source}' reason='{reason}'.",
+                $"adapter='SceneCompositionAdapter' action='ApplyOperationalRoute' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{command.ActiveSceneKey.name}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' completionHandoff='{command.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             var compositionResult = await _sceneCompositionExecutor.ApplyAsync(
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(SceneCompositionAdapter),
-                $"[OBS][RuntimePolicy][Config] SceneCompositionAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"SceneCompositionAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
     }

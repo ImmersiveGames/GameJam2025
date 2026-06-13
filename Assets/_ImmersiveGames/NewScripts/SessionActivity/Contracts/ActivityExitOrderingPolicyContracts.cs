@@ -106,13 +106,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hash = (int)Scenario;
-                hash = (hash * 397) ^ (int)DeactivationWindowRule;
-                hash = (hash * 397) ^ (int)Continuation;
-                hash = (hash * 397) ^ SnapshotBeforeTeardown.GetHashCode();
-                hash = (hash * 397) ^ ReleaseAfterDeactivationWindow.GetHashCode();
-                hash = (hash * 397) ^ OperationalMayContinueBeforeRouteExitCompleted.GetHashCode();
-                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(PolicyId ?? string.Empty);
-                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
+                hash = hash * 397 ^ (int)DeactivationWindowRule;
+                hash = hash * 397 ^ (int)Continuation;
+                hash = hash * 397 ^ SnapshotBeforeTeardown.GetHashCode();
+                hash = hash * 397 ^ ReleaseAfterDeactivationWindow.GetHashCode();
+                hash = hash * 397 ^ OperationalMayContinueBeforeRouteExitCompleted.GetHashCode();
+                hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(PolicyId ?? string.Empty);
+                hash = hash * 397 ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hash;
             }
         }

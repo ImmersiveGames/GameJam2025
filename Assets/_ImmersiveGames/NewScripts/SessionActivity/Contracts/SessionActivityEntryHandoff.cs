@@ -58,12 +58,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = ParticipantId.GetHashCode();
-                hashCode = (hashCode * 397) ^ (Required ? 1 : 0);
-                hashCode = (hashCode * 397) ^ (Prefab != null ? Prefab.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (int)PlacementMode;
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(PlacementId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ LocalPosition.GetHashCode();
-                hashCode = (hashCode * 397) ^ LocalEulerAngles.GetHashCode();
+                hashCode = hashCode * 397 ^ (Required ? 1 : 0);
+                hashCode = hashCode * 397 ^ (Prefab != null ? Prefab.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (int)PlacementMode;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(PlacementId ?? string.Empty);
+                hashCode = hashCode * 397 ^ LocalPosition.GetHashCode();
+                hashCode = hashCode * 397 ^ LocalEulerAngles.GetHashCode();
                 return hashCode;
             }
         }
@@ -108,9 +108,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = HasRouteFadeProfile ? 1 : 0;
-                hashCode = (hashCode * 397) ^ (RouteFadeProfile != null ? RouteFadeProfile.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (HasRouteLoadingProfile ? 1 : 0);
-                hashCode = (hashCode * 397) ^ (RouteLoadingProfile != null ? RouteLoadingProfile.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (RouteFadeProfile != null ? RouteFadeProfile.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (HasRouteLoadingProfile ? 1 : 0);
+                hashCode = hashCode * 397 ^ (RouteLoadingProfile != null ? RouteLoadingProfile.GetHashCode() : 0);
                 return hashCode;
             }
         }
@@ -205,16 +205,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ ActivityOrdinal;
-                hashCode = (hashCode * 397) ^ EntrySequence;
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionParticipationContext?.RouteOperationId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ SessionParticipationRevision;
-                hashCode = (hashCode * 397) ^ ActorMaterializationPlanEntryCount;
-                hashCode = (hashCode * 397) ^ RouteTransitionContext.GetHashCode();
-                hashCode = (hashCode * 397) ^ (LoadedSnapshotPayloadContext.HasPayload ? 1 : 0);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
+                hashCode = hashCode * 397 ^ ActivityOrdinal;
+                hashCode = hashCode * 397 ^ EntrySequence;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionParticipationContext?.RouteOperationId ?? string.Empty);
+                hashCode = hashCode * 397 ^ SessionParticipationRevision;
+                hashCode = hashCode * 397 ^ ActorMaterializationPlanEntryCount;
+                hashCode = hashCode * 397 ^ RouteTransitionContext.GetHashCode();
+                hashCode = hashCode * 397 ^ (LoadedSnapshotPayloadContext.HasPayload ? 1 : 0);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hashCode;
             }
         }

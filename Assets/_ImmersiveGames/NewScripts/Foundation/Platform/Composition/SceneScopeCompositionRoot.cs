@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             _registered = true;
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                $"[OBS][SceneScope] scene scope created scene='{_sceneName}' worldRoot='{BuildTransformPath(worldRoot)}'.",
+                $"scene scope created scene='{_sceneName}' worldRoot='{BuildTransformPath(worldRoot)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             DependencyManager.Provider.ClearSceneServices(_sceneName);
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                $"[OBS][SceneScope] scene scope cleared scene='{_sceneName}'.",
+                $"scene scope cleared scene='{_sceneName}'.",
                 DebugUtility.Colors.Info);
 
             _registered = false;

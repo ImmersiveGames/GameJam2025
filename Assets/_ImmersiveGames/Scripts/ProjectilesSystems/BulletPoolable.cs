@@ -142,7 +142,7 @@ namespace _ImmersiveGames.Scripts.ProjectilesSystems
 
         private bool IsLayerValid(int layer)
         {
-            return (collisionLayers.value & (1 << layer)) != 0;
+            return (collisionLayers.value & 1 << layer) != 0;
         }
 
         public ModelRoot ModelRoot => _modelRoot ??= this.GetOrCreateComponentInChild<ModelRoot>("ModelRoot");

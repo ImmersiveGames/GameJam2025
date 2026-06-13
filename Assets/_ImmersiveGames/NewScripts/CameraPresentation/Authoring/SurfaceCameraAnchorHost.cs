@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
             {
                 DebugUtility.Log(
                     typeof(SurfaceCameraAnchorHost),
-                    $"[OBS][CameraPresentation][SurfaceAnchorHost] ValidateSucceeded " +
+                    $"ValidateSucceeded " +
                     $"host='{name}' " +
                     $"anchorCount='{anchors?.Length ?? 0}' " +
                     $"reason='{reason}'.",
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             DebugUtility.LogError(
                 typeof(SurfaceCameraAnchorHost),
-                $"[OBS][CameraPresentation][SurfaceAnchorHost] ValidateFailed " +
+                $"ValidateFailed " +
                 $"host='{name}' " +
                 $"reason='{reason}'.");
         }

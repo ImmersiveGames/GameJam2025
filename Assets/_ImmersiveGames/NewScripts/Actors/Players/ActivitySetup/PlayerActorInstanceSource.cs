@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<ActorInstanceRecord> actorInstances = new();
             List<ActorParticipationRecord> actorParticipations = new();
 
-            if ((_playerRegistry == null && _sessionActorStore == null) || _playerActors.Count == 0)
+            if (_playerRegistry == null && _sessionActorStore == null || _playerActors.Count == 0)
             {
                 return new ActivityActorInstanceSourceResult(actorInstances, actorParticipations);
             }
@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             string parentPath = BuildTransformPath(transform.parent);
             return string.IsNullOrWhiteSpace(parentPath)
-                ? (transform.name ?? string.Empty)
+                ? transform.name ?? string.Empty
                 : $"{parentPath}/{transform.name}";
         }
     }

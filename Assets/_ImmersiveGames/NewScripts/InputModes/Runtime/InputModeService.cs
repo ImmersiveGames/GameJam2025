@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 case InputModeRequestKind.PauseOverlay:
                 case InputModeRequestKind.InputLocked:
                     DebugUtility.Log(typeof(InputModeService),
-                        $"[OBS][InputModes] InputModeCurrentModeAppliedToPlayerInput inputMode='{_currentMode}' reason='{resolvedReason}' target='state_only' playerInput='{playerInput.name}'.",
+                        $"InputModeCurrentModeAppliedToPlayerInput inputMode='{_currentMode}' reason='{resolvedReason}' target='state_only' playerInput='{playerInput.name}'.",
                         DebugUtility.Colors.Info);
                     return;
 
@@ -90,14 +90,14 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 case InputModeRequestKind.PauseOverlay:
                     _currentMode = mode;
                     DebugUtility.Log(typeof(InputModeService),
-                        $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='pause overlay does not switch action maps in Base 1.1 operational scope'.",
+                        $"InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='pause overlay does not switch action maps in Base 1.1 operational scope'.",
                         DebugUtility.Colors.Info);
                     return;
 
                 case InputModeRequestKind.InputLocked:
                     _currentMode = mode;
                     DebugUtility.Log(typeof(InputModeService),
-                        $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='input locked policy does not switch action maps'.",
+                        $"InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='input locked policy does not switch action maps'.",
                         DebugUtility.Colors.Info);
                     return;
 
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
             playerInput.SwitchCurrentActionMap(actionMapName);
             DebugUtility.Log(typeof(InputModeService),
-                $"[OBS][InputModes] InputModeCurrentModeAppliedToPlayerInput inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' playerInput='{playerInput.name}'.",
+                $"InputModeCurrentModeAppliedToPlayerInput inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' playerInput='{playerInput.name}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
             _currentMode = mode;
             DebugUtility.Log(typeof(InputModeService),
-                $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' observedPlayerInputs='{observedCount}' switchedPlayerInputs='{switchedCount}'.",
+                $"InputModeApplied inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' observedPlayerInputs='{observedCount}' switchedPlayerInputs='{switchedCount}'.",
                 DebugUtility.Colors.Success);
         }
     }

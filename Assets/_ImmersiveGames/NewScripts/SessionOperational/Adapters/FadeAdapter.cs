@@ -60,8 +60,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             controller.SetContextSignature(signature);
             controller.Configure(fadeConfig);
 
-            DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][SessionOperationalFade][Adapter] {phase}Started routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(FadeAdapter),
+                $"{phase}Started routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
             try
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][SessionOperationalFade][Adapter] {phase}Completed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
+                $"{phase}Completed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][RuntimePolicy][Config] FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -87,9 +87,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 factMessage);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityContentSceneUnloadCompletionStage),
-                $"[OBS][ActivityContentSceneUnloadCompletionStage] event='ActivityContentUnloadCompletionTechnicalCompleted' owner='{Owner}' pipelineId='{unloadedIdentity.PipelineId}' sessionStateId='{unloadedIdentity.SessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' operationId='{operation.OperationId}' unloadKind='{command.UnloadKind}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' pendingOperationCleared='true'.",
+                $"event='ActivityContentUnloadCompletionTechnicalCompleted' owner='{Owner}' pipelineId='{unloadedIdentity.PipelineId}' sessionStateId='{unloadedIdentity.SessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' operationId='{operation.OperationId}' unloadKind='{command.UnloadKind}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' pendingOperationCleared='true'.",
                 DebugUtility.Colors.Info);
         }
 

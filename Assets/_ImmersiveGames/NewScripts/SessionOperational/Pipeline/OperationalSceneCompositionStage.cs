@@ -78,8 +78,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source = Normalize(command.Source);
             string reason = Normalize(command.Reason);
 
-            DebugUtility.Log(typeof(OperationalSceneCompositionStage),
-                $"[OBS][SessionOperationalPipeline][SceneComposition] OperationalSceneCompositionStarted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' completionHandoff='{routeCommand.CompletionHandoff}' source='{source}' reason='{reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalSceneCompositionStage),
+                $"OperationalSceneCompositionStarted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' completionHandoff='{routeCommand.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             var sceneCompositionPort = ResolveSceneCompositionPortOrFail(routeCommand);
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!result.IsCompleted)
             {
                 DebugUtility.LogWarning<OperationalSceneCompositionStage>(
-                    $"[OBS][SessionOperationalPipeline][SceneComposition] OperationalSceneCompositionFailed routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' resultKind='{result.Kind}' reason='{result.Reason}' detail='{result.Detail}' source='{source}' reasonDetail='{reason}'.");
+                    $"OperationalSceneCompositionFailed routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' resultKind='{result.Kind}' reason='{result.Reason}' detail='{result.Detail}' source='{source}' reasonDetail='{reason}'.");
 
                 return new OperationalSceneCompositionStageResult(
                     result.Kind,
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             DebugUtility.Log(typeof(OperationalSceneCompositionStage),
-                $"[OBS][SessionOperationalPipeline][SceneComposition] OperationalSceneCompositionCompleted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' correlationId='{result.CompletionFact.CorrelationId}' resultReason='{result.Reason}' source='{source}' reason='{reason}'.",
+                $"OperationalSceneCompositionCompleted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' correlationId='{result.CompletionFact.CorrelationId}' resultReason='{result.Reason}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
 
             return new OperationalSceneCompositionStageResult(

@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             // Endpoint mínimo: a receita real de transform/estado ainda pertence aos próximos cortes de object reset.
             DebugUtility.Log(
                 typeof(ActivityObjectDefaultResetEndpoint),
-                $"[OBS][ActivityObjectReset] event='ActivityObjectStateProfileApplied' targetId='{command.TargetId}' roleId='{(string.IsNullOrWhiteSpace(command.RoleId) ? "<none>" : command.RoleId)}' contributorKind='{command.ContributorKind}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' objectProfileKind='{command.StateProfileKind}' objectProfileSource='{objectProfileSource}' resetHandler='{resetHandler}' resetDescriptor='{command.ResetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectStateProfileApplied' targetId='{command.TargetId}' roleId='{(string.IsNullOrWhiteSpace(command.RoleId) ? "<none>" : command.RoleId)}' contributorKind='{command.ContributorKind}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' objectProfileKind='{command.StateProfileKind}' objectProfileSource='{objectProfileSource}' resetHandler='{resetHandler}' resetDescriptor='{command.ResetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
 
             return new ActivityObjectResetResult(

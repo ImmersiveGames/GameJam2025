@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 Object.Destroy(handle.Instance);
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
-                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(handle.ActorIdentity.Identity.ActivityId)}' entrySequence='{handle.ActorIdentity.Identity.EntrySequence}' trigger='RouteScopedIndexReset' actorId='{handle.ActorId}' actorInstanceRuntimeId='{handle.ActorInstanceRuntimeId}' actorScope='RouteScoped' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(handle.ActorIdentity.Identity.ActivityId)}' entrySequence='{handle.ActorIdentity.Identity.EntrySequence}' trigger='RouteScopedIndexReset' actorId='{handle.ActorId}' actorInstanceRuntimeId='{handle.ActorInstanceRuntimeId}' actorScope='RouteScoped' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                     DebugUtility.Colors.Success);
             }
         }
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
-                    $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorLifetimeDecisionResolved' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                     DebugUtility.Colors.Info);
                 if (emitFacts)
                 {
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 sessionActorRuntimeStore.Remove(entry.ActorInstanceRuntimeId);
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
-                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                     DebugUtility.Colors.Success);
                 if (emitFacts)
                 {
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             facts.Add(fact);
             runtimeState.AppendFact(fact);
-            runtimeState.AppendTrace($"[OBS][{Owner}] fact='{fact.Kind}' stage='{fact.Identity.Stage}' entrySequence='{fact.Identity.EntrySequence}' activity='{fact.Identity.ActivityId}' executionState='{runtimeState.CurrentExecutionState}' message=\"{fact.Message}\"");
+            runtimeState.AppendTrace($"fact='{fact.Kind}' stage='{fact.Identity.Stage}' entrySequence='{fact.Identity.EntrySequence}' activity='{fact.Identity.ActivityId}' executionState='{runtimeState.CurrentExecutionState}' message=\"{fact.Message}\"");
         }
 
         private static string Normalize(string value)

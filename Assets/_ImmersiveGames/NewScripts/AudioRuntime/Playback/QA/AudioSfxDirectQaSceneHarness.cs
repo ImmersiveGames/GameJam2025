@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             bool lastValid = _lastHandle is { IsValid: true };
             bool lastPlaying = _lastHandle is { IsPlaying: true };
 
-            DebugUtility.Log(typeof(AudioSfxDirectQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioSfxDirectQaSceneHarness),
                 $"[QA][Audio][SFX][Direct] action='LogHarnessState' serviceResolved={serviceResolved} direct2d='{SafeName(direct2DCue)}' direct3d='{SafeName(direct3DCue)}' lastHandleValid={lastValid} lastHandlePlaying={lastPlaying}.",
                 DebugUtility.Colors.Info);
         }
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            DebugUtility.Log(typeof(AudioSfxDirectQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioSfxDirectQaSceneHarness),
                 $"[QA][Audio][SFX][Direct] action='{action}' detail='{detail}'.",
                 DebugUtility.Colors.Info);
         }

@@ -51,7 +51,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
 
         private bool IsActive => _step != DesireCycleStep.Inactive;
-        private bool HasActiveDesire => (_step != DesireCycleStep.Inactive && _currentDesire.HasValue) || HasLockedDesire;
+        private bool HasActiveDesire => _step != DesireCycleStep.Inactive && _currentDesire.HasValue || HasLockedDesire;
         private bool HasLockedDesire => _lockedSnapshot.HasValue;
 
         public void Update()

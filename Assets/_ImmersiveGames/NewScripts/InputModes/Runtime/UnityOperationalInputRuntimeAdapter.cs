@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string source,
             string reason)
         {
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("SessionEventSystemValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 FindObjectsSortMode.None);
 
             int observedCount = eventSystems?.Length ?? 0;
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("EventSystemObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"observedCount='{observedCount}' persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     "EventSystem invalido para validacao do InputSystemUIInputModule.");
             }
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("SessionInputModuleValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"eventSystem='{eventSystem.name}' persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 FindObjectsSortMode.None);
 
             int observedCount = modules?.Length ?? 0;
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("InputSystemUIInputModuleObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"observedCount='{observedCount}' eventSystem='{eventSystem.name}'"),
                 DebugUtility.Colors.Info);
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     "InputSystemUIInputModule invalido para binding de UI actions.");
             }
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("SessionUiInputActionsValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"inputModule='{module.name}'"),
                 DebugUtility.Colors.Info);
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     "uiActionsAsset canonico ausente.");
             }
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("UiInputActionsAssetObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"asset='{config.UiActionsAsset.name}'"),
                 DebugUtility.Colors.Info);
@@ -417,7 +417,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string reason,
             string extra)
         {
-            return $"[OBS][OperationalInputRuntime] event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
+            return $"event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
         }
 
     }

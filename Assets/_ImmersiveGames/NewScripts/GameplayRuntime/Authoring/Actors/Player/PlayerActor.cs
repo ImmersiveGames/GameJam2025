@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
 {
@@ -263,8 +264,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             transform.localPosition = placementPosition;
             transform.localRotation = Quaternion.Euler(placementEulerAngles);
 
-            Debug.Log(
-                $"[OBS][PlayerActor][Reset] event='PlayerActorPlacementStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='{placementApplied}' placementPosition='{placementPosition}' placementEulerAngles='{placementEulerAngles}' source='{context.Source}' reason='{context.Reason}'.");
+            DebugUtility.LogVerbose(typeof(PlayerActor), $"event='PlacementStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='{placementApplied}' placementPosition='{placementPosition}' placementEulerAngles='{placementEulerAngles}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
         }
 
         private void LogPlacementProfileSkipped(
@@ -274,8 +274,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             string reason)
         {
             EnsurePlacementContext(context, placementProfileKind);
-            Debug.Log(
-                $"[OBS][PlayerActor][Reset] event='PlayerActorPlacementStateProfileSkipped' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='False' reason='{reason}' source='{context.Source}' reasonDetail='{context.Reason}'.");
+            DebugUtility.LogVerbose(typeof(PlayerActor), $"event='PlacementStateProfileSkipped' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='False' reason='{reason}' source='{context.Source}' reasonDetail='{context.Reason}'.", DebugUtility.Colors.Info, this);
         }
 
         private static void EnsurePlacementContext(ActorResetContext context, string operation)

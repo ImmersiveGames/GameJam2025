@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (_pools.TryGetValue(validatedDefinition, out var existingPool))
             {
                 DebugUtility.LogVerbose(typeof(PoolService),
-                    $"[OBS][Pooling] Ensure no-op (already registered). asset='{validatedDefinition.name}' active={existingPool.ActiveCount} inactive={existingPool.InactiveCount} total={existingPool.TotalCount}.",
+                    $"Ensure no-op (already registered). asset='{validatedDefinition.name}' active={existingPool.ActiveCount} inactive={existingPool.InactiveCount} total={existingPool.TotalCount}.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
+                $"Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             pool.Prewarm();
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Prewarm asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                $"Prewarm asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -76,14 +76,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 var instance = pool.Rent(parent);
 
                 DebugUtility.LogVerbose(typeof(PoolService),
-                    $"[OBS][Pooling] Rent asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                    $"Rent asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                     DebugUtility.Colors.Info);
                 return instance;
             }
             catch (InvalidOperationException ex)
             {
                 DebugUtility.LogError(typeof(PoolService),
-                    $"[OBS][Pooling] Rent failed by limit. asset='{definition.name}' reason='{ex.Message}'.");
+                    $"Rent failed by limit. asset='{definition.name}' reason='{ex.Message}'.");
                 throw;
             }
         }
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             pool.Return(instance);
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Return asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                $"Return asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             DebugUtility.Log(typeof(PoolService),
-                "[OBS][Pooling] Cleanup complete (PoolService shutdown).",
+                "Cleanup complete (PoolService shutdown).",
                 DebugUtility.Colors.Info);
         }
 

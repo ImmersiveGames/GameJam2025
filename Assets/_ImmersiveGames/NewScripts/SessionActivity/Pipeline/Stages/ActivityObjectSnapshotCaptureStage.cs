@@ -110,9 +110,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object snapshot capture started.");
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityObjectSnapshotCaptureStage),
-                $"[OBS][ActivityObjectSnapshotCaptureStage] event='ActivityObjectSnapshotCaptureStarted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectSnapshotCaptureStarted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='0' targetIds='<none>' hasTransformPayload='false'.");
                 DebugUtility.Log(
                     typeof(ActivityObjectSnapshotCaptureStage),
-                    $"[OBS][ActivityObjectSnapshotCaptureStage] event='ActivityObjectSnapshotCaptureCompleted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' capturedCount='0' failedCount='0' targetIds='<none>' hasTransformPayload='false' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActivityObjectSnapshotCaptureCompleted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' capturedCount='0' failedCount='0' targetIds='<none>' hasTransformPayload='false' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
                 endpoint.EmitSnapshot(
                     snapshots,
@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     capabilitySnapshotEnvelope);
                 DebugUtility.Log(
                     typeof(ActivityObjectSnapshotCaptureStage),
-                    $"[OBS][CapabilitySnapshotEnvelope] event='CapabilitySnapshotEnvelopeCaptured' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' schemaId='{capabilitySnapshotEnvelope.SchemaId}' recordCount='{capabilitySnapshotEnvelope.Records.Count}' ownerKinds='{capabilitySnapshotOwnerKinds}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='CapabilitySnapshotEnvelopeCaptured' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' schemaId='{capabilitySnapshotEnvelope.SchemaId}' recordCount='{capabilitySnapshotEnvelope.Records.Count}' ownerKinds='{capabilitySnapshotOwnerKinds}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     payload,
@@ -416,7 +416,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 bool captureFailed = failedCount > 0;
                 string failureDetail = failedCount > 0
-                    ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail))
+                    ? string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail)
                     : string.Empty;
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     default,
@@ -442,7 +442,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");
             DebugUtility.Log(
                 typeof(ActivityObjectSnapshotCaptureStage),
-                $"[OBS][ActivityObjectSnapshotCaptureStage] event='ActivityObjectSnapshotCaptureCompleted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectSnapshotCaptureCompleted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}' source='{command.Source}' reason='{command.Reason}'.",
                 failedCount > 0 ? DebugUtility.Colors.Warning : DebugUtility.Colors.Success);
             endpoint.EmitSnapshot(
                 snapshots,

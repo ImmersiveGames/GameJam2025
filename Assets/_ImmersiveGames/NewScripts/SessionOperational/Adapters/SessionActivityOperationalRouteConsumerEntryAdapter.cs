@@ -123,8 +123,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     entry.LocalPosition,
                     entry.LocalRotation));
 
-                DebugUtility.Log(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
-                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' actorIdSource='PlayerSetDefinitionEntry' actorScope='{participant.ActorScope}' resolutionKey='PlayerSlotIdToSessionParticipantId'.");
+                DebugUtility.LogVerbose(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
+                    $"event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' actorIdSource='PlayerSetDefinitionEntry' actorScope='{participant.ActorScope}' resolutionKey='PlayerSlotIdToSessionParticipantId'.");
             }
 
             return materializationPlanEntries;

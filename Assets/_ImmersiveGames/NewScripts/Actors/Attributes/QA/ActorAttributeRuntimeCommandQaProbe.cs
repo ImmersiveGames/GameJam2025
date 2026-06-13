@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using UnityEngine;
 using UnityEngine.Serialization;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
 {
@@ -85,19 +86,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
             attributeId = string.Empty;
             if (attributeDefinition == null)
             {
-                Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition is required. actorId='{Normalize(sceneActorId)}'.");
+                DebugUtility.LogError(typeof(ActorAttributeRuntimeCommandQaProbe), $"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition is required. actorId='{Normalize(sceneActorId)}'.");
                 return false;
             }
 
             var runtimeId = ActorAttributeId.FromDefinition(attributeDefinition);
             if (!runtimeId.IsValid)
             {
-                Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{Normalize(sceneActorId)}'.");
+                DebugUtility.LogError(typeof(ActorAttributeRuntimeCommandQaProbe), $"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{Normalize(sceneActorId)}'.");
                 return false;
             }
 
             attributeId = runtimeId.ToString();
-            Debug.Log($"[OBS][ActorAttributeRuntimeCommandQaProbe] attributeDefinitionResolved definition='{attributeDefinition.name}' attributeId='{attributeId}' actorId='{Normalize(sceneActorId)}'.");
+            DebugUtility.LogVerbose(typeof(ActorAttributeRuntimeCommandQaProbe), $"attributeDefinitionResolved definition='{attributeDefinition.name}' attributeId='{attributeId}' actorId='{Normalize(sceneActorId)}'.");
             return true;
         }
 

@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.Log(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectsStateProfileSkipped' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' runtimeObjectsProfileKind='{context.StateProfileKind}' runtimeObjectsProfileSource='{profileSource}' trackedCountBefore='0' returnedCount='0' skippedCount='0' trackedCountAfter='0' reason='no_tracked_runtime_objects' source='{Normalize(context.Source)}' trigger='reset' detailSource='{nameof(ActorProjectileSpawnRuntimeTracker)}'.",
+                    $"event='ActorProjectileSpawnedRuntimeObjectsStateProfileSkipped' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' runtimeObjectsProfileKind='{context.StateProfileKind}' runtimeObjectsProfileSource='{profileSource}' trackedCountBefore='0' returnedCount='0' skippedCount='0' trackedCountAfter='0' reason='no_tracked_runtime_objects' source='{Normalize(context.Source)}' trigger='reset' detailSource='{nameof(ActorProjectileSpawnRuntimeTracker)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileSpawnRuntimeTracker),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectsStateProfileApplied' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' runtimeObjectsProfileKind='{context.StateProfileKind}' runtimeObjectsProfileSource='{profileSource}' trackedCountBefore='{trackedCountBefore}' returnedCount='{returnedCount}' skippedCount='{skippedCount}' trackedCountAfter='{_trackedSpawns.Count}' source='{Normalize(context.Source)}' trigger='reset' reason='{Normalize(context.Reason)}'.",
+                $"event='ActorProjectileSpawnedRuntimeObjectsStateProfileApplied' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' runtimeObjectsProfileKind='{context.StateProfileKind}' runtimeObjectsProfileSource='{profileSource}' trackedCountBefore='{trackedCountBefore}' returnedCount='{returnedCount}' skippedCount='{skippedCount}' trackedCountAfter='{_trackedSpawns.Count}' source='{Normalize(context.Source)}' trigger='reset' reason='{Normalize(context.Reason)}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -157,9 +157,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             spawnedActor.PoolDestroyed += HandleSpawnedActorPoolDestroyed;
             _trackedSpawns.Add(trackedSpawnedRuntimeObject);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActorProjectileSpawnRuntimeTracker),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTracked' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileSpawnTracked' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.Log(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnedToPool' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{nameof(ActorProjectileSpawnRuntimeTracker)}' reason='pool_return_callback'.",
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnedToPool' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{nameof(ActorProjectileSpawnRuntimeTracker)}' reason='pool_return_callback'.",
                     DebugUtility.Colors.Info);
             }
         }
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{nameof(ActorProjectileSpawnRuntimeTracker)}' reason='pool_destroyed'.");
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{nameof(ActorProjectileSpawnRuntimeTracker)}' reason='pool_destroyed'.");
             }
         }
 
@@ -292,7 +292,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(staleReason)}'.");
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(staleReason)}'.");
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "stale_return_skip", staleReason, logSkip: false);
                 return false;
             }
@@ -301,14 +301,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='pool_service_unavailable'.");
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='pool_service_unavailable'.");
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "pool_service_unavailable", reason, logSkip: false);
                 return false;
             }
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActorProjectileSpawnRuntimeTracker),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnRequested' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileSpawnedRuntimeObjectReturnRequested' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             try
@@ -320,7 +320,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='pool_return_failed' message='{Normalize(exception.Message)}'.");
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='pool_return_failed' message='{Normalize(exception.Message)}'.");
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "pool_return_failed", exception.Message, logSkip: false);
                 return false;
             }
@@ -453,7 +453,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' reason='{Normalize(reason)}'.");
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' reason='{Normalize(reason)}'.");
             }
         }
 
@@ -528,7 +528,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.LogWarning(
                 typeof(ActorProjectileSpawnRuntimeTracker),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' spawnedActorId='{spawnedActorId}' spawnedActorInstanceRuntimeId='{spawnedActorInstanceRuntimeId}' spawnedInstanceName='{spawnedInstanceName}' source='{Normalize(source)}' reason='{Normalize(reason)}' outcomeReason='{Normalize(outcomeReason)}'.");
+                $"event='ActorProjectileSpawnTrackSkipped' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' spawnedActorId='{spawnedActorId}' spawnedActorInstanceRuntimeId='{spawnedActorInstanceRuntimeId}' spawnedInstanceName='{spawnedInstanceName}' source='{Normalize(source)}' reason='{Normalize(reason)}' outcomeReason='{Normalize(outcomeReason)}'.");
         }
 
         private static string ResolveSpawnedRuntimeObjectsProfileSource(

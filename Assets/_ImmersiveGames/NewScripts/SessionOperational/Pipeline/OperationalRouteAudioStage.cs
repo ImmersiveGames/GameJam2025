@@ -106,9 +106,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
             {
-                DebugUtility.Log(typeof(OperationalRouteAudioStage),
+                DebugUtility.LogVerbose(typeof(OperationalRouteAudioStage),
                     BuildAudioPipelineLog(
-                        "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioSkipped",
+                        "RouteRevealAudioSkipped",
                         command,
                         "skipReason='route_audio_disabled'"),
                     DebugUtility.Colors.Info);
@@ -118,9 +118,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             string cueType = ResolveRouteAudioCueTypeOrFail(routeCommand.Audio.RouteAudioCue);
 
-            DebugUtility.Log(typeof(OperationalRouteAudioStage),
+            DebugUtility.LogVerbose(typeof(OperationalRouteAudioStage),
                 BuildAudioPipelineLog(
-                    "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioStarted",
+                    "RouteRevealAudioStarted",
                     command,
                     $"cueType='{cueType}'"),
                 DebugUtility.Colors.Info);
@@ -136,9 +136,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException(message);
             }
 
-            DebugUtility.Log(typeof(OperationalRouteAudioStage),
+            DebugUtility.LogVerbose(typeof(OperationalRouteAudioStage),
                 BuildAudioPipelineLog(
-                    "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioSubmitted",
+                    "RouteRevealAudioSubmitted",
                     command,
                     $"cueType='{cueType}'"),
                 DebugUtility.Colors.Success);

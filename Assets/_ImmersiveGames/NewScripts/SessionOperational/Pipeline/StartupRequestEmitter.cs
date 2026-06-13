@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.RunPipeline.Contracts;
 using UnityEngine;
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _installed = true;
 
             DebugUtility.LogVerbose(typeof(StartupRequestEmitter),
-                "[OBS][SessionOperationalPipeline][StartupRequest] emitter ensured in canonical bootstrap.",
+                "emitter ensured in canonical bootstrap.",
                 DebugUtility.Colors.Info);
         }
 
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _hasRequested = true;
 
             DebugUtility.Log<StartupRequestEmitter>(
-                "[OBS][SessionOperationalPipeline][StartupRequest] BootStartPlanRequestedEvent emitted for canonical startup rail.",
+                "BootStartPlanRequestedEvent emitted for canonical startup rail.",
                 DebugUtility.Colors.Info);
 
             EventBus<BootStartPlanRequestedEvent>.Raise(new BootStartPlanRequestedEvent());

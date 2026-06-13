@@ -114,14 +114,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             var routeCommand = command.RouteCommand;
-            DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadOnEnterStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
+                $"RouteActivitySaveLoadOnEnterStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             var loadedSnapshotPayloadContext = ExecuteLoadOnEnterOrFail(command);
 
             DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadOnEnterStageCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}' loadedSnapshotPayload='{(loadedSnapshotPayloadContext.HasPayload ? "present" : "absent")}' loadedSnapshotPayloadRecordCount='{(loadedSnapshotPayloadContext.HasPayload ? loadedSnapshotPayloadContext.Payload.RecordCount : 0)}' loadedSnapshotPayloadSourceActivityId='{(loadedSnapshotPayloadContext.HasPayload ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId) : "<none>")}' loadedSnapshotPayloadSourceEntrySequence='{(loadedSnapshotPayloadContext.HasPayload ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence : 0)}'.",
+                $"RouteActivitySaveLoadOnEnterStageCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}' loadedSnapshotPayload='{(loadedSnapshotPayloadContext.HasPayload ? "present" : "absent")}' loadedSnapshotPayloadRecordCount='{(loadedSnapshotPayloadContext.HasPayload ? loadedSnapshotPayloadContext.Payload.RecordCount : 0)}' loadedSnapshotPayloadSourceActivityId='{(loadedSnapshotPayloadContext.HasPayload ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId) : "<none>")}' loadedSnapshotPayloadSourceEntrySequence='{(loadedSnapshotPayloadContext.HasPayload ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence : 0)}'.",
                 DebugUtility.Colors.Success);
 
             return new OperationalRouteActivitySaveLoadOnEnterResult(
@@ -142,8 +142,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!loadOnEnterPlan.ShouldLoad)
             {
-                DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{loadOnEnterPlan.SkipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(loadOnEnterPlan.SkipKind)}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
+                    $"RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{loadOnEnterPlan.SkipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(loadOnEnterPlan.SkipKind)}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 return default;
             }
@@ -158,12 +158,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadPointerResolved routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' pointerOwner='ProgressionSlotContextResolver' currentSnapshotRequired='false' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
+                $"RouteActivitySaveLoadPointerResolved routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' pointerOwner='ProgressionSlotContextResolver' currentSnapshotRequired='false' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
+                $"RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             var result = _activitySaveAdapter.LoadActivitySaveOnEnter(
@@ -176,13 +176,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 if (result.FailureKind == RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing)
                 {
-                    DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                        $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Waiting' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' recordCount='0' ownerIds='<none>' payloadSize='0' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' pointerOwner='ProgressionSlotContextResolver' detail='{Normalize(result.Detail)}'.",
+                    DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
+                        $"checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Waiting' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' recordCount='0' ownerIds='<none>' payloadSize='0' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' pointerOwner='ProgressionSlotContextResolver' detail='{Normalize(result.Detail)}'.",
                         DebugUtility.Colors.Info);
                 }
 
-                DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{result.SkipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(result.SkipKind)}' detail='{Normalize(result.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
+                    $"RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{result.SkipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(result.SkipKind)}' detail='{Normalize(result.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 return default;
             }
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!readResult.Succeeded)
             {
                 DebugUtility.LogError(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' recordCount='0' ownerIds='<none>' payloadSize='0' failureKind='{readResult.FailureKind}' failureReason='{Normalize(readResult.FailureReason)}' detail='{Normalize(readResult.Detail)}'.");
+                    $"checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' recordCount='0' ownerIds='<none>' payloadSize='0' failureKind='{readResult.FailureKind}' failureReason='{Normalize(readResult.FailureReason)}' detail='{Normalize(readResult.Detail)}'.");
                 throw new InvalidOperationException(
                     $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] payload invalido no load-on-enter routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' failureKind='{readResult.FailureKind}' failureReason='{Normalize(readResult.FailureReason)}'.");
             }
@@ -211,14 +211,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 result.ActivitySnapshotPayload.Length);
             string loadedOwnerIds = BuildLoadedSnapshotOwnerIds(loadedPayload.CapabilitySnapshotEnvelope.Records);
             DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySnapshotPayloadLoaded activityIdentity='{Normalize(activityIdentity)}' sourceActivityId='{Normalize(loadedPayload.ActivityId)}' sourceEntrySequence='{loadedPayload.SourceEntrySequence}' payloadKind='{loadedPayload.PayloadKind}' canonicalPayload='CapabilitySnapshotEnvelope' recordCount='{loadedPayload.RecordCount}' ownerIds='{loadedOwnerIds}' schemaId='{Normalize(loadedPayload.SchemaId)}' payloadSize='{result.ActivitySnapshotPayload.Length}'.",
+                $"RouteActivitySnapshotPayloadLoaded activityIdentity='{Normalize(activityIdentity)}' sourceActivityId='{Normalize(loadedPayload.ActivityId)}' sourceEntrySequence='{loadedPayload.SourceEntrySequence}' payloadKind='{loadedPayload.PayloadKind}' canonicalPayload='CapabilitySnapshotEnvelope' recordCount='{loadedPayload.RecordCount}' ownerIds='{loadedOwnerIds}' schemaId='{Normalize(loadedPayload.SchemaId)}' payloadSize='{result.ActivitySnapshotPayload.Length}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Passed' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='true' sourceActivityId='{Normalize(loadedPayload.ActivityId)}' sourceEntrySequence='{loadedPayload.SourceEntrySequence}' payloadKind='{loadedPayload.PayloadKind}' canonicalPayload='CapabilitySnapshotEnvelope' recordCount='{loadedPayload.RecordCount}' ownerIds='{loadedOwnerIds}' payloadSize='{result.ActivitySnapshotPayload.Length}'.",
+                $"checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Passed' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='true' sourceActivityId='{Normalize(loadedPayload.ActivityId)}' sourceEntrySequence='{loadedPayload.SourceEntrySequence}' payloadKind='{loadedPayload.PayloadKind}' canonicalPayload='CapabilitySnapshotEnvelope' recordCount='{loadedPayload.RecordCount}' ownerIds='{loadedOwnerIds}' payloadSize='{result.ActivitySnapshotPayload.Length}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' detail='{Normalize(result.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
+                $"RouteActivitySaveLoadCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' detail='{Normalize(result.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
 
             return new ActivityEntryObjectSnapshotRestorePayloadContext(loadedPayload);

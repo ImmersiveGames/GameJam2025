@@ -14,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             var audioDefaults = preferencesRuntime.AudioDefaults
                 ?? throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeConfigRegistry invariant breach: AudioDefaults obrigatorio ausente no snapshot.");
 
-            DebugUtility.Log(typeof(PreferencesRuntimeConfigResolver),
-                $"[OBS][Preferences][Config] AudioDefaults resolved via RuntimeConfigRegistry. asset='{audioDefaults.name}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimeConfigResolver),
+                $"AudioDefaults resolved via RuntimeConfigRegistry. asset='{audioDefaults.name}'.",
                 DebugUtility.Colors.Info);
 
             return audioDefaults;
@@ -28,8 +28,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             var videoDefaults = preferencesRuntime.VideoDefaults
                 ?? throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeConfigRegistry invariant breach: VideoDefaults obrigatorio ausente no snapshot.");
 
-            DebugUtility.Log(typeof(PreferencesRuntimeConfigResolver),
-                $"[OBS][Preferences][Config] VideoDefaults resolved via RuntimeConfigRegistry. asset='{videoDefaults.name}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimeConfigResolver),
+                $"VideoDefaults resolved via RuntimeConfigRegistry. asset='{videoDefaults.name}'.",
                 DebugUtility.Colors.Info);
 
             return videoDefaults;

@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             bool handlePlaying = _lastHandle is { IsPlaying: true };
             var effectiveOwner = ResolveOwner(out string ownerSource);
 
-            DebugUtility.Log(typeof(AudioEntityEmitterQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioEntityEmitterQaSceneHarness),
                 $"[QA][Audio][EntityEmitter] action='LogHarnessState' emitter='{SafeName(emitterUnderTest)}' explicitCue='{SafeName(explicitCue)}' configuredOwner='{SafeName(ownerTransform)}' effectiveOwner='{SafeName(effectiveOwner)}' ownerSource='{ownerSource}' autoStopDelaySeconds={autoStopDelaySeconds:0.###} autoStopUseUnscaledTime={autoStopUseUnscaledTime} lastHandleValid={handleValid} lastHandlePlaying={handlePlaying}.",
                 DebugUtility.Colors.Info);
         }
@@ -215,7 +215,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            DebugUtility.Log(typeof(AudioEntityEmitterQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioEntityEmitterQaSceneHarness),
                 $"[QA][Audio][EntityEmitter] action='{action}' detail='{detail}'.",
                 DebugUtility.Colors.Info);
         }

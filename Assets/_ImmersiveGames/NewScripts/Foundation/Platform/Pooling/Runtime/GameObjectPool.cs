@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (created > 0)
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] Prewarm complete. asset='{Definition.name}' created={created} total={TotalCount} inactive={InactiveCount}.",
+                    $"Prewarm complete. asset='{Definition.name}' created={created} total={TotalCount} inactive={InactiveCount}.",
                     DebugUtility.Colors.Info);
             }
         }
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 if (isExpansion)
                 {
                     DebugUtility.LogWarning(typeof(GameObjectPool),
-                        $"[OBS][Pooling] Expand blocked by max size. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.");
+                        $"Expand blocked by max size. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.");
                 }
 
                 return false;
@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (isExpansion)
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] Expand success. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.",
+                    $"Expand success. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.",
                     DebugUtility.Colors.Info);
             }
 
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 }
 
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnAuto skipped. asset='{Definition.name}' reason='instance-destroyed'.",
+                    $"ReturnAuto skipped. asset='{Definition.name}' reason='instance-destroyed'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 }
 
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnAuto skipped. asset='{Definition.name}' go='{instance.name}' reason='already-returned'.",
+                    $"ReturnAuto skipped. asset='{Definition.name}' go='{instance.name}' reason='already-returned'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -246,13 +246,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (returnReason == PoolReturnReason.Auto)
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnAuto complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
+                    $"ReturnAuto complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
                     DebugUtility.Colors.Info);
             }
             else
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnManual complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
+                    $"ReturnManual complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
                     DebugUtility.Colors.Info);
             }
         }

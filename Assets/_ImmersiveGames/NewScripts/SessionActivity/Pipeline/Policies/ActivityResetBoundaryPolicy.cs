@@ -155,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
             SessionActivityIdentity identity = plan.Identity;
             DebugUtility.LogVerbose(
                 typeof(ActivityResetBoundaryPolicy),
-                $"[OBS][ActivityEntryPipeline][Reset] event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' resetIntent='{plan.ResetIntent}' resetStateProfile='{plan.StateProfileKind}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' behaviorMode='ResetIntentStateProfilePolicy' pipelineId='{Normalize(identity.PipelineId)}' sessionStateId='{Normalize(identity.SessionId)}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' source='{Normalize(plan.Source)}' reason='{Normalize(plan.Reason)}'.",
+                $"event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' resetIntent='{plan.ResetIntent}' resetStateProfile='{plan.StateProfileKind}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' behaviorMode='ResetIntentStateProfilePolicy' pipelineId='{Normalize(identity.PipelineId)}' sessionStateId='{Normalize(identity.SessionId)}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' source='{Normalize(plan.Source)}' reason='{Normalize(plan.Reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 }
 
                 DebugUtility.LogVerbose(typeof(InputModesInstaller),
-                    "[OBS][InputModes][Installer] Canonical IInputModeService already present.",
+                    "Canonical IInputModeService already present.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             DependencyManager.Provider.RegisterGlobal(inputModeService);
 
             DebugUtility.LogVerbose(typeof(InputModesInstaller),
-                $"[OBS][InputModes][Installer] Canonical IInputModeService registered playerMap='{playerMapName}' menuMap='{menuMapName}'.",
+                $"Canonical IInputModeService registered playerMap='{playerMapName}' menuMap='{menuMapName}'.",
                 DebugUtility.Colors.Info);
         }
 

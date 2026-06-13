@@ -85,9 +85,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string source,
             string reason)
         {
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityContentReleaseRuntimeState),
-                $"[OBS][ActivityContentReleaseRuntimeState] event='{Normalize(eventName)}' owner='ActivityContentReleaseRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasPendingContextBefore='{ToLowerInvariant(hasPendingContextBefore)}' hasPendingContextAfter='{ToLowerInvariant(hasPendingContextAfter)}' awaitingContinuationBefore='{ToLowerInvariant(awaitingBefore)}' awaitingContinuationAfter='{ToLowerInvariant(awaitingAfter)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='{Normalize(eventName)}' owner='ActivityContentReleaseRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasPendingContextBefore='{ToLowerInvariant(hasPendingContextBefore)}' hasPendingContextAfter='{ToLowerInvariant(hasPendingContextAfter)}' awaitingContinuationBefore='{ToLowerInvariant(awaitingBefore)}' awaitingContinuationAfter='{ToLowerInvariant(awaitingAfter)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

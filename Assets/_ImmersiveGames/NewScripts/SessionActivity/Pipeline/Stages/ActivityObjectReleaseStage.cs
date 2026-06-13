@@ -100,9 +100,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' object release started.");
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityObjectReleaseStage),
-                $"[OBS][ActivityObjectReleaseStage] event='ActivityObjectReleaseStarted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectReleaseStarted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' object release completed with no contributors for current entry.");
                 DebugUtility.Log(
                     typeof(ActivityObjectReleaseStage),
-                    $"[OBS][ActivityObjectReleaseStage] event='ActivityObjectReleaseCompleted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActivityObjectReleaseCompleted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
                 endpoint.EmitSnapshot(
                     snapshots,
@@ -310,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{definition.ActivityId}' object release completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
             DebugUtility.Log(
                 typeof(ActivityObjectReleaseStage),
-                $"[OBS][ActivityObjectReleaseStage] event='ActivityObjectReleaseCompleted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityObjectReleaseCompleted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' source='{command.Source}' reason='{command.Reason}'.",
                 failedCount == 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
             endpoint.EmitSnapshot(
                 snapshots,

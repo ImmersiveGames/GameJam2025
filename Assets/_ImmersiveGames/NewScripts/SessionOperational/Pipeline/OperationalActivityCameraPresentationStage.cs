@@ -155,15 +155,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "OperationalActivityCameraPresentationCommand invalido.");
             }
 
-            DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
+                $"ActivityCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             if (command.RouteCommand.CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
             {
                 string skipReason = "activity_camera_not_required";
-                DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return OperationalActivityCameraPresentationResult.Skipped(
@@ -177,8 +177,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (activityProfile == null)
             {
                 string skipReason = "activity_presentation_profile_missing";
-                DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return OperationalActivityCameraPresentationResult.Skipped(
@@ -191,8 +191,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (activityProfile.CameraRigPrefab == null && !activityProfile.Required)
             {
                 string skipReason = "activity_presentation_camera_disabled";
-                DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return OperationalActivityCameraPresentationResult.Skipped(
@@ -226,7 +226,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     command.RouteCommand.ActivityPresentationProfile.Required;
 
                 DebugUtility.LogError(typeof(OperationalActivityCameraPresentationStage),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStageFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' required='{required}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                    $"ActivityCameraPresentationStageFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' required='{required}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
                 return OperationalActivityCameraPresentationResult.Failed(
                     command.ActivityIdentity,
@@ -241,8 +241,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     ? "activity_camera_prepare_skipped"
                     : prepareResult.SkipReason;
 
-                DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return OperationalActivityCameraPresentationResult.Skipped(
@@ -259,7 +259,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     : prepareResult.Reason;
 
                 DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationStagePrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' resultReason='{resultReason}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"ActivityCameraPresentationStagePrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' resultReason='{resultReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
 
                 return OperationalActivityCameraPresentationResult.Completed(

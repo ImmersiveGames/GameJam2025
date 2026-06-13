@@ -122,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
             {
                 DebugUtility.Log(
                     typeof(ActivityCameraAnchorHost),
-                    $"[OBS][CameraPresentation][ActivityAnchorHost] ValidateSucceeded " +
+                    $"ValidateSucceeded " +
                     $"host='{name}' " +
                     $"anchorCount='{anchors?.Length ?? 0}' " +
                     $"reason='{reason}'.",
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             DebugUtility.LogError(
                 typeof(ActivityCameraAnchorHost),
-                $"[OBS][CameraPresentation][ActivityAnchorHost] ValidateFailed " +
+                $"ValidateFailed " +
                 $"host='{name}' " +
                 $"reason='{reason}'.");
         }
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             DebugUtility.Log(
                 typeof(ActivityCameraAnchorHost),
-                $"[OBS][CameraPresentation][ActivityAnchorHost] Registered scene-scoped host scene='{sceneName}' host='{name}' anchorCount='{anchors?.Length ?? 0}'.",
+                $"Registered scene-scoped host scene='{sceneName}' host='{name}' anchorCount='{anchors?.Length ?? 0}'.",
                 DebugUtility.Colors.Info);
         }
 

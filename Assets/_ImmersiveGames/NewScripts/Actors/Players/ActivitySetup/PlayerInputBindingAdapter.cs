@@ -137,8 +137,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             {
                 resolved.actions = canonicalActionsAsset;
                 actionsRebound = true;
-                DebugUtility.Log(typeof(PlayerInputBindingAdapter),
-                    $"[OBS][PlayerInputBinding] event='PlayerInputActionsReboundToCanonical' actorId='{requirement.ActorId}' playerSlotId='{requirement.PlayerSlotId}' playerInput='{resolved.name}' source='{requirement.Source}' reason='{requirement.Reason}'.",
+                DebugUtility.LogVerbose(typeof(PlayerInputBindingAdapter),
+                    $"event='PlayerInputActionsReboundToCanonical' actorId='{requirement.ActorId}' playerSlotId='{requirement.PlayerSlotId}' playerInput='{resolved.name}' source='{requirement.Source}' reason='{requirement.Reason}'.",
                     DebugUtility.Colors.Info);
             }
 

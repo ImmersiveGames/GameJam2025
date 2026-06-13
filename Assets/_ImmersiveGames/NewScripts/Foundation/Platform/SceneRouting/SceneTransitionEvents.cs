@@ -134,13 +134,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
             unchecked
             {
                 int hashCode = ScenesToLoad != null ? ScenesToLoad.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ (ScenesToUnload != null ? ScenesToUnload.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ UseFade.GetHashCode();
-                hashCode = (hashCode * 397) ^ RouteId.GetHashCode();
-                hashCode = (hashCode * 397) ^ (Reason != null ? Reason.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (TransitionProfile != null ? TransitionProfile.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ GameplayEntryKind.GetHashCode();
+                hashCode = hashCode * 397 ^ (ScenesToUnload != null ? ScenesToUnload.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ UseFade.GetHashCode();
+                hashCode = hashCode * 397 ^ RouteId.GetHashCode();
+                hashCode = hashCode * 397 ^ (Reason != null ? Reason.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (TransitionProfile != null ? TransitionProfile.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ GameplayEntryKind.GetHashCode();
                 return hashCode;
             }
         }

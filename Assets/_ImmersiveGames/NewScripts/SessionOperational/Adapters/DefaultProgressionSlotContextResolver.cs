@@ -71,8 +71,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            DebugUtility.Log(typeof(DefaultProgressionSlotContextResolver),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' snapshotPointerSource='{snapshotPointerSource}' currentSnapshotIdRaw='{Normalize(currentSnapshotId)}' currentRevision='{currentState.Revision}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(DefaultProgressionSlotContextResolver),
+                $"ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' snapshotPointerSource='{snapshotPointerSource}' currentSnapshotIdRaw='{Normalize(currentSnapshotId)}' currentRevision='{currentState.Revision}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             failureReason = "resolved";

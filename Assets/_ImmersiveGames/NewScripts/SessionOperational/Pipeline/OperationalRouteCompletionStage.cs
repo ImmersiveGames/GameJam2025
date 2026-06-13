@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var routeCommand = command.RouteCommand;
             DebugUtility.Log(typeof(OperationalRouteCompletionStage),
-                $"[OBS][SessionOperationalPipeline][Transition] command='TransitionPlanReady' transitionMode='{routeCommand.TransitionMode}' transitionProfile='{routeCommand.TransitionProfileLabel}' routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
+                $"command='TransitionPlanReady' transitionMode='{routeCommand.TransitionMode}' transitionProfile='{routeCommand.TransitionProfileLabel}' routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             return OperationalRouteCompletionResult.Accepted("transition_plan_ready_logged");
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var routeSnapshot = BuildCompletedRouteSnapshot(routeCommand);
 
             DebugUtility.Log(typeof(OperationalRouteCompletionStage),
-                $"[OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='{completionFact.RouteIdentity}' routeOperationId='{completionFact.RouteOperationId}' transitionId='{completionFact.TransitionId}' routeSequence='{completionFact.RouteSequence}' correlationId='{completionFact.CorrelationId}' message='{completionFact.Message}' transitionMode='{routeCommand.TransitionMode}' transitionProfile='{routeCommand.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}'.",
+                $"fact='OperationalRouteCompleted' routeIdentity='{completionFact.RouteIdentity}' routeOperationId='{completionFact.RouteOperationId}' transitionId='{completionFact.TransitionId}' routeSequence='{completionFact.RouteSequence}' correlationId='{completionFact.CorrelationId}' message='{completionFact.Message}' transitionMode='{routeCommand.TransitionMode}' transitionProfile='{routeCommand.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
 
             return new OperationalRouteCompletionResult(

@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             }
 
             DebugUtility.Log(typeof(PlayerParticipationStage),
-                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(snapshot.SeedEntries)}' seedActorIdSource='PlayerSetDefinitionEntry' derivedActorScopes='{FormatSeedActorScopes(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
+                $"pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(snapshot.SeedEntries)}' seedActorIdSource='PlayerSetDefinitionEntry' derivedActorScopes='{FormatSeedActorScopes(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
                 DebugUtility.Colors.Info);
 
             return result;
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     seedEntry.HasPrefabReference,
                     seedEntry.PlacementMode,
                     seedEntry.HasPlacementPlan,
-                    isMaterialized ? PlayerParticipationSeedEntryStatus.Materialized : (isSkipped ? PlayerParticipationSeedEntryStatus.Skipped : seedEntry.Status),
+                    isMaterialized ? PlayerParticipationSeedEntryStatus.Materialized : isSkipped ? PlayerParticipationSeedEntryStatus.Skipped : seedEntry.Status,
                     record.MaterializationStatus == PlayerMaterializationStatus.Unknown ? PlayerMaterializationStatus.NotMaterialized : record.MaterializationStatus,
                     record.RuntimeName,
                     record.RuntimeSceneName));
@@ -278,9 +278,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         {
             return outcome == PlayerParticipationOutcome.SeedResolved
                 ? "Player participation seed resolved. Actor materialization remains owned by ActivityEntryPipeline."
-                : (outcome == PlayerParticipationOutcome.Materialized
+                : outcome == PlayerParticipationOutcome.Materialized
                     ? "Player participation materialization observed."
-                    : "No player participation seed entries resolved. Stage observed as canonical no-op.");
+                    : "No player participation seed entries resolved. Stage observed as canonical no-op.";
         }
 
         private static PlayerMaterializationRecord ResolveRecord(PlayerParticipationSeedEntry seedEntry, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)

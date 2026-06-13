@@ -91,7 +91,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             {
                 if (parts[i] != null)
                 {
-                    float partThreshold = 1f - ((i + 1f) / parts.Length);
+                    float partThreshold = 1f - (i + 1f) / parts.Length;
                     parts[i].SetActive(healthPercentage > partThreshold);
                     if (showDebugLogs)
                     {
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
             {
                 if (parts[i] != null)
                 {
-                    float partThreshold = 1f - ((i + 1f) / parts.Length);
+                    float partThreshold = 1f - (i + 1f) / parts.Length;
                     parts[i].SetActive(healthPercentage > partThreshold); // Mantido para consist�ncia em reativa��o quando high
                     if (showDebugLogs)
                     {

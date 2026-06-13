@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 reason);
 
             DebugUtility.Log(typeof(CinemachineRouteCameraDirector),
-                $"[OBS][CameraPresentation][RouteDirector] RouteCameraPrepared " +
+                $"RouteCameraPrepared " +
                 $"outputCamera='{operationalCamera.UnityCamera.name}' " +
                 $"hasOperationalBrain='{operationalCamera.HasCinemachineBrain}' " +
                 $"presentationRig='{rigInstance.name}' " +
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             reason = "route_camera_released";
 
             DebugUtility.Log(typeof(CinemachineRouteCameraDirector),
-                $"[OBS][CameraPresentation][RouteDirector] RouteCameraReleased " +
+                $"RouteCameraReleased " +
                 $"outputCamera='{outputCameraName}' " +
                 $"presentationRig='{presentationRigName}' " +
                 $"surfaceKind='{handle.SurfaceKind}' " +

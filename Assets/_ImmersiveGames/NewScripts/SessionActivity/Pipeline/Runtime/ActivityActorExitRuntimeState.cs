@@ -529,9 +529,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
         private static void Log(string eventName, string activityId, int entrySequence, string source, string reason, string details)
         {
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityActorExitRuntimeState),
-                $"[OBS][ActivityActorExitRuntimeState] event='{Normalize(eventName)}' owner='ActivityActorExitRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{Math.Max(0, entrySequence)}' source='{Normalize(source)}' reason='{Normalize(reason)}' {details}.",
+                $"event='{Normalize(eventName)}' owner='ActivityActorExitRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{Math.Max(0, entrySequence)}' source='{Normalize(source)}' reason='{Normalize(reason)}' {details}.",
                 DebugUtility.Colors.Info);
         }
 

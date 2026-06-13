@@ -193,8 +193,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var routeCommand = command.RouteCommand;
             if (!ShouldRequireOperationalRouteHandoffExit(command))
             {
-                DebugUtility.Log(typeof(OperationalHandoffExitStage),
-                    $"[OBS][SessionOperationalPipeline][Route] OperationalHandoffExitSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' skipReason='not_required' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.LogVerbose(typeof(OperationalHandoffExitStage),
+                    $"OperationalHandoffExitSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' skipReason='not_required' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return new OperationalHandoffExitResult(
@@ -219,11 +219,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            DebugUtility.Log(typeof(OperationalHandoffExitStage),
-                $"[OBS][SessionOperationalPipeline][Route] OperationalRouteRequestDeferredForHandoffExit routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalHandoffExitStage),
+                $"OperationalRouteRequestDeferredForHandoffExit routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
-            DebugUtility.Log(typeof(OperationalHandoffExitStage),
-                $"[OBS][SessionOperationalPipeline][Route] OperationalHandoffExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
+            DebugUtility.LogVerbose(typeof(OperationalHandoffExitStage),
+                $"OperationalHandoffExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             var handoffExitPort = ResolveHandoffExitPortOrFail();
@@ -243,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (exitResult.IsCompleted)
             {
                 DebugUtility.Log(typeof(OperationalHandoffExitStage),
-                    $"[OBS][SessionOperationalPipeline][Route] OperationalHandoffExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' exitResult='{exitResult}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"OperationalHandoffExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' exitResult='{exitResult}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
 
                 return new OperationalHandoffExitResult(
@@ -294,8 +294,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string detail,
             ISessionActivityRouteExitTeardownBoundary boundary)
         {
-            DebugUtility.Log(typeof(OperationalHandoffExitStage),
-                $"[OBS][SessionOperationalPipeline][Route] OperationalHandoffExitPreflightRejected reason='{reason}' detail='{detail}' stage='{boundary.CurrentStage}' railKind='{boundary.CurrentRailKind}' pendingOperation='{boundary.HasPendingOperation}'.",
+            DebugUtility.LogVerbose(typeof(OperationalHandoffExitStage),
+                $"OperationalHandoffExitPreflightRejected reason='{reason}' detail='{detail}' stage='{boundary.CurrentStage}' railKind='{boundary.CurrentRailKind}' pendingOperation='{boundary.HasPendingOperation}'.",
                 DebugUtility.Colors.Info);
 
             return new OperationalRouteHandoffExitPreflightResult(
@@ -335,7 +335,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             var routeCommand = command.RouteCommand;
             DebugUtility.LogWarning<OperationalHandoffExitStage>(
-                $"[OBS][SessionOperationalPipeline][Route] RouteRequestBlockedByOperationalHandoff routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}' exitResult='{exitResult}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                $"RouteRequestBlockedByOperationalHandoff routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}' exitResult='{exitResult}' source='{command.Source}' reasonDetail='{command.Reason}'.");
             throw new RouteRequestBlockedByOperationalHandoffException(blockedReason, blockedDetail);
         }
 

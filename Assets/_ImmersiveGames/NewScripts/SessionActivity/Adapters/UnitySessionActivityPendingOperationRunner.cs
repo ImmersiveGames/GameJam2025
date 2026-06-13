@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 {
@@ -141,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                     }
                     catch (Exception callbackException)
                     {
-                        Debug.LogError(
+                        DebugUtility.LogError(typeof(UnitySessionActivityPendingOperationRunner), 
                             $"[FATAL][SessionActivityPendingOperationRunner] Activity content completion callback failed operationId='{operation.OperationId}' operationKind='{operation.OperationKind}' activityId='{operation.ActivityId}' entrySequence='{operation.EntrySequence}' sceneName='{operation.SceneName}' source='{result.Source}' reason='{result.Reason}' error='{callbackException}'.");
                         callback.FailPendingOperation(operation, result.Source, result.Reason, $"activity_content_completion_callback_failed: {callbackException.Message}");
                     }
@@ -159,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             }
             catch (Exception exception)
             {
-                Debug.LogError(
+                DebugUtility.LogError(typeof(UnitySessionActivityPendingOperationRunner), 
                     $"[FATAL][SessionActivityPendingOperationRunner] Activity content operation failed operationId='{operation.OperationId}' operationKind='{operation.OperationKind}' activityId='{operation.ActivityId}' entrySequence='{operation.EntrySequence}' sceneName='{operation.SceneName}' source='{operation.Source}' reason='{operation.Reason}' error='{exception}'.");
                 callback.FailPendingOperation(operation, operation.Source, operation.Reason, exception.Message);
             }
@@ -187,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                     }
                     catch (Exception callbackException)
                     {
-                        Debug.LogError(
+                        DebugUtility.LogError(typeof(UnitySessionActivityPendingOperationRunner), 
                             $"[FATAL][SessionActivityPendingOperationRunner] Activity content release completion callback failed operationId='{operation.OperationId}' operationKind='{operation.OperationKind}' activityId='{operation.ActivityId}' entrySequence='{operation.EntrySequence}' sceneName='{operation.SceneName}' source='{result.Source}' reason='{result.Reason}' error='{callbackException}'.");
                         callback.FailPendingOperation(operation, result.Source, result.Reason, $"activity_content_release_completion_callback_failed: {callbackException.Message}");
                     }
@@ -205,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             }
             catch (Exception exception)
             {
-                Debug.LogError(
+                DebugUtility.LogError(typeof(UnitySessionActivityPendingOperationRunner), 
                     $"[FATAL][SessionActivityPendingOperationRunner] Activity content release operation failed operationId='{operation.OperationId}' operationKind='{operation.OperationKind}' activityId='{operation.ActivityId}' entrySequence='{operation.EntrySequence}' sceneName='{operation.SceneName}' source='{operation.Source}' reason='{operation.Reason}' error='{exception}'.");
                 callback.FailPendingOperation(operation, operation.Source, operation.Reason, exception.Message);
             }

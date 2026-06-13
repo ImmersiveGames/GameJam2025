@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using UnityEngine;
-using UDebug = UnityEngine.Debug;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 {
@@ -14,8 +14,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
     [DisallowMultipleComponent]
     public sealed class ActorPresentationManualProbe : MonoBehaviour
     {
-        private const string LogPrefix = "[OBS][ActorPresentation][Probe]";
-
         [Header("Inputs")]
         [SerializeField] private ActorPresentationProfileAsset profile;
         [SerializeField] private ActorPresentationEndpoint endpoint;
@@ -65,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
         public void ClearLocalProbeStateContextMenu()
         {
             ClearLocalState();
-            UDebug.Log($"{LogPrefix} LocalProbeStateCleared probe='{name}'.", this);
+            DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), $"event=\'LocalProbeStateCleared\' probe='{name}'.", DebugUtility.Colors.Info, this);
         }
 
         public ActorPresentationPlanResolutionResult ResolvePlan(string reason)
@@ -84,16 +82,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 _lastResolvedPlan = result.ResolvedPlan;
                 _hasResolvedPlan = true;
 
-                UDebug.Log(
-                    $"{LogPrefix} PlanResolved " +
+                DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                    $"event=\'PlanResolved\' " +
                     $"activityIdentity='{_lastResolvedPlan.ActivityIdentity}' " +
                     $"actorId='{_lastResolvedPlan.ActorId}' " +
                     $"actorKind='{_lastResolvedPlan.ActorKind}' " +
                     $"profileId='{_lastResolvedPlan.ProfileId}' " +
                     $"primarySlot='{_lastResolvedPlan.PrimarySlotKind}:{_lastResolvedPlan.PrimarySlotId}' " +
                     $"slotCount='{_lastResolvedPlan.Slots.Count}' " +
-                    $"reason='{reason}'.",
-                    this);
+                    $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
                 return result;
             }
@@ -103,22 +100,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
             if (result.IsSkippedOptional)
             {
-                UDebug.Log(
-                    $"{LogPrefix} PlanSkippedOptional " +
+                DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                    $"event=\'PlanSkippedOptional\' " +
                     $"reasonCode='{result.ReasonCode}' " +
                     $"message='{result.Message}' " +
-                    $"reason='{reason}'.",
-                    this);
+                    $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
                 return result;
             }
 
-            UDebug.LogError(
-                $"{LogPrefix} PlanFailed " +
+            DebugUtility.LogError(typeof(ActorPresentationManualProbe), 
+                $"event=\'PlanFailed\' " +
                 $"reasonCode='{result.ReasonCode}' " +
                 $"message='{result.Message}' " +
-                $"reason='{reason}'.",
-                this);
+                $"reason='{reason}'.", this);
 
             return result;
         }
@@ -153,26 +148,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 _lastRuntimeHandle = result.ReadyFact.RuntimeHandle;
                 _hasRuntimeHandle = true;
 
-                UDebug.Log(
-                    $"{LogPrefix} Materialized " +
+                DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                    $"event=\'Materialized\' " +
                     $"activityIdentity='{_lastRuntimeHandle.ResolvedPlan.ActivityIdentity}' " +
                     $"actorId='{_lastRuntimeHandle.ResolvedPlan.ActorId}' " +
                     $"profileId='{_lastRuntimeHandle.ResolvedPlan.ProfileId}' " +
                     $"instance='{_lastRuntimeHandle.PresentationInstance.name}' " +
-                    $"reason='{reason}'.",
-                    this);
+                    $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
                 return result;
             }
 
             if (result.IsSkippedOptional)
             {
-                UDebug.Log(
-                    $"{LogPrefix} MaterializeSkippedOptional " +
+                DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                    $"event=\'MaterializeSkippedOptional\' " +
                     $"reasonCode='{result.ReasonCode}' " +
                     $"message='{result.Message}' " +
-                    $"reason='{reason}'.",
-                    this);
+                    $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
                 return result;
             }
@@ -180,12 +173,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
             _hasRuntimeHandle = false;
             _lastRuntimeHandle = default;
 
-            UDebug.LogError(
-                $"{LogPrefix} MaterializeFailed " +
+            DebugUtility.LogError(typeof(ActorPresentationManualProbe), 
+                $"event=\'MaterializeFailed\' " +
                 $"reasonCode='{result.ReasonCode}' " +
                 $"message='{result.Message}' " +
-                $"reason='{reason}'.",
-                this);
+                $"reason='{reason}'.", this);
 
             return result;
         }
@@ -194,11 +186,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
         {
             if (!_hasRuntimeHandle)
             {
-                UDebug.Log(
-                    $"{LogPrefix} ReleaseSkippedNoRuntimeHandle " +
+                DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                    $"event=\'ReleaseSkippedNoRuntimeHandle\' " +
                     $"reasonCode='actor_presentation_probe_no_runtime_handle' " +
-                    $"reason='{reason}'.",
-                    this);
+                    $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
                 return ActorPresentationResult.Failed(
                     "actor_presentation_probe_no_runtime_handle",
@@ -214,13 +205,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
             if (result is { Kind: ActorPresentationResultKind.Released, ReleasedFact: { IsValid: true } })
             {
-                UDebug.Log(
-                    $"{LogPrefix} Released " +
+                DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                    $"event=\'Released\' " +
                     $"activityIdentity='{_lastRuntimeHandle.ResolvedPlan.ActivityIdentity}' " +
                     $"actorId='{_lastRuntimeHandle.ResolvedPlan.ActorId}' " +
                     $"profileId='{_lastRuntimeHandle.ResolvedPlan.ProfileId}' " +
-                    $"reason='{reason}'.",
-                    this);
+                    $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
                 _hasRuntimeHandle = false;
                 _lastRuntimeHandle = default;
@@ -228,48 +218,44 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 return result;
             }
 
-            UDebug.LogError(
-                $"{LogPrefix} ReleaseFailed " +
+            DebugUtility.LogError(typeof(ActorPresentationManualProbe), 
+                $"event=\'ReleaseFailed\' " +
                 $"reasonCode='{result.ReasonCode}' " +
                 $"message='{result.Message}' " +
-                $"reason='{reason}'.",
-                this);
+                $"reason='{reason}'.", this);
 
             return result;
         }
 
         public void RunFullProbe(string reason)
         {
-            UDebug.Log(
-                $"{LogPrefix} ProbeStarted " +
+            DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                $"event=\'ProbeStarted\' " +
                 $"probe='{name}' " +
                 $"activityIdentity='{activityIdentity}' " +
                 $"actorId='{actorId}' " +
                 $"actorKind='{actorKind}' " +
-                $"reason='{reason}'.",
-                this);
+                $"reason='{reason}'.", DebugUtility.Colors.Info, this);
 
             var planResult = ResolvePlan($"{reason}/ResolvePlan");
             if (!planResult.IsSuccess)
             {
-                UDebug.LogError(
-                    $"{LogPrefix} ProbeFailed " +
+                DebugUtility.LogError(typeof(ActorPresentationManualProbe), 
+                    $"event=\'ProbeFailed\' " +
                     $"stage='ResolvePlan' " +
                     $"reasonCode='{planResult.ReasonCode}' " +
-                    $"message='{planResult.Message}'.",
-                    this);
+                    $"message='{planResult.Message}'.", this);
                 return;
             }
 
             var materializeResult = Materialize($"{reason}/Materialize");
             if (materializeResult.Kind != ActorPresentationResultKind.Materialized)
             {
-                UDebug.LogError(
-                    $"{LogPrefix} ProbeFailed " +
+                DebugUtility.LogError(typeof(ActorPresentationManualProbe), 
+                    $"event=\'ProbeFailed\' " +
                     $"stage='Materialize' " +
                     $"reasonCode='{materializeResult.ReasonCode}' " +
-                    $"message='{materializeResult.Message}'.",
-                    this);
+                    $"message='{materializeResult.Message}'.", this);
                 return;
             }
 
@@ -278,22 +264,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 var releaseResult = Release($"{reason}/Release");
                 if (releaseResult.Kind != ActorPresentationResultKind.Released)
                 {
-                    UDebug.LogError(
-                        $"{LogPrefix} ProbeFailed " +
+                    DebugUtility.LogError(typeof(ActorPresentationManualProbe), 
+                        $"event=\'ProbeFailed\' " +
                         $"stage='Release' " +
                         $"reasonCode='{releaseResult.ReasonCode}' " +
-                        $"message='{releaseResult.Message}'.",
-                        this);
+                        $"message='{releaseResult.Message}'.", this);
                     return;
                 }
             }
 
-            UDebug.Log(
-                $"{LogPrefix} ProbeSucceeded " +
+            DebugUtility.LogVerbose(typeof(ActorPresentationManualProbe), 
+                $"event=\'ProbeSucceeded\' " +
                 $"probe='{name}' " +
                 $"releaseAfterFullProbe='{releaseAfterFullProbe}' " +
-                $"reason='{reason}'.",
-                this);
+                $"reason='{reason}'.", DebugUtility.Colors.Info, this);
         }
 
         private void ClearLocalState()

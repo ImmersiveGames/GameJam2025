@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
@@ -18,12 +18,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 throw new InvalidOperationException("InputModeAdapter received an invalid command or produced an invalid observation.");
             }
 
-            DebugUtility.Log(typeof(InputModeAdapter),
-                $"[OBS][SessionActivityPipeline][InputMode] command='ApplyActivityInputMode' mode='{command.Kind}' reason='{command.Reason}' outcomeKind='observed_noop' identity='{command.Identity}' source='{command.Source}'.",
+            DebugUtility.LogVerbose(typeof(InputModeAdapter),
+                $"command='ApplyActivityInputMode' mode='{command.Kind}' reason='{command.Reason}' outcomeKind='observed_noop' identity='{command.Identity}' source='{command.Source}'.",
                 DebugUtility.Colors.Info);
 
-            DebugUtility.Log(typeof(InputModeAdapter),
-                $"[OBS][SessionActivityPipeline][InputMode] fact='{observation.Fact}' snapshot='{observation.Snapshot}' command='ApplyActivityInputMode' mode='{command.Kind}' reason='{command.Reason}' outcomeKind='observed_noop' identity='{command.Identity}' source='{command.Source}'.",
+            DebugUtility.LogVerbose(typeof(InputModeAdapter),
+                $"fact='{observation.Fact}' snapshot='{observation.Snapshot}' command='ApplyActivityInputMode' mode='{command.Kind}' reason='{command.Reason}' outcomeKind='observed_noop' identity='{command.Identity}' source='{command.Source}'.",
                 DebugUtility.Colors.Info);
 
             return observation;

@@ -54,9 +54,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 Owner,
                 FreezeReason);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityObjectExitCorrelationFreezeStage),
-                $"[OBS][ActivityObjectExitCorrelationFreezeStage] event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}' inventoryValidationValid='{inventoryValidation.IsValid.ToString().ToLowerInvariant()}'.",
+                $"event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}' inventoryValidationValid='{inventoryValidation.IsValid.ToString().ToLowerInvariant()}'.",
                 DebugUtility.Colors.Info);
         }
 

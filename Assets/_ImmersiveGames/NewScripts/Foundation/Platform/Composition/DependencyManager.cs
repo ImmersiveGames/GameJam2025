@@ -81,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             service = null;
             if (objectId != null && _objectRegistry.TryGet(objectId, out service) ||
                 _sceneRegistry.TryGet(SceneManager.GetActiveScene().name, out service) ||
-                (objectId == null && _globalRegistry.TryGet(null, out service)))
+                objectId == null && _globalRegistry.TryGet(null, out service))
             {
                 DebugUtility.LogVerbose(typeof(DependencyManager), $"Serviço {typeof(T).Name} encontrado.");
                 return true;

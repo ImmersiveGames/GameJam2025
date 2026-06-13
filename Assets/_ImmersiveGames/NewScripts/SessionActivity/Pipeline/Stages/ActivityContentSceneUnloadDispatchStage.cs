@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 DebugUtility.Log(
                     typeof(ActivityContentSceneUnloadDispatchStage),
-                    $"[OBS][ActivityContentSceneUnloadDispatchStage] event='ActivityContentSceneUnloadDispatchCompletedNoMoreScenes' owner='ActivityContentSceneUnloadDispatchStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sceneCount='{loadedSet.Scenes.Count}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActivityContentSceneUnloadDispatchCompletedNoMoreScenes' owner='ActivityContentSceneUnloadDispatchStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sceneCount='{loadedSet.Scenes.Count}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 return new ActivityContentSceneUnloadDispatchStageResult(
                     dispatched: false,
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             DebugUtility.Log(
                 typeof(ActivityContentSceneUnloadDispatchStage),
-                $"[OBS][ActivityContentSceneUnloadDispatchStage] event='ActivityContentSceneUnloadDispatched' owner='ActivityContentSceneUnloadDispatchStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sceneIndex='{nextSceneIndex}' sceneName='{record.SceneName}' operationId='{pendingOperation.OperationId}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityContentSceneUnloadDispatched' owner='ActivityContentSceneUnloadDispatchStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sceneIndex='{nextSceneIndex}' sceneName='{record.SceneName}' operationId='{pendingOperation.OperationId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             pendingOperationRunner.RunActivityContentReleaseOperation(

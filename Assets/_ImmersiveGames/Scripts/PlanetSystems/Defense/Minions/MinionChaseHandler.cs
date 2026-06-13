@@ -151,7 +151,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
                         return;
                     }
 
-                    var direction = (_targetTransform.position - transform.position);
+                    var direction = _targetTransform.position - transform.position;
                     if (direction.sqrMagnitude > 0.0001f && _rotationLerpFactor > 0f)
                     {
                         transform.forward = Vector3.Lerp(

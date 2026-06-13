@@ -91,12 +91,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             string message =
-                $"[OBS][ActivityWindowSceneUnloadContinuationStage] event='{Normalize(eventName)}' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' pipelineId='{Normalize(pipelineId)}' sessionStateId='{Normalize(sessionStateId)}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.";
+                $"event='{Normalize(eventName)}' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' pipelineId='{Normalize(pipelineId)}' sessionStateId='{Normalize(sessionStateId)}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.";
 
-            DebugUtility.Log(
+            if (completed)
+            {
+                DebugUtility.Log(
+                    typeof(ActivityWindowSceneUnloadContinuationStage),
+                    message,
+                    DebugUtility.Colors.Success);
+                return;
+            }
+
+            DebugUtility.LogVerbose(
                 typeof(ActivityWindowSceneUnloadContinuationStage),
                 message,
-                completed ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
+                DebugUtility.Colors.Info);
         }
 
         private static string Normalize(string value)

@@ -80,9 +80,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             runtimeSpawnOrigin = spawnOrigin;
             SetRuntimeActorInstanceId(actorInstanceRuntimeId);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(RuntimeSpawnedActor),
-                $"[OBS][ActorProjectileFire] event='RuntimeSpawnedActorMetadataBound' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' actorRole='{runtimeActorRole}' actorScope='{runtimeActorScope}' ownerActorId='{runtimeSpawnOrigin.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnOrigin.OwnerActorInstanceRuntimeId}' spawnProfileId='{runtimeSpawnOrigin.SpawnProfileId}' originPoolDefinition='{runtimeSpawnOrigin.PoolDefinitionName}' commandSequence='{runtimeSpawnOrigin.CommandSequence}' instanceName='{name}' activeSelf='{gameObject.activeSelf}' activeInHierarchy='{gameObject.activeInHierarchy}' source='{Normalize(source)}' reason='runtime_spawned_actor_metadata_bound'.",
+                $"event='RuntimeSpawnedActorMetadataBound' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' actorRole='{runtimeActorRole}' actorScope='{runtimeActorScope}' ownerActorId='{runtimeSpawnOrigin.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnOrigin.OwnerActorInstanceRuntimeId}' spawnProfileId='{runtimeSpawnOrigin.SpawnProfileId}' originPoolDefinition='{runtimeSpawnOrigin.PoolDefinitionName}' commandSequence='{runtimeSpawnOrigin.CommandSequence}' instanceName='{name}' activeSelf='{gameObject.activeSelf}' activeInHierarchy='{gameObject.activeInHierarchy}' source='{Normalize(source)}' reason='runtime_spawned_actor_metadata_bound'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 {
                     DebugUtility.LogError(
                         typeof(RuntimeSpawnedActor),
-                        $"[OBS][ActorProjectileFire] event='RuntimeSpawnedActorPoolLifecycleCallbackFailed' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' instanceName='{name}' lifecycleReason='{Normalize(reason)}' message='{Normalize(exception.Message)}'.");
+                        $"event='RuntimeSpawnedActorPoolLifecycleCallbackFailed' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' instanceName='{name}' lifecycleReason='{Normalize(reason)}' message='{Normalize(exception.Message)}'.");
                 }
             }
         }

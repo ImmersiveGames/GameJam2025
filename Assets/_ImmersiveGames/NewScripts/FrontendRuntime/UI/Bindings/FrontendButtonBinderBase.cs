@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             if (Time.unscaledTime < _ignoreClicksUntilUnscaledTime)
             {
                 DebugUtility.LogVerbose<FrontendButtonBinderBase>(
-                    $"[FrontendButton] Clique ignorado (cooldown). remaining={(_ignoreClicksUntilUnscaledTime - Time.unscaledTime):0.000}s",
+                    $"[FrontendButton] Clique ignorado (cooldown). remaining={_ignoreClicksUntilUnscaledTime - Time.unscaledTime:0.000}s",
                     DebugUtility.Colors.Warning);
                 return;
             }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Presentation.Loading.Bindings;
@@ -25,8 +25,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             var controller = ResolveControllerOrFail(command);
             string signature = BuildSignature(command);
 
-            DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] showStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' showImmediately='{command.ShowImmediately}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                $"showStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' showImmediately='{command.ShowImmediately}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
             ApplySnapshot(controller, fact, showIfNeeded: command.ShowImmediately);
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] showCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' contextSignature='{signature}'.",
+                $"showCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Success);
 
             return Task.CompletedTask;
@@ -72,8 +72,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             controller.ApplyProgress(snapshot);
 
-            DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] progressApplied routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' step='{fact.StepLabel}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                $"progressApplied routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' step='{fact.StepLabel}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
             return Task.CompletedTask;
@@ -89,14 +89,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (!command.HideAfterCompletion && !forceHide)
             {
-                DebugUtility.Log(typeof(LoadingAdapter),
-                    $"[OBS][SessionOperationalLoading][Adapter] hideSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' hideAfterCompletion='false' contextSignature='{signature}'.",
+                DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                    $"hideSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' hideAfterCompletion='false' contextSignature='{signature}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] hideStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' forceHide='{forceHide}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                $"hideStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' forceHide='{forceHide}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
             await WaitMinimumVisibleTimeAsync(command);
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             await EnsureVisualHideSettledAsync(controller, signature);
 
             DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] hideCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' contextSignature='{signature}'.",
+                $"hideCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -253,12 +253,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             await controller.ApplyProgressAndSettleAsync(snapshot, signature);
 
-            DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] progressApplied routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' step='{fact.StepLabel}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                $"progressApplied routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' step='{fact.StepLabel}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
-            DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] progressVisualSettled routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' step='{fact.StepLabel}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                $"progressVisualSettled routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' progress='{fact.NormalizedProgress:0.###}' step='{fact.StepLabel}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Success);
 
             await WaitFinalProgressHoldAsync(command, fact, signature);
@@ -271,8 +271,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             float holdSeconds = command.FinalProgressHoldSeconds;
 
-            DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] finalProgressHoldStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingProfile='{command.LoadingProfileId}' finalProgressHoldSeconds='{holdSeconds:0.###}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(LoadingAdapter),
+                $"finalProgressHoldStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingProfile='{command.LoadingProfileId}' finalProgressHoldSeconds='{holdSeconds:0.###}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
             if (holdSeconds > 0f)
@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             DebugUtility.Log(typeof(LoadingAdapter),
-                $"[OBS][SessionOperationalLoading][Adapter] finalProgressHoldCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingProfile='{command.LoadingProfileId}' finalProgressHoldSeconds='{holdSeconds:0.###}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' contextSignature='{signature}'.",
+                $"finalProgressHoldCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingProfile='{command.LoadingProfileId}' finalProgressHoldSeconds='{holdSeconds:0.###}' source='{command.Source}' reason='{command.Reason}' stage='{fact.Stage}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Success);
         }
 

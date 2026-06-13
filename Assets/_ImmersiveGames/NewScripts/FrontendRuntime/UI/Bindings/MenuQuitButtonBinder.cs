@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
                 }
 
                 DebugUtility.Log<MenuQuitButtonBinder>(
-                    "[OBS][FrontendUI][Intent] Quit button observed_noop reason='canonical_no_frontend_quit'.");
+                    "Quit button observed_noop reason='canonical_no_frontend_quit'.");
                 return;
             }
 
@@ -48,12 +48,12 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         protected override bool OnClickCore(string actionReason)
         {
             DebugUtility.Log<MenuQuitButtonBinder>(
-                $"[OBS][FrontendUI][Intent] Quit solicitado. reason='{actionReason}'.");
+                $"Quit solicitado. reason='{actionReason}'.");
 
             if (_isCanonicalOperationalProfile)
             {
                 DebugUtility.Log<MenuQuitButtonBinder>(
-                    "[OBS][FrontendUI][Intent] Quit button observed_noop reason='canonical_no_frontend_quit'.");
+                    "Quit button observed_noop reason='canonical_no_frontend_quit'.");
                 return false;
             }
 
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             }
 
             DebugUtility.Log<MenuQuitButtonBinder>(
-                "[OBS][FrontendUI][Delegate] Intent de Quit delegada ao executor tecnico IFrontendQuitService.");
+                "Intent de Quit delegada ao executor tecnico IFrontendQuitService.");
 
             _quitService.Quit(actionReason);
             return true;

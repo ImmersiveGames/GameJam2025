@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             }
 
             float fade = ResolveFadeSeconds(fadeInSeconds);
-            bool hasCurrentPlayback = (_sourceA != null && _sourceA.isPlaying) || (_sourceB != null && _sourceB.isPlaying);
+            bool hasCurrentPlayback = _sourceA != null && _sourceA.isPlaying || _sourceB != null && _sourceB.isPlaying;
 
             CancelActiveTransition("interrupted_by_play", reason);
 
@@ -547,7 +547,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private bool HasAnyPlayback()
         {
-            return (_sourceA != null && _sourceA.isPlaying) || (_sourceB != null && _sourceB.isPlaying);
+            return _sourceA != null && _sourceA.isPlaying || _sourceB != null && _sourceB.isPlaying;
         }
 
         private AudioSource ResolveCurrentlyPlayingSource()

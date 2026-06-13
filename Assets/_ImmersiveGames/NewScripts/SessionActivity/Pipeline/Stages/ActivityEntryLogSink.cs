@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 : $" {normalizedDetail}";
 
             string message =
-                $"[OBS][ActivityEntryPipeline] event='{normalizedEventName}' owner='ActivityEntryPipeline' macroLifecycleOwner='SessionActivityPipeline' pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{Normalize(source)}' reason='{Normalize(reason)}'{detailSuffix}.";
+                $"event='{normalizedEventName}' owner='ActivityEntryPipeline' macroLifecycleOwner='SessionActivityPipeline' pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{Normalize(source)}' reason='{Normalize(reason)}'{detailSuffix}.";
 
             DebugUtility.Log(typeof(ActivityEntryPipeline), message, DebugUtility.Colors.Info);
         }
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 : $" {detail}";
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Phase] {phaseName} pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{source}' reason='{reason}'.{normalizedDetail}",
+                $"{phaseName} pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{source}' reason='{reason}'.{normalizedDetail}",
                 completed ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 

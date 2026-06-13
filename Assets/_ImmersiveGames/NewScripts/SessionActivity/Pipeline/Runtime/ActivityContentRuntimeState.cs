@@ -56,9 +56,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string source,
             string reason)
         {
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActivityContentRuntimeState),
-                $"[OBS][ActivityContentRuntimeState] event='{Normalize(eventName)}' owner='ActivityContentRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasLoadedSetBefore='{ToLowerInvariant(hasLoadedSetBefore)}' hasLoadedSetAfter='{ToLowerInvariant(hasLoadedSetAfter)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='{Normalize(eventName)}' owner='ActivityContentRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasLoadedSetBefore='{ToLowerInvariant(hasLoadedSetBefore)}' hasLoadedSetAfter='{ToLowerInvariant(hasLoadedSetAfter)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

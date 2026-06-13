@@ -139,9 +139,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActorProjectileFirePermissionReceiver),
-                $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                $"event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                 DebugUtility.Colors.Info);
 
             switch (fact.Command.State)
@@ -150,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     _projectileFireEndpoint.SetProjectileFireEnabled(true);
                     DebugUtility.Log(
                         typeof(ActorProjectileFirePermissionReceiver),
-                        $"[OBS][ActivityCapabilityPermission] event='ActorProjectileFirePermissionApplied' permissionId='{fact.Command.PermissionId}' state='Allowed' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' endpointId='{_projectileFireEndpoint.EndpointId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                        $"event='ActorProjectileFirePermissionApplied' permissionId='{fact.Command.PermissionId}' state='Allowed' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' endpointId='{_projectileFireEndpoint.EndpointId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                         DebugUtility.Colors.Success);
                     break;
 
@@ -158,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     _projectileFireEndpoint.SetProjectileFireEnabled(false);
                     DebugUtility.Log(
                         typeof(ActorProjectileFirePermissionReceiver),
-                        $"[OBS][ActivityCapabilityPermission] event='ActorProjectileFirePermissionApplied' permissionId='{fact.Command.PermissionId}' state='Blocked' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' endpointId='{_projectileFireEndpoint.EndpointId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                        $"event='ActorProjectileFirePermissionApplied' permissionId='{fact.Command.PermissionId}' state='Blocked' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' endpointId='{_projectileFireEndpoint.EndpointId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                         DebugUtility.Colors.Warning);
                     break;
 
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     _projectileFireEndpoint.SetProjectileFireEnabled(false);
                     DebugUtility.Log(
                         typeof(ActorProjectileFirePermissionReceiver),
-                        $"[OBS][ActivityCapabilityPermission] event='ActorProjectileFirePermissionApplied' permissionId='{fact.Command.PermissionId}' state='Unbound' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' endpointId='{_projectileFireEndpoint.EndpointId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                        $"event='ActorProjectileFirePermissionApplied' permissionId='{fact.Command.PermissionId}' state='Unbound' outcome='{fact.Outcome}' receiverId='{_receiverId}' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' endpointId='{_projectileFireEndpoint.EndpointId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                         DebugUtility.Colors.Warning);
                     break;
             }

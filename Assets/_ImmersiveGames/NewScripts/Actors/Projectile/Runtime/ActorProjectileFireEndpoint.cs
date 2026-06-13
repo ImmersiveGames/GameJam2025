@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{SpawnAdapterName}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileSpawnAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{SpawnAdapterName}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -65,9 +65,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 const string invalidReason = "invalid_projectile_fire_envelope";
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandRejected' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' commandId='{command.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' dispatchStatus='RejectedUnsupportedCommand' reason='{invalidReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCommandRejected' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' commandId='{command.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' dispatchStatus='RejectedUnsupportedCommand' reason='{invalidReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(invalidReason);
@@ -75,9 +75,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             if (!_projectileFireEnabled)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' dispatchStatus='RejectedInactive' reason='projectile_fire_endpoint_inactive' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' dispatchStatus='RejectedInactive' reason='projectile_fire_endpoint_inactive' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedInactive("projectile_fire_endpoint_inactive");
@@ -101,9 +101,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     ? "projectile_fire_command_build_failed"
                     : readiness.Reason;
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' readinessState='{readiness.Kind}' blockedReason='{readiness.BlockedReason}' dispatchStatus='RejectedUnsupportedCommand' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' readinessState='{readiness.Kind}' blockedReason='{readiness.BlockedReason}' dispatchStatus='RejectedUnsupportedCommand' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
@@ -115,9 +115,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     ? "projectile_fire_mode_missing"
                     : fireModeReason;
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' dispatchStatus='RejectedUnsupportedCommand' blockedReason='MissingFireMode' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' dispatchStatus='RejectedUnsupportedCommand' blockedReason='MissingFireMode' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
@@ -126,24 +126,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             float now = Time.time;
             if (IsCooldownActive(fireMode, now, out float nextAllowedTime, out float remainingSeconds))
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCooldownBlocked' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' remainingSeconds='{remainingSeconds:0.###}' nextAllowedTime='{nextAllowedTime:0.###}' dispatchStatus='RejectedUnsupportedCommand' reason='projectile_fire_cooldown_active' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCooldownBlocked' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' remainingSeconds='{remainingSeconds:0.###}' nextAllowedTime='{nextAllowedTime:0.###}' dispatchStatus='RejectedUnsupportedCommand' reason='projectile_fire_cooldown_active' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_fire_cooldown_active");
             }
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(ActorProjectileFireEndpoint),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
+                $"event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
                 DebugUtility.Colors.Info);
 
             if (_spawnAdapter == null)
             {
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterMissing' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' spawnExecuted='False' poolCalled='False' dispatchStatus='RejectedUnsupportedCommand' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_adapter_missing'.",
+                    $"event='ActorProjectileSpawnAdapterMissing' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' spawnExecuted='False' poolCalled='False' dispatchStatus='RejectedUnsupportedCommand' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_adapter_missing'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_spawn_adapter_missing");
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileFireSpawnAdapterCompleted' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' adapter='{SpawnAdapterName}' adapterResult='{adapterResult.Kind}' spawnExecuted='{adapterResult.SpawnExecuted}' poolCalled='{adapterResult.PoolCalled}' source='{nameof(ActorProjectileFireEndpoint)}' reason='{adapterResult.Reason}'.",
+                $"event='ActorProjectileFireSpawnAdapterCompleted' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' adapter='{SpawnAdapterName}' adapterResult='{adapterResult.Kind}' spawnExecuted='{adapterResult.SpawnExecuted}' poolCalled='{adapterResult.PoolCalled}' source='{nameof(ActorProjectileFireEndpoint)}' reason='{adapterResult.Reason}'.",
                 adapterResult.IsFailed ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
             if (adapterResult.IsFailed || !adapterResult.IsAccepted)
@@ -171,9 +171,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 float scheduledNextAllowedTime = now + fireMode.CooldownSeconds;
                 _nextAllowedFireTimeByMode[fireMode.FireModeId] = scheduledNextAllowedTime;
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCooldownScheduled' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' nextAllowedTime='{scheduledNextAllowedTime:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_cooldown_scheduled'.",
+                    $"event='ActorProjectileFireCooldownScheduled' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' nextAllowedTime='{scheduledNextAllowedTime:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_cooldown_scheduled'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -483,7 +483,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawned_actor_not_runtime_spawned_actor'.");
+                    $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawned_actor_not_runtime_spawned_actor'.");
                 return;
             }
 
@@ -492,7 +492,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_missing'.");
+                    $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_missing'.");
                 return;
             }
 
@@ -500,7 +500,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_rejected_spawn'.");
+                    $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_rejected_spawn'.");
             }
         }
 

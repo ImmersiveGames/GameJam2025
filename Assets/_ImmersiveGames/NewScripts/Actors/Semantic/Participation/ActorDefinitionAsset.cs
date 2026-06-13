@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         private static bool ResolveHasPlacementPlan(ActorPlacementMode mode, string key)
         {
             return mode == ActorPlacementMode.FixedTransform ||
-                   (mode == ActorPlacementMode.SceneMarker && !string.IsNullOrWhiteSpace(key));
+                   mode == ActorPlacementMode.SceneMarker && !string.IsNullOrWhiteSpace(key);
         }
     }
 }

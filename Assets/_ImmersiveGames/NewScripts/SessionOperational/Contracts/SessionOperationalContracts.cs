@@ -77,11 +77,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             unchecked
             {
                 int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteIdentity ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteOperationId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteProfileId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ RouteSequence;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteIdentity ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteOperationId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteProfileId ?? string.Empty);
+                hashCode = hashCode * 397 ^ RouteSequence;
                 return hashCode;
             }
         }
@@ -122,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             unchecked
             {
-                return (RouteKey.GetHashCode() * 397) ^ StringComparer.Ordinal.GetHashCode(TransitionId ?? string.Empty);
+                return RouteKey.GetHashCode() * 397 ^ StringComparer.Ordinal.GetHashCode(TransitionId ?? string.Empty);
             }
         }
 
@@ -161,7 +161,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             unchecked
             {
-                return (TransitionKey.GetHashCode() * 397) ^ (int)Stage;
+                return TransitionKey.GetHashCode() * 397 ^ (int)Stage;
             }
         }
 

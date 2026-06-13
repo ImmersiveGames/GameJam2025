@@ -168,11 +168,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             catch (Exception exception)
             {
                 outcomeReason = $"route_activity_save_qa_failed_exception:{exception.GetType().Name}";
-                DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadResolved='unknown' payloadKind='<none>' recordCount='0' contributorResolutionKind='{Normalize(outcomeReason)}' failureReason='{Normalize(exception.Message)}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
+                    $"checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadResolved='unknown' payloadKind='<none>' recordCount='0' contributorResolutionKind='{Normalize(outcomeReason)}' failureReason='{Normalize(exception.Message)}' source='{normalizedSource}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
-                DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][QA] event='RouteActivitySaveQaRequested' outcomeKind='Failed' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
+                    $"event='RouteActivitySaveQaRequested' outcomeKind='Failed' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
@@ -180,8 +180,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             outcomeReason = string.IsNullOrWhiteSpace(result.Reason) ? result.Detail : result.Reason;
             bool qaSkipped = result.IsCompleted && Normalize(outcomeReason).StartsWith("qa_save_skipped_", StringComparison.Ordinal);
             string outcomeKind = result.IsCompleted ? (qaSkipped ? "Skipped" : "Saved") : "Failed";
-            DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][QA] event='RouteActivitySaveQaRequested' outcomeKind='{outcomeKind}' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
+                $"event='RouteActivitySaveQaRequested' outcomeKind='{outcomeKind}' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 result.IsCompleted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
             return result.IsCompleted;
         }
@@ -314,7 +314,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 if (_hasActiveOperationalRouteOperation)
                 {
                     DebugUtility.LogWarning<SessionOperationalPipeline>(
-                        $"[OBS][SessionOperationalPipeline][Route] rejected reason='stale_or_foreign_route' routeIdentity='{routeIdentity}' activeRouteIdentity='{_activeOperationalRouteIdentity}' activeRouteOperationId='{_activeOperationalRouteOperationId}' activeTransitionId='{_activeOperationalTransitionId}' source='{sourceText}' reason='{reasonText}'.");
+                        $"rejected reason='stale_or_foreign_route' routeIdentity='{routeIdentity}' activeRouteIdentity='{_activeOperationalRouteIdentity}' activeRouteOperationId='{_activeOperationalRouteOperationId}' activeTransitionId='{_activeOperationalTransitionId}' source='{sourceText}' reason='{reasonText}'.");
                     throw new InvalidOperationException("Operational route operation is already in flight.");
                 }
 
@@ -769,8 +769,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             catch (RouteRequestBlockedByOperationalHandoffException blockedException)
             {
                 completionReason = $"blocked:{blockedException.BlockedReason}";
-                DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][Route] RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' blockedReason='{blockedException.BlockedReason}' detail='{blockedException.BlockedDetail}' source='{sourceText}' reason='{reasonText}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
+                    $"RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' blockedReason='{blockedException.BlockedReason}' detail='{blockedException.BlockedDetail}' source='{sourceText}' reason='{reasonText}'.",
                     DebugUtility.Colors.Info);
                 return new SessionOperationalRouteCompletedFact(
                     command,
@@ -804,12 +804,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     catch (Exception cleanupEx)
                     {
                         DebugUtility.LogError<SessionOperationalPipeline>(
-                            $"[OBS][SessionOperationalPipeline][Transition] fade_out_cleanup_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}' exceptionType='{cleanupEx.GetType().Name}' exceptionMessage='{cleanupEx.Message}'.");
+                            $"fade_out_cleanup_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}' exceptionType='{cleanupEx.GetType().Name}' exceptionMessage='{cleanupEx.Message}'.");
                     }
                 }
 
                 DebugUtility.LogError<SessionOperationalPipeline>(
-                    $"[OBS][SessionOperationalPipeline][Transition] route_transition_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}' exceptionType='{ex.GetType().Name}' exceptionMessage='{ex.Message}'.");
+                    $"route_transition_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}' exceptionType='{ex.GetType().Name}' exceptionMessage='{ex.Message}'.");
                 throw;
             }
             finally
@@ -886,9 +886,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             string normalizedPolicyDetail = Normalize(policyDetail);
             DebugUtility.LogWarning<SessionOperationalPipeline>(
-                $"[OBS][SessionOperationalPipeline][Route] RouteRequestBlockedByOperationalHandoff routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{Normalize(source)}' reasonDetail='{Normalize(reasonDetail)}'.");
-            DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][Route] RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{Normalize(source)}' reasonDetail='{Normalize(reasonDetail)}'.",
+                $"RouteRequestBlockedByOperationalHandoff routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{Normalize(source)}' reasonDetail='{Normalize(reasonDetail)}'.");
+            DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
+                $"RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{Normalize(source)}' reasonDetail='{Normalize(reasonDetail)}'.",
                 DebugUtility.Colors.Info);
             return new RouteRequestSubmissionResult(
                 RouteRequestSubmissionKind.RejectedByPolicy,
@@ -1620,8 +1620,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][PreviousRouteExit] SessionActivity route-exit boundary ausente para session reset after route exit.");
             }
 
-            DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][SessionReset] OperationalSessionResetAfterRouteExitStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousActivityIdentity='{previousCompletedRoute.ActivityIdentity}' destinationSurfaceKind='{command.SurfaceKind}' source='{source}' reason='{reason}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
+                $"OperationalSessionResetAfterRouteExitStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousActivityIdentity='{previousCompletedRoute.ActivityIdentity}' destinationSurfaceKind='{command.SurfaceKind}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             var result = boundary.ResetSessionAfterRouteExit(
@@ -1630,7 +1630,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][SessionReset] OperationalSessionResetAfterRouteExitCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousActivityIdentity='{previousCompletedRoute.ActivityIdentity}' result='{result}' source='{source}' reason='{reason}'.",
+                $"OperationalSessionResetAfterRouteExitCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousActivityIdentity='{previousCompletedRoute.ActivityIdentity}' result='{result}' source='{source}' reason='{reason}'.",
                 result.IsFailed ? DebugUtility.Colors.Warning : DebugUtility.Colors.Success);
 
             return result;

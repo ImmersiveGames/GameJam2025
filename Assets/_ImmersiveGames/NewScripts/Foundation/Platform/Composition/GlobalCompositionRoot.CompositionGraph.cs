@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap;
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
             {
                 DebugUtility.Log(typeof(GlobalCompositionRoot),
-                    "[OBS][Composition][Profile] Base11Sandbox SessionOperational profile active.",
+                    "Base11Sandbox SessionOperational profile active.",
                     DebugUtility.Colors.Info);
                 steps.AddRange(GetSessionOperationalCompositionSteps(runtimeModeConfig));
             }

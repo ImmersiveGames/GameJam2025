@@ -106,15 +106,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static void LogMaterializationStarted(OperationalRouteMaterializationBoundaryCommand command)
         {
-            DebugUtility.Log(typeof(OperationalRouteMaterializationBoundary),
-                $"[OBS][SessionOperationalPipeline][Route] OperationalRouteMaterializationStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+            DebugUtility.LogVerbose(typeof(OperationalRouteMaterializationBoundary),
+                $"OperationalRouteMaterializationStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogMaterializationCompleted(OperationalRouteMaterializationBoundaryCommand command)
         {
             DebugUtility.Log(typeof(OperationalRouteMaterializationBoundary),
-                $"[OBS][SessionOperationalPipeline][Route] OperationalRouteMaterializationCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                $"OperationalRouteMaterializationCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
                 DebugUtility.Colors.Success);
         }
 

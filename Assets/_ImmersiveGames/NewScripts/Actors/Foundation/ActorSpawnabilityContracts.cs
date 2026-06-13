@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public float LifetimeSeconds { get; }
         public float ElapsedSeconds { get; }
-        public float RemainingSeconds => HasLifetime ? (LifetimeSeconds - ElapsedSeconds > 0f ? LifetimeSeconds - ElapsedSeconds : 0f) : 0f;
+        public float RemainingSeconds => HasLifetime ? LifetimeSeconds - ElapsedSeconds > 0f ? LifetimeSeconds - ElapsedSeconds : 0f : 0f;
         public bool HasLifetime => LifetimeSeconds > 0f;
         public bool IsExpired => HasLifetime && ElapsedSeconds >= LifetimeSeconds;
         public bool IsValid => LifetimeSeconds >= 0f && ElapsedSeconds >= 0f;
@@ -124,14 +124,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ResetPolicy == ActorSpawnedResetPolicy.ReturnToOriginPool;
 
         public bool IsValid =>
-            (!IsSpawnable || (
-                MaterializationKind != ActorMaterializationKind.Unknown &&
+            (!IsSpawnable || MaterializationKind != ActorMaterializationKind.Unknown &&
                 LifetimePolicy != ActorLifetimePolicy.PolicyKind.Unknown &&
                 ResetPolicy != ActorSpawnedResetPolicy.Unknown &&
                 SnapshotPolicy != ActorSnapshotPolicy.Unknown &&
                 (!RequiresPoolOrigin || HasPoolOrigin) &&
                 (LifetimePolicy != ActorLifetimePolicy.PolicyKind.RuntimeTransient ||
-                    SnapshotPolicy != ActorSnapshotPolicy.Unknown))) &&
+                    SnapshotPolicy != ActorSnapshotPolicy.Unknown)) &&
             (!HasPoolOrigin || PoolOrigin.IsValid);
     }
 }

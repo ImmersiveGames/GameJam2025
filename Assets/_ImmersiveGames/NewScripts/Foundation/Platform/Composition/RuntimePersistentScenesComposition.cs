@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EnsureStartupRouteCompatibilityOrFail(runtimeModeConfig);
 
             DebugUtility.LogVerbose(typeof(RuntimePersistentScenesComposition),
-                "[OBS][RuntimeMode][PersistentScenes] installer='validated' status='ready'.",
+                "installer='validated' status='ready'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -37,8 +37,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _guaranteeRuntimeModeConfig = runtimeModeConfig;
             _guaranteeTask = EnsurePersistentScenesGuaranteedAsync(runtimeModeConfig);
 
-            DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                "[OBS][RuntimeMode][PersistentScenes] guarantee='started'.",
+            DebugUtility.LogVerbose(typeof(RuntimePersistentScenesComposition),
+                "guarantee='started'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             if (persistentScenesPolicy == null)
             {
                 DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                    "[OBS][RuntimeMode][PersistentScenes] policy='none' status='skipped'.",
+                    "policy='none' status='skipped'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             if (persistentSceneNames.Count == 0)
             {
                 DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                    $"[OBS][RuntimeMode][PersistentScenes] policyId='{persistentScenesPolicy.PolicyId}' status='no_entries'.",
+                    $"policyId='{persistentScenesPolicy.PolicyId}' status='no_entries'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                $"[OBS][RuntimeMode][PersistentScenes] guaranteed policyId='{persistentScenesPolicy.PolicyId}' scenes=[{string.Join(", ", persistentSceneNames)}] correlationId='{result.CorrelationId}'.",
+                $"guaranteed policyId='{persistentScenesPolicy.PolicyId}' scenes=[{string.Join(", ", persistentSceneNames)}] correlationId='{result.CorrelationId}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -170,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                $"[OBS][RuntimePolicy][Config] RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
     }

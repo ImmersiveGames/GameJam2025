@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
@@ -60,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 if (IsQaDebugAllowed())
                 {
-                    Debug.Log($"[OBS][SessionActivityPipeline][Host] SessionActivityHostAutoStartIgnored sessionStateId='{sessionStateId}' autoStart='true' reason='auto_start_is_not_canonical_in_base11' source='SessionActivityHost/Start'.");
+                    DebugUtility.LogVerbose(typeof(SessionActivityHost), $"SessionActivityHostAutoStartIgnored sessionStateId='{sessionStateId}' autoStart='true' reason='auto_start_is_not_canonical_in_base11' source='SessionActivityHost/Start'.");
                     return;
                 }
 
@@ -112,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             _lastObservedStateToken = currentToken;
             StateObservedChanged?.Invoke();
-            Debug.Log($"[OBS][SessionActivityPipeline][Host][StateObservedChanged] {currentToken}");
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), $"{currentToken}");
         }
 
         public void DebugStartActivity()
@@ -246,12 +247,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 applied = false;
                 outcomeReason = $"actor_reset_qa_failed_exception:{exception.GetType().Name}";
-                Debug.LogError(
-                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+                DebugUtility.LogError(typeof(SessionActivityHost), 
+                    $"event='ActorResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
             }
 
-            Debug.Log(
-                $"[OBS][SessionActivityPipeline][Host] action='QaResetCurrentPlayerActor' outcomeKind='{(applied ? "Applied" : "Rejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            DebugUtility.Log(typeof(SessionActivityHost), 
+                $"action='QaResetCurrentPlayerActor' outcomeKind='{(applied ? "Applied" : "Rejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
             return applied;
         }
 
@@ -272,12 +273,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 applied = false;
                 outcomeReason = $"activity_object_reset_qa_failed_exception:{exception.GetType().Name}";
-                Debug.LogError(
-                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+                DebugUtility.LogError(typeof(SessionActivityHost), 
+                    $"event='ActivityObjectResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
             }
 
-            Debug.Log(
-                $"[OBS][SessionActivityPipeline][Host] action='QaResetCurrentActivityObjects' outcomeKind='{(applied ? "Applied" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            DebugUtility.Log(typeof(SessionActivityHost), 
+                $"action='QaResetCurrentActivityObjects' outcomeKind='{(applied ? "Applied" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
             return applied;
         }
 
@@ -298,12 +299,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 captured = false;
                 outcomeReason = $"activity_snapshot_capture_qa_failed_exception:{exception.GetType().Name}";
-                Debug.LogError(
-                    $"[OBS][SessionActivityPipeline][QA] event='ActivitySnapshotCaptureQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+                DebugUtility.LogError(typeof(SessionActivityHost), 
+                    $"event='ActivitySnapshotCaptureQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
             }
 
-            Debug.Log(
-                $"[OBS][SessionActivityPipeline][Host] action='QaCaptureCurrentActivitySnapshotPayload' outcomeKind='{(captured ? "Captured" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), 
+                $"action='QaCaptureCurrentActivitySnapshotPayload' outcomeKind='{(captured ? "Captured" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
             return captured;
         }
 
@@ -343,7 +344,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             StringBuilder builder = new();
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpState");
+            builder.AppendLine("DumpState");
             builder.AppendLine($"sessionStateId='{sessionStateId}' autoStart='{autoStart}'");
             builder.AppendLine($"pipelineId='{State.PipelineId}' sessionStateId='{State.SessionId}'");
             builder.AppendLine($"entrySequence='{State.CurrentEntrySequence}'");
@@ -401,7 +402,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             string dump = builder.ToString().TrimEnd();
-            Debug.Log(dump);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), dump);
             return dump;
         }
 
@@ -409,7 +410,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             string trace = BuildTraceDump();
-            Debug.Log(trace);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), trace);
             return trace;
         }
 
@@ -432,7 +433,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             AddEntrySequence(targetEntrySequences, previousActivityEntrySequence);
             AddEntrySequence(targetEntrySequences, lastCompletedActivityEntrySequence);
 
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpActivityContentReleaseEvidence");
+            builder.AppendLine("DumpActivityContentReleaseEvidence");
             AppendDumpSummary(builder);
             builder.AppendLine($"pendingActivityContentReleaseContext='{_pipeline.PendingActivityContentReleaseSummary}'");
             builder.AppendLine($"awaitingContinuationAfterActivityContentRelease='{_pipeline.AwaitingContinuationAfterActivityContentRelease}'");
@@ -506,7 +507,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"- scene='IntroScene02' isLoaded='{ResolveSceneLoaded("IntroScene02")}'");
 
             string dump = builder.ToString().TrimEnd();
-            Debug.Log(dump);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), dump);
             return dump;
         }
 
@@ -514,12 +515,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             StringBuilder builder = new();
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpCurrentActivityEvidence");
+            builder.AppendLine("DumpCurrentActivityEvidence");
             AppendDumpSummary(builder);
             builder.AppendLine("facts(current_activity_entry):");
             AppendFactsByEntrySequence(builder, State.CurrentDefinition.ActivityId, State.CurrentEntrySequence, ShouldIncludeCurrentActivityEvidenceFact);
             string dump = builder.ToString().TrimEnd();
-            Debug.Log(dump);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), dump);
             return dump;
         }
 
@@ -527,12 +528,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             StringBuilder builder = new();
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpParticipantBindingEvidence");
+            builder.AppendLine("DumpParticipantBindingEvidence");
             AppendDumpSummary(builder);
             builder.AppendLine("facts(participant_binding):");
             AppendFactsByEntrySequence(builder, State.CurrentDefinition.ActivityId, State.CurrentEntrySequence, ShouldIncludeParticipantBindingEvidenceFact);
             string dump = builder.ToString().TrimEnd();
-            Debug.Log(dump);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), dump);
             return dump;
         }
 
@@ -540,7 +541,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             StringBuilder builder = new();
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpTransitionEvidence");
+            builder.AppendLine("DumpTransitionEvidence");
             AppendDumpSummary(builder);
             builder.AppendLine("facts(transition):");
             AppendRecentFacts(builder, ShouldIncludeTransitionEvidenceFact);
@@ -570,7 +571,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             string dump = builder.ToString().TrimEnd();
-            Debug.Log(dump);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), dump);
             return dump;
         }
 
@@ -578,7 +579,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             StringBuilder builder = new();
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpSceneState");
+            builder.AppendLine("DumpSceneState");
             AppendDumpSummary(builder);
             builder.AppendLine("scene_state:");
             builder.AppendLine($"- scene='ActivityScene01' isLoaded='{ResolveSceneLoaded("ActivityScene01")}'");
@@ -586,7 +587,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"- scene='IntroScene01' isLoaded='{ResolveSceneLoaded("IntroScene01")}'");
             builder.AppendLine($"- scene='IntroScene02' isLoaded='{ResolveSceneLoaded("IntroScene02")}'");
             string dump = builder.ToString().TrimEnd();
-            Debug.Log(dump);
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), dump);
             return dump;
         }
 
@@ -608,20 +609,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             string outcome = result.Kind.ToString();
-            Debug.Log($"[OBS][SessionActivityPipeline][Host] action='{action}' outcomeKind='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}'");
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), $"action='{action}' outcomeKind='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}'");
 
             for (int index = 0; index < result.Facts.Count; index++)
             {
-                Debug.Log($"[OBS][SessionActivityPipeline][Host][ResultFact] {result.Facts[index]}");
+                DebugUtility.LogVerbose(typeof(SessionActivityHost), $"{result.Facts[index]}");
             }
 
-            Debug.Log($"[OBS][SessionActivityPipeline][Host] factsCount='{State.Facts.Count}' snapshotsCount='{State.Snapshots.Count}' traceCount='{State.Trace.Count}'");
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), $"factsCount='{State.Facts.Count}' snapshotsCount='{State.Snapshots.Count}' traceCount='{State.Trace.Count}'");
         }
 
         private string BuildTraceDump()
         {
             StringBuilder builder = new();
-            builder.AppendLine("[OBS][SessionActivityPipeline][Host] Trace");
+            builder.AppendLine("Trace");
             for (int index = 0; index < State.Trace.Count; index++)
             {
                 builder.AppendLine(State.Trace[index]);
@@ -689,7 +690,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string BuildHostBanner()
         {
-            return $"[OBS][SessionActivityPipeline][Host] initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
+            return $"initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
         }
 
         private string BuildStateObservationToken()
@@ -734,7 +735,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
-            Debug.Log(BuildHostBanner());
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), BuildHostBanner());
         }
 
 
@@ -746,7 +747,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             var scene = SceneManager.GetSceneByName(sceneName.Trim());
-            return (scene.IsValid() && scene.isLoaded) ? "true" : "false";
+            return scene.IsValid() && scene.isLoaded ? "true" : "false";
         }
 
         private static bool ShouldIncludeReleaseEvidenceFact(SessionActivityFact fact)
@@ -972,15 +973,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 QaReason(action),
                 out var result);
 
-            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
-            Debug.Log(
-                $"[OBS][SessionActivityPipeline][Host] action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}'");
+            string outcome = applied ? "Applied" : result.Rejected ? "Rejected" : "Failed";
+            DebugUtility.LogVerbose(typeof(SessionActivityHost), 
+                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}'");
 
             if (applied && result.HasFact)
             {
                 var fact = result.Fact;
-                Debug.Log(
-                    $"[OBS][SessionActivityPipeline][Host][ActorAttributeFact] operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+                DebugUtility.Log(typeof(SessionActivityHost), 
+                    $"operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;

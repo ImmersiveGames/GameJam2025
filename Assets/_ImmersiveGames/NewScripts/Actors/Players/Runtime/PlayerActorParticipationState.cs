@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
@@ -125,8 +126,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 MarkActiveInActivity(context.PipelineIdentity);
             }
 
-            Debug.Log(
-                $"[OBS][PlayerActorParticipationState][Reset] event='PlayerActorParticipationStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' participationProfileKind='{participationProfileKind}' participationProfileSource='{participationProfileSource}' participationStateBefore='{stateBefore}' participationStateAfter='{participationState}' activityIdBefore='{activityBefore}' activityIdAfter='{CurrentActivityId}' entrySequenceBefore='{entrySequenceBefore}' entrySequenceAfter='{currentEntrySequence}' source='{context.Source}' reason='{context.Reason}'.");
+            DebugUtility.LogVerbose(typeof(PlayerActorParticipationState), $"event='ParticipationStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' participationProfileKind='{participationProfileKind}' participationProfileSource='{participationProfileSource}' participationStateBefore='{stateBefore}' participationStateAfter='{participationState}' activityIdBefore='{activityBefore}' activityIdAfter='{CurrentActivityId}' entrySequenceBefore='{entrySequenceBefore}' entrySequenceAfter='{currentEntrySequence}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
         }
 
         private static void EnsureParticipationResetContext(ActorResetContext context, string operation)

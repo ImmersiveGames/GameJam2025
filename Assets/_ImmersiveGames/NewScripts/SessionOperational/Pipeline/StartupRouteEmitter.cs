@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -53,8 +53,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             DebugUtility.Log(typeof(StartupRouteEmitter),
                 newlyCreated
-                    ? "[OBS][SessionOperationalPipeline][StartupRoute] emitter registered for canonical startup rail."
-                    : "[OBS][SessionOperationalPipeline][StartupRoute] emitter rebound for canonical startup rail.",
+                    ? "emitter registered for canonical startup rail."
+                    : "emitter rebound for canonical startup rail.",
                 DebugUtility.Colors.Info);
 
             return _instance;
@@ -89,8 +89,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 var startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
                 var pipeline = ResolvePipelineOrFail();
 
-                DebugUtility.Log(typeof(StartupRouteEmitter),
-                    $"[OBS][SessionOperationalPipeline][StartupRoute] event='BootStartPlanRequestedEvent' routeIdentity='{startupRoute.RouteIdentity}' source='StartupRouteEmitter' reason='{StartupReason}'.",
+                DebugUtility.LogVerbose(typeof(StartupRouteEmitter),
+                    $"event='BootStartPlanRequestedEvent' routeIdentity='{startupRoute.RouteIdentity}' source='StartupRouteEmitter' reason='{StartupReason}'.",
                     DebugUtility.Colors.Info);
 
                 await pipeline.RequestOperationalRouteAsync(

@@ -45,7 +45,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
             var startPos = minion.position;
             var endPos   = target.position;
 
-            var forwardDir = (endPos - startPos);
+            var forwardDir = endPos - startPos;
             float distance     = forwardDir.magnitude;
 
             if (distance <= 0.001f || speed <= 0.001f)

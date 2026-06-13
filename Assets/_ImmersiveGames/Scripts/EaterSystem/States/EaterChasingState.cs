@@ -331,7 +331,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
             var normalizedCenterDirection = centerDirection.sqrMagnitude > Mathf.Epsilon
                 ? centerDirection
-                : (Transform != null ? Transform.forward : Vector3.forward);
+                : Transform != null ? Transform.forward : Vector3.forward;
 
             if (targetCollider == null || !targetCollider.enabled)
             {

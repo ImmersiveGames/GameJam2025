@@ -194,8 +194,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         private static bool TryResolveHandle(ActivityPlayerActorRegistry registry, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
         {
             handle = default;
-            return (registry.TryGetActiveHandleByParticipant(participantId, out handle) && handle.IsValid) ||
-                (registry.TryGetRouteScopedHandleByParticipant(participantId, out handle) && handle.IsValid);
+            return registry.TryGetActiveHandleByParticipant(participantId, out handle) && handle.IsValid ||
+                registry.TryGetRouteScopedHandleByParticipant(participantId, out handle) && handle.IsValid;
         }
 
         private static void EnsureIdentityMatches(

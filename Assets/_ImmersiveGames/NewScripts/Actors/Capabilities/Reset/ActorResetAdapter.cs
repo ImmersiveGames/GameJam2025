@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 {
@@ -68,8 +69,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                         $"stale_or_foreign_actor_reset_inventory_reference: capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{resetReference.ActorInstanceRuntimeId}' expectedActorInstanceRuntimeId='{expectedActorInstanceRuntimeId}'.");
                 }
 
-                Debug.Log(
-                    $"[OBS][ActorResetAdapter] event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' runtimeBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' executionMode='intent_handler_per_reference' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.");
+                DebugUtility.LogVerbose(typeof(ActorResetAdapter), $"event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' runtimeBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' executionMode='intent_handler_per_reference' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
                 ActorResetContext context = new(
                     activeIdentity,
@@ -121,8 +121,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 }
 
                 string resetHandler = ApplyResetByIntent(resetReference.Endpoint, command.ResetIntent, context);
-                Debug.Log(
-                    $"[OBS][ActorResetAdapter] event='ActorResetEndpointAppliedFromInventory' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetHandler='{resetHandler}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_reference' source='{command.Source}' reason='{command.Reason}'.");
+                DebugUtility.LogVerbose(typeof(ActorResetAdapter), $"event='ActorResetEndpointAppliedFromInventory' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetHandler='{resetHandler}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_reference' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
                 appliedReferenceCount += 1;
             }

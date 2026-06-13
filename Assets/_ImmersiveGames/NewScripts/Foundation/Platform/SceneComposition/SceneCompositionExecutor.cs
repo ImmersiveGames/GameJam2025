@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             if (!request.HasOperations)
             {
                 DebugUtility.Log<SceneCompositionExecutor>(
-                    $"[OBS][SceneComposition] {GetScopePrefix(request.Scope)}CompositionNoOp correlationId='{request.CorrelationId}' reason='{request.Reason}'.",
+                    $"{GetScopePrefix(request.Scope)}CompositionNoOp correlationId='{request.CorrelationId}' reason='{request.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return new SceneCompositionResult(
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             string activeSceneLabel = string.IsNullOrWhiteSpace(request.ActiveScene) ? "<none>" : request.ActiveScene;
 
             DebugUtility.Log<SceneCompositionExecutor>(
-                $"[OBS][SceneComposition] LocalCompositionApplied correlationId='{request.CorrelationId}' scenesToLoad=[{string.Join(",", request.ScenesToLoad)}] scenesToUnload=[{string.Join(",", request.ScenesToUnload)}] addedScenes=[{addedList}] removedScenes=[{removedList}] activeScene='{activeSceneLabel}' addedCount={addedScenes.Count} removedCount={removedScenes.Count} reason='{request.Reason}'.",
+                $"LocalCompositionApplied correlationId='{request.CorrelationId}' scenesToLoad=[{string.Join(",", request.ScenesToLoad)}] scenesToUnload=[{string.Join(",", request.ScenesToUnload)}] addedScenes=[{addedList}] removedScenes=[{removedList}] activeScene='{activeSceneLabel}' addedCount={addedScenes.Count} removedCount={removedScenes.Count} reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
             return new SceneCompositionResult(
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                 }
 
                 DebugUtility.Log<SceneCompositionExecutor>(
-                    $"[OBS][SceneComposition] UnloadSceneStarted scene='{sceneName}'.",
+                    $"UnloadSceneStarted scene='{sceneName}'.",
                     DebugUtility.Colors.Info);
 
                 var unloadOperation = SceneManager.UnloadSceneAsync(scene);
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 
                 removedScenes.Add(sceneName);
                 DebugUtility.Log<SceneCompositionExecutor>(
-                    $"[OBS][SceneComposition] UnloadSceneCompleted scene='{sceneName}'.",
+                    $"UnloadSceneCompleted scene='{sceneName}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                 if (!scene.IsValid() || !scene.isLoaded)
                 {
                     DebugUtility.Log<SceneCompositionExecutor>(
-                        $"[OBS][SceneComposition] LoadSceneStarted scene='{sceneName}'.",
+                        $"LoadSceneStarted scene='{sceneName}'.",
                         DebugUtility.Colors.Info);
 
                     var loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
@@ -153,13 +153,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                     }
 
                     DebugUtility.Log<SceneCompositionExecutor>(
-                        $"[OBS][SceneComposition] LoadSceneCompleted scene='{sceneName}'.",
+                        $"LoadSceneCompleted scene='{sceneName}'.",
                         DebugUtility.Colors.Info);
                 }
                 else
                 {
                     DebugUtility.Log<SceneCompositionExecutor>(
-                        $"[OBS][SceneComposition] LoadSceneCompleted scene='{sceneName}' alreadyLoaded='true'.",
+                        $"LoadSceneCompleted scene='{sceneName}' alreadyLoaded='true'.",
                         DebugUtility.Colors.Info);
                 }
 
@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             }
 
             DebugUtility.Log<SceneCompositionExecutor>(
-                $"[OBS][SceneComposition] SetActiveScene scene='{activeSceneName}' correlationId='{correlationId}' reason='{reason}'.",
+                $"SetActiveScene scene='{activeSceneName}' correlationId='{correlationId}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 

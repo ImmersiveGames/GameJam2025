@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (logResetVerbose)
             {
                 DebugUtility.LogVerbose<PlayerShootController>(
-                    $"[Reset][PlayerShootController] Rebind | Action='{actionName}' bound={( _spawnAction != null)} | Actor='{_actor?.ActorName ?? name}' | {ctx}");
+                    $"[Reset][PlayerShootController] Rebind | Action='{actionName}' bound={_spawnAction != null} | Actor='{_actor?.ActorName ?? name}' | {ctx}");
             }
 
             return Task.CompletedTask;

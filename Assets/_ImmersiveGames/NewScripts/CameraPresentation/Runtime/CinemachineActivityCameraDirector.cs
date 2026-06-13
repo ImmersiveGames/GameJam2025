@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             cinemachineCamera.Priority = ActivityCameraPriority;
 
             DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
-                $"[OBS][CameraPresentation][Director] ActivityCameraPrepared outputCamera='{operationalHandle.UnityCamera.name}' hasOperationalBrain='{operationalHandle.HasCinemachineBrain}' presentationRig='{rigInstance.name}' activityIdentity='{command.ActivityIdentity}' requirementId='{command.Requirement.RequirementId}'.",
+                $"ActivityCameraPrepared outputCamera='{operationalHandle.UnityCamera.name}' hasOperationalBrain='{operationalHandle.HasCinemachineBrain}' presentationRig='{rigInstance.name}' activityIdentity='{command.ActivityIdentity}' requirementId='{command.Requirement.RequirementId}'.",
                 DebugUtility.Colors.Info);
 
             reason = "activity_camera_ready";
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             Object.Destroy(binding.Handle.CameraRigInstance);
 
             DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
-                $"[OBS][CameraPresentation][Director] ActivityCameraReleased outputCamera='{binding.Handle.UnityCamera?.name}' presentationRig='{binding.Handle.CameraRigInstance.name}' activityIdentity='{binding.Handle.ActivityIdentity}'.",
+                $"ActivityCameraReleased outputCamera='{binding.Handle.UnityCamera?.name}' presentationRig='{binding.Handle.CameraRigInstance.name}' activityIdentity='{binding.Handle.ActivityIdentity}'.",
                 DebugUtility.Colors.Info);
 
             reason = "activity_camera_released";
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             cinemachineCamera.Target.LookAtTarget = command.LookAtTarget;
 
             DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
-                $"[OBS][CameraPresentation][Director] ActivityCameraTargetsRebound activityIdentity='{command.ActivityIdentity}' presentationRig='{bindingHandle.CameraRigInstance.name}' trackingTarget='{command.TrackingTarget.name}' lookAtTarget='{command.LookAtTarget?.name ?? "<none>"}'.",
+                $"ActivityCameraTargetsRebound activityIdentity='{command.ActivityIdentity}' presentationRig='{bindingHandle.CameraRigInstance.name}' trackingTarget='{command.TrackingTarget.name}' lookAtTarget='{command.LookAtTarget?.name ?? "<none>"}'.",
                 DebugUtility.Colors.Info);
 
             reason = "activity_camera_targets_rebound";

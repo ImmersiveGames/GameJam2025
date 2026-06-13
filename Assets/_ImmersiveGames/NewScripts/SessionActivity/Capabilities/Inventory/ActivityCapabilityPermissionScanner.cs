@@ -12,6 +12,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -70,12 +71,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
                 if (!_identityResolver.TryResolve(target, out var playerIdentity))
                 {
-                    var endpointComponent = (movementEndpoint as Component) ?? (projectileFireEndpoint as Component);
+                    var endpointComponent = movementEndpoint as Component ?? projectileFireEndpoint as Component;
                     string unresolvedComponentPath = endpointComponent != null
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;
-                    Debug.LogWarning(
-                        $"[OBS][ActivityCapabilityPermissionScanner] event='PermissionTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' capabilityKind='{ActivityCapabilityKind.PermissionTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
+                    DebugUtility.LogWarning(typeof(ActivityCapabilityPermissionScanner), 
+                        $"event='PermissionTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' capabilityKind='{ActivityCapabilityKind.PermissionTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 
@@ -360,8 +361,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source,
                 reason));
 
-            Debug.Log(
-                $"[OBS][ActivityCapabilityPermissionScanner] event='retained_player_permission_receiver_contribution_resolved' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' actorId='{playerIdentity.ActorId}' actorInstanceRuntimeId='{playerIdentity.ActorInstanceRuntimeId}' playerActorId='{playerIdentity.PlayerActorId}' playerSlotId='{playerIdentity.PlayerSlotId}' receiverId='{receiverId}' source='{source}' reason='{reason}'.");
+            DebugUtility.LogVerbose(typeof(ActivityCapabilityPermissionScanner), 
+                $"event='retained_player_permission_receiver_contribution_resolved' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' actorId='{playerIdentity.ActorId}' actorInstanceRuntimeId='{playerIdentity.ActorInstanceRuntimeId}' playerActorId='{playerIdentity.PlayerActorId}' playerSlotId='{playerIdentity.PlayerSlotId}' receiverId='{receiverId}' source='{source}' reason='{reason}'.");
         }
 
         private sealed class ExistingPermissionReceiverProvider : IActivityPermissionReceiverProvider

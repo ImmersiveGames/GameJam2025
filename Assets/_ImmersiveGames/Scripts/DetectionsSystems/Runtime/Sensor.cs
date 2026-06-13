@@ -203,7 +203,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             var coneWorldDirection = _origin.TransformDirection(Config.ConeDirection);
             var directionToTarget = (targetPosition - _origin.position).normalized;
             float angleToTarget = Vector3.Angle(coneWorldDirection, directionToTarget);
-            return angleToTarget <= (Config.ConeAngle / 2f);
+            return angleToTarget <= Config.ConeAngle / 2f;
         }
 
         private IDetectable GetDetectableFromCollider(Collider collider)

@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             DebugUtility.Log(typeof(SessionActivityCompositionInstaller),
-                $"[OBS][SessionActivityPipeline][Installer] composition completed sessionStateId='{sessionStateId}' catalog='{_catalog.Summary}'.",
+                $"composition completed sessionStateId='{sessionStateId}' catalog='{_catalog.Summary}'.",
                 DebugUtility.Colors.Info);
         }
 

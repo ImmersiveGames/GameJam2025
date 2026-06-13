@@ -75,10 +75,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var effective3D = ResolveEffectiveProfile(pooled3DCue, null, out string source3D);
             var effectivePool = effective3D != null && effective3D.PooledVoicePoolDefinition != null
                 ? effective3D.PooledVoicePoolDefinition
-                : (effective2D != null ? effective2D.PooledVoicePoolDefinition : null);
+                : effective2D != null ? effective2D.PooledVoicePoolDefinition : null;
 
             LogInfo("ValidatePooledSetup",
-                $"ok pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2D)}' source2d='{source2D}' effective3d='{SafeName(effective3D)}' source3d='{source3D}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3D != null ? effective3D.AllowDirectFallback : (effective2D != null && effective2D.AllowDirectFallback))}");
+                $"ok pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2D)}' source2d='{source2D}' effective3d='{SafeName(effective3D)}' source3d='{source3D}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3D != null ? effective3D.AllowDirectFallback : effective2D != null && effective2D.AllowDirectFallback)}");
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Play 2D")]
@@ -232,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var effective2D = ResolveEffectiveProfile(pooled2DCue, null, out string source2D);
             var effective3D = ResolveEffectiveProfile(pooled3DCue, null, out string source3D);
 
-            DebugUtility.Log(typeof(AudioSfxPooledQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioSfxPooledQaSceneHarness),
                 $"[QA][Audio][SFX][Pooled] action='LogPooledState' serviceResolved={serviceResolved} pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' poolDefault='{pool}' effective2d='{SafeName(effective2D)}' effective2dSource='{source2D}' effective3d='{SafeName(effective3D)}' effective3dSource='{source3D}' budget={(pooledVoiceProfile != null ? pooledVoiceProfile.DefaultVoiceBudget : 0)} releaseGrace={(pooledVoiceProfile != null ? pooledVoiceProfile.ReleaseGraceSeconds : 0f):0.###}.",
                 DebugUtility.Colors.Info);
         }
@@ -398,7 +398,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                     selectedClipLengthSeconds > 0f ? selectedClipLengthSeconds + profileReleaseGrace + 0.5f : pooledSequenceWaitTimeoutSeconds));
 
             LogInfo("ProbePooledSequenceReuse",
-                $"start cue='{cue.name}' sequenceCueSource='{sequenceCueSource}' probeCue='{sequenceProbeCue.name}' selectedClipLength={selectedClipLengthSeconds:0.###} sourceClipCount={sourceClipCount} count={count} stepDelay={stepDelay:0.###} waitTimeout={waitTimeout:0.###} effectiveProfile='{SafeName(sequenceEffectiveProfile)}' profileSource='{sequenceProfileSource}' pool='{SafeName(sequencePool)}' poolInitial={(sequencePool != null ? sequencePool.InitialSize : 0)} poolCanExpand={(sequencePool != null && sequencePool.CanExpand)} poolMax={(sequencePool != null ? sequencePool.MaxSize : 0)} poolAutoReturn={(sequencePool != null ? sequencePool.AutoReturnSeconds : 0f):0.###} expected='rent_play_complete_return_cycles'");
+                $"start cue='{cue.name}' sequenceCueSource='{sequenceCueSource}' probeCue='{sequenceProbeCue.name}' selectedClipLength={selectedClipLengthSeconds:0.###} sourceClipCount={sourceClipCount} count={count} stepDelay={stepDelay:0.###} waitTimeout={waitTimeout:0.###} effectiveProfile='{SafeName(sequenceEffectiveProfile)}' profileSource='{sequenceProfileSource}' pool='{SafeName(sequencePool)}' poolInitial={(sequencePool != null ? sequencePool.InitialSize : 0)} poolCanExpand={sequencePool != null && sequencePool.CanExpand} poolMax={(sequencePool != null ? sequencePool.MaxSize : 0)} poolAutoReturn={(sequencePool != null ? sequencePool.AutoReturnSeconds : 0f):0.###} expected='rent_play_complete_return_cycles'");
 
             for (int i = 0; i < count; i++)
             {
@@ -696,7 +696,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            DebugUtility.Log(typeof(AudioSfxPooledQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioSfxPooledQaSceneHarness),
                 $"[QA][Audio][SFX][Pooled] action='{action}' detail='{detail}'.",
                 DebugUtility.Colors.Info);
         }

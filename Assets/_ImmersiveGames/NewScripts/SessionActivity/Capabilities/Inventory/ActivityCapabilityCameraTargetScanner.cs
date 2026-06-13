@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -62,8 +63,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     string unresolvedComponentPath = endpointComponent != null
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;
-                    Debug.LogWarning(
-                        $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraBindingContributionIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' bindingKind='CameraBindingContribution' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
+                    DebugUtility.LogWarning(typeof(ActivityCapabilityCameraTargetScanner), 
+                        $"event='CameraBindingContributionIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' bindingKind='CameraBindingContribution' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 

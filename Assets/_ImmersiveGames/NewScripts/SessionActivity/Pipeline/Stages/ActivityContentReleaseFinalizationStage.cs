@@ -234,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             DebugUtility.Log(
                 typeof(ActivityContentReleaseFinalizationStage),
-                $"[OBS][ActivityContentReleaseFinalizationStage] event='{eventName}' owner='ActivityContentReleaseFinalizationStage' " +
+                $"event='{eventName}' owner='ActivityContentReleaseFinalizationStage' " +
                 $"pipelineId='{command.Command.Identity.PipelineId}' sessionStateId='{command.Command.Identity.SessionId}' activityId='{command.ActivityId}' " +
                 $"entrySequence='{command.EntrySequence}' stage='{SessionActivityStage.ActivityContentReleaseCompleted}' source='{command.Source}' reason='{command.Reason}' " +
                 $"completionKind='{command.CompletionKind}' status='{command.Status}' loadedSceneCount='{command.LoadedSceneCount}' releasedSceneCount='{command.ReleasedSceneCount}' " +

@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             DebugUtility.Log(typeof(OperationalInputPreparationStage),
-                $"[OBS][SessionOperationalPipeline][InputMode] command='OperationalInputModeRequest' routeIdentity='{request.Identity.RouteId}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' contextSignature='{request.ContextSignature}' operationalSurfaceKind='{request.RouteClass}' inputPolicy='{request.InputPolicy}' initialInputMode='{request.InitialInputMode}' source='{request.Source}' reason='{request.Reason}'.",
+                $"command='OperationalInputModeRequest' routeIdentity='{request.Identity.RouteId}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' contextSignature='{request.ContextSignature}' operationalSurfaceKind='{request.RouteClass}' inputPolicy='{request.InputPolicy}' initialInputMode='{request.InitialInputMode}' source='{request.Source}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -259,7 +259,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalInputModeKind initialInputMode)
         {
             DebugUtility.Log(typeof(OperationalInputPreparationStage),
-                $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{command.RoutePlan.OperationalSurfaceKind}' inputPolicy='{command.InputPolicy}' inputMode='{initialInputMode}' source='{command.Source}' reason='{command.Reason}'.",
+                $"InputCapabilityPrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{command.RoutePlan.OperationalSurfaceKind}' inputPolicy='{command.InputPolicy}' inputMode='{initialInputMode}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 

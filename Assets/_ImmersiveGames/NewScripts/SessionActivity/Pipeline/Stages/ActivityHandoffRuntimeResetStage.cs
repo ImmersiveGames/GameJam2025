@@ -79,9 +79,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static void Log(string eventName, ActivityHandoffRuntimeResetStageCommand command, string color)
         {
-            DebugUtility.Log(
+            string message = $"event='{Normalize(eventName)}' owner='{Owner}' activityId='{Normalize(command.InitialIdentity.ActivityId)}' entrySequence='{command.EntrySequence}' triggerSource='{Normalize(command.TriggerSource)}' triggerReason='{Normalize(command.TriggerReason)}' resetReason='{ResetReason}'.";
+
+            if (eventName.EndsWith("Completed", System.StringComparison.Ordinal))
+            {
+                DebugUtility.Log(
+                    typeof(ActivityHandoffRuntimeResetStage),
+                    message,
+                    color);
+                return;
+            }
+
+            DebugUtility.LogVerbose(
                 typeof(ActivityHandoffRuntimeResetStage),
-                $"[OBS][ActivityHandoffRuntimeResetStage] event='{Normalize(eventName)}' owner='{Owner}' activityId='{Normalize(command.InitialIdentity.ActivityId)}' entrySequence='{command.EntrySequence}' triggerSource='{Normalize(command.TriggerSource)}' triggerReason='{Normalize(command.TriggerReason)}' resetReason='{ResetReason}'.",
+                message,
                 color);
         }
 

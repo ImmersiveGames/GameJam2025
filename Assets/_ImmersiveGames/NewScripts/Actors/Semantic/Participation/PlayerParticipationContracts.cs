@@ -170,9 +170,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             ActorId.IsValid &&
-            ((ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized) ||
-             (ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized) ||
-             (ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped));
+            (ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized ||
+             ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized ||
+             ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -231,17 +231,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             ActorId.IsValid &&
-            ((ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved &&
-              MaterializationStatus == PlayerMaterializationStatus.NotMaterialized &&
-              ((Required && ReadinessStatus == PlayerReadinessStatus.PendingMaterialization) ||
-               (!Required && ReadinessStatus == PlayerReadinessStatus.OptionalPending))) ||
-             (ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized &&
-              MaterializationStatus == PlayerMaterializationStatus.Materialized &&
-              ReadinessStatus == PlayerReadinessStatus.Ready) ||
-             (!Required &&
-              ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped &&
-              MaterializationStatus == PlayerMaterializationStatus.Skipped &&
-              ReadinessStatus == PlayerReadinessStatus.OptionalSkipped));
+            (ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved &&
+                MaterializationStatus == PlayerMaterializationStatus.NotMaterialized &&
+                (Required && ReadinessStatus == PlayerReadinessStatus.PendingMaterialization ||
+                    !Required && ReadinessStatus == PlayerReadinessStatus.OptionalPending) ||
+             ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized &&
+                MaterializationStatus == PlayerMaterializationStatus.Materialized &&
+                ReadinessStatus == PlayerReadinessStatus.Ready ||
+             !Required &&
+                ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped &&
+                MaterializationStatus == PlayerMaterializationStatus.Skipped &&
+                ReadinessStatus == PlayerReadinessStatus.OptionalSkipped);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

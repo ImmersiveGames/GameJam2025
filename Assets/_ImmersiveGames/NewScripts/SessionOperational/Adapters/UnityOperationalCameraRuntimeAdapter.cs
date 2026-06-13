@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string source,
             string reason)
         {
-            DebugUtility.Log(typeof(UnityOperationalCameraRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalCameraRuntimeAdapter),
                 BuildLog("OperationalCameraRuntimeValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     "status='started'"),
                 DebugUtility.Colors.Info);
@@ -52,9 +52,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             int prefabCameraCount = prefabCameras?.Length ?? 0;
             var prefabMarker = prefab.GetComponent<OperationalCameraRuntimeMarker>();
             var prefabPersistentRoot = prefab.GetComponent<PersistentRuntimeObject>();
-            DebugUtility.Log(typeof(UnityOperationalCameraRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalCameraRuntimeAdapter),
                 BuildLog("OperationalCameraPrefabObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
-                    $"prefab='{prefab.name}' cameraCount='{prefabCameraCount}' markerOnRoot='{(prefabMarker != null)}' persistentRoot='{(prefabPersistentRoot != null)}'"),
+                    $"prefab='{prefab.name}' cameraCount='{prefabCameraCount}' markerOnRoot='{prefabMarker != null}' persistentRoot='{prefabPersistentRoot != null}'"),
                 DebugUtility.Colors.Info);
 
             if (prefabCameraCount != 1)
@@ -209,7 +209,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            DebugUtility.Log(typeof(UnityOperationalCameraRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalCameraRuntimeAdapter),
                 BuildLog("OperationalCameraObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"canonicalCount='{canonicalCount}'"),
                 DebugUtility.Colors.Info);
@@ -286,7 +286,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string reason,
             string extra)
         {
-            return $"[OBS][SessionOperationalCameraRuntime] event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
+            return $"event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
         }
     }
 }

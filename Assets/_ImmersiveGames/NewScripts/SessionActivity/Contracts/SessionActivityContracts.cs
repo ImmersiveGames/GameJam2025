@@ -254,10 +254,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ ActivityOrdinal;
-                hashCode = (hashCode * 397) ^ EntrySequence;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
+                hashCode = hashCode * 397 ^ ActivityOrdinal;
+                hashCode = hashCode * 397 ^ EntrySequence;
                 return hashCode;
             }
         }
@@ -297,7 +297,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             unchecked
             {
-                return (CycleKey.GetHashCode() * 397) ^ (int)Stage;
+                return CycleKey.GetHashCode() * 397 ^ (int)Stage;
             }
         }
 
@@ -448,8 +448,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasValidNextActivityTransitionContinuePolicy => NextActivityTransitionContinuePolicy != ActivityTransitionContinuePolicy.Unknown;
 
         private bool IsActivityContentConfigurationValid =>
-            (ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null) ||
-            (ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null);
+            ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null ||
+            ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null;
 
         public override string ToString()
         {

@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             InstallerDependencies = installerDependencies ?? Array.Empty<string>();
             BootstrapDependencies = bootstrapDependencies ?? Array.Empty<string>();
             Optional = optional;
-            InstallerOnly = installerOnly || (installer != null && bootstrap == null);
+            InstallerOnly = installerOnly || installer != null && bootstrap == null;
             Description = description;
             InstallerEntry = installerEntry ?? string.Empty;
             RuntimeComposerEntry = runtimeComposerEntry ?? string.Empty;

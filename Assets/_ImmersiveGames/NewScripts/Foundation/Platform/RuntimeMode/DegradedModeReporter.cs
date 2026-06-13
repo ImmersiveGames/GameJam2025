@@ -252,7 +252,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             if (string.Equals(source, "registry", StringComparison.Ordinal))
             {
                 DebugUtility.Log(typeof(DegradedModeReporter),
-                    "[OBS][RuntimePolicy][Config] DegradedModeReporter using RuntimeConfigRegistry snapshot for reporter/strictness.",
+                    "DegradedModeReporter using RuntimeConfigRegistry snapshot for reporter/strictness.",
                     DebugUtility.Colors.Info);
             }
         }

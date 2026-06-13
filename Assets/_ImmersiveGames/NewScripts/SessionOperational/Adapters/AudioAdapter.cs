@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
@@ -41,9 +41,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             StopPreviousRouteAudioIfRequested(command);
 
-            DebugUtility.Log(typeof(AudioAdapter),
+            DebugUtility.LogVerbose(typeof(AudioAdapter),
                 BuildAudioLog(
-                    "[OBS][SessionOperationalAudio][AudioAdapter] playStarted",
+                    "playStarted",
                     command,
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Info);
@@ -59,9 +59,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            DebugUtility.Log(typeof(AudioAdapter),
+            DebugUtility.LogVerbose(typeof(AudioAdapter),
                 BuildAudioLog(
-                    "[OBS][SessionOperationalAudio][AudioAdapter] playSubmitted",
+                    "playSubmitted",
                     command,
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Success);
@@ -190,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
                 _configSourceLogged = true;
                 DebugUtility.Log(typeof(AudioAdapter),
-                    $"[OBS][Audio][Config] SessionOperational AudioAdapter using RuntimeConfigRegistry/PreferencesRuntimeConfigGroup audio defaults. asset='{registryAudioDefaults.name}'.",
+                    $"SessionOperational AudioAdapter using RuntimeConfigRegistry/PreferencesRuntimeConfigGroup audio defaults. asset='{registryAudioDefaults.name}'.",
                     DebugUtility.Colors.Info);
                 return;
             }

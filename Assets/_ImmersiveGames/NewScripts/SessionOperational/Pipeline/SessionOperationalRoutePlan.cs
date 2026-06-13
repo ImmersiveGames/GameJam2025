@@ -83,9 +83,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(RouteIdentity) &&
             (TransitionMode == SessionOperationalRouteTransitionMode.None || TransitionMode == SessionOperationalRouteTransitionMode.Profile) &&
-            (!UsesTransition || (TransitionProfile != null && TransitionProfile.TryValidate(out _))) &&
+            (!UsesTransition || TransitionProfile != null && TransitionProfile.TryValidate(out _)) &&
             (LoadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault || LoadingMode == SessionOperationalRouteLoadingMode.None || LoadingMode == SessionOperationalRouteLoadingMode.Profile) &&
-            (!UsesLoading || LoadingMode != SessionOperationalRouteLoadingMode.Profile || (LoadingProfile != null && LoadingProfile.TryValidate(out _))) &&
+            (!UsesLoading || LoadingMode != SessionOperationalRouteLoadingMode.Profile || LoadingProfile != null && LoadingProfile.TryValidate(out _)) &&
             ActiveSceneKey != null &&
             !string.IsNullOrWhiteSpace(ActiveSceneKey.SceneName) &&
             FinalScenesToLoad is { Count: > 0 } &&

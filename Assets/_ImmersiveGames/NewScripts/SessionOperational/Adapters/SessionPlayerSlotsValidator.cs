@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             var config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
 
-            DebugUtility.Log(typeof(SessionPlayerSlotsValidator),
+            DebugUtility.LogVerbose(typeof(SessionPlayerSlotsValidator),
                 BuildLog("SessionPlayerSlotsValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"maxPlayerSlots='{config.MaxPlayerSlots}'"),
                 DebugUtility.Colors.Info);
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             var playerInputManager = playerInputManagers[0];
 
-            DebugUtility.Log(typeof(SessionPlayerSlotsValidator),
+            DebugUtility.LogVerbose(typeof(SessionPlayerSlotsValidator),
                 BuildLog("PlayerInputManagerObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"playerInputManager='{playerInputManager.name}' observedMaxPlayerCount='{playerInputManager.maxPlayerCount}'"),
                 DebugUtility.Colors.Info);
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string reason,
             string extra)
         {
-            return $"[OBS][SessionPlayerSlots] event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
+            return $"event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
         }
     }
 }

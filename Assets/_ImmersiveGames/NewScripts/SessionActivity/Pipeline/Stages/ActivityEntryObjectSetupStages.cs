@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -680,8 +681,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             string message)
         {
-            Debug.Log(
-                $"[OBS][ActivityEntryPipeline][CapabilityInventoryPreview] fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='capability_inventory_preview' message=\"{message}\"");
+            DebugUtility.LogVerbose(typeof(ActivityEntryCapabilityInventoryPreviewStage), 
+                $"fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='capability_inventory_preview' message=\"{message}\"");
         }
     }
 
