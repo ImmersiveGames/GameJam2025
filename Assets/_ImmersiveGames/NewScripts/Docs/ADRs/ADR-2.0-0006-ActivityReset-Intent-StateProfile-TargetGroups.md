@@ -763,3 +763,937 @@ como aplicar.
 ```
 
 Essa separação elimina a ambiguidade entre cleanup inicial, reset runtime, placement, transientes e grupos futuros de gameplay.
+
+---
+
+## Implementação parcial — RESET-ARCH-2
+
+Status: Applied / pending compile + smoke.
+
+`RESET-ARCH-2` inicia a migração dos actor reset endpoints para handlers explícitos por intent.
+
+Escopo:
+
+```text
+PlayerActor -> Placement
+PlayerMovementController -> MovementTransient
+ActorProjectileSpawnRuntimeTracker -> SpawnedRuntimeObjects
+PlayerActorParticipationState -> ActivityParticipation
+```
+
+Os endpoints principais passam a implementar as interfaces específicas de actor reset intent, preservando `ApplyReset(...)` como fallback técnico transitório.
+
+O adapter passa a registrar `resetHandler` para diferenciar execução por handler específico de fallback genérico.
+
+Este corte ainda não remove `ActorResetGroup`, não cria target groups e não altera receitas reais de estado.
+
+---
+
+## Implementação parcial — RESET-ARCH-3
+
+Status: Applied / pending compile + smoke.
+
+`RESET-ARCH-3` rebaixa `ActorResetGroup` na observabilidade de actor reset.
+
+Decisão aplicada:
+
+```text
+ActivityResetIntent + ActivityResetStateProfile + resetHandler são o eixo principal do actor reset.
+ActorResetGroup permanece apenas como detalhe técnico transitório enquanto a migração remove a dependência de groups.
+```
+
+Campos antigos de observabilidade principal foram substituídos nos logs de actor reset por campos técnicos:
+
+```text
+technicalResetGroup
+technicalResetGroups
+technicalAppliedGroupCount
+technicalSkippedGroupCount
+technicalGroupMode='legacy_capability_group'
+```
+
+Este corte ainda não remove `ActorResetGroup` do contrato, não altera receitas reais e não migra object reset.
+---
+
+## Implementação parcial — RESET-ARCH-4A
+
+Status: Applied / pending compile + smoke.
+
+`RESET-ARCH-4A` inicia a migração de receita real por state profile no actor placement do `PlayerActor`.
+
+Decisão aplicada:
+
+```text
+EntryInitialize aplica e congela InitialState placement profile.
+RuntimeLocalReset não usa mais a posição atual como falso reset; reutiliza o InitialState placement profile congelado.
+RuntimeActivityReset usa RuntimeActivityState placement profile, com fallback para InitialState quando necessário.
+RuntimeActivityTransitionReset não reposiciona o PlayerActor neste corte.
+RuntimeRouteTransitionReset não reposiciona o PlayerActor neste corte.
+```
+
+Este corte mantém `ActorResetGroup.Placement` como detalhe técnico transitório e não altera movement, projectile, participation nem object reset.
+
+
+---
+
+## Implementação parcial — RESET-ARCH-4B0
+
+Status: Applied / pending compile + smoke.
+
+`RESET-ARCH-4B0` audita o caminho de `ActorAttribute` e adiciona observabilidade de `ActivityResetIntent` + `ActivityResetStateProfileKind` ao setup de atributos.
+
+Decisão aplicada:
+
+```text
+ActorAttribute ainda não entra como reset endpoint real.
+ActivityEntryActorAttributeStage passa a receber e logar resetIntent/resetStateProfile derivados do ActivityResetScopePlan.
+```
+
+Motivo:
+
+```text
+ActivityEntryParticipantResetStage roda antes de ActivityEntryActorAttributeStage.
+Adicionar ActorAttributeEndpoint ao rail de reset agora criaria skip/falso applied ou exigiria mudança de ordem sem auditoria própria.
+```
+
+Este corte registra explicitamente que QA attribute commands continuam como rail paralelo temporário e devem ser migrados/removidos antes do fechamento final do ADR-0006.
+
+
+
+---
+
+## Implementação parcial — RESET-ARCH-4B1
+
+Status: Applied / pending compile + smoke.
+
+`RESET-ARCH-4B1` adiciona o primeiro reset real de `ActorAttribute` no cleanup de teardown.
+
+Decisão aplicada:
+
+```text
+ActivityResetIntent.LifecycleCleanupReset
+-> ActivityResetStateProfileKind.InitialState
+```
+
+`ActorAttributeEndpoint` não entra ainda como `IActorResetEndpoint` do participant reset, porque o participant reset roda antes do setup de atributos. O cleanup reset é executado por `ActivityExitActorTeardownStage`, onde os atributos runtime já existem.
+
+Fluxo aplicado:
+
+```text
+ActivityExitActorTeardownStage
+-> TryResetToInitialForLifecycleCleanup(...)
+-> TryRelease(...)
+```
+
+Regra arquitetural:
+
+```text
+Cleanup pode usar o sistema de reset para devolver estados runtime criados ao default antes do release.
+Esse reset não é runtime reset de gameplay e não deve ser confundido com QA/local reset.
+```
+
+Logs esperados:
+
+```text
+ActorAttributeCleanupResetApplied
+resetIntent='LifecycleCleanupReset'
+resetStateProfile='InitialState'
+resetProfileSource='lifecycle_cleanup_initial_state'
+```
+
+Pendência mantida:
+
+```text
+QA attribute commands ainda são rail paralelo temporário e devem ser migrados/removidos antes do fechamento final do ADR-0006.
+```
+
+---
+
+## Implementação parcial — RESET-ARCH-4C
+
+Status: CLOSED / PASS funcional + PASS arquitetural parcial do corte.
+
+`RESET-ARCH-4C` separa o reset de `MovementTransient` por `ActivityResetStateProfileKind` no `PlayerMovementController`.
+
+Decisão aplicada:
+
+```text
+EntryInitialize -> InitialState -> limpa input/velocidade transitória antes da entrada ficar pronta.
+RuntimeLocalReset -> RuntimeLocalState -> limpa input/velocidade transitória no reset local/QA.
+RuntimeActivityReset -> RuntimeActivityState -> limpa input/velocidade transitória no restart da activity.
+RuntimeActivityTransitionReset -> RuntimeActivityTransitionState -> limpa input/velocidade transitória sem reposicionar o PlayerActor.
+RuntimeRouteTransitionReset -> RuntimeRouteTransitionState -> limpa input/velocidade transitória na transição de rota quando esse intent for usado.
+```
+
+Regra arquitetural:
+
+```text
+MovementTransient não decide lifecycle/policy.
+O pipeline/stage entrega resetIntent/resetStateProfile; o endpoint só aplica a receita de limpeza transitória correspondente.
+```
+
+Este corte ainda mantém `ActorResetGroup.MovementTransient` como detalhe técnico transitório, mas a observabilidade principal passa a ser `resetIntent`, `resetStateProfile` e `movementProfileKind`.
+
+Log esperado:
+
+```text
+PlayerMovementTransientStateProfileApplied
+resetIntent='...'
+resetStateProfile='...'
+movementProfileKind='...'
+movementProfileSource='...'
+```
+
+
+---
+
+## Implementação parcial — RESET-ARCH-4D
+
+Status: CLOSED / PASS funcional + PASS arquitetural parcial do corte.
+
+`RESET-ARCH-4D` separa o reset de `SpawnedRuntimeObjects` por `ActivityResetStateProfileKind` no `ActorProjectileSpawnRuntimeTracker`.
+
+Decisão aplicada:
+
+```text
+EntryInitialize -> InitialState -> retorna/prune objetos runtime spawnados que sobraram antes da entrada ficar pronta.
+RuntimeLocalReset -> RuntimeLocalState -> retorna objetos spawnados no reset local/QA.
+RuntimeActivityReset -> RuntimeActivityState -> retorna objetos spawnados no restart da activity.
+RuntimeActivityTransitionReset -> RuntimeActivityTransitionState -> retorna objetos spawnados ao trocar activity.
+RuntimeRouteTransitionReset -> RuntimeRouteTransitionState -> retorna objetos spawnados na transição de rota quando esse intent for usado.
+```
+
+Regra arquitetural:
+
+```text
+SpawnedRuntimeObjects não decide lifecycle/policy.
+O pipeline/stage entrega resetIntent/resetStateProfile; o endpoint só aplica a receita de retorno/prune de runtime spawned objects.
+```
+
+Este corte ainda mantém `ActorResetGroup.SpawnedRuntimeObjects` como detalhe técnico transitório, mas a observabilidade principal passa a ser `resetIntent`, `resetStateProfile` e `runtimeObjectsProfileKind`.
+
+Logs esperados:
+
+```text
+ActorProjectileSpawnedRuntimeObjectsStateProfileApplied
+resetIntent='...'
+resetStateProfile='...'
+runtimeObjectsProfileKind='...'
+runtimeObjectsProfileSource='...'
+
+ActorProjectileSpawnedRuntimeObjectsStateProfileSkipped
+reason='no_tracked_runtime_objects'
+```
+
+
+---
+
+## Implementação parcial — RESET-ARCH-4E
+
+Status: CLOSED / PASS funcional + PASS arquitetural parcial do corte.
+
+`RESET-ARCH-4E` separa o reset de `ActivityParticipation` por `ActivityResetStateProfileKind` no `PlayerActorParticipationState`.
+
+Decisão aplicada:
+
+```text
+EntryInitialize -> InitialState -> marca o PlayerActor como ativo na activity/entry inicial.
+RuntimeLocalReset -> RuntimeLocalState -> reafirma participação ativa na activity/entry corrente.
+RuntimeActivityReset -> RuntimeActivityState -> marca participação ativa na nova entry de restart.
+RuntimeActivityTransitionReset -> RuntimeActivityTransitionState -> marca participação ativa na próxima activity/entry materializada.
+RuntimeRouteTransitionReset -> RuntimeRouteTransitionState -> limpa participação de activity, porque a rota deixa de ter activity ativa.
+```
+
+Regra arquitetural:
+
+```text
+ActivityParticipation não decide lifecycle/policy.
+O pipeline/stage entrega resetIntent/resetStateProfile; o endpoint só aplica a receita de estado de participação correspondente.
+```
+
+Este corte ainda mantém `ActorResetGroup.ActivityParticipation` como detalhe técnico transitório, mas a observabilidade principal passa a ser `resetIntent`, `resetStateProfile` e `participationProfileKind`.
+
+Log esperado:
+
+```text
+PlayerActorParticipationStateProfileApplied
+resetIntent='...'
+resetStateProfile='...'
+participationProfileKind='...'
+participationProfileSource='...'
+```
+
+---
+
+## Implementação parcial — RESET-ARCH-5A
+
+Status: Applied / pending compile + smoke.
+
+`RESET-ARCH-5A` inicia a migração de object reset para handlers explícitos por `ActivityResetIntent`, usando `ActivityObjectDefaultResetEndpoint` como ponte canônica mínima.
+
+Decisão aplicada:
+
+```text
+EntryInitialize -> IActivityObjectEntryInitializeResetEndpoint -> InitialState.
+RuntimeLocalReset -> IActivityObjectRuntimeLocalResetEndpoint -> RuntimeLocalState.
+RuntimeActivityReset -> IActivityObjectRuntimeActivityResetEndpoint -> RuntimeActivityState.
+RuntimeActivityTransitionReset -> IActivityObjectRuntimeActivityTransitionResetEndpoint -> RuntimeActivityTransitionState.
+RuntimeRouteTransitionReset -> IActivityObjectRuntimeRouteTransitionResetEndpoint -> RuntimeRouteTransitionState.
+```
+
+Regra arquitetural:
+
+```text
+Object reset ainda usa ActivityStateResetGroup como detalhe técnico transitório de seleção.
+O eixo principal passa a ser resetIntent + resetStateProfile + resetHandler + objectProfileKind.
+O endpoint não decide lifecycle/policy; apenas aplica a receita recebida.
+```
+
+Este corte não remove `ActivityStateResetGroup` nem implementa receita material real de transform/interaction/objectives. Ele apenas elimina o fallback genérico no endpoint padrão e expõe a receita por intent/profile na observabilidade.
+
+Log esperado:
+
+```text
+ActivityObjectStateProfileApplied
+resetIntent='...'
+resetStateProfile='...'
+objectProfileKind='...'
+resetHandler='IActivityObjectRuntimeLocalResetEndpoint'
+technicalResetGroup='TransformState'
+technicalGroupMode='legacy_activity_state_reset_group'
+```
+
+---
+
+## Implementação parcial — RESET-ARCH-5B
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+`RESET-ARCH-5B` rebaixa `ActivityStateResetGroup` na observabilidade do object reset.
+
+Decisão aplicada:
+
+```text
+resetIntent + resetStateProfile + resetHandler + objectProfileKind são o eixo principal.
+ActivityStateResetGroup permanece apenas como detalhe técnico transitório.
+```
+
+Campos esperados em logs/facts/checkpoints:
+
+```text
+technicalResetGroup='TransformState'
+technicalResetGroups='TransformState'
+technicalGroupMode='legacy_activity_state_reset_group'
+```
+
+Este corte não remove `ActivityStateResetGroup` e não altera o comportamento material do object reset. A remoção do rail antigo fica para o fechamento final da frente, depois que object reset tiver receita real por intent/profile ou target groups equivalentes.
+
+---
+
+## Implementação parcial — RESET-ARCH-5C
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+`RESET-ARCH-5C` remove o fallback genérico de execução do object reset.
+
+Decisão aplicada:
+
+```text
+IActivityObjectResetEndpoint deixa de expor ApplyReset genérico.
+A execução material passa obrigatoriamente por handler explícito de ActivityResetIntent.
+Se um endpoint não implementar o handler do intent recebido, o stage falha de forma explícita.
+```
+
+Handlers canônicos esperados:
+
+```text
+IActivityObjectEntryInitializeResetEndpoint
+IActivityObjectRuntimeLocalResetEndpoint
+IActivityObjectRuntimeActivityResetEndpoint
+IActivityObjectRuntimeActivityTransitionResetEndpoint
+IActivityObjectRuntimeRouteTransitionResetEndpoint
+```
+
+Regra arquitetural:
+
+```text
+Não existe mais fallback silencioso para object reset.
+Object reset por intent/profile é obrigatório.
+ActivityStateResetGroup continua apenas como detalhe técnico transitório de seleção, não como rail de execução.
+```
+
+Failure esperada se houver endpoint incompleto:
+
+```text
+object_reset_intent_handler_missing
+```
+
+## Implementação parcial — RESET-ARCH-5D
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+RESET-ARCH-5D remove o fallback genérico de actor reset. `IActorResetEndpoint` permanece como interface base de discovery/capability, mas não expõe mais `ApplyReset(...)` como execução genérica. A execução real de actor reset passa obrigatoriamente por handlers específicos de `ActivityResetIntent`:
+
+- `IActorEntryInitializeResetEndpoint`
+- `IActorRuntimeLocalResetEndpoint`
+- `IActorRuntimeActivityResetEndpoint`
+- `IActorRuntimeActivityTransitionResetEndpoint`
+- `IActorRuntimeRouteTransitionResetEndpoint`
+
+Quando um endpoint descoberto não implementa o handler exigido pelo intent resolvido, `ActorResetAdapter` falha explicitamente com `actor_reset_intent_handler_missing`. Isso remove o rail silencioso `IActorResetEndpoint.ApplyReset(...)` e mantém `ActorResetGroup` apenas como detalhe técnico transitório de inventory/observabilidade.
+
+
+
+---
+
+## Implementação parcial — RESET-ARCH-5E
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+RESET-ARCH-5E remove `ActorResetGroup` do loop de execução do actor reset. O `ActorResetAdapter` passa a executar uma vez por `ActorCapabilityResetEndpointReference`, sempre por handler explícito de `ActivityResetIntent`.
+
+Decisão aplicada:
+
+```text
+resetIntent + resetStateProfile + resetHandler dirigem execução.
+ActorResetGroup deixa de multiplicar execução e permanece apenas como metadado técnico transitório.
+```
+
+Regra arquitetural:
+
+```text
+O endpoint é executado uma vez por referência descoberta no inventory.
+O grupo técnico não decide quantas execuções acontecem.
+Se uma referência declarar múltiplos grupos técnicos, o adapter falha explicitamente.
+```
+
+Failure explícita adicionada:
+
+```text
+actor_reset_reference_mixes_technical_groups
+actor_reset_reference_missing_technical_group
+actor_reset_reference_unknown_technical_group
+```
+
+Observabilidade esperada:
+
+```text
+technicalGroupMode='legacy_capability_group_metadata_only'
+executionMode='intent_handler_per_reference'
+```
+
+Este corte ainda não remove `ActorResetGroup` do contrato/inventory. A remoção nominal fica para o fechamento posterior, quando o metadado técnico for substituído por target groups ou por descriptors de endpoint que não carreguem semântica de reset antiga.
+
+---
+
+## Implementação parcial — RESET-ARCH-5F
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+RESET-ARCH-5F aplica no object reset a mesma redução feita no actor reset: `ActivityStateResetGroup` deixa de ser multiplicador de execução. O object reset passa a executar uma vez por `ActivityObjectContributionReport` elegível, sempre por handler explícito de `ActivityResetIntent`.
+
+Decisão aplicada:
+
+```text
+resetIntent + resetStateProfile + resetHandler dirigem execução.
+ActivityStateResetGroup deixa de multiplicar execução e permanece apenas como metadado técnico transitório.
+```
+
+Regra arquitetural:
+
+```text
+O endpoint de object reset é executado uma vez por report/contributor elegível.
+O grupo técnico não decide quantas execuções acontecem.
+Se um report declarar múltiplos grupos técnicos distintos, o stage falha explicitamente.
+```
+
+Failure explícita adicionada:
+
+```text
+object_reset_report_mixes_technical_groups
+object_reset_report_missing_technical_group
+object_reset_report_unknown_technical_group
+```
+
+Observabilidade esperada:
+
+```text
+technicalGroupMode='legacy_activity_state_reset_group_metadata_only'
+executionMode='intent_handler_per_report'
+```
+
+Este corte ainda não remove `ActivityStateResetGroup` do contrato/inventory/authoring. A remoção nominal fica para o fechamento posterior da frente, quando o metadado técnico for substituído por target groups ou por descriptors de endpoint que não carreguem semântica antiga de reset.
+
+
+---
+
+## Implementação parcial — RESET-ARCH-5G
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+RESET-ARCH-5G remove `ActivityStateResetGroup` do contrato principal de execução do object reset. O grupo técnico ainda pode ser lido do report como metadado de observabilidade, mas `ActivityObjectResetCommand` não carrega mais `ActivityStateResetGroup` tipado e `IActivityObjectResetEndpoint` não expõe mais `Supports(ActivityStateResetGroup)`.
+
+Decisão aplicada:
+
+```text
+ActivityObjectResetCommand carrega resetIntent + resetStateProfile como eixo de execução.
+TechnicalResetGroupMetadata é apenas string de observabilidade transitória.
+IActivityObjectResetEndpoint vira interface base de discovery/endpoint, sem decisão de support por grupo.
+```
+
+Regra arquitetural:
+
+```text
+O handler de intent é obrigatório.
+O endpoint não decide suporte por ActivityStateResetGroup.
+O comando de reset de objeto não depende de enum técnico para ser válido.
+```
+
+Bridge ainda restante:
+
+```text
+ActivityObjectContributionReport.SupportedResetGroups
+ActivityObjectContributor.supportedResetGroups
+StateResetRequirement.ResetGroups
+QACheckpoint technicalResetGroups
+```
+
+Esses pontos permanecem como metadado técnico/authoring transitório e devem ser removidos no fechamento final da frente, quando houver target groups ou descriptors de endpoint sem semântica antiga de reset.
+
+
+---
+
+## Implementação parcial — RESET-ARCH-5H
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+RESET-ARCH-5H remove `ActivityStateResetGroup` como gate de execução no report de object reset. O `ActivityObjectContributionReport.SupportedResetGroups` ainda pode aparecer como metadado técnico de observabilidade, mas não é mais obrigatório para emitir `ActivityObjectResetCommand` nem para executar o handler de intent.
+
+Decisão aplicada:
+
+```text
+Object reset passa a ser elegível por report + endpoint inventory + resetIntent/resetStateProfile.
+SupportedResetGroups não bloqueia execução e não decide support.
+```
+
+Regra arquitetural:
+
+```text
+Se há report elegível e endpoint de reset resolvido no inventory, o handler de intent executa.
+Se não há endpoint e o report é Required, o stage falha explicitamente.
+Se não há endpoint e o report é Optional, o stage registra skip explícito.
+```
+
+Failures explícitas relevantes:
+
+```text
+required_reset_endpoint_missing
+reset_endpoint_missing
+```
+
+Bridge ainda restante:
+
+```text
+ActivityObjectContributionReport.SupportedResetGroups
+ActivityObjectContributor.supportedResetGroups
+StateResetRequirement.ResetGroups
+QACheckpoint technicalResetGroups
+```
+
+Esses pontos permanecem apenas como authoring/metadado transitório. O próximo corte deve remover o campo autoral `supportedResetGroups` do contributor ou substituir o metadado técnico por descriptor de endpoint/target group, sem reinstalar o enum como owner de reset.
+
+---
+
+## Implementação parcial — RESET-ARCH-5I
+
+Status: Closed / PASS funcional + PASS arquitetural parcial do corte.
+
+RESET-ARCH-5I remove a dependência residual de `ActivityStateResetGroup` no predicado de contributor required usado pelo QA/object reset quando o inventory está ausente ou inválido. Antes, um report required só era tratado como required-reset contributor se também carregasse `SupportedResetGroups.Count > 0`; isso preservava um gate técnico antigo.
+
+Decisão aplicada:
+
+```text
+Contributor required é definido por Requiredness.
+ActivityStateResetGroup não participa da decisão de required inventory.
+A ausência de endpoint segue tratada pelo stage via required_reset_endpoint_missing.
+```
+
+Regra arquitetural:
+
+```text
+O pipeline/stage exige inventory válido quando há contributor required da entry corrente.
+O endpoint inventory decide se existe endpoint material para reset.
+O handler de intent continua sendo o único caminho de execução.
+SupportedResetGroups permanece só como metadado técnico transitório.
+```
+
+Bridge ainda restante:
+
+```text
+ActivityObjectContributionReport.SupportedResetGroups
+ActivityObjectContributor.supportedResetGroups
+StateResetRequirement.ResetGroups
+QACheckpoint technicalResetGroups
+```
+
+O próximo corte deve remover `supportedResetGroups` do authoring/contribution report ou substituí-lo por descriptor observacional que não carregue semântica antiga de reset.
+
+
+
+---
+
+## Implementação parcial — RESET-ARCH-5J
+
+Status: Applied / pending compile + smoke.
+
+RESET-ARCH-5J remove `supportedResetGroups` do authoring de `ActivityObjectContributor` e remove `ActivityObjectContributionReport.SupportedResetGroups` do report runtime. O object reset deixa de carregar qualquer lista de `ActivityStateResetGroup` no caminho contributor -> report -> inventory -> command.
+
+Decisão aplicada:
+
+```text
+Object reset não declara grupos técnicos no contributor.
+O report runtime não carrega SupportedResetGroups.
+O scanner não publica supportedResetGroup[*] no policy metadata.
+A observabilidade usa resetDescriptor='endpoint_inventory'.
+```
+
+Regra arquitetural:
+
+```text
+Contributor descreve target, requiredness, resetBoundaryEligibility e releaseKinds.
+Endpoint inventory descreve a existência material do reset endpoint.
+ActivityObjectResetCommand executa por resetIntent/resetStateProfile/handler.
+ActivityStateResetGroup não é authoring, contrato, gate ou eixo de observabilidade do object reset.
+```
+
+Mudanças principais:
+
+```text
+ActivityObjectContributor.supportedResetGroups removido.
+ActivityObjectContributionReport.SupportedResetGroups removido.
+ActivityObjectCapabilityScanner não emite supportedResetGroup metadata.
+Object reset facts/QACheckpoint usam resetDescriptor/resetDescriptors + descriptorMode='endpoint_inventory'.
+ActivityObjectResetCommand usa ResetDescriptorMetadata, não TechnicalResetGroupMetadata.
+```
+
+Fora do corte:
+
+```text
+StateResetRequirement.ResetGroups ainda existe em ActivitySetupRequirementsAuthoring.
+ActorResetGroup ainda existe na frente de actor reset como metadado técnico.
+Receita material real de object transform/state ainda não foi reescrita neste corte.
+```
+
+
+## RESET-ARCH-5K — StateResetRequirement sem ResetGroups
+
+Status: Applied / pending compile + smoke.
+
+RESET-ARCH-5K remove `ActivityStateResetGroup` do authoring e do contrato de `StateResetRequirement`. O requirement de state reset deixa de carregar lista de grupos técnicos e passa a declarar apenas o alvo da exigência de reset como item de inventory/setup.
+
+### Decisão
+
+`ActivityStateResetGroup` não é mais domínio ativo de object reset. Após os cortes 5F, 5G, 5H, 5I e 5J, object reset é executado por:
+
+```text
+ActivityResetIntent
+ActivityResetStateProfileKind
+endpoint inventory
+handler explícito
+```
+
+Logo, manter `StateResetRequirement.ResetGroups` reinstalava um eixo técnico antigo no authoring/setup sem owner real.
+
+### Consequência
+
+Removidos do caminho ativo:
+
+```text
+ActivityStateResetGroup
+ActivityStateResetRequirementAuthoring.resetGroups
+ActivityStateResetRequirementAuthoring.ResetGroups
+StateResetRequirement.ResetGroups
+StateResetRequirement.HasResetGroups
+```
+
+`StateResetRequirement` permanece como declaração de setup por `TargetId`, mas não decide receita, handler, profile ou grupo técnico.
+
+### Critério de aceite do corte
+
+- sem erro CS;
+- object reset continua por `resetDescriptor='endpoint_inventory'`;
+- `ActivityObjectStateProfileApplied` continua presente;
+- `ActivityStateResetGroup` ausente do código ativo;
+- checkpoints RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu preservados.
+
+## RESET-ARCH-6A — ActorResetEndpoint sem Supports(group)
+
+Status: Applied / pending compile + smoke.
+
+RESET-ARCH-6A remove `IActorResetEndpoint.Supports(ActorResetGroup)` e as implementações `Supports(...)` dos endpoints concretos de actor reset.
+
+### Decisão
+
+Após `RESET-ARCH-5E`, actor reset já executa uma vez por referência de inventory e por handler explícito de intent/profile. Logo, `Supports(group)` não pode continuar parecendo gate de execução.
+
+```text
+IActorResetEndpoint = marcador/base de discovery.
+IActorEntryInitializeResetEndpoint / IActorRuntime*ResetEndpoint = handlers reais de execução.
+ActorResetGroup permanece apenas como metadado técnico transitório da referência/contribution.
+```
+
+### Consequência
+
+Removido do caminho ativo:
+
+```text
+IActorResetEndpoint.Supports(ActorResetGroup)
+PlayerActor.Supports(ActorResetGroup)
+PlayerMovementController.Supports(ActorResetGroup)
+PlayerActorParticipationState.Supports(ActorResetGroup)
+ActorProjectileSpawnRuntimeTracker.Supports(ActorResetGroup)
+```
+
+`ActorResetGroup` ainda não foi removido. Ele segue como metadado técnico usado para observabilidade e para validação interna transitória do contexto até os próximos cortes da frente de actor reset.
+
+### Critério de aceite
+
+- sem erro CS;
+- actor reset continua por `resetIntent/resetStateProfile` + handler explícito;
+- `IActorResetEndpoint.ApplyReset = 0`;
+- `IActorResetEndpoint.Supports = 0`;
+- `actor_reset_intent_handler_missing = 0`;
+- checkpoints RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu preservados.
+
+
+## RESET-ARCH-6B — ActorResetContext sem ActorResetGroup
+
+Status: Applied / pending compile + smoke.
+
+RESET-ARCH-6B remove `ActorResetGroup` de `ActorResetContext` e elimina os guards internos dos endpoints concretos baseados em `context.Group`.
+
+### Decisão
+
+O handler específico já é o contrato de execução. Após `RESET-ARCH-5D`, `RESET-ARCH-5E` e `RESET-ARCH-6A`, o actor reset não deve entregar grupo técnico ao endpoint para que ele valide se deve executar.
+
+```text
+ActorResetAdapter resolve referência de inventory.
+ActorResetAdapter chama handler explícito por ActivityResetIntent.
+Endpoint aplica ActivityResetStateProfileKind.
+ActorResetGroup não entra no ActorResetContext.
+```
+
+### Consequência
+
+Removido do contexto ativo:
+
+```text
+ActorResetContext.Group
+validação ActorResetContext.IsValid por Group
+checks context.Group nos endpoints concretos
+actor_reset_intent_handler_missing com technicalResetGroup via context
+```
+
+`ActorResetGroup` ainda existe como metadado técnico transitório da referência/contribution/result enquanto a frente de actor reset não remove `SupportedGroups` e os contadores técnicos de observabilidade.
+
+### Critério de aceite
+
+- sem erro CS;
+- actor reset continua por `resetIntent/resetStateProfile` + handler explícito;
+- `context.Group = 0` no código ativo;
+- `IActorResetEndpoint.Supports = 0`;
+- `actor_reset_intent_handler_missing = 0`;
+- checkpoints RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu preservados.
+
+## RESET-ARCH-6C — Actor reset result decoupled from technical group
+
+Status: Applied / pending compile + smoke.
+
+Decisão: `ActorResetResult` não carrega mais `ActorResetGroup` aplicado/pulado. O resultado do adapter reporta execução por referência (`AppliedReferenceCount`, `SkippedReferenceCount`) e motivos de skip por `capabilityId`. `ActorResetGroup` permanece somente como metadado técnico transitório em contribution/reference e observabilidade enquanto a frente de actor reset não remove o inventário legado.
+
+## RESET-ARCH-6D — Actor participant reset command decoupled from technical group
+
+Status: Applied / pending compile + smoke.
+
+RESET-ARCH-6D removes `ActorResetGroup` from the participant reset command surface owned by `ActivityEntryParticipantResetStage`.
+
+The participant reset command no longer derives or exposes `ResetGroups` / `HasResetGroups` from inventory references. Its diagnostic shape now reports `resetDescriptor='endpoint_inventory'`, `descriptorMode='endpoint_inventory'`, and `resetReferenceCount`.
+
+`ActivityEntryParticipantResetStage` also stops emitting `technicalResetGroups` as its applied/skip fact surface. Stage-level success/failure is expressed through reference counts and endpoint-inventory descriptors.
+
+`ActorResetGroup` still exists as temporary metadata inside actor reset contribution/reference and inside the low-level adapter reference observability. It is not a command/stage result axis.
+
+
+## RESET-ARCH-6E — Actor reset adapter observability decoupled from technical group
+
+Status: Applied / pending compile + smoke.
+
+RESET-ARCH-6E removes `technicalResetGroup`, `technicalResetGroups` and `technicalGroupMode='legacy_capability_group_metadata_only'` from the actor reset adapter/QA observability surface.
+
+### Decisão
+
+Depois do `RESET-ARCH-6D`, o stage/command já não expõe `ActorResetGroup` como eixo de reset. O adapter ainda pode usar metadado técnico internamente enquanto `IActorResetContribution.SupportedGroups` existir, mas esse detalhe não deve aparecer como shape principal de observabilidade.
+
+```text
+ActorResetAdapter
+-> resetDescriptor='endpoint_inventory'
+-> descriptorMode='endpoint_inventory'
+-> executionMode='intent_handler_per_reference'
+```
+
+### Consequência
+
+Removido da superfície de logs/facts do adapter e QA:
+
+```text
+technicalResetGroup
+technicalResetGroups
+technicalGroupMode='legacy_capability_group_metadata_only'
+```
+
+`ActorResetGroup` ainda não foi removido do contrato de contribution/reference. Esse débito fica restrito ao inventário técnico transitório e ao branch interno de placement até o próximo corte da frente de actor reset.
+
+### Critério de aceite
+
+- sem erro CS;
+- `ActivityParticipantResetAppliedFromInventory` continua com `resetDescriptor='endpoint_inventory'` e `descriptorMode='endpoint_inventory'`;
+- `ActorResetAdapter` passa a observar reset por descriptor/handler, não por grupo técnico;
+- `technicalResetGroups = 0` na observabilidade ativa do actor reset;
+- `actor_reset_intent_handler_missing = 0`;
+- checkpoints RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu preservados.
+
+
+## RESET-ARCH-6F — Actor Reset Contribution SupportedGroups Removal
+
+Status: CLOSED / PASS funcional + PASS arquitetural parcial do corte.
+
+Objetivo: remover `ActorResetGroup` e `SupportedGroups` do contrato ativo de actor reset. Depois dos cortes 6A-6E, o grupo técnico já não decidia execução, contexto, resultado, command/stage nem observabilidade ativa. O 6F remove a fonte restante: contribution/reference/inventory metadata.
+
+Decisão de ownership:
+
+- Pipeline/stage continua decidindo ordem e policy de reset.
+- `ActivityResetBoundaryPolicy` filtra por `ActivityResetBoundaryEligibility`, não por grupos técnicos.
+- `ActorResetAdapter` executa uma vez por referência canônica de inventory.
+- Endpoints aplicam estado por `ActivityResetIntent` + `ActivityResetStateProfileKind`.
+- A exceção de placement deixa de usar `ActorResetGroup.Placement` e passa a usar o marker de endpoint `IActorPlacementResetEndpoint`, porque placement precisa de contexto de placement do command.
+
+Removido do código ativo:
+
+```text
+ActorResetGroup
+IActorResetContribution.SupportedGroups
+ActorCapabilityResetEndpointReference.SupportedGroups
+supportedResetGroup[*]
+technicalResetGroup
+technicalResetGroups
+technicalGroupMode='legacy_capability_group_metadata_only'
+```
+
+Novo shape:
+
+```text
+IActorResetContribution
+-> Descriptor
+-> ResetBoundaryEligibility
+
+ActorCapabilityResetEndpointReference
+-> Endpoint
+-> Contribution
+-> ResetBoundaryEligibility
+
+ActorResetAdapter
+-> resetDescriptor='endpoint_inventory'
+-> descriptorMode='endpoint_inventory'
+-> executionMode='intent_handler_per_reference'
+-> resetHandler='IActor...ResetEndpoint'
+```
+
+Este corte não cria target groups finais. Ele apenas remove a bridge antiga `ActorResetGroup`. Target groups continuam reservados para uma frente explícita futura.
+
+
+## RESET-ARCH-6G — ResetGroup Runtime Closure Audit
+
+Status: CLOSED / documentação + auditoria estática.
+
+Objetivo: registrar o fechamento da frente `ResetGroup` no runtime ativo de reset. Depois do `RESET-ARCH-5K` e do `RESET-ARCH-6F`, os dois trilhos antigos foram removidos do código ativo:
+
+- `ActivityStateResetGroup` saiu do object reset;
+- `ActorResetGroup` saiu do actor reset.
+
+Auditoria estática no código ativo após `RESET-ARCH-6F`:
+
+```text
+ActorResetGroup = 0
+ActivityStateResetGroup = 0
+SupportedGroups = 0
+supportedResetGroups = 0
+supportedResetGroup = 0
+technicalResetGroup = 0
+technicalResetGroups = 0
+legacy_capability_group = 0
+legacy_activity_state_reset_group = 0
+```
+
+Smoke do `RESET-ARCH-6F` validou que o runtime continua operando por inventory endpoint + intent/profile:
+
+```text
+resetDescriptor='endpoint_inventory'
+descriptorMode='endpoint_inventory'
+executionMode='intent_handler_per_reference'
+```
+
+Decisão: a frente `ResetGroup` está fechada para runtime ativo. O conceito futuro de agrupamento deve ser introduzido apenas como `TargetGroup` explícito, em corte próprio, sem reutilizar capability/reset groups antigos.
+
+Consequência: qualquer novo filtro de alvo de reset deve ser modelado como policy/target selection explícita, não como retorno de `ActorResetGroup` ou `ActivityStateResetGroup`.
+
+
+## RESET-ARCH-6H — Reset Bridge Vocabulary Cleanup
+
+Status: Applied / pending compile + smoke.
+
+Objetivo: remover vocabulário de bridge da observabilidade ativa de reset depois do fechamento funcional da frente `ResetGroup`. O runtime já opera por `ActivityResetIntent` + `ActivityResetStateProfileKind` + endpoint inventory; manter nomes como `ResetIntentStateProfileBridge` ou `*_reset_bridge` nos logs cria risco de regressão conceitual.
+
+Decisão de ownership:
+
+- `ActivityResetBoundaryPolicy` continua sendo a policy de elegibilidade por boundary.
+- Stages continuam emitindo facts/snapshots e executando comandos canônicos.
+- Endpoints continuam aplicando state profiles por handler explícito.
+- Este corte não altera comando, handler, policy, adapter, inventory ou execução.
+
+Renomeado na observabilidade ativa:
+
+```text
+behaviorMode='ResetIntentStateProfileBridge'
+-> behaviorMode='ResetIntentStateProfilePolicy'
+
+entry_initialize_object_reset_bridge
+-> entry_initialize_object_state_profile
+
+runtime_local_object_reset_bridge
+-> runtime_local_object_state_profile
+
+runtime_activity_object_reset_bridge
+-> runtime_activity_object_state_profile
+
+runtime_activity_transition_object_reset_bridge
+-> runtime_activity_transition_object_state_profile
+
+runtime_route_transition_object_reset_bridge
+-> runtime_route_transition_object_state_profile
+
+attribute_setup_lifecycle_bridge
+-> attribute_setup_state_profile
+```
+
+Consequência: a observabilidade de reset deixa de sugerir bridge transitória onde já existe policy/stage/endpoint final parcial. Qualquer bridge real restante em SessionActivity deve ser auditada na frente própria de decomposição, não dentro de reset.
+
+Critério de aceite:
+
+- sem erro CS;
+- smoke sem FATAL, Exception, route_transition_failed ou checkpoint failed;
+- `ResetIntentStateProfileBridge = 0` no log;
+- `*_reset_bridge = 0` nos sources de reset;
+- `attribute_setup_lifecycle_bridge = 0`;
+- `ResetIntentStateProfilePolicy` aparece nas resoluções de reset scope;
+- `resetDescriptor='endpoint_inventory'` e handlers explícitos preservados;
+- checkpoints RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu preservados.

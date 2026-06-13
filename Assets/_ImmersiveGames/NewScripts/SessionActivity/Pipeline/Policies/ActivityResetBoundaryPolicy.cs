@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
     internal static class ActivityResetBoundaryPolicy
     {
         private const string Owner = "ActivityResetBoundaryPolicy";
-        private const string BoundaryEligibilityPolicyId = "reset_boundary_eligibility_policy.v1";
+        private const string BoundaryEligibilityPolicyId = "reset_intent_state_profile_policy.v1";
 
         internal static ActivityResetScopePlan ResolveForEntry(ActivityEntryCommand command)
         {
@@ -22,6 +22,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 command.Identity,
                 command.ResetBoundaryKind,
                 ResolveTargetScope(command.ResetBoundaryKind),
+                command.ResetIntent,
+                command.StateProfileKind,
                 BoundaryEligibilityPolicyId,
                 command.Source,
                 command.Reason);
@@ -41,6 +43,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 command.Identity,
                 ActivityResetBoundaryKind.Local,
                 ActivityResetTargetScope.LocalTarget,
+                ActivityResetIntent.RuntimeLocalReset,
+                ActivityResetStateProfileKind.RuntimeLocalState,
                 BoundaryEligibilityPolicyId,
                 command.Source,
                 command.Reason);
@@ -78,6 +82,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
             if (!resetScopePlan.IsValid)
             {
                 return false;
+            }
+
+            if (resetScopePlan.ResetIntent == ActivityResetIntent.EntryInitialize)
+            {
+                return true;
             }
 
             ActivityResetBoundaryEligibility requiredEligibility = ResolveEligibility(resetScopePlan.BoundaryKind);
@@ -123,11 +132,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                         $"Invalid actor reset reference for boundary filtering. activityId='{Normalize(activityId)}' contextId='{Normalize(contextId)}' referenceIndex='{referenceIndex}'.");
                 }
 
-                if (reference.SupportedGroups == null || reference.SupportedGroups.Length == 0)
-                {
-                    continue;
-                }
-
                 if (AllowsReset(resetScopePlan, reference.ResetBoundaryEligibility))
                 {
                     filtered.Add(reference);
@@ -151,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
             SessionActivityIdentity identity = plan.Identity;
             DebugUtility.LogVerbose(
                 typeof(ActivityResetBoundaryPolicy),
-                $"[OBS][ActivityEntryPipeline][Reset] event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' behaviorMode='BoundaryEligibilityFiltering' pipelineId='{Normalize(identity.PipelineId)}' sessionStateId='{Normalize(identity.SessionId)}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' source='{Normalize(plan.Source)}' reason='{Normalize(plan.Reason)}'.",
+                $"[OBS][ActivityEntryPipeline][Reset] event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' resetIntent='{plan.ResetIntent}' resetStateProfile='{plan.StateProfileKind}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' behaviorMode='ResetIntentStateProfilePolicy' pipelineId='{Normalize(identity.PipelineId)}' sessionStateId='{Normalize(identity.SessionId)}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' source='{Normalize(plan.Source)}' reason='{Normalize(plan.Reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

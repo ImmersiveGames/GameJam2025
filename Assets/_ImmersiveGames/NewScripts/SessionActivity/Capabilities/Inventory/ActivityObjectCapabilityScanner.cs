@@ -242,11 +242,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 new("includeChildrenForEndpointDiscovery", target.IncludeChildrenForEndpointDiscovery ? "true" : "false"),
             };
 
-            for (int index = 0; index < contribution.SupportedResetGroups.Count; index++)
-            {
-                metadata.Add(new($"supportedResetGroup[{index}]", contribution.SupportedResetGroups[index].ToString()));
-            }
-
             for (int index = 0; index < contribution.SupportedReleaseKinds.Count; index++)
             {
                 metadata.Add(new($"supportedReleaseKind[{index}]", contribution.SupportedReleaseKinds[index].ToString()));

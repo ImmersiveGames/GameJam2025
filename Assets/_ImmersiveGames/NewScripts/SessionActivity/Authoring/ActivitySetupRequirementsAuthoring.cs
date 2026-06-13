@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             int removed = 0;
             for (int index = objectEntryRequirements.Count - 1; index >= 0; index--)
             {
-                var entry = objectEntryRequirements[index];
+                ActivityObjectEntryRequirementAuthoring entry = objectEntryRequirements[index];
                 if (entry == null || string.IsNullOrWhiteSpace(entry.RequirementId))
                 {
                     objectEntryRequirements.RemoveAt(index);
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < entries.Count; index++)
             {
-                var entry = entries[index];
+                T entry = entries[index];
                 if (entry == null)
                 {
                     throw new InvalidOperationException($"{source}.{listName}[{index}] cannot be null.");
@@ -386,29 +386,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     public sealed class ActivityStateResetRequirementAuthoring : ActivitySetupRequirementAuthoringBase
     {
         [SerializeField] private string targetId;
-        [SerializeField] private List<ActivityStateResetGroup> resetGroups = new();
 
         public string TargetId => Normalize(targetId);
-        public IReadOnlyList<ActivityStateResetGroup> ResetGroups => resetGroups;
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
             if (string.IsNullOrWhiteSpace(TargetId))
             {
                 throw new InvalidOperationException($"{validationSource} requires targetId.");
-            }
-
-            if (resetGroups == null || resetGroups.Count == 0)
-            {
-                throw new InvalidOperationException($"{validationSource} requires at least one reset group.");
-            }
-
-            for (int index = 0; index < resetGroups.Count; index++)
-            {
-                if (resetGroups[index] == ActivityStateResetGroup.Unknown)
-                {
-                    throw new InvalidOperationException($"{validationSource}.resetGroups[{index}] cannot be Unknown.");
-                }
             }
         }
     }

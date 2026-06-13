@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
@@ -122,6 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string placementRequirementId,
             PlayerActorIdentityRecord actorIdentity,
             IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences,
+            ActivityResetScopePlan resetScopePlan,
             bool required,
             bool placementDeclared,
             bool placementRequired,
@@ -138,6 +138,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             PlacementRequirementId = Normalize(placementRequirementId);
             ActorIdentity = actorIdentity;
             ResetReferences = resetReferences ?? Array.Empty<ActorCapabilityResetEndpointReference>();
+            ResetScopePlan = resetScopePlan;
             Required = required;
             PlacementDeclared = placementDeclared;
             PlacementRequired = placementRequired;
@@ -155,6 +156,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string PlacementRequirementId { get; }
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public IReadOnlyList<ActorCapabilityResetEndpointReference> ResetReferences { get; }
+        public ActivityResetScopePlan ResetScopePlan { get; }
+        public ActivityResetIntent ResetIntent => ResetScopePlan.ResetIntent;
+        public ActivityResetStateProfileKind StateProfileKind => ResetScopePlan.StateProfileKind;
         public bool Required { get; }
         public bool PlacementDeclared { get; }
         public bool PlacementRequired { get; }
@@ -162,17 +166,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasPlacement { get; }
         public Vector3 PlacementPosition { get; }
         public Vector3 PlacementEulerAngles { get; }
-        public IReadOnlyList<ActorResetGroup> ResetGroups => DeriveResetGroups(ResetReferences);
         public string Source { get; }
         public string Reason { get; }
-
-        public bool HasResetGroups => ResetGroups is { Count: > 0 };
 
         public bool IsValid
         {
             get
             {
-                if (!Identity.IsValid || string.IsNullOrWhiteSpace(RequirementId) || !ParticipantBinding.IsValid || !ActorIdentity.IsValid || ResetReferences == null || string.IsNullOrWhiteSpace(Source))
+                if (!Identity.IsValid || string.IsNullOrWhiteSpace(RequirementId) || !ParticipantBinding.IsValid || !ActorIdentity.IsValid || ResetReferences == null || !ResetScopePlan.IsValid || string.IsNullOrWhiteSpace(Source))
                 {
                     return false;
                 }
@@ -191,49 +192,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', resetGroups='{FormatResetGroups(ResetGroups)}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
-        }
-
-        private static IReadOnlyList<ActorResetGroup> DeriveResetGroups(IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences)
-        {
-            if (resetReferences == null || resetReferences.Count == 0)
-            {
-                return Array.Empty<ActorResetGroup>();
-            }
-
-            List<ActorResetGroup> groups = new();
-            HashSet<ActorResetGroup> unique = new();
-            for (int referenceIndex = 0; referenceIndex < resetReferences.Count; referenceIndex++)
-            {
-                var resetReference = resetReferences[referenceIndex];
-                if (resetReference == null || !resetReference.IsValid || resetReference.SupportedGroups == null)
-                {
-                    continue;
-                }
-
-                for (int groupIndex = 0; groupIndex < resetReference.SupportedGroups.Length; groupIndex++)
-                {
-                    var group = resetReference.SupportedGroups[groupIndex];
-                    if (group == ActorResetGroup.Unknown || !unique.Add(group))
-                    {
-                        continue;
-                    }
-
-                    groups.Add(group);
-                }
-            }
-
-            return groups;
-        }
-
-        private static string FormatResetGroups(IReadOnlyList<ActorResetGroup> resetGroups)
-        {
-            if (resetGroups == null || resetGroups.Count == 0)
-            {
-                return "<none>";
-            }
-
-            return string.Join(",", resetGroups);
+            int resetReferenceCount = ResetReferences?.Count ?? 0;
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', resetIntent='{ResetIntent}', resetStateProfile='{StateProfileKind}', resetDescriptor='endpoint_inventory', descriptorMode='endpoint_inventory', resetReferenceCount='{resetReferenceCount}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)

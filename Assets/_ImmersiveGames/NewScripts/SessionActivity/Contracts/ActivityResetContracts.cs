@@ -4,6 +4,56 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
 
+    public enum ActivityResetIntent
+    {
+        Unknown = 0,
+        EntryInitialize = 1,
+        RuntimeLocalReset = 2,
+        RuntimeActivityReset = 3,
+        RuntimeActivityTransitionReset = 4,
+        RuntimeRouteTransitionReset = 5,
+        LifecycleCleanupReset = 6,
+    }
+
+    public enum ActivityResetStateProfileKind
+    {
+        Unknown = 0,
+        InitialState = 1,
+        RuntimeLocalState = 2,
+        RuntimeActivityState = 3,
+        RuntimeActivityTransitionState = 4,
+        RuntimeRouteTransitionState = 5,
+    }
+
+    public static class ActivityResetIntentProfileDefaults
+    {
+        public static ActivityResetIntent ResolveRuntimeIntentForBoundary(ActivityResetBoundaryKind boundaryKind)
+        {
+            return boundaryKind switch
+            {
+                ActivityResetBoundaryKind.Local => ActivityResetIntent.RuntimeLocalReset,
+                ActivityResetBoundaryKind.Activity => ActivityResetIntent.RuntimeActivityReset,
+                ActivityResetBoundaryKind.ActivityTransition => ActivityResetIntent.RuntimeActivityTransitionReset,
+                ActivityResetBoundaryKind.RouteTransition => ActivityResetIntent.RuntimeRouteTransitionReset,
+                _ => ActivityResetIntent.Unknown,
+            };
+        }
+
+        public static ActivityResetStateProfileKind ResolveStateProfile(ActivityResetIntent resetIntent)
+        {
+            return resetIntent switch
+            {
+                ActivityResetIntent.EntryInitialize => ActivityResetStateProfileKind.InitialState,
+                ActivityResetIntent.RuntimeLocalReset => ActivityResetStateProfileKind.RuntimeLocalState,
+                ActivityResetIntent.RuntimeActivityReset => ActivityResetStateProfileKind.RuntimeActivityState,
+                ActivityResetIntent.RuntimeActivityTransitionReset => ActivityResetStateProfileKind.RuntimeActivityTransitionState,
+                ActivityResetIntent.RuntimeRouteTransitionReset => ActivityResetStateProfileKind.RuntimeRouteTransitionState,
+                ActivityResetIntent.LifecycleCleanupReset => ActivityResetStateProfileKind.InitialState,
+                _ => ActivityResetStateProfileKind.Unknown,
+            };
+        }
+    }
+
     public enum ActivityResetBoundaryKind
     {
         Unknown = 0,
@@ -64,10 +114,35 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string policyId,
             string source,
             string reason)
+            : this(
+                identity,
+                boundaryKind,
+                targetScope,
+                ActivityResetIntentProfileDefaults.ResolveRuntimeIntentForBoundary(boundaryKind),
+                ActivityResetIntentProfileDefaults.ResolveStateProfile(ActivityResetIntentProfileDefaults.ResolveRuntimeIntentForBoundary(boundaryKind)),
+                policyId,
+                source,
+                reason)
+        {
+        }
+
+        public ActivityResetScopePlan(
+            SessionActivityIdentity identity,
+            ActivityResetBoundaryKind boundaryKind,
+            ActivityResetTargetScope targetScope,
+            ActivityResetIntent resetIntent,
+            ActivityResetStateProfileKind stateProfileKind,
+            string policyId,
+            string source,
+            string reason)
         {
             Identity = identity;
             BoundaryKind = boundaryKind;
             TargetScope = targetScope;
+            ResetIntent = resetIntent;
+            StateProfileKind = stateProfileKind == ActivityResetStateProfileKind.Unknown
+                ? ActivityResetIntentProfileDefaults.ResolveStateProfile(resetIntent)
+                : stateProfileKind;
             PolicyId = Normalize(policyId);
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -76,6 +151,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public ActivityResetBoundaryKind BoundaryKind { get; }
         public ActivityResetTargetScope TargetScope { get; }
+        public ActivityResetIntent ResetIntent { get; }
+        public ActivityResetStateProfileKind StateProfileKind { get; }
         public string PolicyId { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -84,6 +161,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             BoundaryKind != ActivityResetBoundaryKind.Unknown &&
             TargetScope != ActivityResetTargetScope.Unknown &&
+            ResetIntent != ActivityResetIntent.Unknown &&
+            StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(PolicyId) &&
             !string.IsNullOrWhiteSpace(Source);
 

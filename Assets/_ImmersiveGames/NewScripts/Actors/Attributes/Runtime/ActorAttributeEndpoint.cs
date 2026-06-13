@@ -184,6 +184,91 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             return true;
         }
 
+
+        public bool TryResetToInitialForLifecycleCleanup(
+            SessionActivityIdentity activityIdentity,
+            ActivityResetIntent resetIntent,
+            ActivityResetStateProfileKind stateProfileKind,
+            string source,
+            string reason,
+            out ActorAttributeResetResult result)
+        {
+            if (!_isInitialized)
+            {
+                result = ActorAttributeResetResult.Skipped(
+                    _currentActorInstanceRuntimeId,
+                    resetIntent,
+                    stateProfileKind,
+                    "attribute_endpoint_not_initialized");
+                return true;
+            }
+
+            if (!MatchesRequiredActivityIdentity(activityIdentity, _currentActivityIdentity))
+            {
+                result = ActorAttributeResetResult.Reject(
+                    _currentActorInstanceRuntimeId,
+                    resetIntent,
+                    stateProfileKind,
+                    "foreign_or_stale_activity_identity");
+                return false;
+            }
+
+            if (resetIntent != ActivityResetIntent.LifecycleCleanupReset)
+            {
+                result = ActorAttributeResetResult.Reject(
+                    _currentActorInstanceRuntimeId,
+                    resetIntent,
+                    stateProfileKind,
+                    "attribute_cleanup_reset_requires_lifecycle_cleanup_intent");
+                return false;
+            }
+
+            if (stateProfileKind != ActivityResetStateProfileKind.InitialState)
+            {
+                result = ActorAttributeResetResult.Reject(
+                    _currentActorInstanceRuntimeId,
+                    resetIntent,
+                    stateProfileKind,
+                    "attribute_cleanup_reset_requires_initial_state_profile");
+                return false;
+            }
+
+            if (_runtimeStates == null || _runtimeStates.Length == 0)
+            {
+                result = ActorAttributeResetResult.Skipped(
+                    _currentActorInstanceRuntimeId,
+                    resetIntent,
+                    stateProfileKind,
+                    "attribute_state_empty");
+                return true;
+            }
+
+            var resetCount = 0;
+            for (var i = 0; i < _runtimeStates.Length; i++)
+            {
+                var state = _runtimeStates[i];
+                if (state == null || !state.IsReady)
+                {
+                    result = ActorAttributeResetResult.Fail(
+                        _currentActorInstanceRuntimeId,
+                        resetIntent,
+                        stateProfileKind,
+                        $"attribute_state_not_ready:index={i}");
+                    return false;
+                }
+
+                state.ResetToInitial();
+                resetCount += 1;
+            }
+
+            result = ActorAttributeResetResult.AppliedResult(
+                _currentActorInstanceRuntimeId,
+                resetIntent,
+                stateProfileKind,
+                resetCount);
+            return true;
+        }
+
         public bool TryRelease(out ActorAttributeReleaseResult result)
         {
             return TryRelease(default, out result);

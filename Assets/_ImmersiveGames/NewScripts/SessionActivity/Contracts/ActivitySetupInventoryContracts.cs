@@ -100,18 +100,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unbind = 4,
     }
 
-    public enum ActivityStateResetGroup
-    {
-        Unknown = 0,
-        Placement = 1,
-        ActivityParticipation = 2,
-        TransformState = 3,
-        RuntimeTransient = 4,
-        InteractionState = 5,
-        ObjectiveState = 6,
-        SpawnedRuntimeObjects = 7,
-    }
-
     public enum ActivitySetupInventoryBuildResultKind
     {
         Unknown = 0,
@@ -480,44 +468,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public StateResetRequirement(
             ActivitySetupRequirement requirement,
-            string targetId,
-            IReadOnlyList<ActivityStateResetGroup> resetGroups)
+            string targetId)
         {
             Requirement = requirement;
             TargetId = Normalize(targetId);
-            ResetGroups = resetGroups ?? Array.Empty<ActivityStateResetGroup>();
         }
 
         public ActivitySetupRequirement Requirement { get; }
         public string TargetId { get; }
-        public IReadOnlyList<ActivityStateResetGroup> ResetGroups { get; }
 
-        public bool HasResetGroups => ResetGroups is { Count: > 0 };
-
-        public bool IsValid
-        {
-            get
-            {
-                if (!Requirement.IsValid || Requirement.SubplanKind != ActivitySetupSubplanKind.StateReset || string.IsNullOrWhiteSpace(TargetId) || ResetGroups == null || ResetGroups.Count == 0)
-                {
-                    return false;
-                }
-
-                for (int index = 0; index < ResetGroups.Count; index++)
-                {
-                    if (ResetGroups[index] == ActivityStateResetGroup.Unknown)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-        }
+        public bool IsValid =>
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.StateReset } &&
+            !string.IsNullOrWhiteSpace(TargetId);
 
         public override string ToString()
         {
-            return $"requirement='{Requirement}', targetId='{TargetId}', resetGroups='{ResetGroups.Count}'";
+            return $"requirement='{Requirement}', targetId='{TargetId}', resetDescriptor='endpoint_inventory'";
         }
 
         private static string Normalize(string value)

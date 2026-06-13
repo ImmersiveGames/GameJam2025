@@ -14,13 +14,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
     }
 
     [DisallowMultipleComponent]
-    public sealed class PlayerActorParticipationState : MonoBehaviour, IActorResetEndpoint, IActorResetContributionProvider
+    public sealed class PlayerActorParticipationState : MonoBehaviour, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
-        private static readonly ActorResetGroup[] ActivityParticipationResetGroups =
-        {
-            ActorResetGroup.ActivityParticipation,
-        };
-
         [SerializeField, HideInInspector] private PlayerActorParticipationStateKind participationState = PlayerActorParticipationStateKind.ActiveInActivity;
         [SerializeField, HideInInspector] private string currentActivityId;
         [SerializeField, HideInInspector] private int currentEntrySequence;
@@ -70,25 +65,77 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             return true;
         }
 
-        public bool Supports(ActorResetGroup group)
+        public void ApplyEntryInitializeReset(ActorResetContext context)
         {
-            return group == ActorResetGroup.ActivityParticipation;
+            ApplyParticipationStateProfile(
+                context,
+                participationProfileKind: nameof(ActivityResetStateProfileKind.InitialState),
+                participationProfileSource: "entry_initialize_activity_participation_active");
         }
 
-        public void ApplyReset(ActorResetContext context)
+        public void ApplyRuntimeLocalReset(ActorResetContext context)
+        {
+            ApplyParticipationStateProfile(
+                context,
+                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                participationProfileSource: "runtime_local_activity_participation_reaffirm_active");
+        }
+
+        public void ApplyRuntimeActivityReset(ActorResetContext context)
+        {
+            ApplyParticipationStateProfile(
+                context,
+                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                participationProfileSource: "runtime_activity_activity_participation_reenter_active");
+        }
+
+        public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
+        {
+            ApplyParticipationStateProfile(
+                context,
+                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
+                participationProfileSource: "runtime_activity_transition_activity_participation_active_in_next_activity");
+        }
+
+        public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
+        {
+            ApplyParticipationStateProfile(
+                context,
+                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
+                participationProfileSource: "runtime_route_transition_activity_participation_clear");
+        }
+
+        private void ApplyParticipationStateProfile(
+            ActorResetContext context,
+            string participationProfileKind,
+            string participationProfileSource)
+        {
+            EnsureParticipationResetContext(context, participationProfileKind);
+
+            PlayerActorParticipationStateKind stateBefore = participationState;
+            string activityBefore = CurrentActivityId;
+            int entrySequenceBefore = currentEntrySequence;
+
+            if (context.ResetIntent == ActivityResetIntent.RuntimeRouteTransitionReset)
+            {
+                Clear();
+            }
+            else
+            {
+                MarkActiveInActivity(context.PipelineIdentity);
+            }
+
+            Debug.Log(
+                $"[OBS][PlayerActorParticipationState][Reset] event='PlayerActorParticipationStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' participationProfileKind='{participationProfileKind}' participationProfileSource='{participationProfileSource}' participationStateBefore='{stateBefore}' participationStateAfter='{participationState}' activityIdBefore='{activityBefore}' activityIdAfter='{CurrentActivityId}' entrySequenceBefore='{entrySequenceBefore}' entrySequenceAfter='{currentEntrySequence}' source='{context.Source}' reason='{context.Reason}'.");
+        }
+
+        private static void EnsureParticipationResetContext(ActorResetContext context, string operation)
         {
             if (!context.IsValid)
             {
-                throw new InvalidOperationException("PlayerActorParticipationState received invalid reset context.");
+                throw new InvalidOperationException($"PlayerActorParticipationState received invalid reset context for operation='{operation}'.");
             }
 
-            if (context.Group != ActorResetGroup.ActivityParticipation)
-            {
-                throw new InvalidOperationException(
-                    $"PlayerActorParticipationState received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
-            }
-
-            MarkActiveInActivity(context.PipelineIdentity);
         }
 
         private readonly struct PlayerActorActivityParticipationResetContribution : IActorResetContribution
@@ -111,9 +158,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
-            public ActorResetGroup[] SupportedGroups => ActivityParticipationResetGroups;
             public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
-            public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
+            public bool IsValid => Descriptor.IsValid;
         }
     }
 }

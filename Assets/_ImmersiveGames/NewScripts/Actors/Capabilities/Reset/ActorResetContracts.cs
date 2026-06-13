@@ -1,20 +1,12 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 {
-    public enum ActorResetGroup
-    {
-        Unknown = 0,
-        Placement = 1,
-        ActivityParticipation = 2,
-        MovementTransient = 3,
-        SpawnedRuntimeObjects = 4,
-    }
-
     public readonly struct ActorResetContext
     {
         public ActorResetContext(
@@ -22,7 +14,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorKind actorKind,
-            ActorResetGroup group,
+            ActivityResetIntent resetIntent,
+            ActivityResetStateProfileKind stateProfileKind,
             string placementId,
             bool hasPlacement,
             bool placementRequired,
@@ -37,7 +30,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorKind = actorKind;
-            Group = group;
+            ResetIntent = resetIntent;
+            StateProfileKind = stateProfileKind;
             PlacementId = Normalize(placementId);
             HasPlacement = hasPlacement;
             PlacementRequired = placementRequired;
@@ -53,7 +47,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         public ActorId ActorId { get; }
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorKind ActorKind { get; }
-        public ActorResetGroup Group { get; }
+        public ActivityResetIntent ResetIntent { get; }
+        public ActivityResetStateProfileKind StateProfileKind { get; }
         public string PlacementId { get; }
         public bool HasPlacement { get; }
         public bool PlacementRequired { get; }
@@ -64,28 +59,61 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         public string Source { get; }
         public string Reason { get; }
 
-        public bool IsValid => PipelineIdentity.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown && Group != ActorResetGroup.Unknown;
+        public bool IsValid =>
+            PipelineIdentity.IsValid &&
+            ActorId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
+            ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown &&
+            ResetIntent != ActivityResetIntent.Unknown &&
+            StateProfileKind != ActivityResetStateProfileKind.Unknown;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     public interface IActorResetEndpoint
     {
-        bool Supports(ActorResetGroup group);
-        void ApplyReset(ActorResetContext context);
     }
 
-    public readonly struct ActorResetSkippedGroupReason
+    public interface IActorPlacementResetEndpoint : IActorResetEndpoint
     {
-        public ActorResetSkippedGroupReason(ActorResetGroup group, string reasonCode)
+    }
+
+    public interface IActorEntryInitializeResetEndpoint : IActorResetEndpoint
+    {
+        void ApplyEntryInitializeReset(ActorResetContext context);
+    }
+
+    public interface IActorRuntimeLocalResetEndpoint : IActorResetEndpoint
+    {
+        void ApplyRuntimeLocalReset(ActorResetContext context);
+    }
+
+    public interface IActorRuntimeActivityResetEndpoint : IActorResetEndpoint
+    {
+        void ApplyRuntimeActivityReset(ActorResetContext context);
+    }
+
+    public interface IActorRuntimeActivityTransitionResetEndpoint : IActorResetEndpoint
+    {
+        void ApplyRuntimeActivityTransitionReset(ActorResetContext context);
+    }
+
+    public interface IActorRuntimeRouteTransitionResetEndpoint : IActorResetEndpoint
+    {
+        void ApplyRuntimeRouteTransitionReset(ActorResetContext context);
+    }
+
+    public readonly struct ActorResetSkippedReferenceReason
+    {
+        public ActorResetSkippedReferenceReason(string capabilityId, string reasonCode)
         {
-            Group = group;
+            CapabilityId = Normalize(capabilityId);
             ReasonCode = Normalize(reasonCode);
         }
 
-        public ActorResetGroup Group { get; }
+        public string CapabilityId { get; }
         public string ReasonCode { get; }
-        public bool IsValid => Group != ActorResetGroup.Unknown && !string.IsNullOrWhiteSpace(ReasonCode);
+        public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && !string.IsNullOrWhiteSpace(ReasonCode);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -96,25 +124,25 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorKind actorKind,
-            IReadOnlyList<ActorResetGroup> appliedGroups,
-            IReadOnlyList<ActorResetGroup> skippedGroups,
-            IReadOnlyList<ActorResetSkippedGroupReason> skippedGroupReasons)
+            int appliedReferenceCount,
+            int skippedReferenceCount,
+            IReadOnlyList<ActorResetSkippedReferenceReason> skippedReferenceReasons)
         {
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorKind = actorKind;
-            AppliedGroups = appliedGroups ?? Array.Empty<ActorResetGroup>();
-            SkippedGroups = skippedGroups ?? Array.Empty<ActorResetGroup>();
-            SkippedGroupReasons = skippedGroupReasons ?? Array.Empty<ActorResetSkippedGroupReason>();
+            AppliedReferenceCount = Math.Max(0, appliedReferenceCount);
+            SkippedReferenceCount = Math.Max(0, skippedReferenceCount);
+            SkippedReferenceReasons = skippedReferenceReasons ?? Array.Empty<ActorResetSkippedReferenceReason>();
         }
 
         public ActorId ActorId { get; }
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorKind ActorKind { get; }
-        public IReadOnlyList<ActorResetGroup> AppliedGroups { get; }
-        public IReadOnlyList<ActorResetGroup> SkippedGroups { get; }
-        public IReadOnlyList<ActorResetSkippedGroupReason> SkippedGroupReasons { get; }
-        public bool IsValid => ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown && AppliedGroups != null && SkippedGroups != null && SkippedGroupReasons != null;
+        public int AppliedReferenceCount { get; }
+        public int SkippedReferenceCount { get; }
+        public IReadOnlyList<ActorResetSkippedReferenceReason> SkippedReferenceReasons { get; }
+        public bool IsValid => ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown && AppliedReferenceCount >= 0 && SkippedReferenceCount >= 0 && SkippedReferenceReasons != null;
     }
 
     public interface IActorResetAdapter

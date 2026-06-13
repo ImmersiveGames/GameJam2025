@@ -70,6 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private PendingInternalActivityTransition _pendingInternalActivityTransition;
         private PendingRestartTransition _pendingRestartTransition;
         private ActivityResetBoundaryKind _pendingActivityEntryResetBoundaryKind;
+        private ActivityResetIntent _pendingActivityEntryResetIntent;
         private readonly ActivityContentRuntimeState _activityContentRuntimeState = new();
         private readonly ActivityContentReleaseRuntimeState _activityContentReleaseRuntimeState = new();
         private readonly ActivityObjectExitRuntimeState _activityObjectExitRuntimeState = new();
@@ -774,7 +775,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "SessionActivityPipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
 
-            EnterActivity(initialDefinition, command, handoff, emittedFacts, emittedSnapshots, entrySequence, ActivityResetBoundaryKind.Activity);
+            EnterActivity(initialDefinition, command, handoff, emittedFacts, emittedSnapshots, entrySequence, ActivityResetBoundaryKind.Activity, ActivityResetIntent.EntryInitialize);
 
             SessionActivityCommandResult result = new(
                 SessionActivityCommandResultKind.Started,
@@ -2220,7 +2221,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.PipelineStarted, activationIdentity, command.Source, command.Reason, "SessionActivityPipeline started.");
             EmitSnapshot(snapshots, "pipeline_started", command.Source, command.Reason, "Pipeline started.");
 
-            EnterActivity(firstDefinition, command, default, facts, snapshots, entrySequence, ActivityResetBoundaryKind.Activity);
+            EnterActivity(firstDefinition, command, default, facts, snapshots, entrySequence, ActivityResetBoundaryKind.Activity, ActivityResetIntent.EntryInitialize);
         }
 
         private Task EmitCompleteActivationWindowAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -3014,7 +3015,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentDefinition(restart.Activity);
             _pendingRestartCompletionActivityId = restart.Activity.ActivityId;
             _pendingRestartCompletionEntrySequence = restart.NextEntrySequence;
-            EnterActivity(restart.Activity, command, default, facts, snapshots, restart.NextEntrySequence, ActivityResetBoundaryKind.Activity);
+            EnterActivity(restart.Activity, command, default, facts, snapshots, restart.NextEntrySequence, ActivityResetBoundaryKind.Activity, ActivityResetIntent.RuntimeActivityReset);
             CompleteActivityContentReleaseContinuationIfStarted(
                 continuationStarted,
                 continuationTelemetry,
@@ -3062,7 +3063,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.ClearHandoff();
             _state.SetCurrentDefinition(next);
             await ApplyPendingTransitionBeforeNextEntryIfNeededAsync(_state.CurrentIdentity, command.Source, command.Reason);
-            EnterActivity(next, command, default, facts, snapshots, nextEntrySequence, ActivityResetBoundaryKind.ActivityTransition);
+            EnterActivity(next, command, default, facts, snapshots, nextEntrySequence, ActivityResetBoundaryKind.ActivityTransition, ActivityResetIntent.RuntimeActivityTransitionReset);
             await ApplyPendingTransitionRevealIfNeededAsync(next, command, facts, snapshots);
         }
 
@@ -3277,7 +3278,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
             int entrySequence,
-            ActivityResetBoundaryKind resetBoundaryKind)
+            ActivityResetBoundaryKind resetBoundaryKind,
+            ActivityResetIntent resetIntent)
         {
             if (!definition.IsValid)
             {
@@ -3289,7 +3291,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Activity entry requires Activity or transition reset boundary. activityId='{definition.ActivityId}' boundaryKind='{resetBoundaryKind}'.");
             }
 
+            if (resetIntent == ActivityResetIntent.Unknown)
+            {
+                throw new InvalidOperationException($"Activity entry requires explicit reset intent. activityId='{definition.ActivityId}' boundaryKind='{resetBoundaryKind}'.");
+            }
+
             _pendingActivityEntryResetBoundaryKind = resetBoundaryKind;
+            _pendingActivityEntryResetIntent = resetIntent;
             SessionActivityIdentity setupBoundaryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             ActivityEntryPreparationCommand entryCommand = new(
                 setupBoundaryIdentity,
@@ -3329,7 +3337,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     setupBoundaryIdentity.ActivityOrdinal,
                     command.Source,
                     command.Reason,
-                    resetBoundaryKind),
+                    resetBoundaryKind,
+                    resetIntent),
                 definition,
                 handoff.LoadedSnapshotPayloadContext,
                 facts,
@@ -3340,6 +3349,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _pendingActivityEntryResetBoundaryKind = ActivityResetBoundaryKind.Unknown;
+            _pendingActivityEntryResetIntent = ActivityResetIntent.Unknown;
             ActivityObjectExitCorrelationFreezeStage.Execute(
                 setupReadinessResult.Identity,
                 setupReadinessResult.ExitCorrelation,
@@ -3401,6 +3411,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     ? _state.CurrentHandoff.LoadedSnapshotPayloadContext
                     : default;
             ActivityResetBoundaryKind resetBoundaryKind = ResolvePendingActivityEntryResetBoundaryKind(definition, entrySequence);
+            ActivityResetIntent resetIntent = ResolvePendingActivityEntryResetIntent(definition, entrySequence, resetBoundaryKind);
             ActivityEntrySetupReadinessResult setupReadinessResult = _activityEntryPipeline.ExecuteSetupAndReadiness(
                 new ActivityEntryCommand(
                     setupBoundaryIdentity,
@@ -3408,7 +3419,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     setupBoundaryIdentity.ActivityOrdinal,
                     command.Source,
                     command.Reason,
-                    resetBoundaryKind),
+                    resetBoundaryKind,
+                    resetIntent),
                 definition,
                 loadedSnapshotPayloadContext,
                 facts,
@@ -3419,6 +3431,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _pendingActivityEntryResetBoundaryKind = ActivityResetBoundaryKind.Unknown;
+            _pendingActivityEntryResetIntent = ActivityResetIntent.Unknown;
             ActivityObjectExitCorrelationFreezeStage.Execute(
                 setupReadinessResult.Identity,
                 setupReadinessResult.ExitCorrelation,
@@ -3445,6 +3458,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return ActivityResetBoundaryKind.Activity;
+        }
+
+        private ActivityResetIntent ResolvePendingActivityEntryResetIntent(SessionActivityDefinition definition, int entrySequence, ActivityResetBoundaryKind boundaryKind)
+        {
+            if (_pendingActivityEntryResetIntent != ActivityResetIntent.Unknown)
+            {
+                return _pendingActivityEntryResetIntent;
+            }
+
+            PendingInternalActivityTransition transition = _pendingInternalActivityTransition;
+            if (transition.IsValid &&
+                definition.IsValid &&
+                string.Equals(transition.ToActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                transition.ToEntrySequence == entrySequence)
+            {
+                return ActivityResetIntent.RuntimeActivityTransitionReset;
+            }
+
+            return ActivityResetIntentProfileDefaults.ResolveRuntimeIntentForBoundary(boundaryKind);
         }
 
         private void EmitPredefinedVisualSetupReadyFactIfApplicable(
@@ -4538,7 +4570,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActivityResetScopePlan resetScopePlan = ActivityResetBoundaryPolicy.ResolveForLocal(resetPolicyCommand);
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaScopePlanResolved' owner='ActivityResetBoundaryPolicy' qaOwner='SessionActivityPipeline' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='BoundaryEligibilityFiltering' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaScopePlanResolved' owner='ActivityResetBoundaryPolicy' qaOwner='SessionActivityPipeline' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='ResetIntentStateProfilePolicy' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             IReadOnlyList<ActorCapabilityResetEndpointReference> sourceResetReferences = ResolveActorResetReferencesFromInventory(
@@ -4550,7 +4582,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 outcomeReason = "actor_reset_qa_inventory_reference_missing";
                 DebugUtility.Log(
                     typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaRejected' reason='{outcomeReason}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaRejected' reason='{outcomeReason}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
@@ -4565,7 +4597,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 outcomeReason = "actor_reset_qa_references_filtered_by_boundary_policy";
                 DebugUtility.Log(
                     typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaSkipped' reason='{outcomeReason}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' sourceReferenceCount='{sourceResetReferences.Count}' filteredReferenceCount='0' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaSkipped' reason='{outcomeReason}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' sourceReferenceCount='{sourceResetReferences.Count}' filteredReferenceCount='0' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -4579,6 +4611,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 placementRequirementId: string.Empty,
                 selected,
                 resetReferences,
+                resetScopePlan,
                 required: true,
                 placementDeclared: true,
                 placementRequired: true,
@@ -4617,7 +4650,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorResetResult result = results[0];
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaAppliedFromInventory' reason='{outcomeReason}' playerSlotId='{selected.PlayerSlotId}' playerActorId='{selected.PlayerActorId}' observedPlayerSlotId='{observedIdentity.PlayerSlotId}' observedPlayerActorId='{observedIdentity.PlayerActorId}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' appliedGroups='{result.AppliedGroups.Count}' skippedGroups='{result.SkippedGroups.Count}' referenceCount='{resetReferences.Count}' sourceReferenceCount='{sourceResetReferences.Count}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaAppliedFromInventory' reason='{outcomeReason}' playerSlotId='{selected.PlayerSlotId}' playerActorId='{selected.PlayerActorId}' observedPlayerSlotId='{observedIdentity.PlayerSlotId}' observedPlayerActorId='{observedIdentity.PlayerActorId}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' appliedReferenceCount='{result.AppliedReferenceCount}' skippedReferenceCount='{result.SkippedReferenceCount}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' referenceCount='{resetReferences.Count}' sourceReferenceCount='{sourceResetReferences.Count}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -4728,7 +4761,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActivityResetScopePlan resetScopePlan = ActivityResetBoundaryPolicy.ResolveForLocal(resetCommand);
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaScopePlanResolved' owner='ActivityResetBoundaryPolicy' qaOwner='SessionActivityPipeline' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='BoundaryEligibilityFiltering' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaScopePlanResolved' owner='ActivityResetBoundaryPolicy' qaOwner='SessionActivityPipeline' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='ResetIntentStateProfilePolicy' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             ActivityResetResult resetResult;
@@ -4752,7 +4785,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 outcomeReason = "activity_object_reset_qa_failed";
                 DebugUtility.Log(
                     typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaFailed' reason='{outcomeReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}' error='{exception.Message}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.",
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaFailed' reason='{outcomeReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}' error='{exception.Message}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.",
                     DebugUtility.Colors.Error);
                 return false;
             }
@@ -4762,7 +4795,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 outcomeReason = "activity_object_reset_qa_applied";
                 DebugUtility.Log(
                     typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaApplied' reason='{outcomeReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' commandCount='{resetResult.CommandCount}' appliedCount='{resetResult.AppliedCount}' skippedCount='{resetResult.SkippedCount}' failedCount='{resetResult.FailedCount}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaApplied' reason='{outcomeReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' commandCount='{resetResult.CommandCount}' appliedCount='{resetResult.AppliedCount}' skippedCount='{resetResult.SkippedCount}' failedCount='{resetResult.FailedCount}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                     DebugUtility.Colors.Success);
                 return true;
             }
@@ -4774,7 +4807,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 outcomeReason = "activity_object_reset_qa_no_commands";
                 DebugUtility.Log(
                     typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaSkipped' reason='{outcomeReason}' completionKind='{resetResult.CompletionKind}' completionReason='{resetResult.CompletionReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' commandCount='{resetResult.CommandCount}' appliedCount='{resetResult.AppliedCount}' skippedCount='{resetResult.SkippedCount}' failedCount='{resetResult.FailedCount}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaSkipped' reason='{outcomeReason}' completionKind='{resetResult.CompletionKind}' completionReason='{resetResult.CompletionReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' commandCount='{resetResult.CommandCount}' appliedCount='{resetResult.AppliedCount}' skippedCount='{resetResult.SkippedCount}' failedCount='{resetResult.FailedCount}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -4782,7 +4815,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             outcomeReason = "activity_object_reset_qa_rejected";
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaRejected' reason='{outcomeReason}' completionKind='{resetResult.CompletionKind}' completionReason='{resetResult.CompletionReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaRejected' reason='{outcomeReason}' completionKind='{resetResult.CompletionKind}' completionReason='{resetResult.CompletionReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 DebugUtility.Colors.Warning);
             return false;
         }
@@ -5004,8 +5037,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                    string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    identity.EntrySequence == entrySequence &&
-                   !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
-                   result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
+                   !string.IsNullOrWhiteSpace(result.Command.TargetId);
         }
 
         private bool IsObjectResetResultForCurrentResetEntry(
@@ -5022,8 +5054,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                    string.Equals(identity.ActivityId, activityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == activityOrdinal &&
                    identity.EntrySequence == entrySequence &&
-                   !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
-                   result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
+                   !string.IsNullOrWhiteSpace(result.Command.TargetId);
         }
 
         private static IActivityObjectReleaseEndpoint[] ResolveObjectReleaseEndpointsFromInventory(
@@ -5451,9 +5482,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required &&
-                    report.SupportedResetGroups != null &&
-                    report.SupportedResetGroups.Count > 0)
+                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required)
                 {
                     return true;
                 }

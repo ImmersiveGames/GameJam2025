@@ -14,15 +14,10 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class ActorProjectileSpawnRuntimeTracker : MonoBehaviour, IActorResetEndpoint, IActorResetContributionProvider
+    public sealed class ActorProjectileSpawnRuntimeTracker : MonoBehaviour, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
         [Header("Reset")]
         [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
-
-        private static readonly ActorResetGroup[] SpawnedRuntimeObjectResetGroups =
-        {
-            ActorResetGroup.SpawnedRuntimeObjects,
-        };
 
         private readonly List<TrackedSpawnedRuntimeObject> _trackedSpawns = new();
         private Actor _ownerActor;
@@ -43,44 +38,75 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             contribution = new SpawnedRuntimeObjectsResetContribution(context, resetBoundaryEligibility);
             return true;
         }
-
-        public bool Supports(ActorResetGroup group)
-        {
-            return group == ActorResetGroup.SpawnedRuntimeObjects;
-        }
-
-        public void ApplyReset(ActorResetContext context)
+        private void ApplySpawnedRuntimeObjectsStateProfile(ActorResetContext context)
         {
             if (!context.IsValid)
             {
                 throw new InvalidOperationException("ActorProjectileSpawnRuntimeTracker received invalid reset context.");
             }
 
-            if (context.Group != ActorResetGroup.SpawnedRuntimeObjects)
-            {
-                throw new InvalidOperationException(
-                    $"ActorProjectileSpawnRuntimeTracker received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
-            }
-
             RefreshOwnerActor();
             PruneTrackedSpawns("reset_prune_stale_entries");
 
-            if (_trackedSpawns.Count == 0)
+            int trackedCountBefore = _trackedSpawns.Count;
+            string profileSource = ResolveSpawnedRuntimeObjectsProfileSource(context.ResetIntent, context.StateProfileKind);
+
+            if (trackedCountBefore == 0)
             {
                 DebugUtility.Log(
                     typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' group='{context.Group}' reason='no_tracked_runtime_objects' source='{nameof(ActorProjectileSpawnRuntimeTracker)}'.",
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectsStateProfileSkipped' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' runtimeObjectsProfileKind='{context.StateProfileKind}' runtimeObjectsProfileSource='{profileSource}' trackedCountBefore='0' returnedCount='0' skippedCount='0' trackedCountAfter='0' reason='no_tracked_runtime_objects' source='{Normalize(context.Source)}' trigger='reset' detailSource='{nameof(ActorProjectileSpawnRuntimeTracker)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
+            int returnedCount = 0;
+            int skippedCount = 0;
             TrackedSpawnedRuntimeObject[] snapshot = _trackedSpawns.ToArray();
             for (int index = 0; index < snapshot.Length; index++)
             {
-                TryReturnTrackedSpawnedRuntimeObject(snapshot[index], context.Source, context.Reason, "reset");
+                if (TryReturnTrackedSpawnedRuntimeObject(snapshot[index], context.Source, context.Reason, "reset"))
+                {
+                    returnedCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                }
             }
 
             ClearTrackedSpawns();
+
+            DebugUtility.Log(
+                typeof(ActorProjectileSpawnRuntimeTracker),
+                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectsStateProfileApplied' actorId='{OwnerActorId}' actorInstanceRuntimeId='{OwnerActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' runtimeObjectsProfileKind='{context.StateProfileKind}' runtimeObjectsProfileSource='{profileSource}' trackedCountBefore='{trackedCountBefore}' returnedCount='{returnedCount}' skippedCount='{skippedCount}' trackedCountAfter='{_trackedSpawns.Count}' source='{Normalize(context.Source)}' trigger='reset' reason='{Normalize(context.Reason)}'.",
+                DebugUtility.Colors.Success);
+        }
+
+
+        public void ApplyEntryInitializeReset(ActorResetContext context)
+        {
+            ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeLocalReset(ActorResetContext context)
+        {
+            ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeActivityReset(ActorResetContext context)
+        {
+            ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
+        {
+            ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
+        {
+            ApplySpawnedRuntimeObjectsStateProfile(context);
         }
 
         public bool TryTrackSpawnedRuntimeObject(
@@ -251,7 +277,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             return true;
         }
 
-        private void TryReturnTrackedSpawnedRuntimeObject(
+        private bool TryReturnTrackedSpawnedRuntimeObject(
             TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject,
             string source,
             string reason,
@@ -259,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             if (trackedSpawnedRuntimeObject == null)
             {
-                return;
+                return false;
             }
 
             if (!IsTrackedSpawnedRuntimeObjectReturnable(trackedSpawnedRuntimeObject, out string staleReason))
@@ -268,7 +294,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     typeof(ActorProjectileSpawnRuntimeTracker),
                     $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(staleReason)}'.");
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "stale_return_skip", staleReason, logSkip: false);
-                return;
+                return false;
             }
 
             if (!TryResolvePoolService(out IPoolService poolService))
@@ -277,7 +303,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     typeof(ActorProjectileSpawnRuntimeTracker),
                     $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='pool_service_unavailable'.");
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "pool_service_unavailable", reason, logSkip: false);
-                return;
+                return false;
             }
 
             DebugUtility.Log(
@@ -288,6 +314,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             try
             {
                 poolService.Return(trackedSpawnedRuntimeObject.SpawnOrigin.PoolDefinition, trackedSpawnedRuntimeObject.SpawnedInstance);
+                return true;
             }
             catch (Exception exception)
             {
@@ -295,6 +322,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     typeof(ActorProjectileSpawnRuntimeTracker),
                     $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='pool_return_failed' message='{Normalize(exception.Message)}'.");
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "pool_return_failed", exception.Message, logSkip: false);
+                return false;
             }
         }
 
@@ -503,6 +531,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnTrackSkipped' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' spawnedActorId='{spawnedActorId}' spawnedActorInstanceRuntimeId='{spawnedActorInstanceRuntimeId}' spawnedInstanceName='{spawnedInstanceName}' source='{Normalize(source)}' reason='{Normalize(reason)}' outcomeReason='{Normalize(outcomeReason)}'.");
         }
 
+        private static string ResolveSpawnedRuntimeObjectsProfileSource(
+            ActivityResetIntent resetIntent,
+            ActivityResetStateProfileKind stateProfileKind)
+        {
+            return resetIntent switch
+            {
+                ActivityResetIntent.EntryInitialize when stateProfileKind == ActivityResetStateProfileKind.InitialState =>
+                    "entry_initialize_spawned_runtime_objects_return",
+                ActivityResetIntent.RuntimeLocalReset when stateProfileKind == ActivityResetStateProfileKind.RuntimeLocalState =>
+                    "runtime_local_spawned_runtime_objects_return",
+                ActivityResetIntent.RuntimeActivityReset when stateProfileKind == ActivityResetStateProfileKind.RuntimeActivityState =>
+                    "runtime_activity_spawned_runtime_objects_return",
+                ActivityResetIntent.RuntimeActivityTransitionReset when stateProfileKind == ActivityResetStateProfileKind.RuntimeActivityTransitionState =>
+                    "runtime_activity_transition_spawned_runtime_objects_return",
+                ActivityResetIntent.RuntimeRouteTransitionReset when stateProfileKind == ActivityResetStateProfileKind.RuntimeRouteTransitionState =>
+                    "runtime_route_transition_spawned_runtime_objects_return",
+                _ => "unknown_spawned_runtime_objects_profile",
+            };
+        }
+
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -577,9 +625,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
-            public ActorResetGroup[] SupportedGroups => SpawnedRuntimeObjectResetGroups;
             public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
-            public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
+            public bool IsValid => Descriptor.IsValid;
         }
     }
 }

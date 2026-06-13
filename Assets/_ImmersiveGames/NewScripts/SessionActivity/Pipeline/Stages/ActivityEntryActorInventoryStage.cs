@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
-using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -34,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.Identity.EntrySequence;
-            var startedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryStarted);
+            SessionActivityIdentity startedIdentity = ActivityEntryObjectSetupStageUtility.BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryStarted);
             identityBridge.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorSceneDiscoveryStarted);
             factBridge.EmitFact(
                 facts,
@@ -59,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             try
             {
                 bool canDiscoverFromLoadedSet = HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) && loadedSet.HasScenes;
-                var discovery = ActorSceneDiscoveryStage.Execute(
+                ActorSceneDiscoveryStageResult discovery = ActorSceneDiscoveryStage.Execute(
                     command.ActivityId,
                     startedIdentity,
                     loadedSet,
@@ -68,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 if (!discovery.HasAuthorizedSource)
                 {
-                    var skippedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoverySkipped);
+                    SessionActivityIdentity skippedIdentity = ActivityEntryObjectSetupStageUtility.BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoverySkipped);
                     identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorSceneDiscoverySkipped);
                     factBridge.EmitFact(
                         facts,
@@ -91,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_scene_discovery' reason='no_authorized_source'");
                 }
 
-                var completedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryCompleted);
+                SessionActivityIdentity completedIdentity = ActivityEntryObjectSetupStageUtility.BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryCompleted);
                 identityBridge.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorSceneDiscoveryCompleted);
                 factBridge.EmitFact(
                     facts,
@@ -117,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
             catch (Exception exception)
             {
-                var failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryFailed);
+                SessionActivityIdentity failedIdentity = ActivityEntryObjectSetupStageUtility.BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryFailed);
                 identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorSceneDiscoveryFailed);
                 factBridge.EmitFact(
                     facts,
@@ -171,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryActorInventoryStage requires session actor runtime store.");
             }
 
-            var identity = command.Identity;
+            SessionActivityIdentity identity = command.Identity;
             logSink.LogEntryOwnerEvent(
                 "ActivityEntryActorInventoryFeedStarted",
                 identity,
@@ -192,7 +191,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             };
 
             ActorInventoryFeed feed = new();
-            var result = feed.BuildFromSources(identity, actorSources, command.Source, command.Reason);
+            ActorInventoryFeedResult result = feed.BuildFromSources(identity, actorSources, command.Source, command.Reason);
             if (!result.IsValid)
             {
                 logSink.LogEntryOwnerEvent(
@@ -268,13 +267,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < participants.Count; index++)
             {
-                var participant = participants[index];
+                ActivityParticipantBinding participant = participants[index];
                 if (!participant.IsValid || !participant.RequiresPlayerActor || !participant.ParticipantId.IsValid)
                 {
                     continue;
                 }
 
-                if (!TryResolvePlayerActorHandleForCapabilityInventory(playerActorRegistry, sessionActorRuntimeStore, identity, participant, out var handle) || !handle.IsValid)
+                if (!TryResolvePlayerActorHandleForCapabilityInventory(playerActorRegistry, sessionActorRuntimeStore, identity, participant, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }
@@ -314,7 +313,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             if (sessionActorRuntimeStore != null &&
-                sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out var entry) &&
+                sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) &&
                 entry.IsValid)
             {
                 PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
@@ -348,13 +347,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<PlayerActorIdentityRecord> resolved = new();
             for (int index = 0; index < retained.Count; index++)
             {
-                var candidate = retained[index];
+                PlayerActorIdentityRecord candidate = retained[index];
                 if (!candidate.IsValid)
                 {
                     continue;
                 }
 
-                if ((!playerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out var handle) ||
+                if ((!playerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle handle) ||
                     !handle.IsValid) &&
                     (!playerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out handle) ||
                      !handle.IsValid))

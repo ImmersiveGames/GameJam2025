@@ -35,11 +35,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             IReadOnlyList<ActorAttributeSetupContribution> attributeContributions = command.AttributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
             int entrySequence = command.Identity.EntrySequence;
-            var startedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupStarted);
+            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorAttributeSetupStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupStarted, startedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup started mode='SetupContributions'.");
             endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup started.");
-            DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeSetupStarted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}' mode='SetupContributions'.", DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeSetupStarted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile' source='{command.Source}' reason='{command.Reason}' mode='SetupContributions'.", DebugUtility.Colors.Info);
 
             int totalCount = attributeContributions.Count;
             int resolvedCount = 0;
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (attributeContributions.Count == 0)
             {
-                var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupSkipped);
+                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupSkipped);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorAttributeSetupSkipped);
                 endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupSkipped, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped reason='no_attribute_setup_contributions'.");
                 endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_skipped", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped reason='no_attribute_setup_contributions'.");
@@ -60,10 +60,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 for (int index = 0; index < attributeContributions.Count; index++)
                 {
-                    var attributeContribution = attributeContributions[index];
+                    ActorAttributeSetupContribution attributeContribution = attributeContributions[index];
                     if (!attributeContribution.IsValid)
                     {
-                        var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
+                        SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' reason='attribute_contribution_invalid'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='attribute_contribution_invalid'.");
@@ -72,17 +72,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     if (!IsSameAttributeScope(startedIdentity, attributeContribution.Identity))
                     {
-                        var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
+                        SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='attribute_contribution_identity_mismatch'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='attribute_contribution_identity_mismatch'.");
                         throw new InvalidOperationException($"[FATAL][ActivityEntryActorAttributeStage][ActorAttributeSetup] Attribute contribution identity mismatch actorId='{attributeContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}'.");
                     }
 
-                    var attributeEndpoint = attributeContribution.Endpoint;
+                    ActorAttributeEndpoint attributeEndpoint = attributeContribution.Endpoint;
                     if (attributeEndpoint == null)
                     {
-                        var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
+                        SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='actor_attribute_endpoint_missing'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='actor_attribute_endpoint_missing'.");
@@ -90,27 +90,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     resolvedCount += 1;
-                    var profile = attributeContribution.Profile ?? attributeEndpoint.AttributeProfile;
-                    var profileResolvedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeProfileResolved);
+                    ActorAttributeProfileAsset profile = attributeContribution.Profile ?? attributeEndpoint.AttributeProfile;
+                    SessionActivityIdentity profileResolvedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeProfileResolved);
                     endpoint.SetCurrentIdentity(profileResolvedIdentity, SessionActivityStage.ActorAttributeProfileResolved);
                     endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeProfileResolved, profileResolvedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute profile resolved actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' profileId='{(profile != null ? profile.ProfileId : "<none>")}'.");
                     endpoint.EmitSnapshot(snapshots, "actor_attribute_profile_resolved", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute profile resolved actorId='{attributeContribution.ActorId}' profileId='{(profile != null ? profile.ProfileId : "<none>")}'.");
-                    DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeProfileResolved' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' profileId='{(profile != null ? profile.ProfileId : "<none>")}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
+                    DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeProfileResolved' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' profileId='{(profile != null ? profile.ProfileId : "<none>")}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
                     if (profile == null)
                     {
                         failedCount += 1;
-                        var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
+                        SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' reason='attribute_profile_missing'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='attribute_profile_missing'.");
                         throw new InvalidOperationException($"[FATAL][ActivityEntryActorAttributeStage][ActorAttributeSetup] Missing ActorAttributeProfileAsset actorId='{attributeContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}'.");
                     }
 
-                    if (!attributeEndpoint.TryInitialize(attributeContribution.ActorInstanceRuntimeId, startedIdentity, out var setupResult))
+                    if (!attributeEndpoint.TryInitialize(attributeContribution.ActorInstanceRuntimeId, startedIdentity, out ActorAttributeSetupResult setupResult))
                     {
                         failedCount += 1;
-                        var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
+                        SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeSetupFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' reason='{setupResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup failed actorId='{attributeContribution.ActorId}' reason='{setupResult.Reason}'.");
@@ -120,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (setupResult.IsSkippedNoContent)
                     {
                         skippedCount += 1;
-                        var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupSkipped);
+                        SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupSkipped);
                         endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorAttributeSetupSkipped);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupSkipped, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' reason='{setupResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_skipped", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped actorId='{attributeContribution.ActorId}' reason='{setupResult.Reason}'.");
@@ -143,29 +143,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         "ActivityEntryActorAttributeStage",
                         "store_active_actor_attribute_capability");
 
-                    var readyIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeReady);
+                    SessionActivityIdentity readyIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeReady);
                     endpoint.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActorAttributeReady);
                     endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReady, readyIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute ready actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' attributeCount='{setupResult.AttributeCount}' attributeIds='{BuildActorAttributeIdList(attributeEndpoint)}'.");
                     endpoint.EmitSnapshot(snapshots, "actor_attribute_ready", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute ready actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' attributeCount='{setupResult.AttributeCount}'.");
-                    DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeReady' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' attributeCount='{setupResult.AttributeCount}' attributeIds='{BuildActorAttributeIdList(attributeEndpoint)}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                    DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeReady' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{attributeContribution.ActorId}' actorKind='{attributeContribution.ActorKind}' attributeCount='{setupResult.AttributeCount}' attributeIds='{BuildActorAttributeIdList(attributeEndpoint)}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
                     readyCount += 1;
                 }
 
                 if (resolvedCount == 0 || readyCount == 0)
                 {
                     skippedCount += 1;
-                    var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupSkipped);
+                    SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupSkipped);
                     endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorAttributeSetupSkipped);
                     endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupSkipped, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped reason='no_attribute_endpoint_ready'.");
                     endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_skipped", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped reason='no_attribute_endpoint_ready'.");
                 }
             }
 
-            var completedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupCompleted);
+            SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupCompleted);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorAttributeSetupCompleted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupCompleted, completedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup completed total='{totalCount}' resolved='{resolvedCount}' ready='{readyCount}' skipped='{skippedCount}' failed='{failedCount}' mode='SetupContributions'.");
             endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_completed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup completed total='{totalCount}' resolved='{resolvedCount}' ready='{readyCount}' skipped='{skippedCount}' failed='{failedCount}'.");
-            DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeSetupCompleted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' total='{totalCount}' resolved='{resolvedCount}' ready='{readyCount}' skipped='{skippedCount}' failed='{failedCount}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+            DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeSetupCompleted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile' total='{totalCount}' resolved='{resolvedCount}' ready='{readyCount}' skipped='{skippedCount}' failed='{failedCount}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
             return new ActivityEntryActorAttributeSetupResult(
                 completed: true,
                 completedIdentity,
@@ -212,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<string> ids = new(endpoint.RuntimeStates.Count);
             for (int index = 0; index < endpoint.RuntimeStates.Count; index++)
             {
-                var state = endpoint.RuntimeStates[index];
+                ActorAttributeState state = endpoint.RuntimeStates[index];
                 if (state == null || !state.AttributeId.IsValid)
                 {
                     continue;

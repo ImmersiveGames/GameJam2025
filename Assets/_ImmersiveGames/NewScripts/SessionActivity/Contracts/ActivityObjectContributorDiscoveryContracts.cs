@@ -24,7 +24,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityObjectContributorKind contributorKind,
             ActivitySetupRequirementRequiredness requiredness,
             ActivityResetBoundaryEligibility resetBoundaryEligibility,
-            IReadOnlyList<ActivityStateResetGroup> supportedResetGroups,
             IReadOnlyList<ActivityReleaseRequirementKind> supportedReleaseKinds,
             string source,
             string reason)
@@ -43,7 +42,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ContributorKind = contributorKind;
             Requiredness = requiredness;
             ResetBoundaryEligibility = resetBoundaryEligibility;
-            SupportedResetGroups = supportedResetGroups ?? Array.Empty<ActivityStateResetGroup>();
             SupportedReleaseKinds = supportedReleaseKinds ?? Array.Empty<ActivityReleaseRequirementKind>();
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -63,7 +61,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityObjectContributorKind ContributorKind { get; }
         public ActivitySetupRequirementRequiredness Requiredness { get; }
         public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
-        public IReadOnlyList<ActivityStateResetGroup> SupportedResetGroups { get; }
         public IReadOnlyList<ActivityReleaseRequirementKind> SupportedReleaseKinds { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -82,13 +79,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(TargetId) &&
             ContributorKind != ActivityObjectContributorKind.Unknown &&
             Requiredness != ActivitySetupRequirementRequiredness.Unknown &&
-            SupportedResetGroups != null &&
             SupportedReleaseKinds != null &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{SceneName}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(ResetBoundaryEligibility)}', resetGroups='{SupportedResetGroups.Count}', releaseKinds='{SupportedReleaseKinds.Count}', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{SceneName}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(ResetBoundaryEligibility)}', resetDescriptor='endpoint_inventory', descriptorMode='endpoint_inventory', releaseKinds='{SupportedReleaseKinds.Count}', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)

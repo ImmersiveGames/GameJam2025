@@ -489,13 +489,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 new("capabilitySource", contribution.Descriptor.Source),
             };
 
-            if (contribution is IActorResetContribution resetContribution && resetContribution.SupportedGroups != null)
+            if (contribution is IActorResetContribution resetContribution)
             {
                 metadata.Add(new("resetBoundaryEligibility", ActivityResetBoundaryEligibilityFormatter.Format(resetContribution.ResetBoundaryEligibility)));
-                for (int index = 0; index < resetContribution.SupportedGroups.Length; index++)
-                {
-                    metadata.Add(new($"supportedResetGroup[{index}]", resetContribution.SupportedGroups[index].ToString()));
-                }
+                metadata.Add(new("resetDescriptor", "endpoint_inventory"));
+                metadata.Add(new("descriptorMode", "endpoint_inventory"));
             }
 
             if (contribution is IActorSnapshotContribution snapshotContribution)
@@ -573,7 +571,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string ProviderType { get; }
         public IActorResetEndpoint Endpoint { get; }
         public IActorResetContribution Contribution { get; }
-        public ActorResetGroup[] SupportedGroups => Contribution?.SupportedGroups ?? Array.Empty<ActorResetGroup>();
         public ActivityResetBoundaryEligibility ResetBoundaryEligibility => Contribution?.ResetBoundaryEligibility ?? ActivityResetBoundaryEligibility.All;
         public bool IsValid =>
             TypedCapabilityId.IsValid &&

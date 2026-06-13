@@ -51,7 +51,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int activityOrdinal,
             string source,
             string reason,
-            ActivityResetBoundaryKind resetBoundaryKind = ActivityResetBoundaryKind.Activity)
+            ActivityResetBoundaryKind resetBoundaryKind = ActivityResetBoundaryKind.Activity,
+            ActivityResetIntent resetIntent = ActivityResetIntent.Unknown,
+            ActivityResetStateProfileKind stateProfileKind = ActivityResetStateProfileKind.Unknown)
         {
             Identity = identity;
             ActivityId = Normalize(activityId);
@@ -59,6 +61,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Source = Normalize(source);
             Reason = Normalize(reason);
             ResetBoundaryKind = resetBoundaryKind;
+            ResetIntent = resetIntent == ActivityResetIntent.Unknown
+                ? ActivityResetIntentProfileDefaults.ResolveRuntimeIntentForBoundary(resetBoundaryKind)
+                : resetIntent;
+            StateProfileKind = stateProfileKind == ActivityResetStateProfileKind.Unknown
+                ? ActivityResetIntentProfileDefaults.ResolveStateProfile(ResetIntent)
+                : stateProfileKind;
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -67,6 +75,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Source { get; }
         public string Reason { get; }
         public ActivityResetBoundaryKind ResetBoundaryKind { get; }
+        public ActivityResetIntent ResetIntent { get; }
+        public ActivityResetStateProfileKind StateProfileKind { get; }
 
         public bool IsValid =>
             Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
@@ -75,6 +85,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             ResetBoundaryKind != ActivityResetBoundaryKind.Unknown &&
+            ResetIntent != ActivityResetIntent.Unknown &&
+            StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -550,23 +562,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityEntryActorAttributeSetupCommand(
             SessionActivityIdentity identity,
             IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
+            ActivityResetIntent resetIntent,
+            ActivityResetStateProfileKind stateProfileKind,
             string source,
             string reason)
         {
             Identity = identity;
             AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
+            ResetIntent = resetIntent;
+            StateProfileKind = stateProfileKind;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
         public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
+        public ActivityResetIntent ResetIntent { get; }
+        public ActivityResetStateProfileKind StateProfileKind { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             AttributeSetupContributions != null &&
+            ResetIntent != ActivityResetIntent.Unknown &&
+            StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)

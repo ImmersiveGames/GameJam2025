@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
@@ -329,7 +328,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
 
     public interface IActorResetContribution : IActorCapabilityContribution
     {
-        ActorResetGroup[] SupportedGroups { get; }
         ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
     }
 

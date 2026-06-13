@@ -8,7 +8,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     [DisallowMultipleComponent]
-    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint, IActorCommandSink, IActorResetEndpoint, IActorResetContributionProvider
+    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint, IActorCommandSink, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 5f;
@@ -23,12 +23,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         private Rigidbody _rigidbody;
         private bool _movementEnabled;
         private Vector2 _moveInput;
-
-        private static readonly ActorResetGroup[] MovementTransientResetGroups =
-        {
-            ActorResetGroup.MovementTransient,
-        };
-
 
         public Transform Transform => transform;
         public bool IsMovementEnabled => _movementEnabled;
@@ -100,25 +94,75 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             return true;
         }
 
-        public bool Supports(ActorResetGroup group)
+        public void ApplyEntryInitializeReset(ActorResetContext context)
         {
-            return group == ActorResetGroup.MovementTransient;
+            ApplyMovementTransientStateProfile(
+                context,
+                movementProfileKind: nameof(ActivityResetStateProfileKind.InitialState),
+                movementProfileSource: "entry_initialize_transient_clear");
         }
 
-        public void ApplyReset(ActorResetContext context)
+        public void ApplyRuntimeLocalReset(ActorResetContext context)
+        {
+            ApplyMovementTransientStateProfile(
+                context,
+                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                movementProfileSource: "runtime_local_transient_clear");
+        }
+
+        public void ApplyRuntimeActivityReset(ActorResetContext context)
+        {
+            ApplyMovementTransientStateProfile(
+                context,
+                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                movementProfileSource: "runtime_activity_transient_clear");
+        }
+
+        public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
+        {
+            ApplyMovementTransientStateProfile(
+                context,
+                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
+                movementProfileSource: "runtime_activity_transition_transient_clear");
+        }
+
+        public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
+        {
+            ApplyMovementTransientStateProfile(
+                context,
+                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
+                movementProfileSource: "runtime_route_transition_transient_clear");
+        }
+
+
+        private void ApplyMovementTransientStateProfile(
+            ActorResetContext context,
+            string movementProfileKind,
+            string movementProfileSource)
+        {
+            EnsureMovementResetContext(context, movementProfileKind);
+
+            Vector2 inputBefore = _moveInput;
+            Vector3 velocityBefore = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
+            Vector3 angularVelocityBefore = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
+            bool movementEnabledBefore = _movementEnabled;
+
+            ClearMovementState();
+
+            Vector3 velocityAfter = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
+            Vector3 angularVelocityAfter = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
+
+            Debug.Log(
+                $"[OBS][PlayerMovementController][Reset] event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{_movementEnabled}' hasRigidbody='{(_rigidbody != null)}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.");
+        }
+
+        private static void EnsureMovementResetContext(ActorResetContext context, string operation)
         {
             if (!context.IsValid)
             {
-                throw new InvalidOperationException("PlayerMovementController received invalid reset context.");
+                throw new InvalidOperationException($"PlayerMovementController received invalid reset context for operation='{operation}'.");
             }
 
-            if (context.Group != ActorResetGroup.MovementTransient)
-            {
-                throw new InvalidOperationException(
-                    $"PlayerMovementController received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
-            }
-
-            ClearMovementState();
         }
 
         public ActorCommandDispatchResult AcceptCommand(ActorCommandEnvelope command)
@@ -244,9 +288,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
-            public ActorResetGroup[] SupportedGroups => MovementTransientResetGroups;
             public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
-            public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
+            public bool IsValid => Descriptor.IsValid;
         }
     }
 }

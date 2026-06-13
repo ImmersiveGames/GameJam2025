@@ -34,11 +34,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 
             ActorId actorId = command.ActorIdentity.ActorId;
             ActorKind actorKind = ActorKind.Player;
-            List<ActorResetGroup> appliedGroups = new();
-            List<ActorResetGroup> skippedGroups = new();
-            List<ActorResetSkippedGroupReason> skippedReasons = new();
-            HashSet<ActorResetGroup> appliedGroupSet = new();
-            HashSet<ActorResetGroup> skippedGroupSet = new();
+            int appliedReferenceCount = 0;
+            int skippedReferenceCount = 0;
+            List<ActorResetSkippedReferenceReason> skippedReferenceReasons = new();
             ActorInstanceRuntimeId expectedActorInstanceRuntimeId = default;
             ActorInstanceRuntimeId actorInstanceRuntimeId = default;
             bool actorCaptured = false;
@@ -71,83 +69,62 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 }
 
                 Debug.Log(
-                    $"[OBS][ActorResetAdapter] event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' supportedGroups='{FormatActorResetGroups(resetReference.SupportedGroups)}' resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.");
+                    $"[OBS][ActorResetAdapter] event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' runtimeBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' executionMode='intent_handler_per_reference' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.");
 
-                IReadOnlyList<ActorResetGroup> supportedGroups = resetReference.SupportedGroups;
-                for (int groupIndex = 0; groupIndex < supportedGroups.Count; groupIndex++)
+                ActorResetContext context = new(
+                    activeIdentity,
+                    actorId,
+                    actorInstanceRuntimeId,
+                    actorKind,
+                    command.ResetIntent,
+                    command.StateProfileKind,
+                    command.PlacementRequirementId,
+                    command.HasPlacement,
+                    command.PlacementRequired,
+                    command.PlacementOptional,
+                    command.PlacementDeclared,
+                    command.PlacementPosition,
+                    command.PlacementEulerAngles,
+                    command.Source,
+                    command.Reason);
+
+                if (resetReference.Endpoint is IActorPlacementResetEndpoint)
                 {
-                    ActorResetGroup group = supportedGroups[groupIndex];
-                    if (group == ActorResetGroup.Unknown)
+                    if (command.PlacementRequired && !command.HasPlacement && string.IsNullOrWhiteSpace(command.PlacementRequirementId))
                     {
-                        throw new InvalidOperationException($"Unknown reset group at index '{groupIndex}' for capabilityId='{resetReference.CapabilityId}'.");
+                        throw new InvalidOperationException($"invalid_required_placement: actorId='{command.ActorIdentity.ActorId}'.");
                     }
 
-                    ActorResetContext context = new(
-                        activeIdentity,
-                        actorId,
-                        actorInstanceRuntimeId,
-                        actorKind,
-                        group,
-                        command.PlacementRequirementId,
-                        command.HasPlacement,
-                        command.PlacementRequired,
-                        command.PlacementOptional,
-                        command.PlacementDeclared,
-                        command.PlacementPosition,
-                        command.PlacementEulerAngles,
-                        command.Source,
-                        command.Reason);
-
-                    if (group == ActorResetGroup.Placement)
+                    if (!command.PlacementDeclared)
                     {
-                        if (command.PlacementRequired && !command.HasPlacement && string.IsNullOrWhiteSpace(command.PlacementRequirementId))
-                        {
-                            throw new InvalidOperationException($"invalid_required_placement: actorId='{command.ActorIdentity.ActorId}'.");
-                        }
+                        skippedReferenceCount += 1;
+                        skippedReferenceReasons.Add(new ActorResetSkippedReferenceReason(resetReference.CapabilityId, "no_placement_declared"));
 
-                        if (!command.PlacementDeclared)
-                        {
-                            if (skippedGroupSet.Add(group))
-                            {
-                                skippedGroups.Add(group);
-                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "no_placement_declared"));
-                            }
-
-                            continue;
-                        }
-
-                        if (command.PlacementOptional && !command.HasPlacement)
-                        {
-                            if (skippedGroupSet.Add(group))
-                            {
-                                skippedGroups.Add(group);
-                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "optional_placement_missing"));
-                            }
-
-                            continue;
-                        }
-
-                        if (command.HasPlacement && !command.PlacementRequired)
-                        {
-                            if (skippedGroupSet.Add(group))
-                            {
-                                skippedGroups.Add(group);
-                                skippedReasons.Add(new ActorResetSkippedGroupReason(group, "placement_not_required"));
-                            }
-
-                            continue;
-                        }
+                        continue;
                     }
 
-                    resetReference.Endpoint.ApplyReset(context);
-                    Debug.Log(
-                        $"[OBS][ActorResetAdapter] event='ActorResetEndpointAppliedFromInventory' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' group='{group}' source='{command.Source}' reason='{command.Reason}'.");
-
-                    if (appliedGroupSet.Add(group))
+                    if (command.PlacementOptional && !command.HasPlacement)
                     {
-                        appliedGroups.Add(group);
+                        skippedReferenceCount += 1;
+                        skippedReferenceReasons.Add(new ActorResetSkippedReferenceReason(resetReference.CapabilityId, "optional_placement_missing"));
+
+                        continue;
+                    }
+
+                    if (command.HasPlacement && !command.PlacementRequired)
+                    {
+                        skippedReferenceCount += 1;
+                        skippedReferenceReasons.Add(new ActorResetSkippedReferenceReason(resetReference.CapabilityId, "placement_not_required"));
+
+                        continue;
                     }
                 }
+
+                string resetHandler = ApplyResetByIntent(resetReference.Endpoint, command.ResetIntent, context);
+                Debug.Log(
+                    $"[OBS][ActorResetAdapter] event='ActorResetEndpointAppliedFromInventory' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetHandler='{resetHandler}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_reference' source='{command.Source}' reason='{command.Reason}'.");
+
+                appliedReferenceCount += 1;
             }
 
             if (!actorCaptured)
@@ -157,8 +134,48 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 
             return new[]
             {
-                new ActorResetResult(actorId, actorInstanceRuntimeId, actorKind, appliedGroups, skippedGroups, skippedReasons),
+                new ActorResetResult(actorId, actorInstanceRuntimeId, actorKind, appliedReferenceCount, skippedReferenceCount, skippedReferenceReasons),
             };
+        }
+
+        private static string ApplyResetByIntent(
+            IActorResetEndpoint endpoint,
+            ActivityResetIntent resetIntent,
+            ActorResetContext context)
+        {
+            if (resetIntent == ActivityResetIntent.EntryInitialize && endpoint is IActorEntryInitializeResetEndpoint entryInitialize)
+            {
+                entryInitialize.ApplyEntryInitializeReset(context);
+                return nameof(IActorEntryInitializeResetEndpoint);
+            }
+
+            if (resetIntent == ActivityResetIntent.RuntimeLocalReset && endpoint is IActorRuntimeLocalResetEndpoint runtimeLocal)
+            {
+                runtimeLocal.ApplyRuntimeLocalReset(context);
+                return nameof(IActorRuntimeLocalResetEndpoint);
+            }
+
+            if (resetIntent == ActivityResetIntent.RuntimeActivityReset && endpoint is IActorRuntimeActivityResetEndpoint runtimeActivity)
+            {
+                runtimeActivity.ApplyRuntimeActivityReset(context);
+                return nameof(IActorRuntimeActivityResetEndpoint);
+            }
+
+            if (resetIntent == ActivityResetIntent.RuntimeActivityTransitionReset && endpoint is IActorRuntimeActivityTransitionResetEndpoint runtimeActivityTransition)
+            {
+                runtimeActivityTransition.ApplyRuntimeActivityTransitionReset(context);
+                return nameof(IActorRuntimeActivityTransitionResetEndpoint);
+            }
+
+            if (resetIntent == ActivityResetIntent.RuntimeRouteTransitionReset && endpoint is IActorRuntimeRouteTransitionResetEndpoint runtimeRouteTransition)
+            {
+                runtimeRouteTransition.ApplyRuntimeRouteTransitionReset(context);
+                return nameof(IActorRuntimeRouteTransitionResetEndpoint);
+            }
+
+            string endpointType = endpoint == null ? "<null>" : endpoint.GetType().Name;
+            throw new InvalidOperationException(
+                $"actor_reset_intent_handler_missing: endpointType='{endpointType}' resetIntent='{resetIntent}' resetStateProfile='{context.StateProfileKind}' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}'.");
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
@@ -172,14 +189,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 left.EntrySequence == right.EntrySequence;
         }
 
-        private static string FormatActorResetGroups(IReadOnlyList<ActorResetGroup> groups)
-        {
-            if (groups == null || groups.Count == 0)
-            {
-                return "<none>";
-            }
-
-            return string.Join(",", groups);
-        }
     }
 }

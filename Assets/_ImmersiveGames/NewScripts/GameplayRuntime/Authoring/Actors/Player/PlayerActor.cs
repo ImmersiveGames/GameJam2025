@@ -10,19 +10,20 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
 {
     [DisallowMultipleComponent]
-    public sealed class PlayerActor : Actor, IActorResetEndpoint, IActorResetContributionProvider
+    public sealed class PlayerActor : Actor, IActorPlacementResetEndpoint, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
-        private static readonly ActorResetGroup[] PlacementResetGroups =
-        {
-            ActorResetGroup.Placement,
-        };
-
         [Header("Reset")]
         [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
 
         private ActorId _runtimeActorId;
         private ActorScope _runtimeActorScope;
         private ActorParticipationRecord.ActorParticipationPolicy _runtimeParticipationPolicy;
+        private bool _hasInitialStatePlacementProfile;
+        private Vector3 _initialStatePlacementPosition;
+        private Vector3 _initialStatePlacementEulerAngles;
+        private bool _hasRuntimeActivityStatePlacementProfile;
+        private Vector3 _runtimeActivityStatePlacementPosition;
+        private Vector3 _runtimeActivityStatePlacementEulerAngles;
 
         public override ActorId ActorIdValue => _runtimeActorId;
         public override ActorRole ActorRoleMetadata => ActorRole.PrimaryPlayer;
@@ -101,37 +102,191 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             return true;
         }
 
-        public bool Supports(ActorResetGroup group)
+        public void ApplyEntryInitializeReset(ActorResetContext context)
         {
-            return group == ActorResetGroup.Placement;
+            ApplyPlacementFromCommandContext(
+                context,
+                placementProfileKind: nameof(ActivityResetStateProfileKind.InitialState),
+                captureInitialStateProfile: true,
+                captureRuntimeActivityProfile: true);
         }
 
-        public void ApplyReset(ActorResetContext context)
+        public void ApplyRuntimeLocalReset(ActorResetContext context)
         {
-            if (!context.IsValid)
+            EnsurePlacementContext(context, nameof(ApplyRuntimeLocalReset));
+
+            if (_hasInitialStatePlacementProfile)
             {
-                throw new InvalidOperationException("PlayerActor received invalid reset context.");
+                ApplyPlacementProfile(
+                    context,
+                    _initialStatePlacementPosition,
+                    _initialStatePlacementEulerAngles,
+                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                    placementProfileSource: nameof(ActivityResetStateProfileKind.InitialState),
+                    placementApplied: true);
+                return;
             }
 
-            if (context.Group != ActorResetGroup.Placement)
+            if (context.PlacementRequired)
             {
                 throw new InvalidOperationException(
-                    $"PlayerActor received unsupported reset group='{context.Group}' for actorId='{context.ActorId}'.");
+                    $"PlayerActor runtime local placement reset requires a cached InitialState profile. actorId='{context.ActorId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}'.");
             }
+
+            LogPlacementProfileSkipped(
+                context,
+                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                placementProfileSource: "missing_initial_state_profile",
+                reason: "runtime_local_reset_has_no_cached_placement_profile");
+        }
+
+        public void ApplyRuntimeActivityReset(ActorResetContext context)
+        {
+            if (context.HasPlacement)
+            {
+                ApplyPlacementFromCommandContext(
+                    context,
+                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    captureInitialStateProfile: false,
+                    captureRuntimeActivityProfile: true);
+                return;
+            }
+
+            if (_hasRuntimeActivityStatePlacementProfile)
+            {
+                ApplyPlacementProfile(
+                    context,
+                    _runtimeActivityStatePlacementPosition,
+                    _runtimeActivityStatePlacementEulerAngles,
+                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    placementProfileSource: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    placementApplied: true);
+                return;
+            }
+
+            if (_hasInitialStatePlacementProfile)
+            {
+                ApplyPlacementProfile(
+                    context,
+                    _initialStatePlacementPosition,
+                    _initialStatePlacementEulerAngles,
+                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    placementProfileSource: nameof(ActivityResetStateProfileKind.InitialState),
+                    placementApplied: true);
+                return;
+            }
+
+            ApplyPlacementFromCommandContext(
+                context,
+                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                captureInitialStateProfile: false,
+                captureRuntimeActivityProfile: true);
+        }
+
+        public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
+        {
+            EnsurePlacementContext(context, nameof(ApplyRuntimeActivityTransitionReset));
+            LogPlacementProfileSkipped(
+                context,
+                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
+                placementProfileSource: "transition_profile_no_placement",
+                reason: "runtime_activity_transition_does_not_apply_player_placement");
+        }
+
+        public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
+        {
+            EnsurePlacementContext(context, nameof(ApplyRuntimeRouteTransitionReset));
+            LogPlacementProfileSkipped(
+                context,
+                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
+                placementProfileSource: "route_transition_profile_no_placement",
+                reason: "runtime_route_transition_does_not_apply_player_placement");
+        }
+
+        private void ApplyPlacementFromCommandContext(
+            ActorResetContext context,
+            string placementProfileKind,
+            bool captureInitialStateProfile,
+            bool captureRuntimeActivityProfile)
+        {
+            EnsurePlacementContext(context, placementProfileKind);
 
             if (context is { PlacementRequired: true, HasPlacement: false })
             {
-                throw new InvalidOperationException($"Placement reset is required but missing for actorId='{context.ActorId}'.");
+                throw new InvalidOperationException(
+                    $"Placement reset is required but missing for actorId='{context.ActorId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}'.");
             }
 
             if (!context.HasPlacement)
             {
+                LogPlacementProfileSkipped(
+                    context,
+                    placementProfileKind,
+                    placementProfileSource: "command_context_missing_placement",
+                    reason: "placement_context_not_available");
                 return;
             }
 
-            transform.localPosition = context.PlacementPosition;
-            transform.localRotation = Quaternion.Euler(context.PlacementEulerAngles);
+            ApplyPlacementProfile(
+                context,
+                context.PlacementPosition,
+                context.PlacementEulerAngles,
+                placementProfileKind,
+                placementProfileSource: "command_context",
+                placementApplied: true);
+
+            if (captureInitialStateProfile)
+            {
+                _hasInitialStatePlacementProfile = true;
+                _initialStatePlacementPosition = context.PlacementPosition;
+                _initialStatePlacementEulerAngles = context.PlacementEulerAngles;
+            }
+
+            if (captureRuntimeActivityProfile)
+            {
+                _hasRuntimeActivityStatePlacementProfile = true;
+                _runtimeActivityStatePlacementPosition = context.PlacementPosition;
+                _runtimeActivityStatePlacementEulerAngles = context.PlacementEulerAngles;
+            }
         }
+
+        private void ApplyPlacementProfile(
+            ActorResetContext context,
+            Vector3 placementPosition,
+            Vector3 placementEulerAngles,
+            string placementProfileKind,
+            string placementProfileSource,
+            bool placementApplied)
+        {
+            EnsurePlacementContext(context, placementProfileKind);
+
+            transform.localPosition = placementPosition;
+            transform.localRotation = Quaternion.Euler(placementEulerAngles);
+
+            Debug.Log(
+                $"[OBS][PlayerActor][Reset] event='PlayerActorPlacementStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='{placementApplied}' placementPosition='{placementPosition}' placementEulerAngles='{placementEulerAngles}' source='{context.Source}' reason='{context.Reason}'.");
+        }
+
+        private void LogPlacementProfileSkipped(
+            ActorResetContext context,
+            string placementProfileKind,
+            string placementProfileSource,
+            string reason)
+        {
+            EnsurePlacementContext(context, placementProfileKind);
+            Debug.Log(
+                $"[OBS][PlayerActor][Reset] event='PlayerActorPlacementStateProfileSkipped' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='False' reason='{reason}' source='{context.Source}' reasonDetail='{context.Reason}'.");
+        }
+
+        private static void EnsurePlacementContext(ActorResetContext context, string operation)
+        {
+            if (!context.IsValid)
+            {
+                throw new InvalidOperationException($"PlayerActor received invalid reset context for operation='{operation}'.");
+            }
+
+        }
+
 
         private readonly struct PlayerActorPlacementResetContribution : IActorResetContribution
         {
@@ -153,9 +308,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
-            public ActorResetGroup[] SupportedGroups => PlacementResetGroups;
             public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
-            public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
+            public bool IsValid => Descriptor.IsValid;
         }
     }
 }

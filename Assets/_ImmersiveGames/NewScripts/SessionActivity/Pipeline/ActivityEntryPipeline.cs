@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Identity,
                 command.Source,
                 command.Reason,
-                $"owner='ActivityEntryPipeline' bridgeReduction='runtime_bridge_domain_split' stageBridgeSplit='content_object_actor_inventory' runtimeStateStoreSplit='content_preparation_store_sources' objectActorStoreSourceSplit='stage_owned_store_sources' contentPendingOperationSplit='loaded_set_store_pending_operation_runner' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadRecordCount='{loadedSnapshotPayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'");
+                $"owner='ActivityEntryPipeline' decompositionStatus='runtime_domain_split' stageOwnershipSplit='content_object_actor_inventory' runtimeStateStoreSplit='content_preparation_store_sources' objectActorStoreSourceSplit='stage_owned_store_sources' contentPendingOperationSplit='loaded_set_store_pending_operation_runner' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadRecordCount='{loadedSnapshotPayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'");
             _logSink.LogEntryOwnerEvent(
                 "ActivityEntryPreparationStarted",
                 command.Identity,
@@ -224,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 setupStartedIdentity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='setup_readiness_orchestration' phaseOwner='ActivityEntryPipeline' bridgeReduction='macro_phase_internalized'");
+                "owner='ActivityEntryPipeline' block='setup_readiness_orchestration' phaseOwner='ActivityEntryPipeline' phaseOwnership='entry_phase_internalized'");
 
             try
             {
@@ -275,7 +275,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     setupStartedIdentity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityResetBoundaryPolicy' entryPipelineOwner='ActivityEntryPipeline' block='reset_boundary_policy' boundaryKind='{resetScopePlan.BoundaryKind}' targetScope='{resetScopePlan.TargetScope}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' policyId='{resetScopePlan.PolicyId}' behaviorMode='BoundaryEligibilityFiltering'");
+                    $"owner='ActivityResetBoundaryPolicy' entryPipelineOwner='ActivityEntryPipeline' block='reset_boundary_policy' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' boundaryKind='{resetScopePlan.BoundaryKind}' targetScope='{resetScopePlan.TargetScope}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' policyId='{resetScopePlan.PolicyId}' behaviorMode='ResetIntentStateProfilePolicy'");
 
                 ActivityEntryObjectSetupResult setupInfrastructureResult = ExecuteSetupInfrastructure(
                     objectSetupCommand,
@@ -356,6 +356,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     new ActivityEntryActorAttributeSetupCommand(
                         setupStartedIdentity,
                         _activityInventoryRuntimeState.CurrentActivityAttributeSetupContributions,
+                        resetScopePlan.ResetIntent,
+                        resetScopePlan.StateProfileKind,
                         command.Source,
                         command.Reason),
                     facts,
@@ -472,7 +474,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     completedIdentity,
                     command.Source,
                     command.Reason,
-                    "owner='ActivityEntryPipeline' block='setup_readiness_orchestration' resultKind='Completed' next='activation_flow' macroLifecycleOwner='SessionActivityPipeline' phaseOwner='ActivityEntryPipeline' bridgeReduction='macro_phase_internalized'");
+                    "owner='ActivityEntryPipeline' block='setup_readiness_orchestration' resultKind='Completed' next='activation_flow' macroLifecycleOwner='SessionActivityPipeline' phaseOwner='ActivityEntryPipeline' phaseOwnership='entry_phase_internalized'");
                 return new ActivityEntrySetupReadinessResult(
                     ActivityEntrySetupReadinessResultKind.Completed,
                     completedIdentity,
@@ -1278,7 +1280,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Identity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='actor_attribute_setup'");
+                $"owner='ActivityEntryPipeline' block='actor_attribute_setup' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile'");
 
             try
             {
@@ -1294,7 +1296,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Identity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='actor_attribute_setup' total='{result.Total}' resolved='{result.Resolved}' ready='{result.Ready}' skipped='{result.Skipped}' failed='{result.Failed}'");
+                    $"owner='ActivityEntryPipeline' block='actor_attribute_setup' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile' total='{result.Total}' resolved='{result.Resolved}' ready='{result.Ready}' skipped='{result.Skipped}' failed='{result.Failed}'");
                 return result;
             }
             catch (Exception exception)
