@@ -39,10 +39,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' movement binding started.");
-            DebugUtility.LogVerbose(
-                typeof(ActivityEntryMovementBindingStage),
-                $"event='MovementBindingStarted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryMovementBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
                 "movement_binding_started",

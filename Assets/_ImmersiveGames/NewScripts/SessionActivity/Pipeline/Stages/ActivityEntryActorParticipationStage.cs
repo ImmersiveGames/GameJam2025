@@ -29,7 +29,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static ActivityEntryActorParticipationEnterResult ExecuteEnter(
             ActivityEntryActorParticipationEnterCommand command,
-            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActorInventoryFeedResult feedResult,
             ActivityActorExitRuntimeState runtimeState,
@@ -58,25 +57,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.Identity.EntrySequence;
-            var startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterStarted, entrySequence);
+            var startedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterStarted, command.Source);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorParticipationEnterStarted);
-            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter started mode='inventory_feed'.");
-            endpoint.EmitSnapshot(snapshots, "actor_participation_enter_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter started.");
-            DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterStarted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
-
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterStarted, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter started mode='inventory_feed'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_enter_started", command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter started.");
             if (!feedResult.IsValid || !IsSameActivityCycle(feedResult.Identity, startedIdentity))
             {
-                var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterFailed, entrySequence);
+                var failedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterFailed, command.Source);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationEnterFailed);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter failed reason='actor_inventory_feed_missing_or_foreign'.");
-                endpoint.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter failed reason='actor_inventory_feed_missing_or_foreign'.");
-                throw new InvalidOperationException($"[FATAL][ActivityEntryActorParticipationStage][ActorParticipationEnter] Missing or foreign ActorInventoryFeedResult activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter failed reason='actor_inventory_feed_missing_or_foreign'.");
+                endpoint.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter failed reason='actor_inventory_feed_missing_or_foreign'.");
+                throw new InvalidOperationException($"[FATAL][ActivityEntryActorParticipationStage][ActorParticipationEnter] Missing or foreign ActorInventoryFeedResult activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
             }
 
             ActorParticipationStageExecutor executor = new(new RuntimeBridgeReadinessPolicy(participationBridge));
             ActorParticipationCommand participationCommand = new(
                 startedIdentity,
-                definition.ActivityId,
+                command.ActivityId,
                 entrySequence,
                 feedResult,
                 command.Source,
@@ -99,59 +96,59 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 var instance = actorResult.Instance;
                 if (actorResult.IsSkipped)
                 {
-                    var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterSkipped, entrySequence);
+                    var skippedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterSkipped, command.Source);
                     endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationEnterSkipped);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation skipped actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='{actorResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_participation_enter_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterSkipped, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='{actorResult.ReasonCode}'.");
+                    endpoint.EmitSnapshot(snapshots, "actor_participation_enter_skipped", command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
+                    DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
                     continue;
                 }
 
                 if (actorResult.IsFailed)
                 {
-                    var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterFailed, entrySequence);
+                    var failedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterFailed, command.Source);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationEnterFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation failed actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='{actorResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{actorResult.SkipKind}' failureReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation failed actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='{actorResult.ReasonCode}'.");
+                    endpoint.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{command.ActivityId}' actor participation failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
+                    DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterFailed' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{actorResult.SkipKind}' failureReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorParticipationStage][ActorParticipationEnter] readiness failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
                 }
 
                 var actorInstanceRuntimeId = instance.ActorInstanceRuntimeId;
                 if (!actorInstanceRuntimeId.IsValid)
                 {
-                    var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterFailed, entrySequence);
+                    var failedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterFailed, command.Source);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationEnterFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation failed actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='actor_instance_runtime_id_invalid'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation failed actorId='{instance.ActorId}' reason='actor_instance_runtime_id_invalid'.");
+                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation failed actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='actor_instance_runtime_id_invalid'.");
+                    endpoint.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{command.ActivityId}' actor participation failed actorId='{instance.ActorId}' reason='actor_instance_runtime_id_invalid'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorParticipationStage][ActorParticipationEnter] runtime actor instance id invalid actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}'.");
                 }
 
-                runtimeState.StoreActiveActorParticipation(actorInstanceRuntimeId, definition.ActivityId, entrySequence, "ActivityEntryActorParticipationStage", "store_active_actor_participation");
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEntered, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation entered actorId='{instance.ActorId}' actorRole='{instance.Role}' actorScope='{instance.Scope}'.");
-                endpoint.EmitSnapshot(snapshots, "actor_participation_entered", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation entered actorId='{instance.ActorId}'.");
-                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEntered' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                runtimeState.StoreActiveActorParticipation(actorInstanceRuntimeId, command.ActivityId, entrySequence, "ActivityEntryActorParticipationStage", "store_active_actor_participation");
+                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEntered, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation entered actorId='{instance.ActorId}' actorRole='{instance.Role}' actorScope='{instance.Scope}'.");
+                endpoint.EmitSnapshot(snapshots, "actor_participation_entered", command.Source, command.Reason, $"'{command.ActivityId}' actor participation entered actorId='{instance.ActorId}'.");
+                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEntered' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorReady, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor ready actorId='{instance.ActorId}' actorRole='{instance.Role}'.");
-                endpoint.EmitSnapshot(snapshots, "actor_ready", command.Source, command.Reason, $"'{definition.ActivityId}' actor ready actorId='{instance.ActorId}'.");
-                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorReady' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                endpoint.EmitFact(facts, SessionActivityFactKind.ActorReady, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor ready actorId='{instance.ActorId}' actorRole='{instance.Role}'.");
+                endpoint.EmitSnapshot(snapshots, "actor_ready", command.Source, command.Reason, $"'{command.ActivityId}' actor ready actorId='{instance.ActorId}'.");
+                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorReady' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
             }
 
             if (entered == 0)
             {
                 skipped += 1;
-                var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterSkipped, entrySequence);
+                var skippedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterSkipped, command.Source);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationEnterSkipped);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation skipped reason='no_entered_actors'.");
-                endpoint.EmitSnapshot(snapshots, "actor_participation_enter_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation skipped reason='no_entered_actors'.");
-                DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_entered_actors' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterSkipped, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped reason='no_entered_actors'.");
+                endpoint.EmitSnapshot(snapshots, "actor_participation_enter_skipped", command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped reason='no_entered_actors'.");
+                DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_entered_actors' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
             }
 
-            var completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterCompleted, entrySequence);
+            var completedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterCompleted, command.Source);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorParticipationEnterCompleted);
-            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter completed total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}'.");
-            endpoint.EmitSnapshot(snapshots, "actor_participation_enter_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter completed total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}'.");
-            DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterCompleted, completedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter completed total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_enter_completed", command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter completed total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}'.");
+            DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
             return new ActivityEntryActorParticipationEnterResult(
                 completed: true,
                 completedIdentity,
@@ -160,6 +157,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 skipped,
                 failed,
                 "actor_participation_enter_completed");
+        }
+
+        private static SessionActivityIdentity BuildIdentity(
+            SessionActivityIdentity identity,
+            SessionActivityStage stage,
+            string source)
+        {
+            return new SessionActivityIdentity(
+                identity.PipelineId,
+                identity.SessionId,
+                identity.ActivityId,
+                identity.ActivityOrdinal,
+                identity.EntrySequence,
+                stage,
+                source);
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)

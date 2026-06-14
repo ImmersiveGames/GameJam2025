@@ -667,3 +667,28 @@ Não significa que toda Base 2.0 está finalizada.
 Não significa que SessionActivity já foi migrado.
 Não autoriza novas extrações por tamanho.
 ```
+
+**Atualização pós-Etapa 2 (aplicação completa - 2026-06-14):**  
+Modelo canônico de operação de stage (Command/Result/Fact) aplicado de forma ampla (ver detalhes e resumo de alterações apenas no Docs/Architecture/Modularity-Facilitation-of-New-Components.md seção 12). 
+Principais efeitos: remoção de wrapper local explícito (SceneComposition), normalização de shapes de Result (IsCompleted/IsSkipped/IsAccepted), comentários de canonização em stages representativos, duplicados de Contracts confirmados como stubs limpos. 
+Callers no pipeline e boundaries permanecem compatíveis. 
+Benefício: linguagem única para quem for implementar novo Operational*Stage ou integrar novo adapter/port. 
+Validação: greps no FullLog.txt (Evidence) pós-alterações sem FATALs e com sinais de fluxo operacional intactos (fade/audio/scene/loading/input/handoff/OperationalRouteCompleted). 
+Estado: SessionOperational mais coeso e com modelo previsível para extensão (respeitando ownership Pipeline/Contracts/Adapters/FactRecorder). 
+Manter preferência de "apenas resumo de alterações" em qualquer documentação futura de mudanças.
+
+**Atualização Etapa 3 (Canonização de Facts - 2026-06-14):** 
+Foco em OperationalFactRecorder como ponto central para emissão de fatos de operação. Injetado em todos os stages e boundaries; chamadas padronizadas nos pontos Started/Completed/Skipped/Failed usando TryRecordOperationStage (com enum estendido para granularidade). Logs DebugUtility ricos mantidos para diagnóstico. 
+Ver resumo completo e lista de arquivos tocados apenas no Modularity...md seção 14. 
+Estado atual: Facts agora seguem caminho canônico, facilitando novos stages (sempre injetar recorder e registrar via ele). Pipeline atualizado para passar o recorder consistentemente.
+
+**Verificação via log atualizado pelo usuário (2026-06-14):** Log re-analisado. Zero "Failed to record OperationalRouteCompleted", zero route_transition_failed ou FATALs de gravação de fatos desde o boot. Sinais positivos de "OperationalRouteCompleted" (progress=1) presentes. Etapa 3 validada como correta.
+
+**Etapa 4 (Consolidação da orquestração de fatos - 2026-06-14, resumo apenas):** Exploração aprofundada do fluxo completo (métodos públicos de observação no Pipeline → recorder direto para macro/primary; helper para granulares; order/policy agora no recorder; reset especial no Pipeline). Eliminado o wrapper privado TryRecordStage + CanAccept + BuildTransitionKey. Todos os TryObserve* e TryComplete agora delegam diretamente ao recorder. Unificação completa: recorder como owner canônico da emissão + enforcement para fatos de alto nível. Ver seção 15 do architecture.md (incluindo análise detalhada do fluxo). Etapa 4 concluída.
+
+**Etapa 5 (Centralização da emissão de sinais canônicos - 2026-06-14, resumo apenas):** Exploração do fluxo de sinais granulares revelou duplicação (recorder call com short key + DebugUtility.Log* separado com o long "OperationalXXXStarted/Completed..." message que o checklist do README usa para validação). 
+Etapa 5: enhanced TryRecordOperationStage no recorder que aceita o richLogMessage + ownerType + color, registra o Fact (rich vai para trace também) e emite o Debug log (centralizando a emissão do sinal canônico). 
+Atualizadas chamadas em stages representativas (Fade, Handoff, Audio): agora usam o helper central com o full rich message; removidas as chamadas separadas a Debug (a emissão agora sai do recorder). 
+O padrão aplica-se a todas as stages granulares. 
+Menos duplicação, mais fácil adicionar novo stage (só um call ao helper central). 
+Ver seção 15 do architecture.md para exploração do fluxo e resumo. Etapa 5 concluída. O recorder é o ponto único para fatos + sinais canônicos (macro e granular).

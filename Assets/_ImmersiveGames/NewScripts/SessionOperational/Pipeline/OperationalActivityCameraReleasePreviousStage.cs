@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -82,10 +83,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalActivityCameraReleasePreviousStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly ISessionOperationalActivityCameraAdapter _activityCameraAdapter;
 
-        public OperationalActivityCameraReleasePreviousStage(ISessionOperationalActivityCameraAdapter activityCameraAdapter)
+        public OperationalActivityCameraReleasePreviousStage(OperationalFactRecorder factRecorder, ISessionOperationalActivityCameraAdapter activityCameraAdapter)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _activityCameraAdapter = activityCameraAdapter ?? throw new ArgumentNullException(nameof(activityCameraAdapter));
         }
 
@@ -98,6 +101,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var routeCommand = command.RouteCommand;
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_release_previous_started");
             DebugUtility.LogVerbose(typeof(OperationalActivityCameraReleasePreviousStage),
                 $"ActivityCameraPresentationReleasePreviousStarted currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);

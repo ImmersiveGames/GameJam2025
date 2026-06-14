@@ -1,10 +1,10 @@
-# ADR-2.0-0002 â€” SessionActivity Ownership Decomposition e ActivityEntryPipeline
+﻿# ADR-2.0-0002 â€” SessionActivity Ownership Decomposition e ActivityEntryPipeline
 
 ## Status
 
 Aceito / congelado incrementalmente.
-Ultimo checkpoint real consolidado: `SA-14B1 - ActivityObject exit correlation explicit entry result CLOSED / PASS funcional + PASS arquitetural do corte`.
-O estado superior agora reflete o fechamento funcional/documental de SA-14B1 e nao deve contradizer os cortes posteriores ja registrados neste ADR.
+Ultimo checkpoint real consolidado: `SA-12F5A - residual SessionActivityDefinition command hygiene CLOSED / PASS funcional do corte`, com `RESET-ARCH-7` e `RESET-OBS-1..3` fechados no ADR-0006.
+O estado superior agora reflete o fechamento funcional/documental de SA-12F5A e nao deve contradizer os cortes posteriores ja registrados neste ADR.
 
 ## Ãrea
 
@@ -1485,7 +1485,7 @@ A expansÃ£o foi aceita porque permaneceu dentro da mesma fronteira arquitetura
 
 ##### Checkpoint SA-12F â€” Reduce SessionActivityDefinition from ActivityEntry commands
 
-Status: `PARTIAL / IN PROGRESS`.
+Status: `PARTIAL / KNOWN RESIDUAL COMMAND PATHS CLOSED BY SA-12F5A; pending final audit after next full package`.
 
 Subcortes validados atÃ© este checkpoint:
 
@@ -1498,6 +1498,7 @@ SA-12F3C   â€” CLOSED / PASS funcional + PASS arquitetural do command bound
 SA-12F4A   â€” CLOSED / PASS funcional + PASS arquitetural do corte
 SA-12F4B   â€” CLOSED / PASS funcional + PASS arquitetural do corte
 SA-12F4C   â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F5A   — CLOSED / PASS funcional do corte
 ```
 
 Escopo fechado:
@@ -1546,6 +1547,71 @@ ActorAttributeSetupCompleted preservado
 ActivityCapabilityInventoryValidationPassed preservado
 ActivityCapabilityInventoryPreviewObserved preservado
 ActivityObjectReset preservado como PassedApplied em activity_01 e PassedNoCommands em activity_02
+```
+
+
+##### Checkpoint SA-12F5A — residual SessionActivityDefinition command hygiene
+
+Status: `CLOSED / PASS funcional do corte`.
+
+Objetivo: remover `SessionActivityDefinition` dos caminhos residuais onde o command/stage já carregava payload runtime suficiente.
+
+Removido dos caminhos tratados:
+
+```text
+ActivityEntryContentLoadCompletionCommand
+-> CompleteContentLoad(...) sem SessionActivityDefinition
+
+ActivityEntryContentLoadFailureCommand
+-> FailContentLoad(...) sem SessionActivityDefinition
+
+ActivityEntryActorParticipationEnterCommand
+-> ExecuteActorParticipationEnter(...) sem SessionActivityDefinition
+
+ActivityEntryActorParticipationStage.ExecuteEnter(...)
+-> sem SessionActivityDefinition
+
+ActivityContentReleaseFinalizationStage.Execute(...)
+-> sem SessionActivityDefinition
+
+ActivityObjectContributorUnregisterStage.Execute(...)
+-> sem SessionActivityDefinition
+```
+
+Fronteira preservada:
+
+```text
+SessionActivityPipeline ainda pode resolver catálogo/definition para lifecycle macro.
+ExecuteSetupAndReadiness(..., SessionActivityDefinition definition, ...) permanece permitido enquanto consome authoring data real.
+SessionActivityDefinition não deve ser carrier de command runtime resolvido.
+```
+
+Decisão arquitetural:
+
+```text
+ActivityEntryPipeline é owner dos commands/runtime payloads de entry.
+Commands carregam payload runtime resolvido.
+Stages executam passos determinísticos.
+Authoring data fica em boundary/catálogo/stage quando realmente necessário, não como carrier genérico.
+```
+
+Evidência funcional aceita:
+
+```text
+sem error CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+Pendência associada:
+
+```text
+SA-12F5B — auditoria final no pacote atualizado para confirmar que não restou SessionActivityDefinition como carrier indevido fora dos caminhos tratados.
 ```
 
 ##### Checkpoint SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 â€” retained PlayerActor movement in no-content activity
@@ -1630,8 +1696,9 @@ Manter ActivityCapabilityInventory como snapshot/Ã­ndice runtime passivo com w
 ##### PendÃªncias restantes de SA-12
 
 ```text
-SA-12F5 â€” auditoria/correÃ§Ã£o final dos resÃ­duos de SessionActivityDefinition em ActivityEntryCommand, content-load completion/failure, ActorParticipationEnterCommand e ActivityContentReleaseFinalizationStageCommand.
-SA-12F-MOV-H1 â€” hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
+SA-12F5A — CLOSED / PASS funcional do corte: residual SessionActivityDefinition command hygiene nos caminhos conhecidos.
+SA-12F5B — auditoria final no pacote atualizado para confirmar ausência de carriers indevidos restantes de SessionActivityDefinition.
+SA-12F-MOV-H1 — hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
 ```
 
 CritÃ©rio para os prÃ³ximos cortes:
@@ -1639,8 +1706,9 @@ CritÃ©rio para os prÃ³ximos cortes:
 ```text
 NÃ£o reabrir SA-12E salvo regressÃ£o explÃ­cita.
 NÃ£o reabrir o blocker funcional de movement em activity_02 salvo regressÃ£o de smoke.
-Resolver SA-12F5 por cortes pequenos de residual command hygiene.
-Tratar SA-12F-MOV-H1 como hygiene futuro, nÃ£o blocker funcional.
+Não reabrir SA-12F5A sem regressão explícita de smoke/compile.
+Executar SA-12F5B apenas como auditoria final quando o pacote atualizado for enviado.
+Tratar SA-12F-MOV-H1 como hygiene futuro, não blocker funcional.
 NÃ£o criar compat/fallback paralelo.
 NÃ£o criar pipeline novo.
 Preservar smoke macro completo.
@@ -1695,8 +1763,9 @@ DONE  SA-12B/C Command boundary + identity duplication cleanup
 DONE  SA-12D  ActorAttributeCommand typed identity
 DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
 PART  SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
-DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 â€” PASS funcional / PASS arquitetural parcial
-PEND  SA-12F5 residual SessionActivityDefinition command hygiene
+DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — PASS funcional / PASS arquitetural parcial
+DONE  SA-12F5A residual SessionActivityDefinition command hygiene — PASS funcional do corte
+PEND  SA-12F5B final residual SessionActivityDefinition audit after next full package
 DEBT  SA-12F-MOV-H1 Retained PlayerActor target projection ownership hygiene
 ```
 
@@ -5821,13 +5890,10 @@ SA-14C - CLOSED / AUDITED
 RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 Movement retained/control surface defer high risk
 ActivityContent release/continuation surface defer high risk
-ActivityObject exit correlation observability hygiene: closed as SA-17D; technical ownership stays in ActivityObjectExitRuntimeState and SessionActivityPipeline remains only the macro ordering/freeze boundary.
-`SA-17A` closed the `RunActivityContentOperation(...)` dispatch split.
-`SA-17B` removed the `LoadedSet` bridge and moved store/clear to the technical runtime state.
-`SA-17C` removed the `ActivityContent` aggregate bridge without introducing a substitute bridge name.
-`SA-17D` closed the `ActivityObject exit correlation observability hygiene` cut with `ActivityObjectExitRuntimeState` as technical owner and `SessionActivityPipeline` only as macro ordering/freeze owner.
-`SA-17D-FIX` restored `activity_02` no-content RouteActivitySave classification to `NoActivityContentContributors / no_activity_content_contributors`; `SnapshotPayloadExpectedButMissing` remains reserved for expected contributors that failed to produce payload.
+ActivityObject exit correlation observability hygiene: optional future cleanup only; ActivityEntryPipeline already produces ActivityObjectExitCorrelationBundle and SessionActivityPipeline only commits it to ActivityObjectExitRuntimeState.
+IActivityEntryContentPendingOperationRuntimeBridge / RunActivityContentOperation(..., this) remain the main future bridge candidate for content ownership reduction.
 IActivityEntryParticipantBindingRuntimeBridge remains a possible future split candidate.
+IActivityEntryContentLoadedSetRuntimeBridge remains a future cleanup candidate.
 ActivityContentReleaseRuntimeState remains defer high risk.
 Movement retained/control remains defer high risk.
 ```
@@ -5851,15 +5917,13 @@ Resumo:
 - A decomposicao runtime atual de `SessionActivity` fica congelada como checkpoint temporario.
 - `SA-14B1` permanece como `CLOSED / PASS funcional + PASS arquitetural do corte`.
 - `SA-13D`, `SA-14C` e `SA-14D` permanecem fechados como auditorias.
-- Os residuos restantes ficam classificados como `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_MEDIUM` e `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
+- Os residuos restantes ficam classificados como `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_LOW`, `FUTURE_CLEANUP_MEDIUM` e `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
 
 ### Matriz final
 
 ```text
 CLOSED_PASS:
   SA-14B1 - ActivityObject exit correlation explicit entry result
-  SA-17D - ActivityObject exit correlation observability hygiene
-  SA-17D-FIX - restore activity_02 no-content RouteActivitySave classification
 
 CLOSED_AUDITED:
   SA-13D - Runtime surface audits
@@ -5874,7 +5938,13 @@ DEFER_HIGH_RISK:
 POLICY_GAP:
   RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 
+FUTURE_CLEANUP_LOW:
+  IActivityEntryContentLoadedSetRuntimeBridge cleanup
+  IActivityEntryContentRuntimeBridge aggregate cleanup
+  ActivityObject exit correlation observability hygiene
+
 FUTURE_CLEANUP_MEDIUM:
+  IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
 DO_NOT_REOPEN_WITHOUT_REGRESSION:
   Movement
@@ -5906,14 +5976,14 @@ RouteActivitySave last useful payload e policy nova, nao bug local.
 Qualquer alteracao futura no pending-operation callback path exige smoke completo.
 ```
 
-## SA-14D - ActivityContent pending-operation bridge audit (histórico)
+## SA-14D - ActivityContent pending-operation bridge audit
 
-Status: CLOSED / AUDITED (historical; superseded by SA-17A).
+Status: CLOSED / AUDITED.
 
 Resumo:
 
-- Historicamente, `IActivityEntryContentPendingOperationRuntimeBridge` cobria apenas build/set state registration antes de `SA-17A`.
-- `RunActivityContentOperation(...)` is owned by `ISessionActivityPendingOperationRunner`, with `SessionActivityPipeline` as callback boundary.
+- `IActivityEntryContentPendingOperationRuntimeBridge` remains a technical residual and is deferred.
+- `RunActivityContentOperation(..., this)` is a technical callback, not a wrong owner.
 - `SessionActivityPipeline` remains the callback boundary through `ISessionActivityPendingOperationCallback`.
 - No fallback silencioso, no new lookup tardio, and no duplicate owner were found in the audited path.
 - No immediate runtime patch is recommended.
@@ -5922,7 +5992,9 @@ Resumo:
 ### Backlog futuro
 
 ```text
-IActivityEntryParticipantBindingRuntimeBridge possible split
+IActivityEntryContentPendingOperationRuntimeBridge split/reduction
+IActivityEntryContentLoadedSetRuntimeBridge cleanup
+IActivityEntryContentRuntimeBridge aggregate cleanup
 ```
 
 ## SA-14C - residual bridge / carrier matrix
@@ -5934,14 +6006,9 @@ Resumo:
 - No new wrong owner, duplicate owner, fallback silencioso, or new lookup tardio were found inside SessionActivity.
 - No bridge documented as removed was still active in the code path audited.
 - No immediate runtime patch is recommended.
-- `SA-17A` closed the pending-operation bridge dispatch split.
-- `SA-17B` removed the `LoadedSet` bridge and moved store/clear to `ActivityContentRuntimeState`.
-- `SA-17C` removed the aggregate `ActivityContent` bridge without introducing a substitute bridge name.
-- `SA-17D` closed the `ActivityObject exit correlation observability hygiene` cut; `ActivityObjectExitRuntimeState` remains the technical owner and `SessionActivityPipeline` remains only the macro ordering/freeze owner.
-- `SA-17D-FIX` restored the `activity_02` no-content RouteActivitySave classification to `NoActivityContentContributors / no_activity_content_contributors`.
-- `SA-18A7-FIX7-DOC` recorded the validated closure note for retained PlayerActor rebind plus permission scanner guard closure; runtime ownership remains unchanged and is inherited from the `SA-18A7-FIX7` smoke baseline.
-- `SA-18A8-A9-DOC` recorded the participant-binding bridge residual cleanup closure: placement marker lookup left the participant binding bridge in SA-18A8, and participation context store left the bridge in SA-18A9-H1 with separate runtime-state owners.
+- Main future bridge candidate remains `IActivityEntryContentPendingOperationRuntimeBridge` and `RunActivityContentOperation(..., this)`.
 - `IActivityEntryParticipantBindingRuntimeBridge` remains a possible future split candidate.
+- `IActivityEntryContentLoadedSetRuntimeBridge` remains a future cleanup candidate.
 - `Movement retained/control` and `ActivityContentReleaseRuntimeState` remain high risk.
 
 ## Historico / checkpoints anteriores
@@ -6050,16 +6117,6 @@ Activity01ToActivity02 PASS.
 RouteExitBackToMenu PASS.
 RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
 ```
-
-## SA-18A15 - fechamento da frente ParticipantBinding bridge
-
-- `SA-18A15` foi fechado por `PASS funcional + PASS arquitetural do corte`.
-- `IActivityEntryParticipantBindingRuntimeBridge` saiu do runtime ativo.
-- `SessionActivityPipeline` deixou de proxiar `ExecutePlayerActorMaterialization`, `ExecutePlayerActorParticipationEnter` e `ExecuteActorReset`.
-- `ActivityEntryPipeline` passou a injetar dependências explícitas no `ActivityEntryParticipantBindingStage`.
-- O aceite observado preservou `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` sem `error CS`, `FATAL`, `Exception`, `route_transition_failed`, `checkpointStatus='Failed'`, `ActivityGateBindingFailed` ou `Duplicate player participant registration`.
-- Esta frente está fechada; o próximo foco volta aos resíduos gerais de ownership do `SessionActivityPipeline`.
-
 ## SA-16F closure
 
 - `SA-16F` - `Route/session save contributor inventory audit`: `CLOSED / Backlog controlado`.

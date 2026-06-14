@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.PlayerParticipation.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {

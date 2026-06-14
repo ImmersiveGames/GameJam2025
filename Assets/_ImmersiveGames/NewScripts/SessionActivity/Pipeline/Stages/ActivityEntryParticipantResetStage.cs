@@ -93,13 +93,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             SessionActivityIdentity identity = command.Identity;
-            logSink.LogEntryOwnerEvent(
-                "ActivityEntryParticipantResetStarted",
-                identity,
-                command.Source,
-                command.Reason,
-                $"owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' block='participant_reset' resetSource='activity_capability_inventory' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='ResetIntentStateProfilePolicy'");
-
             IReadOnlyList<ActivityEntryParticipantBindingResolvedRecord> resolvedParticipants = participantBindingResult.ResolvedParticipants;
             if (resolvedParticipants == null || resolvedParticipants.Count == 0)
             {
@@ -230,7 +223,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 DebugUtility.LogVerbose(
                     typeof(ActivityEntryParticipantResetStage),
-                    $"event='ActorResetInventoryReferencesResolved' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' referenceCount='{resetReferences.Count}' sourceReferenceCount='{sourceResetReferences.Count}' references='{FormatResetReferenceIds(resetReferences)}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                    $"event='ActorResetInventoryReferencesResolved' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' referenceCount='{resetReferences.Count}' providerTypes='{FormatResetReferenceProviderTypes(resetReferences)}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 IReadOnlyList<ActorResetResult> resetRecords = actorResetAdapter.Execute(resolvedResetCommand, identity);
@@ -251,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' participant reset applied from inventory requirementId='{resolvedResetCommand.RequirementId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' role='{resolvedResetCommand.ParticipantBinding.Role}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resolvedResetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resolvedResetCommand.PlacementRequirementId) ? "<none>" : resolvedResetCommand.PlacementRequirementId)}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' appliedReferenceCount='{resetRecords[0].AppliedReferenceCount}' skippedReferenceCount='{resetRecords[0].SkippedReferenceCount}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true' inventoryReferenceCount='{resetReferences.Count}' sourceInventoryReferenceCount='{sourceResetReferences.Count}'.");
                 DebugUtility.Log(
                     typeof(ActivityEntryParticipantResetStage),
-                $"event='ActivityParticipantResetAppliedFromInventory' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorScope='{resolvedResetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' appliedReferenceCount='{resetRecords[0].AppliedReferenceCount}' skippedReferenceCount='{resetRecords[0].SkippedReferenceCount}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' inventoryReferenceCount='{resetReferences.Count}' sourceInventoryReferenceCount='{sourceResetReferences.Count}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActivityParticipantResetAppliedFromInventory' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorScope='{resolvedResetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' appliedReferenceCount='{resetRecords[0].AppliedReferenceCount}' skippedReferenceCount='{resetRecords[0].SkippedReferenceCount}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' inventoryReferenceCount='{resetReferences.Count}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
                 appliedCount += 1;
             }
@@ -322,14 +315,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return resolved;
         }
 
-        private static string FormatResetReferenceIds(IReadOnlyList<ActorCapabilityResetEndpointReference> references)
+        private static string FormatResetReferenceProviderTypes(IReadOnlyList<ActorCapabilityResetEndpointReference> references)
         {
             if (references == null || references.Count == 0)
             {
                 return "<none>";
             }
 
-            List<string> capabilityIds = new(references.Count);
+            SortedSet<string> providerTypes = new(StringComparer.Ordinal);
             for (int index = 0; index < references.Count; index++)
             {
                 ActorCapabilityResetEndpointReference reference = references[index];
@@ -338,11 +331,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                capabilityIds.Add(reference.CapabilityId);
+                string providerType = Normalize(reference.ProviderType);
+                if (!string.IsNullOrWhiteSpace(providerType))
+                {
+                    providerTypes.Add(providerType);
+                }
             }
 
-            capabilityIds.Sort(StringComparer.Ordinal);
-            return capabilityIds.Count == 0 ? "<none>" : string.Join(",", capabilityIds);
+            return providerTypes.Count == 0 ? "<none>" : string.Join(",", providerTypes);
         }
 
         private static SessionActivityActorMaterializationPlanEntry ResolveMaterializationPlanEntryForActivityParticipantOrFail(

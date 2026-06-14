@@ -26,7 +26,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public OperationalInputPreparationResultKind Kind { get; }
         public SessionOperationalInputModeKind InitialInputMode { get; }
         public bool IsCompleted => Kind == OperationalInputPreparationResultKind.Completed;
+        public bool IsAccepted => IsCompleted; // Etapa 2: added for canonical shape compatibility (no skip path for this prep)
     }
+
+    // Etapa 2 note: local Command/Result mantidos (específicos de preparação de input mode da rota). 
+    // O ResultKind + Is* agora seguem o modelo canônico textual definido na arquitetura para consistência ao adicionar novos steps.
 
     public readonly struct OperationalInputPreparationCommand
     {

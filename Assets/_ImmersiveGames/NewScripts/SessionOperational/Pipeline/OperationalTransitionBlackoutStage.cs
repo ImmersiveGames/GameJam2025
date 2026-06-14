@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -76,6 +77,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalTransitionBlackoutStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
+
+        public OperationalTransitionBlackoutStage(OperationalFactRecorder factRecorder)
+        {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
+        }
+
         public void Begin(OperationalTransitionBlackoutCommand command)
         {
             Validate(command);
@@ -85,12 +93,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.UsesTransition)
             {
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.TransitionBlackout, source, reason, "transition_blackout_started");
                 DebugUtility.LogVerbose(typeof(OperationalTransitionBlackoutStage),
                     $"OperationalTransitionBlackoutStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.TransitionBlackout, source, reason, "transition_blackout_skipped");
             DebugUtility.LogVerbose(typeof(OperationalTransitionBlackoutStage),
                 $"OperationalTransitionBlackoutSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
@@ -105,6 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.UsesTransition)
             {
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.TransitionBlackout, source, reason, "transition_blackout_completed");
                 DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
                     $"OperationalTransitionBlackoutCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Success);
@@ -120,6 +131,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "Operational transition blackout completed.");
             }
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.TransitionBlackout, source, reason, "transition_blackout_skipped");
             return new OperationalTransitionBlackoutResult(
                 OperationalTransitionBlackoutResultKind.Skipped,
                 routeCommand.RouteIdentity,

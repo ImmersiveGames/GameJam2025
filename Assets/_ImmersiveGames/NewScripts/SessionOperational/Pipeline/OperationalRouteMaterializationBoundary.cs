@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -70,9 +71,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteMaterializationBoundary
     {
+        private readonly OperationalFactRecorder _factRecorder;
+
+        public OperationalRouteMaterializationBoundary(OperationalFactRecorder factRecorder)
+        {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
+        }
+
         public void Begin(OperationalRouteMaterializationBoundaryCommand command)
         {
             ValidateCommand(command);
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RoutePhysicalApplyObserved, command.Source, command.Reason, "materialization_started");
             LogMaterializationStarted(command);
         }
 
@@ -87,6 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("SessionOperationalRouteCompletedFact is invalid.");
             }
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.ScenesReadyObserved, command.Source, command.Reason, "materialization_completed");
             LogMaterializationCompleted(command);
 
             return new OperationalRouteMaterializationBoundaryResult(

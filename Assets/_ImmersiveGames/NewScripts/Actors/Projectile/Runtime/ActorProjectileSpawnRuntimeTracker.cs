@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     public sealed class ActorProjectileSpawnRuntimeTracker : MonoBehaviour, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
         [Header("Reset")]
-        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
 
         private readonly List<TrackedSpawnedRuntimeObject> _trackedSpawns = new();
         private Actor _ownerActor;
@@ -183,13 +183,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject))
-            {
-                DebugUtility.Log(
-                    typeof(ActorProjectileSpawnRuntimeTracker),
-                    $"event='ActorProjectileSpawnedRuntimeObjectReturnedToPool' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{nameof(ActorProjectileSpawnRuntimeTracker)}' reason='pool_return_callback'.",
-                    DebugUtility.Colors.Info);
-            }
+            TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out _);
         }
 
         private void HandleSpawnedActorPoolDestroyed(RuntimeSpawnedActor spawnedActor)
@@ -305,11 +299,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject.SpawnedActor, "pool_service_unavailable", reason, logSkip: false);
                 return false;
             }
-
-            DebugUtility.LogVerbose(
-                typeof(ActorProjectileSpawnRuntimeTracker),
-                $"event='ActorProjectileSpawnedRuntimeObjectReturnRequested' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(reason)}'.",
-                DebugUtility.Colors.Info);
 
             try
             {

@@ -39,8 +39,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorAttributeSetupStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupStarted, startedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup started mode='SetupContributions'.");
             endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup started.");
-            DebugUtility.LogVerbose(typeof(ActivityEntryActorAttributeStage), $"event='ActorAttributeSetupStarted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorAttributeStage' entryPipelineOwner='ActivityEntryPipeline' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' stateProfileSource='attribute_setup_state_profile' source='{command.Source}' reason='{command.Reason}' mode='SetupContributions'.", DebugUtility.Colors.Info);
-
             int totalCount = attributeContributions.Count;
             int resolvedCount = 0;
             int readyCount = 0;

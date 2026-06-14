@@ -100,10 +100,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' object release started.");
-            DebugUtility.LogVerbose(
-                typeof(ActivityObjectReleaseStage),
-                $"event='ActivityObjectReleaseStarted' owner='ActivityObjectReleaseStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
                 "object_release_started",

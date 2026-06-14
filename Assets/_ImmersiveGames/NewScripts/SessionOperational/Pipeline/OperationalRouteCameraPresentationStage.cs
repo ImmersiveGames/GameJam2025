@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -87,10 +88,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteCameraPresentationStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly ISessionOperationalRouteCameraAdapter _routeCameraAdapter;
 
-        public OperationalRouteCameraPresentationStage(ISessionOperationalRouteCameraAdapter routeCameraAdapter)
+        public OperationalRouteCameraPresentationStage(OperationalFactRecorder factRecorder, ISessionOperationalRouteCameraAdapter routeCameraAdapter)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _routeCameraAdapter = routeCameraAdapter ?? throw new ArgumentNullException(nameof(routeCameraAdapter));
         }
 
@@ -101,9 +104,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalRouteCameraPresentationCommand is invalid.");
             }
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteCameraPresentation, command.Source, command.Reason, "route_camera_presentation_started");
             LogStageStarted(command);
             PrepareRouteCameraOrFail(command);
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteCameraPresentation, command.Source, command.Reason, "route_camera_presentation_completed");
             return OperationalRouteCameraPresentationResult.Completed("completed");
         }
 

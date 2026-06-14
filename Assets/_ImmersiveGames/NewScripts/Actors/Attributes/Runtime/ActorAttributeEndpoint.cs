@@ -185,10 +185,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         }
 
 
-        public bool TryResetToInitialForLifecycleCleanup(
+        public bool TryResetToInitial(
             SessionActivityIdentity activityIdentity,
-            ActivityResetIntent resetIntent,
-            ActivityResetStateProfileKind stateProfileKind,
             string source,
             string reason,
             out ActorAttributeResetResult result)
@@ -197,8 +195,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             {
                 result = ActorAttributeResetResult.Skipped(
                     _currentActorInstanceRuntimeId,
-                    resetIntent,
-                    stateProfileKind,
+                    ActivityResetIntent.EntryInitialize,
+                    ActivityResetStateProfileKind.InitialState,
                     "attribute_endpoint_not_initialized");
                 return true;
             }
@@ -207,29 +205,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             {
                 result = ActorAttributeResetResult.Reject(
                     _currentActorInstanceRuntimeId,
-                    resetIntent,
-                    stateProfileKind,
+                    ActivityResetIntent.EntryInitialize,
+                    ActivityResetStateProfileKind.InitialState,
                     "foreign_or_stale_activity_identity");
-                return false;
-            }
-
-            if (resetIntent != ActivityResetIntent.LifecycleCleanupReset)
-            {
-                result = ActorAttributeResetResult.Reject(
-                    _currentActorInstanceRuntimeId,
-                    resetIntent,
-                    stateProfileKind,
-                    "attribute_cleanup_reset_requires_lifecycle_cleanup_intent");
-                return false;
-            }
-
-            if (stateProfileKind != ActivityResetStateProfileKind.InitialState)
-            {
-                result = ActorAttributeResetResult.Reject(
-                    _currentActorInstanceRuntimeId,
-                    resetIntent,
-                    stateProfileKind,
-                    "attribute_cleanup_reset_requires_initial_state_profile");
                 return false;
             }
 
@@ -237,8 +215,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             {
                 result = ActorAttributeResetResult.Skipped(
                     _currentActorInstanceRuntimeId,
-                    resetIntent,
-                    stateProfileKind,
+                    ActivityResetIntent.EntryInitialize,
+                    ActivityResetStateProfileKind.InitialState,
                     "attribute_state_empty");
                 return true;
             }
@@ -251,8 +229,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 {
                     result = ActorAttributeResetResult.Fail(
                         _currentActorInstanceRuntimeId,
-                        resetIntent,
-                        stateProfileKind,
+                        ActivityResetIntent.EntryInitialize,
+                        ActivityResetStateProfileKind.InitialState,
                         $"attribute_state_not_ready:index={i}");
                     return false;
                 }
@@ -263,8 +241,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
             result = ActorAttributeResetResult.AppliedResult(
                 _currentActorInstanceRuntimeId,
-                resetIntent,
-                stateProfileKind,
+                ActivityResetIntent.EntryInitialize,
+                ActivityResetStateProfileKind.InitialState,
                 resetCount);
             return true;
         }

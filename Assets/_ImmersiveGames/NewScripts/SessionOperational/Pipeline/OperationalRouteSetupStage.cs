@@ -135,6 +135,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     /// </summary>
     public sealed class OperationalRouteSetupStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
+
+        public OperationalRouteSetupStage(OperationalFactRecorder factRecorder)
+        {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
+        }
+
         public OperationalRouteSetupResult Execute(OperationalRouteSetupCommand setupCommand)
         {
             if (!setupCommand.IsValid)
@@ -182,7 +189,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 routeCommand.Source,
                 routeCommand.Reason);
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteSetup, routeCommand.Source, routeCommand.Reason, "route_setup_started");
             LogSetupFacts(setupCommand, routeCommand, routeActivitySavePlan, loadingCommand);
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteSetup, routeCommand.Source, routeCommand.Reason, "route_setup_completed");
 
             return new OperationalRouteSetupResult(
                 OperationalRouteSetupResultKind.Completed,

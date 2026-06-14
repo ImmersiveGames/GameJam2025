@@ -84,17 +84,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteActivitySaveLoadOnEnterStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly ISessionOperationalActivitySaveAdapter _activitySaveAdapter;
         private readonly IProgressionSlotContextResolver _progressionSlotContextResolver;
         private readonly IRouteActivityLoadedSnapshotPayloadStore _loadedSnapshotStore;
         private readonly string _routeActivitySnapshotSchemaId;
 
         public OperationalRouteActivitySaveLoadOnEnterStage(
+            OperationalFactRecorder factRecorder,
             ISessionOperationalActivitySaveAdapter activitySaveAdapter,
             IProgressionSlotContextResolver progressionSlotContextResolver,
             IRouteActivityLoadedSnapshotPayloadStore loadedSnapshotStore,
             string routeActivitySnapshotSchemaId)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _activitySaveAdapter = activitySaveAdapter ?? throw new ArgumentNullException(nameof(activitySaveAdapter));
             _progressionSlotContextResolver = progressionSlotContextResolver ?? throw new ArgumentNullException(nameof(progressionSlotContextResolver));
             _loadedSnapshotStore = loadedSnapshotStore ?? throw new ArgumentNullException(nameof(loadedSnapshotStore));
@@ -114,6 +117,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             var routeCommand = command.RouteCommand;
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RoutePhysicalApplyObserved, command.Source, command.Reason, "route_activity_save_load_on_enter_started");
             DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
                 $"RouteActivitySaveLoadOnEnterStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);

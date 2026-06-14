@@ -70,31 +70,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
-                new CompositionPipelineStep(
-                    id: "InputModes",
-                    installer: config => InputModesInstaller.Install(config),
-                    installerDependencies: new[] { "RuntimePolicy" },
-                    bootstrap: config => InputModesRuntimeComposer.ComposeRuntime(config),
-                    bootstrapDependencies: Array.Empty<string>()),
-                new CompositionPipelineStep(
-                    id: "OperationalCameraRuntime",
-                    installer: _ => OperationalCameraRuntimeComposition.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy" },
-                    bootstrap: _ => OperationalCameraRuntimeComposition.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: Array.Empty<string>()),
+                CompositionPipelineStep.FromDescriptor(InputModesCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(OperationalCameraRuntimeCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(CameraPresentationCompositionDescriptor.Descriptor),
-                new CompositionPipelineStep(
-                    id: "RuntimePersistentScenes",
-                    installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy", "OperationalCameraRuntime" },
-                    bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes", "OperationalCameraRuntime", "CameraPresentation" }),
-                new CompositionPipelineStep(
-                    id: "SessionOperationalRuntime",
-                    installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes", "Save", "CameraPresentation" },
-                    bootstrap: _ => SessionOperationalRuntimeComposer.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes", "CameraPresentation" }),
+                CompositionPipelineStep.FromDescriptor(RuntimePersistentScenesCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SessionOperationalRuntimeCompositionDescriptor.Descriptor),
             };
         }
 

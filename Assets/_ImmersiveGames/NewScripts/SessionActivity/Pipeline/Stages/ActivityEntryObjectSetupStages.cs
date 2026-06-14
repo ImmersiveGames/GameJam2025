@@ -45,13 +45,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.Identity.ActivityId}' activity object contributor discovery started.");
-            logSink.LogEntryOwnerEvent(
-                "ActivityEntryObjectContributorDiscoveryStarted",
-                discoveryIdentity,
-                command.Source,
-                command.Reason,
-                "owner='ActivityEntryObjectSetupStages' entryPipelineOwner='ActivityEntryPipeline' block='object_contributor_discovery'");
-
             if (!HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) || !loadedSet.HasScenes)
             {
                 inventoryState.ClearCurrentActivityObjectContributorDiscoveryResult();
@@ -356,11 +349,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitEntryCapabilityInventoryLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryPreviewStarted,
-                previewIdentity,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
-
             bool hasDiscoveryForCurrentEntry = IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, previewIdentity);
             bool hasActorTargets = actorTargets != null && actorTargets.Count > 0;
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)

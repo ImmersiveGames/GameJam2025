@@ -571,7 +571,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string ProviderType { get; }
         public IActorResetEndpoint Endpoint { get; }
         public IActorResetContribution Contribution { get; }
-        public ActivityResetBoundaryEligibility ResetBoundaryEligibility => Contribution?.ResetBoundaryEligibility ?? ActivityResetBoundaryEligibility.All;
+        public ActivityResetBoundaryEligibility ResetBoundaryEligibility => Contribution?.ResetBoundaryEligibility ?? ActivityResetBoundaryEligibility.RuntimeAll;
         public bool IsValid =>
             TypedCapabilityId.IsValid &&
             ActorId.IsValid &&

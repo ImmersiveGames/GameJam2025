@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -113,17 +114,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteActivitySaveSaveOnExitStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly ISessionOperationalActivitySaveAdapter _activitySaveAdapter;
         private readonly IProgressionSlotContextResolver _progressionSlotContextResolver;
         private readonly Func<ISessionActivitySnapshotPayloadProvider> _activitySnapshotPayloadProviderResolver;
         private readonly string _routeActivitySnapshotSchemaId;
 
         public OperationalRouteActivitySaveSaveOnExitStage(
+            OperationalFactRecorder factRecorder,
             ISessionOperationalActivitySaveAdapter activitySaveAdapter,
             IProgressionSlotContextResolver progressionSlotContextResolver,
             Func<ISessionActivitySnapshotPayloadProvider> activitySnapshotPayloadProviderResolver,
             string routeActivitySnapshotSchemaId)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _activitySaveAdapter = activitySaveAdapter ?? throw new ArgumentNullException(nameof(activitySaveAdapter));
             _progressionSlotContextResolver = progressionSlotContextResolver ?? throw new ArgumentNullException(nameof(progressionSlotContextResolver));
             _activitySnapshotPayloadProviderResolver = activitySnapshotPayloadProviderResolver ?? throw new ArgumentNullException(nameof(activitySnapshotPayloadProviderResolver));
@@ -145,6 +149,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var routeCommand = command.RouteCommand;
             var saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
             var contributorScopePolicy = saveOnExitPlan.PreviousRouteContributorScopePolicy;
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RoutePhysicalApplyObserved, command.Source, command.Reason, "route_activity_save_save_on_exit_started");
             DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveSaveOnExitStage),
                 $"RouteActivitySaveSaveOnExitStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' contributorScopePolicy='{contributorScopePolicy}' saveOnExitSkipKind='{saveOnExitPlan.SkipKind}' saveOnExitSkipReason='{RouteActivitySaveSkipKindMapper.ToCode(saveOnExitPlan.SkipKind)}' saveOnExitSkipDetail='{Normalize(saveOnExitPlan.SkipDetail)}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);

@@ -8,3 +8,5 @@ Docs/Reports/ACTIVITY-OBJECT-CAPACITY-1A-Object-Lifecycle-Contribution-Provider.
 Motivo: report transitório de capacity já consolidado em documentação canônica.
 Docs/Reports/ACTOR-CAPACITY-3A-Passive-Actor-Snapshot-Restore-Release-Contracts.md
 Motivo: contrato passivo transitório já consolidado em ADR/status canônico.
+Docs/Guides/SessionOperational-Application-Guide.md
+Motivo: espelho redundante do README.md canônico dentro de SessionOperational/ (conteúdo idêntico no cabeçalho e estrutura; README do módulo é a fonte viva com atualizações das Etapas de canonização). Remoção segue padrão de limpeza de docs redundantes (ver entradas anteriores em REMOVED_FILES.txt e normalizações de 2026-06-14).

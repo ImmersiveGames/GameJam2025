@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
@@ -7,13 +8,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         private readonly SessionOperationalRuntimeState _state;
         private readonly string _sessionOperationalPipelineId;
+        private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy;
 
         public OperationalFactRecorder(
             SessionOperationalRuntimeState state,
-            string sessionOperationalPipelineId)
+            string sessionOperationalPipelineId,
+            SessionOperationalStageOrderPolicy stageOrderPolicy)
         {
             _state = state ?? throw new ArgumentNullException(nameof(state));
             _sessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
+            _stageOrderPolicy = stageOrderPolicy ?? throw new ArgumentNullException(nameof(stageOrderPolicy));
 
             if (string.IsNullOrWhiteSpace(_sessionOperationalPipelineId))
             {
@@ -57,6 +61,62 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"Stage '{stage}' ignored because the identity payload is incomplete.");
             }
 
+            bool isPrimaryStage = (int)stage <= 17;
+
+            // Etapa 4: order and transition consistency enforcement for primary/macro stages now lives in the recorder
+            // (using the injected policy). This consolidates the high-level fact orchestration that was duplicated
+            // in the Pipeline's local wrapper. Granular stages bypass this (isPrimaryStage false).
+            if (isPrimaryStage)
+            {
+                if (_state.HasStarted)
+                {
+                    if (normalizedRouteOperationId != _state.RouteOperationId ||
+                        normalizedTransitionId != _state.TransitionId ||
+                        transitionSequence != _state.TransitionSequence ||
+                        normalizedRouteId != _state.RouteId ||
+                        normalizedRouteProfileId != _state.RouteProfileId)
+                    {
+                        return Reject(
+                            SessionOperationalFactKind.IgnoredForeignOrStale,
+                            stage,
+                            normalizedSource,
+                            normalizedReason,
+                            $"Stage '{stage}' ignored because it is foreign or stale (transition mismatch).");
+                    }
+                }
+
+                if (!_state.HasStarted)
+                {
+                    if (!_stageOrderPolicy.CanStart(stage))
+                    {
+                        return Reject(
+                            SessionOperationalFactKind.IgnoredForeignOrStale,
+                            stage,
+                            normalizedSource,
+                            normalizedReason,
+                            $"Stage '{stage}' ignored because it cannot start the operation.");
+                    }
+                }
+                else if (_state.HasCompleted)
+                {
+                    return Reject(
+                        SessionOperationalFactKind.IgnoredForeignOrStale,
+                        stage,
+                        normalizedSource,
+                        normalizedReason,
+                        $"Stage '{stage}' ignored because the operation is already completed.");
+                }
+                else if (!_stageOrderPolicy.CanAdvance(_state.CurrentStage, stage))
+                {
+                    return Reject(
+                        SessionOperationalFactKind.IgnoredForeignOrStale,
+                        stage,
+                        normalizedSource,
+                        normalizedReason,
+                        $"Stage '{stage}' ignored because it is out of order.");
+                }
+            }
+
             SessionOperationalIdentity identity = new(
                 _sessionOperationalPipelineId,
                 normalizedRouteOperationId,
@@ -80,8 +140,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException($"Cannot emit invalid operational fact for stage '{stage}'.");
             }
 
-            _state.SetCurrentIdentity(identity);
-            _state.MarkStarted();
+            // Etapa 3 fix: only primary/macro stages (original enum <=17) update the high-level CurrentStage and machine.
+            // Granular per-op stages (Fade etc >=18, added for fact canonization) still record fact+trace for observability
+            // but do not pollute _state.CurrentStage / order policy used by completion logic.
+            if (isPrimaryStage)
+            {
+                _state.SetCurrentIdentity(identity);
+                _state.MarkStarted();
+            }
+
             _state.AppendFact(fact);
             _state.AppendTrace(
                 $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeOperationId='{fact.Identity.RouteOperationId}' transitionId='{fact.Identity.TransitionId}' transitionSequence='{fact.Identity.TransitionSequence}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
@@ -180,6 +247,40 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             return $"pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
         }
+
+        // Etapa 3: helpers for per-operation fact recording (canonization - stages should use these or TryRecordStage)
+        public bool TryRecordOperationStage(SessionOperationalStage stage, string source, string reason, string message)
+        {
+            var id = CurrentIdentity;
+            if (!id.IsValid)
+            {
+                return false;
+            }
+            return TryRecordStage(
+                stage,
+                id.RouteOperationId,
+                id.TransitionId,
+                id.TransitionSequence,
+                id.RouteId,
+                id.RouteProfileId,
+                source,
+                reason,
+                message);
+        }
+
+        // Etapa 5: enhanced helper to centralize emission of canonical operational signals (fact + rich log).
+        // This eliminates the duplication of _factRecorder call + separate DebugUtility.Log* in each stage.
+        // New stages only need to call this with the full rich "OperationalXXX..." message (as used in the README checklist).
+        // The log is emitted from the central place (recorder), trace gets the rich message too.
+        public bool TryRecordOperationStage(SessionOperationalStage stage, string source, string reason, string richLogMessage, Type ownerType, string color = null)
+        {
+            bool recorded = TryRecordOperationStage(stage, source, reason, richLogMessage);
+            if (recorded)
+            {
+                DebugUtility.LogVerbose(ownerType, richLogMessage, color ?? DebugUtility.Colors.Info);
+            }
+            return recorded;
+        }
         private static SessionOperationalFactKind MapFactKind(SessionOperationalStage stage)
         {
             return stage switch
@@ -201,6 +302,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 SessionOperationalStage.ReadyToOpenCurtain => SessionOperationalFactKind.ReadyToOpenCurtain,
                 SessionOperationalStage.TransitionCompletedObserved => SessionOperationalFactKind.TransitionCompletedObserved,
                 SessionOperationalStage.Completed => SessionOperationalFactKind.Completed,
+                // Etapa 3: map new granular stages
+                SessionOperationalStage.Fade => SessionOperationalFactKind.Fade,
+                SessionOperationalStage.SceneComposition => SessionOperationalFactKind.SceneComposition,
+                SessionOperationalStage.HandoffExit => SessionOperationalFactKind.HandoffExit,
+                SessionOperationalStage.RouteAudio => SessionOperationalFactKind.RouteAudio,
+                SessionOperationalStage.RouteCameraPresentation => SessionOperationalFactKind.RouteCameraPresentation,
+                SessionOperationalStage.ActivityCameraPresentation => SessionOperationalFactKind.ActivityCameraPresentation,
+                SessionOperationalStage.ConsumerEntryAndReadiness => SessionOperationalFactKind.ConsumerEntryAndReadiness,
+                SessionOperationalStage.PlayerParticipation => SessionOperationalFactKind.PlayerParticipation,
+                SessionOperationalStage.Loading => SessionOperationalFactKind.Loading,
+                SessionOperationalStage.TransitionBlackout => SessionOperationalFactKind.TransitionBlackout,
+                SessionOperationalStage.RouteReveal => SessionOperationalFactKind.RouteReveal,
+                SessionOperationalStage.RouteSetup => SessionOperationalFactKind.RouteSetup,
                 _ => SessionOperationalFactKind.Unknown
             };
         }

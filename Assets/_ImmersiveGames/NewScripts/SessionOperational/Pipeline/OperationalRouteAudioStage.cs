@@ -1,59 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
-    public enum OperationalRouteAudioStageResultKind
-    {
-        Unknown = 0,
-        Completed = 1,
-        Skipped = 2,
-        Failed = 3,
-    }
-
-    public readonly struct OperationalRouteAudioStageResult
-    {
-        public OperationalRouteAudioStageResult(
-            OperationalRouteAudioStageResultKind kind,
-            bool audioSubmitted,
-            string reason,
-            string detail)
-        {
-            Kind = kind;
-            AudioSubmitted = audioSubmitted;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
-        }
-
-        public OperationalRouteAudioStageResultKind Kind { get; }
-        public bool AudioSubmitted { get; }
-        public string Reason { get; }
-        public string Detail { get; }
-        public bool IsCompleted => Kind == OperationalRouteAudioStageResultKind.Completed;
-        public bool IsSkipped => Kind == OperationalRouteAudioStageResultKind.Skipped;
-
-        public static OperationalRouteAudioStageResult Completed(bool audioSubmitted)
-        {
-            return new OperationalRouteAudioStageResult(
-                OperationalRouteAudioStageResultKind.Completed,
-                audioSubmitted,
-                "completed",
-                string.Empty);
-        }
-
-        public static OperationalRouteAudioStageResult Skipped(string reason, string detail)
-        {
-            return new OperationalRouteAudioStageResult(
-                OperationalRouteAudioStageResultKind.Skipped,
-                false,
-                reason,
-                detail);
-        }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
-
     public sealed class OperationalRouteAudioCommand
     {
         public OperationalRouteAudioCommand(
@@ -88,14 +39,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteAudioStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly Func<IOperationalRouteAudioPort> _routeAudioPortResolver;
 
-        public OperationalRouteAudioStage(Func<IOperationalRouteAudioPort> routeAudioPortResolver)
+        public OperationalRouteAudioStage(OperationalFactRecorder factRecorder, Func<IOperationalRouteAudioPort> routeAudioPortResolver)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _routeAudioPortResolver = routeAudioPortResolver ?? throw new ArgumentNullException(nameof(routeAudioPortResolver));
         }
 
-        public OperationalRouteAudioStageResult Execute(OperationalRouteAudioCommand command)
+        public OperationalRouteAudioResult Execute(OperationalRouteAudioCommand command)
         {
             if (command == null || !command.IsValid)
             {
@@ -106,24 +59,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
             {
-                DebugUtility.LogVerbose(typeof(OperationalRouteAudioStage),
-                    BuildAudioPipelineLog(
-                        "RouteRevealAudioSkipped",
-                        command,
-                        "skipReason='route_audio_disabled'"),
-                    DebugUtility.Colors.Info);
+                string skippedMsg = BuildAudioPipelineLog(
+                    "RouteRevealAudioSkipped",
+                    command,
+                    "skipReason='route_audio_disabled'");
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteAudio, command.Source, command.Reason, skippedMsg, typeof(OperationalRouteAudioStage), DebugUtility.Colors.Info);
 
-                return OperationalRouteAudioStageResult.Skipped("route_audio_disabled", "route audio disabled by route policy");
+                return OperationalRouteAudioResult.Skipped("route_audio_disabled", "route audio disabled by route policy");
             }
 
             string cueType = ResolveRouteAudioCueTypeOrFail(routeCommand.Audio.RouteAudioCue);
 
-            DebugUtility.LogVerbose(typeof(OperationalRouteAudioStage),
-                BuildAudioPipelineLog(
-                    "RouteRevealAudioStarted",
-                    command,
-                    $"cueType='{cueType}'"),
-                DebugUtility.Colors.Info);
+            string startedMsg = BuildAudioPipelineLog(
+                "RouteRevealAudioStarted",
+                command,
+                $"cueType='{cueType}'");
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteAudio, command.Source, command.Reason, startedMsg, typeof(OperationalRouteAudioStage), DebugUtility.Colors.Info);
 
             var routeAudioPort = ResolveRouteAudioPortOrFail(routeCommand);
             var result = routeAudioPort.SubmitRouteRevealAudio(
@@ -131,19 +82,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!result.IsCompleted)
             {
-                string message = $"[FATAL][SessionOperationalPipeline][Audio] OperationalRouteAudioPort failed routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' resultKind='{result.Kind}' reason='{result.Reason}' detail='{result.Detail}'.";
-                DebugUtility.LogError<OperationalRouteAudioStage>(message);
-                throw new InvalidOperationException(message);
+                string failedMsg = $"[FATAL][SessionOperationalPipeline][Audio] OperationalRouteAudioPort failed routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' resultKind='{result.Kind}' reason='{result.Reason}' detail='{result.Detail}'.";
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteAudio, command.Source, command.Reason, failedMsg, typeof(OperationalRouteAudioStage));
+                DebugUtility.LogError<OperationalRouteAudioStage>(failedMsg);
+                throw new InvalidOperationException(failedMsg);
             }
 
-            DebugUtility.LogVerbose(typeof(OperationalRouteAudioStage),
-                BuildAudioPipelineLog(
-                    "RouteRevealAudioSubmitted",
-                    command,
-                    $"cueType='{cueType}'"),
-                DebugUtility.Colors.Success);
+            string completedMsg = BuildAudioPipelineLog(
+                "RouteRevealAudioSubmitted",
+                command,
+                $"cueType='{cueType}'");
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteAudio, command.Source, command.Reason, completedMsg, typeof(OperationalRouteAudioStage), DebugUtility.Colors.Success);
 
-            return OperationalRouteAudioStageResult.Completed(true);
+            return result;
         }
 
         private IOperationalRouteAudioPort ResolveRouteAudioPortOrFail(SessionOperationalRouteCommand routeCommand)

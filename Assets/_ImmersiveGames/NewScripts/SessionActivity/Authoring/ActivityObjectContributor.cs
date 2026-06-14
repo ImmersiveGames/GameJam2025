@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string roleId;
         [SerializeField] private ActivityObjectContributorKind contributorKind = ActivityObjectContributorKind.SceneObject;
         [SerializeField] private ActivitySetupRequirementRequiredness defaultRequiredness = ActivitySetupRequirementRequiredness.Required;
-        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
         [SerializeField] private List<ActivityReleaseRequirementKind> supportedReleaseKinds = new();
         [SerializeField] private bool includeChildrenForEndpointDiscovery = true;
         [SerializeField] private string debugLabel;

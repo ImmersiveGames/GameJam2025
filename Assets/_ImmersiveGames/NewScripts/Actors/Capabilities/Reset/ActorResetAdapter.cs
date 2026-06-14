@@ -69,8 +69,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                         $"stale_or_foreign_actor_reset_inventory_reference: capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{resetReference.ActorInstanceRuntimeId}' expectedActorInstanceRuntimeId='{expectedActorInstanceRuntimeId}'.");
                 }
 
-                DebugUtility.LogVerbose(typeof(ActorResetAdapter), $"event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' runtimeBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' executionMode='intent_handler_per_reference' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
-
                 ActorResetContext context = new(
                     activeIdentity,
                     actorId,
@@ -121,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 }
 
                 string resetHandler = ApplyResetByIntent(resetReference.Endpoint, command.ResetIntent, context);
-                DebugUtility.LogVerbose(typeof(ActorResetAdapter), $"event='ActorResetEndpointAppliedFromInventory' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetHandler='{resetHandler}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_reference' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
+                DebugUtility.LogVerbose(typeof(ActorResetAdapter), $"event='ActorResetEndpointAppliedFromInventory' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' providerType='{resetReference.ProviderType}' resetIntent='{command.ResetIntent}' resetStateProfile='{command.StateProfileKind}' resetHandler='{resetHandler}' resetDescriptor='endpoint_inventory' runtimeBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' executionMode='intent_handler_per_reference' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
                 appliedReferenceCount += 1;
             }

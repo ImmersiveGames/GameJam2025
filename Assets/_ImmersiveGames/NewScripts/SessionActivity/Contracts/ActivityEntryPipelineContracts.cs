@@ -1341,7 +1341,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryContentLoadResult CompleteContentLoad(
             ActivityEntryContentLoadCompletionCommand command,
-            SessionActivityDefinition definition,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteSetupInfrastructure(
@@ -1368,7 +1367,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryActorParticipationEnterResult ExecuteActorParticipationEnter(
             ActivityEntryActorParticipationEnterCommand command,
-            SessionActivityDefinition definition,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryPlayerInputBindingResult ExecutePlayerInputBinding(
@@ -1387,7 +1385,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityEntryCameraBindingCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
-        void FailContentLoad(ActivityEntryContentLoadFailureCommand command, SessionActivityDefinition definition, List<SessionActivityFact> facts);
+        void FailContentLoad(ActivityEntryContentLoadFailureCommand command, List<SessionActivityFact> facts);
         void ResetState();
     }
 }

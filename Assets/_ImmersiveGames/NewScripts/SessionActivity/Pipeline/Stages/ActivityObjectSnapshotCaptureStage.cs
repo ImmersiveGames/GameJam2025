@@ -110,10 +110,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object snapshot capture started.");
-            DebugUtility.LogVerbose(
-                typeof(ActivityObjectSnapshotCaptureStage),
-                $"event='ActivityObjectSnapshotCaptureStarted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_object_snapshot_capture_started",

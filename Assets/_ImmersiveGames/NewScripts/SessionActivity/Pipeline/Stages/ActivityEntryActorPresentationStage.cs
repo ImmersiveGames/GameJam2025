@@ -59,8 +59,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorPresentationSetupStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupStarted, startedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started mode='SetupContributions'.");
             endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started.");
-            DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationSetupFromSetupContributionsStarted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}' mode='SetupContributions'.", DebugUtility.Colors.Info);
-
             IReadOnlyList<ActorPresentationSetupContribution> presentationContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             int totalResolved = 0;
             int totalMaterialized = 0;

@@ -1,12 +1,4 @@
-﻿# Plano de Refatoração – SessionActivity Base 2.0
-
-> Historical planning document. The active normative boundary is frozen by `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md` and `ENTRY-BOUNDARY-DOC-0` inside it. Use this plan only as refactor context; do not read inventory-backed setup/binding as an allowed final shape.
-
-> Closure note: `ENTRY-BOUNDARY Closure â€” PASS funcional + PASS arquitetural parcial` is now recorded in the ADR. Treat the current shape as frozen for entry boundary work: `ActivityCapabilityInventory` remains transversal only; Presentation/Attribute/Camera moved to contributions; gate binding is owned explicitly; ObjectEmission stays out of inventory.
-
-> ACT-EMIT-2 closure note: `ACT-EMIT-2 â€” ObjectEmission Pool/Rent/Return MVP â€” PASS` is now recorded in `ADR-2.0-0002`. The MVP shape is frozen: `FirePrimary` is routed through `PlayerActorCommandInputHub`, `ActorObjectEmitterEndpoint` builds the resolved payload, `ObjectEmissionRuntimeComposer`/`ObjectEmissionPoolRuntimeBridge` wire `IPoolService`, `ObjectEmissionPoolAdapter` owns `Rent`, `ObjectEmissionPoolReturnSink` owns `Return`, and the runtime stays out of scanner/inventory/setup/binding/gate reopening. Next possible cuts start at `ACT-EMIT-3A`, `ACT-EMIT-4A`, `ACT-EMIT-5A` and `ACT-EMIT-6A`.
-
-> ACTOR-COMP-0F note: `ActivityPlayerActorRegistry` is now technical index only; scope/reentry compatibility remains in `ActivityActorScopeCompatibilityPolicy`, and the legacy lifecycle wrappers were removed from the active code path.
+# Plano de Refatoração — SessionActivity Base 2.0
 
 ## Objetivo
 
@@ -34,55 +26,45 @@ Endpoints = reação/capacidade local
 - Não pedir ao Codex build, compile, tests, smoke, playmode ou batchmode.
 - Toda implementação precisa voltar com smoke/log manual antes de PASS.
 
+## Atualização de status — 2026-06-14
 
-## Status consolidado pós-SA-CONTENT-REL-2
-
-Este plano registra a direção inicial. A ordem normativa e os checkpoints detalhados vivem no `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md`.
-
-Cortes fechados relevantes após a decomposição principal:
+Baseline funcional congelado para a próxima auditoria:
 
 ```text
-SA-6C   Movement binding stage – CLOSED / PASS; shim morto removido.
-SA-6D   Camera binding stage – CLOSED / PASS.
-SA-8B   ObjectRelease/SnapshotCapture cleanup – CLOSED / PASS; helper morto removido.
-SA-8C   Actor release/participation exit cleanup – CLOSED / PASS.
-SA-11A  ActivityEntry state/context extraction – CLOSED / PASS arquitetural do ownership de entry.
-SA-12   Command/contract hygiene – CLOSED após SA-12F5 e SA-12F-MOV-H1.
-SA-CONTENT-REL-1/2 ActivityContent loaded set ownership normalization – CLOSED / PASS.
+RESET-ARCH-7 — CLOSED / PASS
+RESET-OBS-1 — CLOSED / PASS
+RESET-OBS-1-FIX1 — CLOSED / PASS
+RESET-OBS-2 — CLOSED / PASS
+RESET-OBS-3/FIX1/FIX2 — CLOSED / PASS
+SA-12F5A — CLOSED / PASS funcional do corte
 ```
 
-Fechamento documental adicional:
+Smoke aceito:
 
 ```text
-SA-16B confirmou que o release de ActivityContent continua async apenas por side-effect Unity.
-CompleteActivityContentSceneUnloadOperation foi reduzido ao callback tecnico de completion.
-ContinueAfterActivityContentUnloadCompletionAsync(...) permaneceu no SessionActivityPipeline como continuation macro explicita.
-Nao houve criacao de ActivityContentReleasePipeline ou ActivityExitPipeline.
-SA-16C confirmou que PendingOperation permanece state tecnico e que CompletePendingOperation foi limpo nos unloads de ActivationWindow e DeactivationWindow.
-SessionActivityPendingOperationKind ficou restrito a operacoes async reais pendentes.
-SA-16D confirmou que PlayerInput canonical actions explicit composition resolve o asset canonico na composition root, injeta ate o ActivityEntryPipeline e remove o lookup global do PlayerInputBindingAdapter.
+sem error CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
 ```
 
-SA-16B  ActivityContent async release completion boundary – CLOSED.
-SA-16B1 ActivityContent unload callback boundary cleanup â€” PASS funcional + PASS arquitetural do corte.
-SA-16C  PendingOperation callback contract â€” CLOSED.
-SA-16C1 PendingOperation window unload callback boundary cleanup â€” PASS funcional + PASS arquitetural do corte.
-SA-16C2 PendingOperation kind contract cleanup â€” PASS funcional + PASS arquitetural do corte.
-SA-16D  PlayerInput canonical actions explicit composition – CLOSED / PASS funcional + PASS arquitetural do corte.
-
-Ownership consolidado:
+Próxima ação planejada:
 
 ```text
-SessionActivityPipeline = lifecycle macro / ordem / handoffs / continuation.
-ActivityEntryPipeline = owner do lifecycle e state canônico de entry.
-ActivityContentRuntimeState = owner canônico do loaded set vivo de ActivityContent.
-ActivityContentReleaseRuntimeState = state operacional da release assíncrona, sem loaded set duplicado.
-SessionActivityRuntimeState = state macro legítimo, sem mirrors de entry sem consumer comprovado.
+1. Congelar documentação atualizada.
+2. Aguardar envio do pacote completo atualizado.
+3. Executar SA-12F5B como auditoria final de SessionActivityDefinition residual.
+4. Só depois decidir próximo corte de implementação.
 ```
 
-Próximo trabalho deve começar por auditoria dos débitos restantes reais; não reabrir cortes fechados sem regressão explícita.
+Não avançar agora para `PERMISSION-OBS-1`, `ACT-OBS-*` ou `SA-12F-MOV-H1` sem auditoria do pacote novo.
 
-## Corte SA-0 – Congelamento documental
+
+## Corte SA-0 — Congelamento documental
 
 ### Objetivo
 
@@ -103,7 +85,7 @@ Adicionar ADR e plano ao projeto sem alterar runtime.
 
 Baixo.
 
-## Corte SA-1 – RouteExit teardown owner unification
+## Corte SA-1 — RouteExit teardown owner unification
 
 ### Objetivo
 
@@ -125,7 +107,7 @@ Remover owner duplicado entre `SessionActivityHost` e `SessionActivityPipeline` 
 
 ### Aceite arquitetural
 
-- Host nÃ£o decide lifecycle de teardown.
+- Host não decide lifecycle de teardown.
 - Pipeline decide route-exit teardown.
 - Sem duas listas divergentes de route-exit/deactivation stages.
 - Sem fallback para caminho antigo.
@@ -140,15 +122,15 @@ Remover owner duplicado entre `SessionActivityHost` e `SessionActivityPipeline` 
 
 ### Risco
 
-Médio. Pode quebrar contrato externo de `SessionOperacional` se o Host deixar de responder corretamente.
+Médio. Pode quebrar contrato externo de `SessionOperational` se o Host deixar de responder corretamente.
 
-## Corte SA-2 – ActivityEntryPipeline shell canônico
+## Corte SA-2 — ActivityEntryPipeline shell canônico
 
 ### Objetivo
 
 Criar `ActivityEntryPipeline` concreto como owner real de entry, sem ainda migrar todos os stages.
 
-### AÃ§Ã£o
+### Ação
 
 - Criar `ActivityEntryPipeline` com `ExecuteAsync(ActivityEntryCommand)`.
 - Criar `ActivityEntryCommand`, `ActivityEntryResult`, `ActivityEntryResultKind` se os contratos atuais forem insuficientes.
@@ -156,7 +138,7 @@ Criar `ActivityEntryPipeline` concreto como owner real de entry, sem ainda migra
 - Fazer `SessionActivityPipeline` chamar `ActivityEntryPipeline` no ponto de entry.
 - O primeiro corte pode migrar apenas um bloco pequeno e coeso de entry, removendo o caminho antigo equivalente.
 
-### NÃ£o fazer
+### Não fazer
 
 - Não criar fallback para o fluxo antigo.
 - Não criar boundary que chama sub-stages como mini-pipeline.
@@ -170,7 +152,7 @@ Criar `ActivityEntryPipeline` concreto como owner real de entry, sem ainda migra
 - O caminho antigo equivalente foi removido ou deixou de ser chamado.
 - Logs mostram início/fim de `ActivityEntryPipeline`.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - Boot -> Menu -> Sandbox.
 - Activity entry inicial.
@@ -182,13 +164,13 @@ Criar `ActivityEntryPipeline` concreto como owner real de entry, sem ainda migra
 
 Alto. O corte define a costura principal da decomposição.
 
-## Corte SA-3 – ActivityContent + Inventory para ActivityEntryPipeline
+## Corte SA-3 — ActivityContent + Inventory para ActivityEntryPipeline
 
 ### Objetivo
 
 Mover prepare/load/readiness de `ActivityContent` e preview/resolution de `ActivityCapabilityInventory` para `ActivityEntryPipeline`.
 
-### AÃ§Ã£o
+### Ação
 
 - Migrar stages de content load/prepare para entry pipeline.
 - Migrar inventory preview/resolution para entry pipeline.
@@ -204,27 +186,27 @@ Mover prepare/load/readiness de `ActivityContent` e preview/resolution de `Activ
 
 ### Aceite arquitetural
 
-- `ActivityEntryPipeline` Ã© owner de content/inventory para a entry.
-- `SessionActivityPipeline` nÃ£o executa diretamente esses passos.
+- `ActivityEntryPipeline` é owner de content/inventory para a entry.
+- `SessionActivityPipeline` não executa diretamente esses passos.
 - Facts preservam nomes/checkpoints relevantes ou mapeiam novo owner claramente.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - Entry com `activity_01` content.
-- TransiÃ§Ã£o para `activity_02` no-content/skip.
+- Transição para `activity_02` no-content/skip.
 - `Activity01ToActivity02 PASS`.
 
 ### Risco
 
 Alto. Content/inventory alimentam quase todos os stages posteriores.
 
-## Corte SA-4 – Actor/Object setup para ActivityEntryPipeline
+## Corte SA-4 — Actor/Object setup para ActivityEntryPipeline
 
 ### Objetivo
 
 Mover setup/readiness de actors, objects e capabilities para `ActivityEntryPipeline`.
 
-### AÃ§Ã£o
+### Ação
 
 Migrar em subcortes, não em bloco único, mas sem transformar especializações concretas em trilhos arquiteturais:
 
@@ -234,28 +216,28 @@ Migrar em subcortes, não em bloco único, mas sem transformar especializações
 4. ActorAttributes setup.
 5. ActorParticipation enter readiness.
 6. ActivityObject reset/restore.
-7. Input binding quando for capacidade de actor/participante, nÃ£o rail de player.
-8. Movement binding quando for capacidade/endpoints do actor, nÃ£o branch global de player.
-9. Camera binding por capability target, nÃ£o por tipo concreto de actor.
+7. Input binding quando for capacidade de actor/participante, não rail de player.
+8. Movement binding quando for capacidade/endpoints do actor, não branch global de player.
+9. Camera binding por capability target, não por tipo concreto de actor.
 10. Permission target preparation com identidades separadas.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o recriar rails `PlayerActor` vs `NonPlayerActor` como lifecycle global.
-- NÃ£o criar subcorte/stage canÃ´nico nomeado por especializaÃ§Ã£o concreta (`PlayerActorReadiness`, `NonPlayerActorDiscovery`) quando o domÃ­nio correto Ã© `Actor`.
-- NÃ£o alterar reaction local de permission.
-- NÃ£o mover Deactivation/Release neste corte.
-- NÃ£o misturar `ActorId`, `PlayerActorId`, `PlayerSlotId`, `ActorInstanceRuntimeId` e receiver tÃ©cnico.
+- Não recriar rails `PlayerActor` vs `NonPlayerActor` como lifecycle global.
+- Não criar subcorte/stage canônico nomeado por especialização concreta (`PlayerActorReadiness`, `NonPlayerActorDiscovery`) quando o domínio correto é `Actor`.
+- Não alterar reaction local de permission.
+- Não mover Deactivation/Release neste corte.
+- Não misturar `ActorId`, `PlayerActorId`, `PlayerSlotId`, `ActorInstanceRuntimeId` e receiver técnico.
 
 ### Aceite arquitetural
 
-- Cada subcorte tem stage owner explÃ­cito.
-- Capabilities usam `ActorCapabilitySurface`/inventory quando jÃ¡ migradas.
-- AusÃªncia obrigatÃ³ria Ã© fail-fast.
-- AusÃªncia opcional Ã© skip explÃ­cito.
+- Cada subcorte tem stage owner explícito.
+- Capabilities usam `ActorCapabilitySurface`/inventory quando já migradas.
+- Ausência obrigatória é fail-fast.
+- Ausência opcional é skip explícito.
 - Sem fallback silencioso.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - RestartCurrentActivity PASS.
 - Activity01ToActivity02 PASS.
@@ -266,31 +248,31 @@ Migrar em subcortes, não em bloco único, mas sem transformar especializações
 
 Muito alto. Deve ser dividido em subcortes pequenos.
 
-## Corte SA-5 â€” Exit/Release decomposition audit
+## Corte SA-5 — Exit/Release decomposition audit
 
 ### Objetivo
 
-Auditar e decidir se saÃ­da/release/snapshot continuam como stages chamados pelo `SessionActivityPipeline` ou se exigem um `ActivityExitPipeline` prÃ³prio.
+Auditar e decidir se saída/release/snapshot continuam como stages chamados pelo `SessionActivityPipeline` ou se exigem um `ActivityExitPipeline` próprio.
 
-### AÃ§Ã£o
+### Ação
 
 - Auditar release de ActorPresentation, ActorParticipation exit, ActivityObject snapshot/release, ActivityContent unload, DeactivationWindow ordering.
-- Separar o que Ã© macro lifecycle do que Ã© stage determinÃ­stico.
-- SÃ³ criar `ActivityExitPipeline` se houver owner final claro.
+- Separar o que é macro lifecycle do que é stage determinístico.
+- Só criar `ActivityExitPipeline` se houver owner final claro.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o criar `ActivityExitPipeline` apenas por simetria com entry.
-- NÃ£o mover release antes de confirmar ordering de DeactivationWindow.
-- NÃ£o quebrar RouteExit ordering congelado.
+- Não criar `ActivityExitPipeline` apenas por simetria com entry.
+- Não mover release antes de confirmar ordering de DeactivationWindow.
+- Não quebrar RouteExit ordering congelado.
 
 ### Aceite arquitetural
 
-- DecisÃ£o explÃ­cita: stages de exit sob `SessionActivityPipeline` ou pipeline prÃ³prio.
+- Decisão explícita: stages de exit sob `SessionActivityPipeline` ou pipeline próprio.
 - Sem owner duplicado.
 - Sem release antes da janela correta.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - CompleteCurrentActivity.
 - Activity01ToActivity02.
@@ -301,103 +283,103 @@ Auditar e decidir se saÃ­da/release/snapshot continuam como stages chamados pe
 
 Alto. Exit mistura deactivation, snapshot, release e route-exit.
 
-## Corte SA-6 â€” Permission identity cleanup
+## Corte SA-6 — Permission identity cleanup
 
 ### Objetivo
 
-Separar domÃ­nio de identidade em permission target/receiver.
+Separar domínio de identidade em permission target/receiver.
 
-### AÃ§Ã£o
+### Ação
 
 - Auditar `PlayerMovementPermissionReceiver.TargetsCurrentActor`.
 - Separar `PlayerActorId`, `PlayerSlotId`, `ReceiverId` e futuro `PermissionTargetId`.
-- Remover comparaÃ§Ã£o cruzada como fallback.
+- Remover comparação cruzada como fallback.
 - Manter receiver player-specific enquanto movement for player-specific.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o generalizar movement para todos os actors neste corte.
-- NÃ£o criar fallback por `ActorId`.
-- NÃ£o alterar local reaction.
+- Não generalizar movement para todos os actors neste corte.
+- Não criar fallback por `ActorId`.
+- Não alterar local reaction.
 
 ### Aceite arquitetural
 
-- Nenhum domÃ­nio de identidade Ã© comparado como equivalente.
-- Missing identity Ã© observÃ¡vel.
+- Nenhum domínio de identidade é comparado como equivalente.
+- Missing identity é observável.
 - Permission runtime continua command/fact, sem side-effect direto.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - Movement control bloqueado antes de ActivityRunning.
 - Movement control liberado em ActivityRunning.
 - Movement control bloqueado em completion/route-exit.
-- Sem `PermissionTargetIdentityUnresolved` em cenÃ¡rio vÃ¡lido.
+- Sem `PermissionTargetIdentityUnresolved` em cenário válido.
 
 ### Risco
 
-MÃ©dio. Pode quebrar receivers existentes se a separaÃ§Ã£o for agressiva.
+Médio. Pode quebrar receivers existentes se a separação for agressiva.
 
-## Corte SA-7 â€” Host/composition boundary cleanup
+## Corte SA-7 — Host/composition boundary cleanup
 
 ### Objetivo
 
-Remover `DependencyManager.Provider` e registros globais do Host quando a fronteira de lifecycle jÃ¡ estiver estabilizada.
+Remover `DependencyManager.Provider` e registros globais do Host quando a fronteira de lifecycle já estiver estabilizada.
 
-### AÃ§Ã£o
+### Ação
 
 - Auditar `RegisterGlobal*` / `UnregisterGlobal*`.
-- Mover composiÃ§Ã£o/global registry para composition root/installer correto.
+- Mover composição/global registry para composition root/installer correto.
 - Host fica boundary/endpoint externo.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o iniciar antes de SA-1 e SA-2.
-- NÃ£o alterar bootstrap global sem auditoria de dependentes.
+- Não iniciar antes de SA-1 e SA-2.
+- Não alterar bootstrap global sem auditoria de dependentes.
 
 ### Aceite arquitetural
 
-- Host nÃ£o usa service locator para lifecycle/composition ativa.
-- Composition root registra dependÃªncias.
-- Sem regressÃ£o de acesso externo ao boundary.
+- Host não usa service locator para lifecycle/composition ativa.
+- Composition root registra dependências.
+- Sem regressão de acesso externo ao boundary.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - Full smoke de rota/activity.
 
 ### Risco
 
-MÃ©dio/alto. Pode quebrar bootstrap.
+Médio/alto. Pode quebrar bootstrap.
 
-## Corte SA-8 â€” State/fact hygiene
+## Corte SA-8 — State/fact hygiene
 
 ### Objetivo
 
-Reduzir state mutÃ¡vel e fact emission dentro do pipeline macro apÃ³s os owners estarem corretos.
+Reduzir state mutável e fact emission dentro do pipeline macro após os owners estarem corretos.
 
-### AÃ§Ã£o
+### Ação
 
 - Auditar runtime state usado por SessionActivity.
-- Separar fact recording de decisÃ£o.
-- Garantir que recorder nÃ£o decide lifecycle/policy.
+- Separar fact recording de decisão.
+- Garantir que recorder não decide lifecycle/policy.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o repetir erro do recorder crescendo alÃ©m de fact/trace.
-- NÃ£o mover result building para recorder.
+- Não repetir erro do recorder crescendo além de fact/trace.
+- Não mover result building para recorder.
 
 ### Aceite arquitetural
 
-- State Ã© tÃ©cnico e explÃ­cito.
-- Facts nÃ£o executam side-effects.
-- Recorder nÃ£o decide stage order.
+- State é técnico e explícito.
+- Facts não executam side-effects.
+- Recorder não decide stage order.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - Full smoke.
 
 ### Risco
 
-MÃ©dio. SÃ³ deve ocorrer depois da decomposiÃ§Ã£o principal.
+Médio. Só deve ocorrer depois da decomposição principal.
 
 ## Ordem recomendada
 
@@ -413,67 +395,35 @@ Audite e implemente somente o Corte SA-1 de SessionActivity Base 2.0.
 Objetivo: unificar o owner de RouteExit teardown.
 
 Regras:
-- NÃ£o rode build, compile, tests, smoke, playmode ou batchmode.
-- Antes de alterar, audite chamadas de ISessionActivityRouteExitTeardownBoundary, SessionActivityHost.RequestRouteExitTeardown/AwaitRouteExitTeardownAsync e os mÃ©todos equivalentes no SessionActivityPipeline.
-- SessionActivityPipeline deve ser o Ãºnico owner de decisÃ£o/estado de RouteExit teardown.
+- Não rode build, compile, tests, smoke, playmode ou batchmode.
+- Antes de alterar, audite chamadas de ISessionActivityRouteExitTeardownBoundary, SessionActivityHost.RequestRouteExitTeardown/AwaitRouteExitTeardownAsync e os métodos equivalentes no SessionActivityPipeline.
+- SessionActivityPipeline deve ser o único owner de decisão/estado de RouteExit teardown.
 - SessionActivityHost deve virar delegador/endpoint externo, sem classificar lifecycle/stages como owner final.
-- Remova ou consolide listas duplicadas de stage policy se estiverem no mesmo domÃ­nio de decisÃ£o.
-- NÃ£o crie ActivityEntryPipeline ainda.
-- NÃ£o altere input/movement/camera/adapters.
-- NÃ£o crie fallback para caminho antigo.
+- Remova ou consolide listas duplicadas de stage policy se estiverem no mesmo domínio de decisão.
+- Não crie ActivityEntryPipeline ainda.
+- Não altere input/movement/camera/adapters.
+- Não crie fallback para caminho antigo.
 
 Entregue:
 1. arquivos alterados;
 2. resumo do novo ownership;
-3. confirmaÃ§Ã£o de que nÃ£o hÃ¡ dois owners de RouteExit teardown;
+3. confirmação de que não há dois owners de RouteExit teardown;
 4. como gerar smoke manual para Boot -> Menu -> Sandbox -> CompleteActivationWindow -> BackToMenu.
 ```
 
-## EvidÃªncia exigida apÃ³s cada implementaÃ§Ã£o
+## Evidência exigida após cada implementação
 
-NÃ£o aceitar PASS sem log/smoke contendo:
+Não aceitar PASS sem log/smoke contendo:
 
 ```text
 sem FATAL
 sem Exception
 sem route_transition_failed
 sem foreign/stale indevido
-RestartCurrentActivity PASS quando aplicÃ¡vel
-Activity01ToActivity02 PASS quando aplicÃ¡vel
+RestartCurrentActivity PASS quando aplicável
+Activity01ToActivity02 PASS quando aplicável
 RouteExitBackToMenu PASS
-owner correto visÃ­vel nos logs
+owner correto visível nos logs
 sem fallback silencioso
 sem trilho paralelo novo
 ```
-## SA-16A - Movement / GameplayControl / Reset / Save boundary
-
-### Status
-
-SA-16A: CLOSED.
-SA-16A1: PASS funcional + PASS arquitetural do corte.
-SA-16A2: PASS funcional + PASS arquitetural do corte.
-
-### Registro
-
-- `MovementBindingAdapter` deixou de publicar gate state e ficou como preparation/binding tecnico.
-- `ActivityEntryMovementBindingStage` continua como owner da publicacao inicial de `Blocked` antes de `ActivityRunning`.
-- `ActivityCapabilityPermissionRuntime` continua aplicando command/fact/snapshot e notificando receivers.
-- `PlayerMovementPermissionReceiver` continua sendo reaction local.
-- `PlayerActorDefaultResetEndpoint` passou a suportar `MovementTransient` via `PlayerMovementController.ClearMovementState()`.
-- `Movement` continua fora de Save/Snapshot e fora de lifecycle macro.
-- `ActivityEntryParticipantBindingStage` continua dono do mapping `RuntimeTransient -> MovementTransient`.
-- `ActorResetAdapter` continua sendo o executor canonico de reset.
-
-### Invariantes registradas
-
-- Movement e uma capability local de Actor.
-- MovementBinding e stage de ActivityEntryPipeline.
-- Gate/control nao pertence ao MovementController.
-- Movement pode expor endpoint bloqueavel/reagivel e reset transitorio.
-- Movement nao e save contributor por padrao.
-- Save so consome snapshot provider explicito.
-- Reset nao e Save.
-- Reset nao decide lifecycle.
-- Receiver local reage; nao decide policy.
-- Pipeline decide macro lifecycle; nao manipula componente de Movement diretamente.
-

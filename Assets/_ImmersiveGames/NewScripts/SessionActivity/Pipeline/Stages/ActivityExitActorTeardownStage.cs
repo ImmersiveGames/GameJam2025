@@ -239,8 +239,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int releasedCount = 0;
             int skippedCount = 0;
             int failedCount = 0;
-            int cleanupResetAppliedCount = 0;
-            int cleanupResetSkippedCount = 0;
+            int initialStateResetAppliedCount = 0;
+            int initialStateResetSkippedCount = 0;
             if (activeStates == null || activeStates.Count == 0)
             {
                 SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseSkipped, entrySequence);
@@ -261,46 +261,44 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     string actorId = capabilityState.ActorId;
-                    ActivityResetIntent cleanupResetIntent = ActivityResetIntent.LifecycleCleanupReset;
-                    ActivityResetStateProfileKind cleanupStateProfile = ActivityResetIntentProfileDefaults.ResolveStateProfile(cleanupResetIntent);
-                    if (!capabilityState.Endpoint.TryResetToInitialForLifecycleCleanup(
+                    ActivityResetIntent initialStateResetIntent = ActivityResetIntent.EntryInitialize;
+                    ActivityResetStateProfileKind initialStateResetProfile = ActivityResetIntentProfileDefaults.ResolveStateProfile(initialStateResetIntent);
+                    if (!capabilityState.Endpoint.TryResetToInitial(
                             startedIdentity,
-                            cleanupResetIntent,
-                            cleanupStateProfile,
                             command.Source,
                             command.Reason,
-                            out ActorAttributeResetResult cleanupResetResult))
+                            out ActorAttributeResetResult initialStateResetResult))
                     {
                         failedCount += 1;
                         SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeReleaseFailed);
-                        endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute cleanup reset failed actorId='{actorId}' resetIntent='{cleanupResetIntent}' resetStateProfile='{cleanupStateProfile}' reason='{cleanupResetResult.Reason}'.");
-                        endpoint.EmitSnapshot(snapshots, "actor_attribute_cleanup_reset_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute cleanup reset failed actorId='{actorId}' reason='{cleanupResetResult.Reason}'.");
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorAttributeCleanupResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{cleanupResetIntent}' resetStateProfile='{cleanupStateProfile}' resetProfileSource='lifecycle_cleanup_initial_state' outcomeReason='{cleanupResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
-                        throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeCleanupReset] Cleanup reset failed actorId='{actorId}' reason='{cleanupResetResult.Reason}'.");
+                        endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' reason='{initialStateResetResult.Reason}'.");
+                        endpoint.EmitSnapshot(snapshots, "actor_attribute_initial_state_reset_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
+                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorAttributeInitialStateResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+                        throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeInitialStateReset] Initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
                     }
 
-                    if (cleanupResetResult.Rejected || cleanupResetResult.Failed)
+                    if (initialStateResetResult.Rejected || initialStateResetResult.Failed)
                     {
                         failedCount += 1;
                         SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeReleaseFailed);
-                        endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute cleanup reset failed actorId='{actorId}' resetIntent='{cleanupResetIntent}' resetStateProfile='{cleanupStateProfile}' reason='{cleanupResetResult.Reason}'.");
-                        endpoint.EmitSnapshot(snapshots, "actor_attribute_cleanup_reset_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute cleanup reset failed actorId='{actorId}' reason='{cleanupResetResult.Reason}'.");
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorAttributeCleanupResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{cleanupResetIntent}' resetStateProfile='{cleanupStateProfile}' resetProfileSource='lifecycle_cleanup_initial_state' outcomeReason='{cleanupResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
-                        throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeCleanupReset] Cleanup reset failed actorId='{actorId}' reason='{cleanupResetResult.Reason}'.");
+                        endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' reason='{initialStateResetResult.Reason}'.");
+                        endpoint.EmitSnapshot(snapshots, "actor_attribute_initial_state_reset_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
+                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorAttributeInitialStateResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+                        throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeInitialStateReset] Initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
                     }
 
-                    if (cleanupResetResult.SkippedNoContent)
+                    if (initialStateResetResult.SkippedNoContent)
                     {
-                        cleanupResetSkippedCount += 1;
+                        initialStateResetSkippedCount += 1;
                     }
                     else
                     {
-                        cleanupResetAppliedCount += 1;
+                        initialStateResetAppliedCount += 1;
                     }
 
-                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='{(cleanupResetResult.SkippedNoContent ? "ActorAttributeCleanupResetSkipped" : "ActorAttributeCleanupResetApplied")}' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{cleanupResetIntent}' resetStateProfile='{cleanupStateProfile}' resetProfileSource='lifecycle_cleanup_initial_state' resetAttributeCount='{cleanupResetResult.ResetAttributeCount}' outcomeReason='{cleanupResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", cleanupResetResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
+                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='{(initialStateResetResult.SkippedNoContent ? "ActorAttributeInitialStateResetSkipped" : "ActorAttributeInitialStateResetApplied")}' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' resetAttributeCount='{initialStateResetResult.ResetAttributeCount}' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", initialStateResetResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
                     if (!capabilityState.Endpoint.TryRelease(startedIdentity, out ActorAttributeReleaseResult releaseResult))
                     {
@@ -362,8 +360,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseCompleted, entrySequence);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorAttributeReleaseCompleted);
-            endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release completed total='{totalCount}' released='{releasedCount}' skipped='{skippedCount}' failed='{failedCount}' cleanupResetApplied='{cleanupResetAppliedCount}' cleanupResetSkipped='{cleanupResetSkippedCount}'.");
-            endpoint.EmitSnapshot(snapshots, "actor_attribute_release_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release completed total='{totalCount}' released='{releasedCount}' skipped='{skippedCount}' failed='{failedCount}' cleanupResetApplied='{cleanupResetAppliedCount}' cleanupResetSkipped='{cleanupResetSkippedCount}'.");
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release completed total='{totalCount}' released='{releasedCount}' skipped='{skippedCount}' failed='{failedCount}' initialStateResetApplied='{initialStateResetAppliedCount}' initialStateResetSkipped='{initialStateResetSkippedCount}'.");
+            endpoint.EmitSnapshot(snapshots, "actor_attribute_release_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release completed total='{totalCount}' released='{releasedCount}' skipped='{skippedCount}' failed='{failedCount}' initialStateResetApplied='{initialStateResetAppliedCount}' initialStateResetSkipped='{initialStateResetSkippedCount}'.");
         }
 
         public static SessionActivityIdentity ExecuteActorParticipationExit(

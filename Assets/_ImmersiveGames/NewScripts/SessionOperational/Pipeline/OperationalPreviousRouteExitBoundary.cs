@@ -1,4 +1,6 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -77,6 +79,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalPreviousRouteExitBoundary
     {
+        private readonly OperationalFactRecorder _factRecorder;
+
+        public OperationalPreviousRouteExitBoundary(OperationalFactRecorder factRecorder)
+        {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
+        }
+
         public OperationalPreviousRouteExitBoundaryResult Begin(OperationalPreviousRouteExitBoundaryCommand command)
         {
             if (!command.IsValid)
@@ -86,6 +95,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var routeCommand = command.RouteCommand;
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.PreviousRouteTeardownSkipped, command.Source, command.Reason, "previous_route_exit_started");
             DebugUtility.LogVerbose(typeof(OperationalPreviousRouteExitBoundary),
                 $"OperationalPreviousRouteExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
@@ -102,6 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var routeCommand = command.RouteCommand;
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.PreviousRouteTeardownSkipped, command.Source, command.Reason, "previous_route_exit_completed");
             DebugUtility.Log(typeof(OperationalPreviousRouteExitBoundary),
                 $"OperationalPreviousRouteExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);

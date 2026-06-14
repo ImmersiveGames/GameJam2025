@@ -6,7 +6,7 @@ using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {

@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -55,33 +56,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 
-    public readonly struct OperationalFadeStageResult
-    {
-        public OperationalFadeStageResult(OperationalFadeResult result, bool fadeCompleted)
-        {
-            Result = result;
-            FadeCompleted = fadeCompleted;
-        }
-
-        public OperationalFadeResult Result { get; }
-        public bool FadeCompleted { get; }
-        public bool IsAccepted => Result.IsAccepted;
-        public bool IsCompleted => Result.IsCompleted;
-        public bool IsSkipped => Result.IsSkipped;
-        public string Reason => Result.Reason;
-        public string Detail => Result.Detail;
-    }
-
     public sealed class OperationalFadeStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly Func<IOperationalFadePort> _fadePortResolver;
 
-        public OperationalFadeStage(Func<IOperationalFadePort> fadePortResolver)
+        public OperationalFadeStage(OperationalFactRecorder factRecorder, Func<IOperationalFadePort> fadePortResolver)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _fadePortResolver = fadePortResolver ?? throw new ArgumentNullException(nameof(fadePortResolver));
         }
 
-        public async Task<OperationalFadeStageResult> ExecuteAsync(OperationalFadeCommand command)
+        public async Task<OperationalFadeResult> ExecuteAsync(OperationalFadeCommand command)
         {
             if (!command.IsValid)
             {
@@ -94,24 +80,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!routeCommand.UsesTransition)
             {
-                LogSkipped(
+                string skipMsg = $"OperationalFadeStageSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' skipReason='transition_disabled' detail='Operational fade skipped because route transition is disabled.' source='{command.Source}' reason='{command.Reason}'.";
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.Fade, command.Source, command.Reason, skipMsg, typeof(OperationalFadeStage), DebugUtility.Colors.Info);
+
+                return OperationalFadeResult.Skipped(
                     routeCommand,
-                    command,
                     direction,
-                    operationKindLabel,
                     "transition_disabled",
                     "Operational fade skipped because route transition is disabled.");
-
-                return new OperationalFadeStageResult(
-                    OperationalFadeResult.Skipped(
-                        routeCommand,
-                        direction,
-                        "transition_disabled",
-                        "Operational fade skipped because route transition is disabled."),
-                    false);
             }
 
-            LogStarted(routeCommand, command, direction, operationKindLabel);
+            string startedMsg = $"OperationalFadeStageStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' source='{command.Source}' reason='{command.Reason}'.";
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.Fade, command.Source, command.Reason, startedMsg, typeof(OperationalFadeStage), DebugUtility.Colors.Info);
 
             try
             {
@@ -125,24 +105,27 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 if (result.IsCompleted)
                 {
-                    LogCompleted(routeCommand, command, direction, operationKindLabel, result);
-                    return new OperationalFadeStageResult(result, true);
+                    string completedMsg = $"OperationalFadeStageCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' resultReason='{result.Reason}' detail='{result.Detail}' source='{command.Source}' reason='{command.Reason}'.";
+                    _factRecorder.TryRecordOperationStage(SessionOperationalStage.Fade, command.Source, command.Reason, completedMsg, typeof(OperationalFadeStage), DebugUtility.Colors.Success);
+                    return result;
                 }
 
                 if (result.IsSkipped)
                 {
-                    LogSkipped(routeCommand, command, direction, operationKindLabel, result.Reason, result.Detail);
-                    return new OperationalFadeStageResult(result, false);
+                    string skippedMsg = $"OperationalFadeStageSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' skipReason='{result.Reason}' detail='{result.Detail}' source='{command.Source}' reason='{command.Reason}'.";
+                    _factRecorder.TryRecordOperationStage(SessionOperationalStage.Fade, command.Source, command.Reason, skippedMsg, typeof(OperationalFadeStage), DebugUtility.Colors.Info);
+                    return result;
                 }
 
-                LogFailed(routeCommand, command, direction, operationKindLabel, result.Reason, result.Detail);
-
+                string failedMsg = $"OperationalFadeStageFailed routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' failureReason='{result.Reason}' detail='{result.Detail}' source='{command.Source}' reason='{command.Reason}'.";
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.Fade, command.Source, command.Reason, failedMsg, typeof(OperationalFadeStage));
                 throw new InvalidOperationException(
                     $"[FATAL][SessionOperationalPipeline][Transition] Operational fade failed routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' reason='{result.Reason}' detail='{result.Detail}'.");
             }
             catch (Exception ex)
             {
-                LogFailed(routeCommand, command, direction, operationKindLabel, ex.GetType().Name, ex.Message);
+                string exMsg = $"OperationalFadeStageFailed routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' failureReason='{ex.GetType().Name}' detail='{ex.Message}' source='{command.Source}' reason='{command.Reason}'.";
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.Fade, command.Source, command.Reason, exMsg, typeof(OperationalFadeStage));
                 throw;
             }
         }

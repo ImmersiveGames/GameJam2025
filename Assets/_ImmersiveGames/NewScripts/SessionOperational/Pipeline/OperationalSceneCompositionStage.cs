@@ -1,9 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
+    // Etapa 2 canonical model: local command kept (Pipeline step-specific data). The Result surface is now the canonical from Contracts.
     public readonly struct OperationalSceneCompositionCommand
     {
         public OperationalSceneCompositionCommand(
@@ -32,42 +34,23 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 
-    public readonly struct OperationalSceneCompositionStageResult
-    {
-        public OperationalSceneCompositionStageResult(
-            OperationalSceneCompositionResultKind kind,
-            SessionOperationalRouteCompletedFact completionFact,
-            string reason,
-            string detail)
-        {
-            Kind = kind;
-            CompletionFact = completionFact;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
-        }
-
-        public OperationalSceneCompositionResultKind Kind { get; }
-        public SessionOperationalRouteCompletedFact CompletionFact { get; }
-        public string Reason { get; }
-        public string Detail { get; }
-        public bool IsCompleted => Kind == OperationalSceneCompositionResultKind.Completed && CompletionFact.IsValid;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+    // Etapa 2 (canonização Command/Result/Fact): removed local OperationalSceneCompositionStageResult wrapper.
+    // Stage now returns the canonical OperationalSceneCompositionResult directly from Contracts.
+    // This unifies the operation result model (IsCompleted/IsAccepted + factories on the contract type).
+    // Command remains local (enriches data for this step) as it is Pipeline-internal; the port Request is built from it.
 
     public sealed class OperationalSceneCompositionStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly Func<IOperationalSceneCompositionPort> _sceneCompositionPortResolver;
 
-        public OperationalSceneCompositionStage(Func<IOperationalSceneCompositionPort> sceneCompositionPortResolver)
+        public OperationalSceneCompositionStage(OperationalFactRecorder factRecorder, Func<IOperationalSceneCompositionPort> sceneCompositionPortResolver)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _sceneCompositionPortResolver = sceneCompositionPortResolver ?? throw new ArgumentNullException(nameof(sceneCompositionPortResolver));
         }
 
-        public async Task<OperationalSceneCompositionStageResult> ExecuteAsync(OperationalSceneCompositionCommand command)
+        public async Task<OperationalSceneCompositionResult> ExecuteAsync(OperationalSceneCompositionCommand command)
         {
             if (!command.IsValid)
             {
@@ -77,6 +60,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var routeCommand = command.RouteCommand;
             string source = Normalize(command.Source);
             string reason = Normalize(command.Reason);
+
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.SceneComposition, source, reason, "scene_composition_started");
 
             DebugUtility.LogVerbose(typeof(OperationalSceneCompositionStage),
                 $"OperationalSceneCompositionStarted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' completionHandoff='{routeCommand.CompletionHandoff}' source='{source}' reason='{reason}'.",
@@ -91,25 +76,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!result.IsCompleted)
             {
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.SceneComposition, source, reason, "scene_composition_failed");
                 DebugUtility.LogWarning<OperationalSceneCompositionStage>(
                     $"OperationalSceneCompositionFailed routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' resultKind='{result.Kind}' reason='{result.Reason}' detail='{result.Detail}' source='{source}' reasonDetail='{reason}'.");
 
-                return new OperationalSceneCompositionStageResult(
-                    result.Kind,
-                    default,
-                    result.Reason,
-                    result.Detail);
+                // Etapa 2: forward the canonical result directly (no local wrapper)
+                return result;
             }
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.SceneComposition, source, reason, "scene_composition_completed");
             DebugUtility.Log(typeof(OperationalSceneCompositionStage),
                 $"OperationalSceneCompositionCompleted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' correlationId='{result.CompletionFact.CorrelationId}' resultReason='{result.Reason}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
 
-            return new OperationalSceneCompositionStageResult(
-                OperationalSceneCompositionResultKind.Completed,
-                result.CompletionFact,
-                result.Reason,
-                result.Detail);
+            // Etapa 2: forward the canonical result directly (no local wrapper)
+            return result;
         }
 
         private IOperationalSceneCompositionPort ResolveSceneCompositionPortOrFail(SessionOperationalRouteCommand routeCommand)

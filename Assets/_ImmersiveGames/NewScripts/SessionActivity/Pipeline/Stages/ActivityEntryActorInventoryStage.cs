@@ -48,13 +48,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline'.");
-            logSink.LogEntryOwnerEvent(
-                "ActivityEntryActorSceneDiscoveryStarted",
-                startedIdentity,
-                command.Source,
-                command.Reason,
-                "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_scene_discovery'");
-
             try
             {
                 bool canDiscoverFromLoadedSet = HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) && loadedSet.HasScenes;
@@ -171,13 +164,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             SessionActivityIdentity identity = command.Identity;
-            logSink.LogEntryOwnerEvent(
-                "ActivityEntryActorInventoryFeedStarted",
-                identity,
-                command.Source,
-                command.Reason,
-                "owner='ActivityEntryActorInventoryStage' entryPipelineOwner='ActivityEntryPipeline' block='actor_inventory_feed'");
-
             IReadOnlyList<PlayerActorIdentityRecord> playerActors = ResolvePlayerActorCapabilityTargetsForCurrentEntry(
                 participationContext,
                 playerActorRegistry,

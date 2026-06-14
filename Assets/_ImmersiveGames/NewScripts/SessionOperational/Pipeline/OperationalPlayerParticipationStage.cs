@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Runtime;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -16,6 +17,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Failed = 3,
     }
 
+    // Etapa 2 (canonização Command/Result/Fact): Result já seguia o modelo (IsCompleted/IsSkipped/IsAccepted + Kind).
+    // Mantido local por depender de tipos de PlayerParticipation (cross module contracts).
+    // Quando criar novo step similar, preferir surface em *Contracts.cs + factories.
     public readonly struct OperationalPlayerParticipationResult
     {
         public OperationalPlayerParticipationResult(
@@ -89,13 +93,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalPlayerParticipationStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly Func<IRoutePlayerParticipationEndpoint> _routePlayerParticipationEndpointResolver;
         private readonly Func<IPlayerParticipationRuntime> _playerParticipationRuntimeResolver;
 
         public OperationalPlayerParticipationStage(
+            OperationalFactRecorder factRecorder,
             Func<IRoutePlayerParticipationEndpoint> routePlayerParticipationEndpointResolver,
             Func<IPlayerParticipationRuntime> playerParticipationRuntimeResolver)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _routePlayerParticipationEndpointResolver = routePlayerParticipationEndpointResolver ?? throw new ArgumentNullException(nameof(routePlayerParticipationEndpointResolver));
             _playerParticipationRuntimeResolver = playerParticipationRuntimeResolver ?? throw new ArgumentNullException(nameof(playerParticipationRuntimeResolver));
         }
@@ -109,6 +116,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (command.RouteCommand.CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
             {
+                _factRecorder.TryRecordOperationStage(SessionOperationalStage.PlayerParticipation, command.Source, command.Reason, "player_participation_skipped_no_handoff");
                 return new OperationalPlayerParticipationResult(
                     OperationalPlayerParticipationResultKind.SkippedNoHandoff,
                     default,
@@ -172,6 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             LogSessionParticipationContextPrepared(command, sessionParticipationContext);
             LogPlayerParticipationCompleted(command, playerParticipationIdentity, playerParticipationResult);
 
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.PlayerParticipation, command.Source, command.Reason, "player_participation_completed");
             return new OperationalPlayerParticipationResult(
                 OperationalPlayerParticipationResultKind.Completed,
                 playerParticipationResult,

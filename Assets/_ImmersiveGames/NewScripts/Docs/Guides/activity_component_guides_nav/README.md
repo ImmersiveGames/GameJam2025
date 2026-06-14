@@ -1,38 +1,25 @@
-# Guia Visual — Componentes de Activity Base 2.0
+# Guia de uso de Activity — Base 2.0
 
-Abra primeiro:
+Entrada principal: `index.html` ou `00-index.html`.
 
-- `index.html`
+Esta versão é documentação operacional em formato de interface para quem conhece Unity, mas ainda não conhece o sistema de Activity.
 
-Melhorias desta versão:
+Principais blocos:
 
-- barra superior fixa com `Índice`, `Anterior`, `Próximo` e `Topo`;
-- menu lateral fixo com todos os arquivos;
-- seletor de páginas em telas pequenas;
-- navegação anterior/próximo no fim de cada página.
+- conceito de Activity;
+- glossário curto;
+- tutorial mínimo em 10 minutos;
+- árvores de decisão;
+- criação de catálogo, ActivityAsset e Content Profile;
+- estrutura mínima de GameObject;
+- transversalidades de objetos;
+- criação de endpoint novo para reset/snapshot/restore/release;
+- Actor e características;
+- binding, permission gate, exemplos e smoke.
 
-Arquivos incluídos:
+Escopo: documentação apenas. Não altera runtime, contratos C# ou assets.
 
-- `index.html`
-- `Guia-Visual-Componentes-Activity-Base20.html`
-- `Guia-Visual-Componentes-Activity-Base20-v2.html`
-- `01-reset.html`
-- `02-snapshot.html`
-- `03-restore.html`
-- `04-release.html`
-- `05-setup.html`
-- `06-binding.html`
-- `07-permission-gate.html`
-- `08-save-persistencia.html`
 
-Regra central:
+## Nota de legibilidade
 
-Interface sozinha não integra nada. O objeto precisa estar no caminho de descoberta da Activity.
-
-Com Actor:
-
-Actor + ActorCapabilitySurface + componente.
-
-Sem Actor:
-
-Activity Object / Contributor / Marker + componente.
+Os blocos de código usam tema escuro suave: fundo azul-grafite, texto claro e espaçamento maior. O estilo de `code` inline foi separado de `pre > code`, então o destaque inline não interfere mais nos exemplos grandes.

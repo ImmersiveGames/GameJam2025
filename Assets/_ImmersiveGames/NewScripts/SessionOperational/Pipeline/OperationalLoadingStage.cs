@@ -14,6 +14,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Failed = 3,
     }
 
+    // Etapa 2 (canonização): Result local normalizado para o modelo canônico (IsCompleted/IsSkipped/IsAccepted + Kind).
+    // Command local mantido (enriquece com SessionOperationalLoadingCommand do Contracts). 
+    // Quando possível, novos steps devem preferir declarar Request/Result em *Contracts.cs e stages retornarem direto o tipo canônico.
     public readonly struct OperationalLoadingResult
     {
         public OperationalLoadingResult(
@@ -90,10 +93,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalLoadingStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly ILoadingAdapter _loadingAdapter;
 
-        public OperationalLoadingStage(ILoadingAdapter loadingAdapter)
+        public OperationalLoadingStage(OperationalFactRecorder factRecorder, ILoadingAdapter loadingAdapter)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _loadingAdapter = loadingAdapter ?? throw new ArgumentNullException(nameof(loadingAdapter));
         }
 
@@ -121,6 +126,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     0f,
                     "Loading started",
                     "LoadingStarted"));
+
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.Loading, command.Source, command.Reason, "loading_started");
 
             DebugUtility.LogVerbose(typeof(OperationalLoadingStage),
                 $"LoadingStarted routeIdentity='{loadingCommand.RouteIdentity}' routeOperationId='{loadingCommand.RouteOperationId}' transitionId='{loadingCommand.TransitionId}' routeSequence='{loadingCommand.RouteSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' showImmediately='{loadingCommand.ShowImmediately}'.",

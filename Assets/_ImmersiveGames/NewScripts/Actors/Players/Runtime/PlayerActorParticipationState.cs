@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         [SerializeField, HideInInspector] private string currentActivityId;
         [SerializeField, HideInInspector] private int currentEntrySequence;
         [Header("Reset")]
-        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
 
         public PlayerActorParticipationStateKind ParticipationState => participationState;
         public string CurrentActivityId => string.IsNullOrWhiteSpace(currentActivityId) ? string.Empty : currentActivityId.Trim();

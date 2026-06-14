@@ -3,8 +3,9 @@
 ## Status
 
 Aceito como direção arquitetural da Base 2.0.  
-Implementação runtime pendente.  
-Nenhum corte deve ser marcado como `PASS` para este ADR sem compile + smoke/log específico.
+Implementação runtime em fechamento incremental.  
+Baseline documental atualizado após `RESET-ARCH-7`, `RESET-OBS-1`, `RESET-OBS-1-FIX1`, `RESET-OBS-2` e `RESET-OBS-3/FIX1/FIX2`.  
+Nenhum novo corte deve ser marcado como `PASS` para este ADR sem compile + smoke/log específico.
 
 Este ADR congela a mudança conceitual do reset de Activity/Actor/Object:
 
@@ -871,7 +872,7 @@ Status: Applied / pending compile + smoke.
 Decisão aplicada:
 
 ```text
-ActivityResetIntent.LifecycleCleanupReset
+ActivityResetIntent.EntryInitialize
 -> ActivityResetStateProfileKind.InitialState
 ```
 
@@ -881,7 +882,7 @@ Fluxo aplicado:
 
 ```text
 ActivityExitActorTeardownStage
--> TryResetToInitialForLifecycleCleanup(...)
+-> TryResetToInitial(...)
 -> TryRelease(...)
 ```
 
@@ -895,10 +896,10 @@ Esse reset não é runtime reset de gameplay e não deve ser confundido com QA/l
 Logs esperados:
 
 ```text
-ActorAttributeCleanupResetApplied
-resetIntent='LifecycleCleanupReset'
+ActorAttributeInitialStateResetApplied
+resetIntent='EntryInitialize'
 resetStateProfile='InitialState'
-resetProfileSource='lifecycle_cleanup_initial_state'
+resetProfileSource='entry_initialize_initial_state'
 ```
 
 Pendência mantida:

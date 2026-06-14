@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
     public sealed class PlayerActor : Actor, IActorPlacementResetEndpoint, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
         [Header("Reset")]
-        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
 
         private ActorId _runtimeActorId;
         private ActorScope _runtimeActorScope;

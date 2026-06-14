@@ -12,7 +12,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         RuntimeActivityReset = 3,
         RuntimeActivityTransitionReset = 4,
         RuntimeRouteTransitionReset = 5,
-        LifecycleCleanupReset = 6,
     }
 
     public enum ActivityResetStateProfileKind
@@ -48,7 +47,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 ActivityResetIntent.RuntimeActivityReset => ActivityResetStateProfileKind.RuntimeActivityState,
                 ActivityResetIntent.RuntimeActivityTransitionReset => ActivityResetStateProfileKind.RuntimeActivityTransitionState,
                 ActivityResetIntent.RuntimeRouteTransitionReset => ActivityResetStateProfileKind.RuntimeRouteTransitionState,
-                ActivityResetIntent.LifecycleCleanupReset => ActivityResetStateProfileKind.InitialState,
                 _ => ActivityResetStateProfileKind.Unknown,
             };
         }
@@ -71,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Activity = 1 << 1,
         ActivityTransition = 1 << 2,
         RouteTransition = 1 << 3,
-        All = Local | Activity | ActivityTransition | RouteTransition,
+        RuntimeAll = Local | Activity | ActivityTransition | RouteTransition,
     }
 
 
@@ -80,15 +78,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public static string Format(ActivityResetBoundaryEligibility eligibility)
         {
-            ActivityResetBoundaryEligibility canonical = eligibility & ActivityResetBoundaryEligibility.All;
+            ActivityResetBoundaryEligibility canonical = eligibility & ActivityResetBoundaryEligibility.RuntimeAll;
             if (canonical == ActivityResetBoundaryEligibility.None)
             {
                 return "None";
             }
 
-            if (canonical == ActivityResetBoundaryEligibility.All)
+            if (canonical == ActivityResetBoundaryEligibility.RuntimeAll)
             {
-                return "All";
+                return "RuntimeAll";
             }
 
             return canonical.ToString().Replace(" ", string.Empty);

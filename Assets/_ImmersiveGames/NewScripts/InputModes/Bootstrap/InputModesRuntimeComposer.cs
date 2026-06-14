@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
-using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 {
     public static class InputModesRuntimeComposer

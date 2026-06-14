@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         [SerializeField] private bool useFixedUpdateForPhysics = true;
 
         [Header("Reset")]
-        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
 
         private CharacterController _characterController;
         private Rigidbody _rigidbody;

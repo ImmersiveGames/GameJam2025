@@ -65,9 +65,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy = new();
         private readonly OperationalFactRecorder _factRecorder;
         private readonly SessionOperationalRoutePlanResolver _routePlanResolver = new();
-        private readonly OperationalRouteSetupStage _routeSetupStage = new();
+        private readonly OperationalRouteSetupStage _routeSetupStage;
         private readonly OperationalTransitionBlackoutStage _transitionBlackoutStage;
-        private readonly OperationalPreviousRouteExitBoundary _previousRouteExitBoundary = new();
+        private readonly OperationalPreviousRouteExitBoundary _previousRouteExitBoundary;
         private readonly OperationalSceneCompositionStage _sceneCompositionStage;
         private readonly OperationalHandoffExitStage _handoffExitStage;
         private readonly OperationalRouteCameraReleasePreviousStage _routeCameraReleasePreviousStage;
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage;
         private readonly OperationalRouteActivitySaveLoadOnEnterStage _routeActivitySaveLoadOnEnterStage;
         private readonly OperationalRouteActivitySaveSaveOnExitStage _routeActivitySaveSaveOnExitStage;
-        private readonly OperationalRouteMaterializationBoundary _routeMaterializationBoundary = new();
+        private readonly OperationalRouteMaterializationBoundary _routeMaterializationBoundary;
         private readonly OperationalLoadingStage _loadingStage;
         private readonly OperationalRouteAudioStage _routeAudioStage;
         private readonly OperationalRouteRevealStage _routeRevealStage;
@@ -111,35 +111,45 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             _factRecorder = new OperationalFactRecorder(
                 _state,
-                _sessionOperationalPipelineId);
+                _sessionOperationalPipelineId,
+                _stageOrderPolicy);
 
-            _fadeStage = new OperationalFadeStage(_dependencies.ResolveFadePort);
-            _transitionBlackoutStage = new OperationalTransitionBlackoutStage();
-            _sceneCompositionStage = new OperationalSceneCompositionStage(_dependencies.ResolveSceneCompositionPort);
+            // Etapa 3: pass _factRecorder to all stages for centralized fact emission (canonization of Facts)
+            _fadeStage = new OperationalFadeStage(_factRecorder, _dependencies.ResolveFadePort);
+            _transitionBlackoutStage = new OperationalTransitionBlackoutStage(_factRecorder);
+            _sceneCompositionStage = new OperationalSceneCompositionStage(_factRecorder, _dependencies.ResolveSceneCompositionPort);
             _handoffExitStage = new OperationalHandoffExitStage(
+                _factRecorder,
                 _dependencies.ResolveRouteHandoffExitPort,
                 _dependencies.ResolveSessionActivityRouteExitTeardownBoundary);
-            _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_dependencies.RouteCameraAdapter);
-            _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_dependencies.RouteCameraAdapter);
+            _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_factRecorder, _dependencies.RouteCameraAdapter);
+            _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_factRecorder, _dependencies.RouteCameraAdapter);
             _inputPreparationStage = new OperationalInputPreparationStage(_factRecorder, _dependencies.ResolveInputModeRequestPort);
-            _playerParticipationStage = new OperationalPlayerParticipationStage(_dependencies.ResolveRoutePlayerParticipationEndpoint, _dependencies.ResolvePlayerParticipationRuntime);
+            _playerParticipationStage = new OperationalPlayerParticipationStage(_factRecorder, _dependencies.ResolveRoutePlayerParticipationEndpoint, _dependencies.ResolvePlayerParticipationRuntime);
             _routeCompletionStage = new OperationalRouteCompletionStage(_factRecorder);
-            _activityCameraPresentationStage = new OperationalActivityCameraPresentationStage(_dependencies.ActivityCameraAdapter);
-            _activityCameraReleasePreviousStage = new OperationalActivityCameraReleasePreviousStage(_dependencies.ActivityCameraAdapter);
-            _consumerEntryAndReadinessStage = new OperationalConsumerEntryAndReadinessStage(_dependencies.ResolveRouteConsumerEntryPort, _dependencies.ResolveRouteConsumerReadinessPort);
+            _activityCameraPresentationStage = new OperationalActivityCameraPresentationStage(_factRecorder, _dependencies.ActivityCameraAdapter);
+            _activityCameraReleasePreviousStage = new OperationalActivityCameraReleasePreviousStage(_factRecorder, _dependencies.ActivityCameraAdapter);
+            _consumerEntryAndReadinessStage = new OperationalConsumerEntryAndReadinessStage(_factRecorder, _dependencies.ResolveRouteConsumerEntryPort, _dependencies.ResolveRouteConsumerReadinessPort);
             _routeActivitySaveLoadOnEnterStage = new OperationalRouteActivitySaveLoadOnEnterStage(
+                _factRecorder,
                 _dependencies.ActivitySaveAdapter,
                 _dependencies.ProgressionSlotContextResolver,
                 this,
                 RouteActivitySnapshotSchemaId);
             _routeActivitySaveSaveOnExitStage = new OperationalRouteActivitySaveSaveOnExitStage(
+                _factRecorder,
                 _dependencies.ActivitySaveAdapter,
                 _dependencies.ProgressionSlotContextResolver,
                 ResolveActivitySnapshotPayloadProviderOrNull,
                 RouteActivitySnapshotSchemaId);
-            _loadingStage = new OperationalLoadingStage(_dependencies.LoadingAdapter);
-            _routeAudioStage = new OperationalRouteAudioStage(_dependencies.ResolveRouteAudioPort);
-            _routeRevealStage = new OperationalRouteRevealStage();
+            _loadingStage = new OperationalLoadingStage(_factRecorder, _dependencies.LoadingAdapter);
+            _routeAudioStage = new OperationalRouteAudioStage(_factRecorder, _dependencies.ResolveRouteAudioPort);
+            _routeRevealStage = new OperationalRouteRevealStage(_factRecorder);
+            _routeSetupStage = new OperationalRouteSetupStage(_factRecorder);
+
+            // Etapa 3: boundaries also receive recorder for full fact canonization
+            _previousRouteExitBoundary = new OperationalPreviousRouteExitBoundary(_factRecorder);
+            _routeMaterializationBoundary = new OperationalRouteMaterializationBoundary(_factRecorder);
         }
 
         public SessionOperationalRuntimeState State => _state;
@@ -434,7 +444,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                             OperationalFadeOperationKind.CloseCurtain,
                             sourceText,
                             reasonText));
-                    blackoutFadeInCompleted = fadeResult.FadeCompleted;
+                    blackoutFadeInCompleted = fadeResult.IsCompleted;
                 }
 
                 var blackoutResult = _transitionBlackoutStage.Complete(
@@ -718,12 +728,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                             OperationalFadeOperationKind.OpenCurtain,
                             sourceText,
                             reasonText));
-                    revealFadeOutCompleted = fadeResult.FadeCompleted;
+                    revealFadeOutCompleted = fadeResult.IsCompleted;
                 }
 
                 var revealResult = _routeRevealStage.Complete(
                     revealCommand,
-                    routeAudioResult.AudioSubmitted,
+                    routeAudioResult.IsCompleted,
                     revealFadeOutCompleted);
 
                 if (!revealResult.IsCompleted)
@@ -942,7 +952,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 normalizedRouteId,
                 normalizedRouteProfileId);
 
-            return TryRecordStage(
+            // Etapa 4: record directly via recorder after state setup (consolidation of fact entry point).
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.RouteOperationStarted,
                 normalizedRouteOperationId,
                 normalizedTransitionId,
@@ -963,7 +974,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact now recorded directly via the recorder (order/consistency enforced there).
+            // This is part of consolidating fact orchestration so the recorder is the primary/only entry point.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.NavigationIntentObserved,
                 routeOperationId,
                 transitionId,
@@ -984,7 +997,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder (order/consistency now enforced centrally).
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.RouteResolved,
                 routeOperationId,
                 transitionId,
@@ -1005,7 +1019,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.TransitionRequested,
                 routeOperationId,
                 transitionId,
@@ -1026,7 +1041,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.TransitionStarted,
                 routeOperationId,
                 transitionId,
@@ -1047,7 +1063,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.CurtainClosed,
                 routeOperationId,
                 transitionId,
@@ -1068,7 +1085,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.PreviousRouteTeardownSkipped,
                 routeOperationId,
                 transitionId,
@@ -1089,7 +1107,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.RoutePhysicalApplyObserved,
                 routeOperationId,
                 transitionId,
@@ -1110,7 +1129,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.ScenesReadyObserved,
                 routeOperationId,
                 transitionId,
@@ -1131,7 +1151,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.SessionOperationalSetupNoOp,
                 routeOperationId,
                 transitionId,
@@ -1152,7 +1173,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.PlayerParticipationSeedObserved,
                 routeOperationId,
                 transitionId,
@@ -1173,7 +1195,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.PauseCapabilityPrepared,
                 routeOperationId,
                 transitionId,
@@ -1194,7 +1217,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.ReadyToOpenCurtain,
                 routeOperationId,
                 transitionId,
@@ -1215,7 +1239,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            return TryRecordStage(
+            // Etapa 4: high-level macro fact recorded directly via the recorder.
+            return _factRecorder.TryRecordStage(
                 SessionOperationalStage.TransitionCompletedObserved,
                 routeOperationId,
                 transitionId,
@@ -1236,7 +1261,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            if (!TryRecordStage(
+            // Etapa 4: direct to recorder (consolidation; order enforced in recorder for primary stage Completed).
+            if (!_factRecorder.TryRecordStage(
                     SessionOperationalStage.Completed,
                     routeOperationId,
                     transitionId,
@@ -1253,119 +1279,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return true;
         }
 
-        private bool TryRecordStage(
-            SessionOperationalStage stage,
-            string routeOperationId,
-            string transitionId,
-            int transitionSequence,
-            string routeId,
-            string routeProfileId,
-            string source,
-            string reason,
-            string message)
-        {
-            string normalizedRouteOperationId = Normalize(routeOperationId);
-            string normalizedTransitionId = Normalize(transitionId);
-            string normalizedRouteId = Normalize(routeId);
-            string normalizedRouteProfileId = Normalize(routeProfileId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
-            string normalizedMessage = Normalize(message);
-
-            if (stage == SessionOperationalStage.Unknown ||
-                string.IsNullOrWhiteSpace(normalizedRouteOperationId) ||
-                string.IsNullOrWhiteSpace(normalizedTransitionId) ||
-                transitionSequence <= 0 ||
-                string.IsNullOrWhiteSpace(normalizedRouteId) ||
-                string.IsNullOrWhiteSpace(normalizedRouteProfileId) ||
-                string.IsNullOrWhiteSpace(normalizedSource) ||
-                string.IsNullOrWhiteSpace(normalizedReason))
-            {
-                return _factRecorder.Reject(
-                    SessionOperationalFactKind.IgnoredForeignOrStale,
-                    stage,
-                    normalizedSource,
-                    normalizedReason,
-                    $"Stage '{stage}' ignored because the identity payload is incomplete.");
-            }
-
-            var incomingTransitionKey = BuildTransitionKey(
-                normalizedRouteOperationId,
-                normalizedTransitionId,
-                transitionSequence,
-                normalizedRouteId,
-                normalizedRouteProfileId);
-            SessionOperationalStageKey incomingStageKey = new(incomingTransitionKey, stage);
-
-            if (!CanAcceptStage(incomingStageKey))
-            {
-                return _factRecorder.Reject(
-                    SessionOperationalFactKind.IgnoredForeignOrStale,
-                    stage,
-                    normalizedSource,
-                    normalizedReason,
-                    $"Stage '{stage}' ignored because it is foreign, stale, or out of order.");
-            }
-
-            return _factRecorder.TryRecordStage(
-                stage,
-                normalizedRouteOperationId,
-                normalizedTransitionId,
-                transitionSequence,
-                normalizedRouteId,
-                normalizedRouteProfileId,
-                normalizedSource,
-                normalizedReason,
-                normalizedMessage);
-        }
-
-        private bool CanAcceptStage(SessionOperationalStageKey stageKey)
-        {
-            if (!stageKey.IsValid)
-            {
-                return false;
-            }
-
-            var activeTransitionKey = BuildTransitionKey(
-                _state.RouteOperationId,
-                _state.TransitionId,
-                _state.TransitionSequence,
-                _state.RouteId,
-                _state.RouteProfileId);
-            if (stageKey.TransitionKey != activeTransitionKey)
-            {
-                return false;
-            }
-
-            if (!_state.HasStarted)
-            {
-                return _stageOrderPolicy.CanStart(stageKey.Stage);
-            }
-
-            if (_state.HasCompleted)
-            {
-                return false;
-            }
-
-            return _stageOrderPolicy.CanAdvance(_state.CurrentStage, stageKey.Stage);
-        }
-
-        private SessionOperationalTransitionKey BuildTransitionKey(
-            string routeOperationId,
-            string transitionId,
-            int routeSequence,
-            string routeId,
-            string routeProfileId)
-        {
-            SessionOperationalRouteKey routeKey = new(
-                _sessionOperationalPipelineId,
-                routeId,
-                routeOperationId,
-                routeId,
-                routeProfileId,
-                routeSequence);
-            return new SessionOperationalTransitionKey(routeKey, transitionId);
-        }
+        // Etapa 4: private TryRecordStage wrapper fully removed.
+        // All macro fact recordings now go directly through _factRecorder.TryRecordStage (which owns validation + order for primaries).
+        // This completes the consolidation of high-level fact orchestration.
 
         public string DumpState()
         {

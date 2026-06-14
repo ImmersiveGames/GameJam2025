@@ -22,6 +22,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         ReadyToOpenCurtain = 15,
         TransitionCompletedObserved = 16,
         Completed = 17,
+        // Etapa 3: granular stages for per-operation fact canonization via OperationalFactRecorder
+        Fade = 18,
+        SceneComposition = 19,
+        HandoffExit = 20,
+        RouteAudio = 21,
+        RouteCameraPresentation = 22,
+        ActivityCameraPresentation = 23,
+        ConsumerEntryAndReadiness = 24,
+        PlayerParticipation = 25,
+        Loading = 26,
+        TransitionBlackout = 27,
+        RouteReveal = 28,
+        RouteSetup = 29,
     }
 
     public readonly struct SessionOperationalRouteKey : IEquatable<SessionOperationalRouteKey>
@@ -300,6 +313,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         TransitionCompletedObserved = 16,
         Completed = 17,
         IgnoredForeignOrStale = 18,
+        // Etapa 3: granular fact kinds matching the new SessionOperationalStage values for recorder canonization
+        Fade = 19,
+        SceneComposition = 20,
+        HandoffExit = 21,
+        RouteAudio = 22,
+        RouteCameraPresentation = 23,
+        ActivityCameraPresentation = 24,
+        ConsumerEntryAndReadiness = 25,
+        PlayerParticipation = 26,
+        Loading = 27,
+        TransitionBlackout = 28,
+        RouteReveal = 29,
+        RouteSetup = 30,
     }
 
     public enum SessionOperationalInputModeKind

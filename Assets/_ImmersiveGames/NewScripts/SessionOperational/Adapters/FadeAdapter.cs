@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Bindings;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Runtime;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
 using UnityEngine.SceneManagement;

@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -80,9 +81,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteRevealStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
+
+        public OperationalRouteRevealStage(OperationalFactRecorder factRecorder)
+        {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
+        }
+
         public void Begin(OperationalRouteRevealCommand command)
         {
             Validate(command);
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteReveal, command.Source, command.Reason, "route_reveal_started");
             LogRevealStarted(command);
         }
 
@@ -92,6 +101,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             bool fadeOutCompleted)
         {
             Validate(command);
+            _factRecorder.TryRecordOperationStage(SessionOperationalStage.RouteReveal, command.Source, command.Reason, "route_reveal_completed");
             LogRevealCompleted(command);
             return OperationalRouteRevealResult.Completed(audioSubmitted, fadeOutCompleted);
         }

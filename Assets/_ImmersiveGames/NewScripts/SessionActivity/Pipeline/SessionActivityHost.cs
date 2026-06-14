@@ -350,15 +350,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Invalid result returned by action '{action}'.");
             }
 
-            string outcome = result.Kind.ToString();
-            DebugUtility.LogVerbose(typeof(SessionActivityHost), $"action='{action}' outcomeKind='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}'");
+            if (!result.IsStarted)
+            {
+                string outcome = result.Kind.ToString();
+                DebugUtility.LogVerbose(typeof(SessionActivityHost), $"action='{action}' outcomeKind='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}'");
+            }
 
             for (int index = 0; index < result.Facts.Count; index++)
             {
                 DebugUtility.LogVerbose(typeof(SessionActivityHost), $"{result.Facts[index]}");
             }
-
-            DebugUtility.LogVerbose(typeof(SessionActivityHost), $"factsCount='{State.Facts.Count}' snapshotsCount='{State.Snapshots.Count}' traceCount='{State.Trace.Count}'");
         }
 
         private string GetPendingHandoffTarget()

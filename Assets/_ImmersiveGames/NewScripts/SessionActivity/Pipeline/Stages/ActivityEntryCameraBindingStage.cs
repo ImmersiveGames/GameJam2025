@@ -42,11 +42,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             var startedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.CameraBindingStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingStarted, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding stage started.");
-            DebugUtility.LogVerbose(
-                typeof(ActivityEntryCameraBindingStage),
-                $"event='CameraBindingStarted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryCameraBindingStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
-
             IReadOnlyList<CameraBindingRequirement> cameraRequirements = inventory.CameraBindingRequirements ?? Array.Empty<CameraBindingRequirement>();
             bool hasValidCameraInventory =
                 startedIdentity.IsValid &&

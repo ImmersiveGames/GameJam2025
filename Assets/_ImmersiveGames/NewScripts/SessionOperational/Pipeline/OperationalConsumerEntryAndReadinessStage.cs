@@ -131,13 +131,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalConsumerEntryAndReadinessStage
     {
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly Func<IOperationalRouteConsumerEntryPort> _entryPortResolver;
         private readonly Func<IOperationalRouteConsumerReadinessPort> _readinessPortResolver;
 
         public OperationalConsumerEntryAndReadinessStage(
+            OperationalFactRecorder factRecorder,
             Func<IOperationalRouteConsumerEntryPort> entryPortResolver,
             Func<IOperationalRouteConsumerReadinessPort> readinessPortResolver)
         {
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _entryPortResolver = entryPortResolver ?? throw new ArgumentNullException(nameof(entryPortResolver));
             _readinessPortResolver = readinessPortResolver ?? throw new ArgumentNullException(nameof(readinessPortResolver));
         }

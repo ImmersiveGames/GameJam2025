@@ -1402,7 +1402,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     completionKind: "Completed",
                     status: status,
                     continuationKind: telemetry.ContinuationKind),
-                definition,
                 this,
                 _activityContentRuntimeState,
                 _activityContentReleaseRuntimeState,
@@ -1642,7 +1641,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             ActivityObjectContributorUnregisterStage.Execute(
                 new ActivityObjectContributorUnregisterStageCommand(command.Identity, command, entrySequence),
-                definition,
                 this,
                 _activityObjectExitRuntimeState,
                 facts,
@@ -1746,7 +1744,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                             operation,
                             source,
                             reason),
-                        definition,
                         facts,
                         snapshots);
                     if (result.ShouldContinueEntry)
@@ -1820,7 +1817,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         source,
                         reason,
                         error),
-                    _state.CurrentDefinition,
                     contentLoadFacts);
             }
             else if (active.OperationKind == SessionActivityPendingOperationKind.ActivityContentSceneUnload)
@@ -4581,7 +4577,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorResetResult result = results[0];
             DebugUtility.Log(
                 typeof(SessionActivityPipeline),
-                $"event='ActorResetQaAppliedFromInventory' reason='{outcomeReason}' playerSlotId='{selected.PlayerSlotId}' playerActorId='{selected.PlayerActorId}' observedPlayerSlotId='{observedIdentity.PlayerSlotId}' observedPlayerActorId='{observedIdentity.PlayerActorId}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' appliedReferenceCount='{result.AppliedReferenceCount}' skippedReferenceCount='{result.SkippedReferenceCount}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' referenceCount='{resetReferences.Count}' sourceReferenceCount='{sourceResetReferences.Count}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"event='ActorResetQaAppliedFromInventory' reason='{outcomeReason}' playerSlotId='{selected.PlayerSlotId}' playerActorId='{selected.PlayerActorId}' observedPlayerSlotId='{observedIdentity.PlayerSlotId}' observedPlayerActorId='{observedIdentity.PlayerActorId}' actorId='{selectedPlayerInstance.ActorId}' actorInstanceRuntimeId='{selectedPlayerInstance.ActorInstanceRuntimeId}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' appliedReferenceCount='{result.AppliedReferenceCount}' skippedReferenceCount='{result.SkippedReferenceCount}' resetDescriptor='endpoint_inventory' descriptorMode='endpoint_inventory' referenceCount='{resetReferences.Count}' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
             return true;
         }

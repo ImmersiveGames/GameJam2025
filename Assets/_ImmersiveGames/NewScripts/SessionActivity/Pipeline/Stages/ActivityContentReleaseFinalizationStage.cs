@@ -86,7 +86,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityContentReleaseFinalizationStageResult Execute(
             ActivityContentReleaseFinalizationStageCommand command,
-            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityContentRuntimeState contentRuntimeState,
             ActivityContentReleaseRuntimeState releaseRuntimeState,
@@ -111,17 +110,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool awaitingBefore = releaseRuntimeState.IsAwaitingContinuation;
 
             int entrySequence = command.EntrySequence;
-            var completedIdentity = endpoint.BuildIdentity(
-                definition,
+            var completedIdentity = BuildIdentity(
+                command.Command.Identity,
                 SessionActivityStage.ActivityContentReleaseCompleted,
-                entrySequence);
+                entrySequence,
+                command.Source);
 
             ActivityObjectContributorUnregisterStage.Execute(
                 new ActivityObjectContributorUnregisterStageCommand(
                     command.Command.Identity,
                     command.Command,
                     entrySequence),
-                definition,
                 endpoint,
                 objectExitRuntimeState,
                 facts,
@@ -176,6 +175,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity: completedIdentity,
                 continuationKind: command.ContinuationKind,
                 reason: "finalized");
+        }
+
+        private static SessionActivityIdentity BuildIdentity(
+            SessionActivityIdentity identity,
+            SessionActivityStage stage,
+            int entrySequence,
+            string source)
+        {
+            return new SessionActivityIdentity(
+                identity.PipelineId,
+                identity.SessionId,
+                identity.ActivityId,
+                identity.ActivityOrdinal,
+                entrySequence,
+                stage,
+                source);
         }
 
         private static void LogFinalizationEvent(
