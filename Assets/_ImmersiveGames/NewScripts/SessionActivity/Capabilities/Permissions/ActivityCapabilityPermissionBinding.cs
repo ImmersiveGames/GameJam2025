@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             ActivityCapabilityPermissionId permissionId,
             ActivityCapabilityPermissionScope scope,
             ActivityCapabilityPermissionState state,
-            string receiverId,
+            ActivityCapabilityPermissionReceiverId receiverId,
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PermissionId = permissionId;
             Scope = scope;
             State = state;
-            ReceiverId = Normalize(receiverId);
+            ReceiverId = receiverId;
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             PlayerActorId = playerActorId;
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public ActivityCapabilityPermissionId PermissionId { get; }
         public ActivityCapabilityPermissionScope Scope { get; }
         public ActivityCapabilityPermissionState State { get; }
-        public string ReceiverId { get; }
+        public ActivityCapabilityPermissionReceiverId ReceiverId { get; }
         public ActorId ActorId { get; }
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public PlayerActorId PlayerActorId { get; }
@@ -40,14 +40,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PermissionId != ActivityCapabilityPermissionId.Unknown &&
             Scope != ActivityCapabilityPermissionScope.Unknown &&
             State != ActivityCapabilityPermissionState.Unknown &&
-            !string.IsNullOrWhiteSpace(ReceiverId) &&
+            ReceiverId.IsValid &&
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
             PlayerActorId.IsValid;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
     }
 }

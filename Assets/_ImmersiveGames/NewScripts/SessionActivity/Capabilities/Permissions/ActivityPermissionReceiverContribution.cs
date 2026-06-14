@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PlayerSlotId playerSlotId,
             ActivityCapabilityPermissionId permissionId,
             ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
-            string receiverId,
+            ActivityCapabilityPermissionReceiverId receiverId,
             string componentPath,
             IActivityPermissionReceiverProvider provider,
             string source,
@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PlayerSlotId = playerSlotId;
             PermissionId = permissionId;
             ReceiverIdentity = receiverIdentity;
-            ReceiverId = Normalize(receiverId);
+            ReceiverId = receiverId;
             ComponentPath = Normalize(componentPath);
             Provider = provider;
             Source = Normalize(source);
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public PlayerSlotId PlayerSlotId { get; }
         public ActivityCapabilityPermissionId PermissionId { get; }
         public ActivityCapabilityPermissionReceiverIdentity ReceiverIdentity { get; }
-        public string ReceiverId { get; }
+        public ActivityCapabilityPermissionReceiverId ReceiverId { get; }
         public string ComponentPath { get; }
         public IActivityPermissionReceiverProvider Provider { get; }
         public string Source { get; }
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PlayerActorId.IsValid &&
             PermissionId != ActivityCapabilityPermissionId.Unknown &&
             ReceiverIdentity.IsValid &&
-            !string.IsNullOrWhiteSpace(ReceiverId) &&
+            ReceiverId.IsValid &&
             Provider != null &&
             !string.IsNullOrWhiteSpace(Source);
 

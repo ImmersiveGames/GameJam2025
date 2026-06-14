@@ -4,6 +4,10 @@ using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
+    // PlayerMovementControlStage
+    // Mantido como implementação ativa para controle de movimento de players no pipeline macro.
+    // (O rail "Player" paralelo ainda existe aqui para movement control durante activities.
+    //  Futura remoção/migração faz parte do H2 do plano de higiene de arquitetura.)
     internal static class PlayerMovementControlStage
     {
         public static IReadOnlyList<MovementControlRecord> Execute(

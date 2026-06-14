@@ -9,7 +9,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryPlayerInputBindingResult Execute(
             ActivityEntryPlayerInputBindingCommand command,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryIdentityRuntimeBridge identityBridge,
+            IActivityEntryFactRuntimeBridge factBridge,
             IPlayerInputBindingAdapter adapter,
             ActivityPlayerActorRegistry registry,
             List<SessionActivityFact> facts,
@@ -20,7 +21,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryPlayerInputBindingCommand is invalid.");
             }
 
-            endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            identityBridge = identityBridge ?? throw new ArgumentNullException(nameof(identityBridge));
+            factBridge = factBridge ?? throw new ArgumentNullException(nameof(factBridge));
             adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
             registry = registry ?? throw new ArgumentNullException(nameof(registry));
             facts ??= new List<SessionActivityFact>();
@@ -28,15 +30,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             int entrySequence = command.Identity.EntrySequence;
             var startedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingStarted);
-            endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.PlayerInputBindingStarted);
-            endpoint.EmitFact(
+            identityBridge.SetCurrentIdentity(startedIdentity, SessionActivityStage.PlayerInputBindingStarted);
+            factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.PlayerInputBindingStarted,
                 startedIdentity,
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' player input binding started.");
-            endpoint.EmitSnapshot(
+            factBridge.EmitSnapshot(
                 snapshots,
                 "player_input_binding_started",
                 command.Source,
@@ -48,15 +50,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (requiredCount <= 0)
             {
                 var skippedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput);
-                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput);
-                endpoint.EmitFact(
+                identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput);
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerInputBindingSkippedNoRequiredInput,
                     skippedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{command.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "player_input_binding_skipped_no_required_input",
                     command.Source,
@@ -64,15 +66,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
 
                 var completedAfterSkipIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingCompleted);
-                endpoint.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.PlayerInputBindingCompleted);
-                endpoint.EmitFact(
+                identityBridge.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.PlayerInputBindingCompleted);
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerInputBindingCompleted,
                     completedAfterSkipIdentity,
                     command.Source,
                     command.Reason,
                     $"'{command.ActivityId}' player input binding completed with skip.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "player_input_binding_completed",
                     command.Source,
@@ -91,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             for (int index = 0; index < requirements.Count; index++)
             {
                 var requirement = requirements[index];
-                endpoint.EmitFact(
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerInputBindingCommandIssued,
                     startedIdentity,
@@ -119,15 +121,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (!record.IsValid)
                 {
                     var failedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingFailed);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
-                    endpoint.EmitFact(
+                    identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                    factBridge.EmitFact(
                         facts,
                         SessionActivityFactKind.PlayerInputBindingFailed,
                         failedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{command.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
-                    endpoint.EmitSnapshot(
+                    factBridge.EmitSnapshot(
                         snapshots,
                         "player_input_binding_failed",
                         command.Source,
@@ -141,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     requiredBoundCount += 1;
                 }
 
-                endpoint.EmitFact(
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerInputBound,
                     startedIdentity,
@@ -153,15 +155,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (requiredBoundCount < requiredCount)
             {
                 var failedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingFailed);
-                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
-                endpoint.EmitFact(
+                identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerInputBindingFailed,
                     failedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{command.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "player_input_binding_failed",
                     command.Source,
@@ -171,15 +173,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             var completedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingCompleted);
-            endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.PlayerInputBindingCompleted);
-            endpoint.EmitFact(
+            identityBridge.SetCurrentIdentity(completedIdentity, SessionActivityStage.PlayerInputBindingCompleted);
+            factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.PlayerInputBindingCompleted,
                 completedIdentity,
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
-            endpoint.EmitSnapshot(
+            factBridge.EmitSnapshot(
                 snapshots,
                 "player_input_binding_completed",
                 command.Source,

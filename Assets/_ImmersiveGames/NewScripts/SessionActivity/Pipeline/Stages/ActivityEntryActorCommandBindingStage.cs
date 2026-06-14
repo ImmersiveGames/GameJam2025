@@ -9,7 +9,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActorCommandBindingResult Execute(
             ActorCommandBindingCommand command,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryIdentityRuntimeBridge identityBridge,
+            IActivityEntryFactRuntimeBridge factBridge,
             IActorCommandBindingAdapter adapter,
             ActivityPlayerActorRegistry registry,
             List<SessionActivityFact> facts,
@@ -20,7 +21,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActorCommandBindingCommand is invalid.");
             }
 
-            endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            identityBridge = identityBridge ?? throw new ArgumentNullException(nameof(identityBridge));
+            factBridge = factBridge ?? throw new ArgumentNullException(nameof(factBridge));
             adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
             registry = registry ?? throw new ArgumentNullException(nameof(registry));
             facts ??= new List<SessionActivityFact>();
@@ -28,13 +30,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             int entrySequence = command.PipelineIdentity.EntrySequence;
             var startedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingStarted);
-            endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorCommandBindingStarted);
+            identityBridge.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorCommandBindingStarted);
 
             IReadOnlyList<ActorCommandBindingReference> requirements = command.Bindings ?? Array.Empty<ActorCommandBindingReference>();
             if (requirements.Count == 0)
             {
                 var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
-                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
+                identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
                 return new ActorCommandBindingResult(
                     skippedIdentity,
                     totalRequirements: 0,
@@ -94,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             var completedIdentity = BuildIdentity(command, SessionActivityStage.ActorCommandBindingCompleted);
-            endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorCommandBindingCompleted);
+            identityBridge.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorCommandBindingCompleted);
             return new ActorCommandBindingResult(
                 completedIdentity,
                 requirements.Count,

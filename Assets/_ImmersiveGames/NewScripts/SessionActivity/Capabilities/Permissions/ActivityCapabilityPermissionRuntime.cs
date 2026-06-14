@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
     public sealed class ActivityCapabilityPermissionRuntime : IActivityCapabilityPermissionRuntime
     {
-        private readonly Dictionary<string, IActivityCapabilityPermissionReceiver> _receivers = new(StringComparer.Ordinal);
+        private readonly Dictionary<ActivityCapabilityPermissionReceiverId, IActivityCapabilityPermissionReceiver> _receivers = new();
         private readonly Dictionary<PermissionKey, ActivityCapabilityPermissionBinding> _bindingsByKey = new();
         private string _activePipelineId = string.Empty;
         private string _activeSessionStateId = string.Empty;
@@ -68,8 +68,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                     continue;
                 }
 
-                string receiverId = Normalize(reference.ReceiverId);
-                if (string.IsNullOrWhiteSpace(receiverId) || _receivers.ContainsKey(receiverId))
+                ActivityCapabilityPermissionReceiverId receiverId = reference.ReceiverId;
+                if (!receiverId.IsValid || _receivers.ContainsKey(receiverId))
                 {
                     continue;
                 }
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             DebugUtility.LogVerbose(
                 typeof(ActivityCapabilityPermissionRuntime),
-                $"event='ActivityCapabilityPermissionPublished' permissionId='{command.PermissionId}' state='{command.State}' receiverId='runtime.unbound' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' playerActorId='{command.PlayerActorId}' playerSlotId='{command.PlayerSlotId}' pipelineId='{command.PipelineId}' sessionStateId='{command.SessionStateId}' activityId='{command.ActivityId}' entrySequence='{command.EntrySequence}' source='{command.Source}' reason='{command.Reason}'",
+                $"event='ActivityCapabilityPermissionPublished' permissionId='{command.PermissionId}' state='{command.State}' receiverId='{ActivityCapabilityPermissionReceiverId.RuntimeUnbound}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' playerActorId='{command.PlayerActorId}' playerSlotId='{command.PlayerSlotId}' pipelineId='{command.PipelineId}' sessionStateId='{command.SessionStateId}' activityId='{command.ActivityId}' entrySequence='{command.EntrySequence}' source='{command.Source}' reason='{command.Reason}'",
                 DebugUtility.Colors.Info);
 
             if (!command.IsValid)
@@ -132,7 +132,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 command.PermissionId,
                 command.Scope,
                 command.State,
-                receiverId: "runtime.unbound",
+                receiverId: ActivityCapabilityPermissionReceiverId.RuntimeUnbound,
                 command.ActorId,
                 command.ActorInstanceRuntimeId,
                 command.PlayerActorId,
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
         private void NotifyReceivers(ActivityCapabilityPermissionFact fact)
         {
-            foreach (KeyValuePair<string, IActivityCapabilityPermissionReceiver> pair in _receivers)
+            foreach (KeyValuePair<ActivityCapabilityPermissionReceiverId, IActivityCapabilityPermissionReceiver> pair in _receivers)
             {
                 var receiver = pair.Value;
                 if (receiver == null)
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
         private static void LogOutcome(string eventName, ActivityCapabilityPermissionFact fact)
         {
-            string message = $"event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='runtime.unbound' actorId='{fact.Command.ActorId}' actorInstanceRuntimeId='{fact.Command.ActorInstanceRuntimeId}' playerActorId='{fact.Command.PlayerActorId}' playerSlotId='{fact.Command.PlayerSlotId}' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'";
+            string message = $"event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='{ActivityCapabilityPermissionReceiverId.RuntimeUnbound}' actorId='{fact.Command.ActorId}' actorInstanceRuntimeId='{fact.Command.ActorInstanceRuntimeId}' playerActorId='{fact.Command.PlayerActorId}' playerSlotId='{fact.Command.PlayerSlotId}' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'";
 
             if (string.Equals(eventName, "ActivityCapabilityPermissionApplied", StringComparison.Ordinal))
             {

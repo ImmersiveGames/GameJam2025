@@ -122,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Command,
                     entrySequence),
                 endpoint,
+                endpoint,
                 objectExitRuntimeState,
                 facts,
                 snapshots);

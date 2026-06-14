@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
@@ -11,6 +12,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeR
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
@@ -19,16 +21,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     public sealed class ActivityCapabilityPermissionScanner : IActivityCapabilityScanner
     {
         private const string ModuleId = "SessionActivity.PermissionTarget";
-        private const string MovementReceiverKind = "movement";
-        private const string ProjectileFireReceiverKind = "projectile_fire";
-        private const string RetainedPlayerReceiverKind = "retained_player";
-        private readonly IPlayerActorCapabilityIdentityResolver _identityResolver;
-
-        public ActivityCapabilityPermissionScanner(IPlayerActorCapabilityIdentityResolver identityResolver)
-        {
-            _identityResolver = identityResolver ?? throw new InvalidOperationException("ActivityCapabilityPermissionScanner requires non-null identity resolver.");
-        }
-
         public string ScannerId => "activity_capability_permission_scanner.v1";
         public int Order => 300;
 
@@ -69,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
-                if (!_identityResolver.TryResolve(target, out var playerIdentity))
+                if (!TryResolvePlayerIdentity(target, out var playerActorId, out var playerSlotId))
                 {
                     var endpointComponent = (movementEndpoint as Component) ?? (projectileFireEndpoint as Component);
                     string unresolvedComponentPath = endpointComponent != null
@@ -81,16 +73,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 }
 
                 string ownerPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform);
-                string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(
+                string ownerId = BuildPermissionOwnerId(
                     inventoryId,
-                    ActivityCapabilityOwnerKind.PlayerActor,
-                    ownerPath,
-                    target.ActorId);
+                    ActivityCapabilityOwnerKind.Actor,
+                    new ActorId(target.ActorId),
+                    target.ActorInstanceRuntimeId);
 
                 if (ownerKeys.Add(ownerId))
                 {
                     owners.Add(new ActivityCapabilityOwnerDescriptor(
-                        ActivityCapabilityOwnerKind.PlayerActor,
+                        ActivityCapabilityOwnerKind.Actor,
                         ownerId,
                         ownerPath,
                         target.SourceSceneName,
@@ -104,10 +96,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     context.Identity.SessionId,
                     context.Identity.ActivityId,
                     context.Identity.EntrySequence,
-                    playerIdentity.ActorId,
-                    playerIdentity.ActorInstanceRuntimeId,
-                    playerIdentity.PlayerActorId,
-                    playerIdentity.PlayerSlotId);
+                    new ActorId(target.ActorId),
+                    target.ActorInstanceRuntimeId,
+                    playerActorId,
+                    playerSlotId);
 
                 if (movementEndpoint != null)
                 {
@@ -117,7 +109,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         inventoryId,
                         ownerId,
                         context.Identity,
-                        playerIdentity,
                         receiverIdentity,
                         movementEndpoint as Component,
                         movementEndpoint,
@@ -133,7 +124,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         inventoryId,
                         ownerId,
                         context.Identity,
-                        playerIdentity,
                         receiverIdentity,
                         projectileFireEndpoint as Component,
                         projectileFireEndpoint,
@@ -153,7 +143,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     inventoryId,
                     ownerId,
                     context.Identity,
-                    playerIdentity,
                     receiverIdentity,
                     directPermissionReceiver,
                     context.Source,
@@ -173,25 +162,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 context.Reason);
         }
 
-        private static string BuildCapabilityPath(
-            string receiverKind,
-            string componentPath,
-            ActivityCapabilityPermissionReceiverIdentity receiverIdentity)
+        private static string BuildPermissionOwnerId(
+            ActivityCapabilityInventoryId inventoryId,
+            ActivityCapabilityOwnerKind ownerKind,
+            ActorId actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId)
         {
-            string normalizedReceiverKind = string.IsNullOrWhiteSpace(receiverKind) ? "permission" : receiverKind.Trim();
-            string normalizedComponentPath = string.IsNullOrWhiteSpace(componentPath) ? string.Empty : componentPath.Trim();
-            string actorInstanceToken = receiverIdentity.ActorInstanceRuntimeId.IsValid
-                ? receiverIdentity.ActorInstanceRuntimeId.Value
+            string actorIdToken = actorId.IsValid ? actorId.Value : string.Empty;
+            string actorInstanceToken = actorInstanceRuntimeId.IsValid
+                ? actorInstanceRuntimeId.Value
                 : "actor.instance.unbound";
-            string slotToken = receiverIdentity.PlayerSlotId.IsValid
-                ? receiverIdentity.PlayerSlotId.Value
-                : "slot.unbound";
-            if (!string.IsNullOrWhiteSpace(normalizedComponentPath))
-            {
-                return $"{normalizedReceiverKind}|componentPath={normalizedComponentPath}|actorInstance={actorInstanceToken}|slot={slotToken}";
-            }
+            return $"{inventoryId.Signature}|ownerKind={ownerKind}|actorId={actorIdToken}|actorInstance={actorInstanceToken}";
+        }
 
-            return $"{normalizedReceiverKind}|actorInstance={actorInstanceToken}|slot={slotToken}";
+        private static string BuildPermissionCapabilityId(
+            ActivityCapabilityInventoryId inventoryId,
+            string ownerId,
+            ActivityCapabilityPermissionId permissionId,
+            ActivityCapabilityPermissionReceiverId receiverId)
+        {
+            return $"{inventoryId.Signature}|ownerId={ownerId}|capabilityKind={ActivityCapabilityKind.PermissionTarget}|moduleId={ModuleId}|permissionId={permissionId}|receiverId={receiverId}";
         }
 
         private static void AppendMovementPermissionReceiverContribution(
@@ -200,7 +190,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityInventoryId inventoryId,
             string ownerId,
             SessionActivityIdentity identity,
-            PlayerActorCapabilityIdentity playerIdentity,
             ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
             Component endpointComponent,
             IActorMovementEndpoint movementEndpoint,
@@ -210,36 +199,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string componentPath = endpointComponent != null
                 ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                 : string.Empty;
-            string capabilityPath = BuildCapabilityPath(MovementReceiverKind, componentPath, receiverIdentity);
-            string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+            ActivityCapabilityPermissionReceiverId receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(receiverIdentity);
+            string capabilityId = BuildPermissionCapabilityId(
                 inventoryId,
                 ownerId,
-                ActivityCapabilityKind.PermissionTarget,
-                ModuleId,
-                capabilityPath);
+                ActivityCapabilityPermissionId.ActivityGameplayControl,
+                receiverId);
 
             if (!capabilityKeys.Add(capabilityId))
             {
                 return;
             }
 
-            string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(receiverIdentity);
             IActivityPermissionReceiverProvider receiverProvider = new PlayerMovementPermissionReceiverProvider(
                 movementEndpoint,
                 receiverId,
-                playerIdentity.ActorId,
-                playerIdentity.ActorInstanceRuntimeId,
-                playerIdentity.PlayerActorId,
-                playerIdentity.PlayerSlotId);
+                receiverIdentity.ActorId,
+                receiverIdentity.ActorInstanceRuntimeId,
+                receiverIdentity.PlayerActorId,
+                receiverIdentity.PlayerSlotId);
 
             contributions.Add(new ActivityPermissionReceiverContribution(
                 identity,
                 capabilityId,
                 ownerId,
-                playerIdentity.ActorId,
-                playerIdentity.ActorInstanceRuntimeId,
-                playerIdentity.PlayerActorId,
-                playerIdentity.PlayerSlotId,
+                receiverIdentity.ActorId,
+                receiverIdentity.ActorInstanceRuntimeId,
+                receiverIdentity.PlayerActorId,
+                receiverIdentity.PlayerSlotId,
                 ActivityCapabilityPermissionId.ActivityGameplayControl,
                 receiverIdentity,
                 receiverId,
@@ -255,7 +242,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityInventoryId inventoryId,
             string ownerId,
             SessionActivityIdentity identity,
-            PlayerActorCapabilityIdentity playerIdentity,
             ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
             Component endpointComponent,
             IActorProjectileFireEndpoint projectileFireEndpoint,
@@ -265,36 +251,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string componentPath = endpointComponent != null
                 ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                 : string.Empty;
-            string capabilityPath = BuildCapabilityPath(ProjectileFireReceiverKind, componentPath, receiverIdentity);
-            string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+            ActivityCapabilityPermissionReceiverId receiverId = ActorProjectileFirePermissionReceiver.CreateReceiverId(receiverIdentity);
+            string capabilityId = BuildPermissionCapabilityId(
                 inventoryId,
                 ownerId,
-                ActivityCapabilityKind.PermissionTarget,
-                ModuleId,
-                capabilityPath);
+                ActivityCapabilityPermissionId.ActivityGameplayControl,
+                receiverId);
 
             if (!capabilityKeys.Add(capabilityId))
             {
                 return;
             }
 
-            string receiverId = ActorProjectileFirePermissionReceiver.CreateReceiverId(receiverIdentity);
             IActivityPermissionReceiverProvider receiverProvider = new ActorProjectileFirePermissionReceiverProvider(
                 projectileFireEndpoint,
                 receiverId,
-                playerIdentity.ActorId,
-                playerIdentity.ActorInstanceRuntimeId,
-                playerIdentity.PlayerActorId,
-                playerIdentity.PlayerSlotId);
+                receiverIdentity.ActorId,
+                receiverIdentity.ActorInstanceRuntimeId,
+                receiverIdentity.PlayerActorId,
+                receiverIdentity.PlayerSlotId);
 
             contributions.Add(new ActivityPermissionReceiverContribution(
                 identity,
                 capabilityId,
                 ownerId,
-                playerIdentity.ActorId,
-                playerIdentity.ActorInstanceRuntimeId,
-                playerIdentity.PlayerActorId,
-                playerIdentity.PlayerSlotId,
+                receiverIdentity.ActorId,
+                receiverIdentity.ActorInstanceRuntimeId,
+                receiverIdentity.PlayerActorId,
+                receiverIdentity.PlayerSlotId,
                 ActivityCapabilityPermissionId.ActivityGameplayControl,
                 receiverIdentity,
                 receiverId,
@@ -310,7 +294,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityInventoryId inventoryId,
             string ownerId,
             SessionActivityIdentity identity,
-            PlayerActorCapabilityIdentity playerIdentity,
             ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
             IActorPermissionReceiver directPermissionReceiver,
             string source,
@@ -321,8 +304,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return;
             }
 
-            string receiverId = directPermissionReceiver.ReceiverId;
-            if (string.IsNullOrWhiteSpace(receiverId))
+            ActivityCapabilityPermissionReceiverId receiverId = directPermissionReceiver.ReceiverId;
+            if (!receiverId.IsValid)
             {
                 return;
             }
@@ -331,13 +314,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string componentPath = receiverComponent != null
                 ? ActivityCapabilityTransformPathUtility.BuildTransformPath(receiverComponent.transform)
                 : string.Empty;
-            string capabilityPath = BuildCapabilityPath(RetainedPlayerReceiverKind, componentPath, receiverIdentity);
-            string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+            string capabilityId = BuildPermissionCapabilityId(
                 inventoryId,
                 ownerId,
-                ActivityCapabilityKind.PermissionTarget,
-                ModuleId,
-                capabilityPath);
+                ActivityCapabilityPermissionId.ActivityGameplayControl,
+                receiverId);
 
             if (!capabilityKeys.Add(capabilityId))
             {
@@ -349,10 +330,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 identity,
                 capabilityId,
                 ownerId,
-                playerIdentity.ActorId,
-                playerIdentity.ActorInstanceRuntimeId,
-                playerIdentity.PlayerActorId,
-                playerIdentity.PlayerSlotId,
+                receiverIdentity.ActorId,
+                receiverIdentity.ActorInstanceRuntimeId,
+                receiverIdentity.PlayerActorId,
+                receiverIdentity.PlayerSlotId,
                 ActivityCapabilityPermissionId.ActivityGameplayControl,
                 receiverIdentity,
                 receiverId,
@@ -362,7 +343,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 reason));
 
             DebugUtility.LogVerbose(typeof(ActivityCapabilityPermissionScanner), 
-                $"event='retained_player_permission_receiver_contribution_resolved' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' actorId='{playerIdentity.ActorId}' actorInstanceRuntimeId='{playerIdentity.ActorInstanceRuntimeId}' playerActorId='{playerIdentity.PlayerActorId}' playerSlotId='{playerIdentity.PlayerSlotId}' receiverId='{receiverId}' source='{source}' reason='{reason}'.");
+                $"event='retained_player_permission_receiver_contribution_resolved' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' actorId='{receiverIdentity.ActorId}' actorInstanceRuntimeId='{receiverIdentity.ActorInstanceRuntimeId}' playerActorId='{receiverIdentity.PlayerActorId}' playerSlotId='{receiverIdentity.PlayerSlotId}' receiverId='{receiverId}' source='{source}' reason='{reason}'.");
+        }
+
+        private static bool TryResolvePlayerIdentity(
+            ActorScanTarget target,
+            out PlayerActorId playerActorId,
+            out PlayerSlotId playerSlotId)
+        {
+            playerActorId = default;
+            playerSlotId = default;
+
+            if (target.RuntimeActor == null)
+            {
+                return false;
+            }
+
+            var playerIdentity = target.RuntimeActor.GetComponent<PlayerActorIdentity>();
+            if (playerIdentity == null || !playerIdentity.IsValid)
+            {
+                return false;
+            }
+
+            playerActorId = playerIdentity.PlayerActorId;
+            playerSlotId = playerIdentity.PlayerSlotId;
+            return playerActorId.IsValid && playerSlotId.IsValid;
         }
 
         private sealed class ExistingPermissionReceiverProvider : IActivityPermissionReceiverProvider
@@ -374,7 +379,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 _receiver = receiver;
             }
 
-            public string ReceiverId => _receiver?.ReceiverId ?? string.Empty;
+            public ActivityCapabilityPermissionReceiverId ReceiverId => _receiver?.ReceiverId ?? default;
 
             public bool TryCreateReceiver(out IActivityCapabilityPermissionReceiver receiver)
             {

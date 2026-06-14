@@ -43,8 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 string ownerPath = target.HasTargetObjectPath
                     ? target.TargetObjectPath
                     : ActivityCapabilityTransformPathUtility.BuildTransformPath(target.TargetObject.transform);
-                string ownerSource = target.Contribution.TargetId;
-                string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(inventoryId, ownerKind, ownerPath, ownerSource);
+                string ownerId = BuildActivityObjectOwnerId(inventoryId, ownerKind, target.Contribution);
 
                 if (ownerKeys.Add(ownerId))
                 {
@@ -79,16 +78,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     for (int contributionIndex = 0; contributionIndex < lifecycleContributions.Count; contributionIndex++)
                     {
                         TryAppendLifecycleContribution(
-                            capabilities,
-                            runtimeReferences,
-                            capabilityKeys,
-                            inventoryId,
-                            ownerId,
-                            target.Contribution.TargetId,
-                            BuildPolicyMetadata(target),
-                            target.Contribution.Requiredness == ActivitySetupRequirementRequiredness.Required,
-                            context.Source,
-                            behaviour,
+                        capabilities,
+                        runtimeReferences,
+                        capabilityKeys,
+                        inventoryId,
+                        ownerId,
+                        target.Contribution,
+                        BuildPolicyMetadata(target),
+                        target.Contribution.Requiredness == ActivitySetupRequirementRequiredness.Required,
+                        context.Source,
+                        behaviour,
                             lifecycleContributions[contributionIndex]);
                     }
                 }
@@ -113,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             HashSet<string> capabilityKeys,
             ActivityCapabilityInventoryId inventoryId,
             string ownerId,
-            string targetId,
+            ActivityObjectContributionReport contributionReport,
             IReadOnlyList<ActivityCapabilityPolicyEntry> metadata,
             bool required,
             string source,
@@ -132,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(providerBehaviour.transform);
             string componentType = providerBehaviour.GetType().FullName ?? providerBehaviour.GetType().Name;
-            string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(inventoryId, ownerId, capabilityKind, ModuleId, componentPath);
+            string capabilityId = BuildActivityObjectCapabilityId(inventoryId, ownerId, capabilityKind, contribution);
             if (!capabilityKeys.Add(capabilityId))
             {
                 return;
@@ -155,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityObjectResetEndpointReference(
                     capabilityId,
                     ownerId,
-                    targetId,
+                    contributionReport.TargetId,
                     componentPath,
                     resetContribution.ResetEndpoint));
             }
@@ -165,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityObjectSnapshotProviderReference(
                     capabilityId,
                     ownerId,
-                    targetId,
+                    contributionReport.TargetId,
                     componentPath,
                     snapshotContribution.SnapshotProvider));
             }
@@ -175,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityObjectSnapshotRestoreEndpointReference(
                     capabilityId,
                     ownerId,
-                    targetId,
+                    contributionReport.TargetId,
                     componentPath,
                     restoreContribution.RestoreEndpoint));
             }
@@ -185,10 +184,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityObjectReleaseEndpointReference(
                     capabilityId,
                     ownerId,
-                    targetId,
+                    contributionReport.TargetId,
                     componentPath,
                     releaseContribution.ReleaseEndpoint));
             }
+        }
+
+        private static string BuildActivityObjectOwnerId(
+            ActivityCapabilityInventoryId inventoryId,
+            ActivityCapabilityOwnerKind ownerKind,
+            ActivityObjectContributionReport contribution)
+        {
+            string normalizedTargetId = Normalize(contribution.TargetId);
+            string normalizedRoleId = Normalize(contribution.RoleId);
+            string normalizedSceneName = Normalize(contribution.SceneName);
+            string normalizedContentProfileId = Normalize(contribution.ContentProfileId);
+            return $"{inventoryId.Signature}|ownerKind={ownerKind}|contentProfileId={normalizedContentProfileId}|sceneName={normalizedSceneName}|targetId={normalizedTargetId}|roleId={normalizedRoleId}|contributorKind={contribution.ContributorKind}";
+        }
+
+        private static string BuildActivityObjectCapabilityId(
+            ActivityCapabilityInventoryId inventoryId,
+            string ownerId,
+            ActivityCapabilityKind capabilityKind,
+            IActivityObjectLifecycleContribution contribution)
+        {
+            return $"{inventoryId.Signature}|ownerId={Normalize(ownerId)}|capabilityKind={capabilityKind}|moduleId={ModuleId}|contributionId={Normalize(contribution.ContributionId)}";
         }
 
         private static bool TryResolveCapabilityKind(
@@ -248,6 +268,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             }
 
             return metadata;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

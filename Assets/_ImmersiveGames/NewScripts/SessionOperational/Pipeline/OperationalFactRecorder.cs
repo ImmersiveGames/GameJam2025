@@ -27,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public bool TryRecordStage(
             SessionOperationalStage stage,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             string message)
         {
+            string normalizedRouteIdentity = Normalize(routeIdentity);
             string normalizedRouteOperationId = Normalize(routeOperationId);
             string normalizedTransitionId = Normalize(transitionId);
             string normalizedRouteId = Normalize(routeId);
@@ -45,6 +47,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string normalizedMessage = Normalize(message);
 
             if (stage == SessionOperationalStage.Unknown ||
+                string.IsNullOrWhiteSpace(normalizedRouteIdentity) ||
                 string.IsNullOrWhiteSpace(normalizedRouteOperationId) ||
                 string.IsNullOrWhiteSpace(normalizedTransitionId) ||
                 transitionSequence <= 0 ||
@@ -70,7 +73,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 if (_state.HasStarted)
                 {
-                    if (normalizedRouteOperationId != _state.RouteOperationId ||
+                    if (normalizedRouteIdentity != _state.RouteIdentity ||
+                        normalizedRouteOperationId != _state.RouteOperationId ||
                         normalizedTransitionId != _state.TransitionId ||
                         transitionSequence != _state.TransitionSequence ||
                         normalizedRouteId != _state.RouteId ||
@@ -119,6 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             SessionOperationalIdentity identity = new(
                 _sessionOperationalPipelineId,
+                normalizedRouteIdentity,
                 normalizedRouteOperationId,
                 normalizedTransitionId,
                 transitionSequence,
@@ -151,13 +156,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             _state.AppendFact(fact);
             _state.AppendTrace(
-                $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeOperationId='{fact.Identity.RouteOperationId}' transitionId='{fact.Identity.TransitionId}' transitionSequence='{fact.Identity.TransitionSequence}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
+                $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeIdentity='{fact.Identity.RouteIdentity}' routeOperationId='{fact.Identity.RouteOperationId}' transitionId='{fact.Identity.TransitionId}' transitionSequence='{fact.Identity.TransitionSequence}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
 
             if (stage == SessionOperationalStage.InputCapabilityPrepared ||
                 stage == SessionOperationalStage.InitialInputModePrepared)
             {
                 _state.AppendTrace(
-                    $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
+                    $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeIdentity='{fact.Identity.RouteIdentity}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
             }
 
             if (stage == SessionOperationalStage.Completed)
@@ -182,6 +187,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public bool TryRecordInputStage(
             SessionOperationalStage stage,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -197,6 +203,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SetInputModeContext(routeClass, inputPolicy, initialInputMode);
             return TryRecordStage(
                 stage,
+                routeIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -220,6 +227,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             SessionOperationalIdentity identity = new(
                 _sessionOperationalPipelineId,
+                _state.RouteIdentity,
                 _state.RouteOperationId,
                 _state.TransitionId,
                 _state.TransitionSequence,
@@ -245,7 +253,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public string DumpState()
         {
-            return $"pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
+            return $"pipelineId='{_state.SessionOperationalPipelineId}' routeIdentity='{_state.RouteIdentity}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
         }
 
         // Etapa 3: helpers for per-operation fact recording (canonization - stages should use these or TryRecordStage)
@@ -258,6 +266,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
             return TryRecordStage(
                 stage,
+                id.RouteIdentity,
                 id.RouteOperationId,
                 id.TransitionId,
                 id.TransitionSequence,
@@ -325,4 +334,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 }
-

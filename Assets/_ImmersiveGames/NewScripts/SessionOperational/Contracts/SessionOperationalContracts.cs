@@ -186,6 +186,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
     {
         public SessionOperationalIdentity(
             string sessionOperationalPipelineId,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -196,6 +197,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             SessionOperationalStage stage)
         {
             SessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
+            RouteIdentity = Normalize(routeIdentity);
             RouteOperationId = Normalize(routeOperationId);
             TransitionId = Normalize(transitionId);
             TransitionSequence = transitionSequence < 0 ? 0 : transitionSequence;
@@ -206,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Stage = stage;
             RouteKey = new SessionOperationalRouteKey(
                 SessionOperationalPipelineId,
-                RouteId,
+                RouteIdentity,
                 RouteOperationId,
                 RouteId,
                 RouteProfileId,
@@ -215,6 +217,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             StageKey = new SessionOperationalStageKey(TransitionKey, Stage);
             CycleSignature = BuildCycleSignature(
                 SessionOperationalPipelineId,
+                RouteIdentity,
                 RouteOperationId,
                 TransitionId,
                 TransitionSequence,
@@ -226,6 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         }
 
         public string SessionOperationalPipelineId { get; }
+        public string RouteIdentity { get; }
         public string RouteOperationId { get; }
         public string TransitionId { get; }
         public int TransitionSequence { get; }
@@ -265,7 +269,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public override string ToString()
         {
             return IsValid
-                ? $"sessionOperationalPipelineId='{SessionOperationalPipelineId}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', transitionSequence='{TransitionSequence}', routeId='{RouteId}', routeProfileId='{RouteProfileId}', source='{Source}', reason='{Reason}', stage='{Stage}'"
+                ? $"sessionOperationalPipelineId='{SessionOperationalPipelineId}', routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', transitionSequence='{TransitionSequence}', routeId='{RouteId}', routeProfileId='{RouteProfileId}', source='{Source}', reason='{Reason}', stage='{Stage}'"
                 : "<none>";
         }
 
@@ -274,6 +278,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         private static string BuildCycleSignature(
             string sessionOperationalPipelineId,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -283,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string reason,
             SessionOperationalStage stage)
         {
-            return $"{sessionOperationalPipelineId}|{routeOperationId}|{transitionId}|{transitionSequence}|{routeId}|{routeProfileId}|{source}|{reason}|{stage}";
+            return $"{sessionOperationalPipelineId}|{routeIdentity}|{routeOperationId}|{transitionId}|{transitionSequence}|{routeId}|{routeProfileId}|{source}|{reason}|{stage}";
         }
 
         private static string Normalize(string value)
@@ -430,4 +435,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         }
     }
 }
-

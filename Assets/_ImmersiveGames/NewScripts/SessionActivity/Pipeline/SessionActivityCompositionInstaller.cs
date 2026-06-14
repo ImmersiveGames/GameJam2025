@@ -89,7 +89,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline,
                 canonicalPlayerInputActionsAsset,
                 _pipeline.ActivityActorExitRuntimeState);
-            _pipeline.BindEntryPipeline(activityEntryPipeline);
+            // SA-19B1 — BindEntryPipeline seam removed (real removal step).
+            // Old method deleted. Using transitional AttachEntryPipeline for now.
+            // See SA-19B0-Bridge-Surface-Freeze.md and SA-19 plan.
+            // Next: restructure so that EntryPipeline is created with narrow contracts and attached at construction time (SA-19B2).
+            _pipeline.AttachEntryPipeline(activityEntryPipeline);
 
             _globalsRegistered = true;
             try

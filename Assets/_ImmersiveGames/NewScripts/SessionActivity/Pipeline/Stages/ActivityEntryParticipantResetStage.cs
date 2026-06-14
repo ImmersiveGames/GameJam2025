@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
@@ -13,7 +11,6 @@ using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using UnityEngine;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
-using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -29,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityPlayerActorRegistry playerActorRegistry,
             IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
             IActivityEntryPlacementMarkerLookup placementMarkerLookup,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryFactRuntimeBridge factBridge,
             ActivityEntryLogSink logSink,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -117,10 +114,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 PlayerActivityParticipantBinding participantBinding = resolvedParticipant.ParticipantBinding;
-                if (!TryResolveActivePlayerActorHandleForParticipant(playerActorRegistry, participantBinding.ParticipantId, out PlayerActorRuntimeHandle actorHandle))
+                if (!playerActorRegistry.TryGetActiveHandleByParticipant(participantBinding.ParticipantId, out PlayerActorRuntimeHandle actorHandle) ||
+                    !actorHandle.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"Activity participant '{participantBinding.ParticipantId}' is not available for operation='reset' activityId='{command.ActivityId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}'.");
+                        $"required_activity_participant_reset_handle_missing: activityId='{command.ActivityId}' participantId='{participantBinding.ParticipantId}' playerSlotId='{participantBinding.PlayerSlotId}' actorId='{participantBinding.ActorId}' requirementId='{resolvedParticipant.RequirementId}'.");
                 }
 
                 IReadOnlyList<ActorCapabilityResetEndpointReference> sourceResetReferences = ResolveParticipantResetReferencesFromInventory(
@@ -136,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     skippedCount += 1;
-                    endpoint.EmitFact(
+                    factBridge.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityParticipantResetApplied,
                         identity,
@@ -158,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (resetReferences.Count == 0)
                 {
                     skippedCount += 1;
-                    endpoint.EmitFact(
+                    factBridge.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityParticipantResetApplied,
                         identity,
@@ -235,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 ValidateRequiredResetReferencesOrFail(resolvedResetCommand, resetRecords[0]);
 
-                endpoint.EmitFact(
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityParticipantResetApplied,
                     identity,
@@ -255,20 +253,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' block='participant_reset' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' total='{resolvedParticipants.Count}' applied='{appliedCount}' skipped='{skippedCount}'");
-        }
-
-        private static bool TryResolveActivePlayerActorHandleForParticipant(
-            ActivityPlayerActorRegistry playerActorRegistry,
-            PlayerSessionParticipantId participantId,
-            out PlayerActorRuntimeHandle handle)
-        {
-            handle = default;
-            if (playerActorRegistry == null || !participantId.IsValid)
-            {
-                return false;
-            }
-
-            return playerActorRegistry.TryGetActiveHandleByParticipant(participantId, out handle) && handle.IsValid;
         }
 
         private static IReadOnlyList<ActorCapabilityResetEndpointReference> ResolveParticipantResetReferencesFromInventory(

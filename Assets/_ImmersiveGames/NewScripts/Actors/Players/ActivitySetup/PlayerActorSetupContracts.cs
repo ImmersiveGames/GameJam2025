@@ -35,7 +35,25 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             ParticipantBinding.IsValid &&
             PlayerActorId.IsValid;
 
-        public static PlayerActorId BuildPlayerActorId(SessionActivityIdentity identity, ActorId actorId)
+        public static PlayerActorIdentityRecord Create(
+            SessionActivityIdentity identity,
+            ActivityParticipantBinding participantBinding)
+        {
+            if (!identity.IsValid || !participantBinding.IsValid)
+            {
+                return default;
+            }
+
+            PlayerActorId playerActorId = BuildPlayerActorId(identity, participantBinding.ActorId);
+            if (!playerActorId.IsValid)
+            {
+                return default;
+            }
+
+            return new PlayerActorIdentityRecord(identity, participantBinding, playerActorId);
+        }
+
+        private static PlayerActorId BuildPlayerActorId(SessionActivityIdentity identity, ActorId actorId)
         {
             if (!identity.IsValid || !actorId.IsValid)
             {

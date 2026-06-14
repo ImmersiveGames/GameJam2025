@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {

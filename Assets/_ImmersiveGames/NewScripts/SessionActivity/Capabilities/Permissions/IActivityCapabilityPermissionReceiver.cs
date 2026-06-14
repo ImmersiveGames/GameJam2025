@@ -2,7 +2,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
     public interface IActivityCapabilityPermissionReceiver
     {
-        string ReceiverId { get; }
+        ActivityCapabilityPermissionReceiverId ReceiverId { get; }
 
         void OnPermissionChanged(ActivityCapabilityPermissionFact fact);
     }

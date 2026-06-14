@@ -2488,3 +2488,82 @@ Activity01ToActivity02 PASS.
 RouteExitBackToMenu PASS.
 RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
 ```
+## BASE-ID identity stabilization — closure 2026-06-14
+
+Status: `BASE-ID identity stabilization — CLOSED FOR NOW`.
+
+Esta seção registra o fechamento controlado da frente `BASE-ID`, criada para auditar e estabilizar ownership de identidades runtime sem criar manager/coordinator genérico nem trilho paralelo de compatibilidade.
+
+### Checkpoints fechados
+
+```text
+BASE-ID-0        CLOSED / AUDIT
+BASE-ID-1A       CLOSED / PASS
+BASE-ID-1B       CLOSED / PASS
+BASE-ID-1C       CLOSED / PASS
+BASE-ID-1D       CLOSED / PASS
+BASE-ID-1E       CLOSED / PASS
+BASE-ID-1F       CLOSED / AUDIT
+BASE-ID-1G       CLOSED / PASS
+BASE-ID-1H       CLOSED / PASS
+BASE-ID-1I-AUDIT CLOSED / NO RUNTIME CHANGES
+BASE-ID-1I       DEFERRED
+```
+
+### Decisão
+
+`BASE-ID-1I — Type inventory lookup keys` fica adiado.
+
+A auditoria `BASE-ID-1I-AUDIT` concluiu que o risco atual não justifica tipar agora o índice central do `ActivityCapabilityInventory`. O inventário ainda usa `string` como índice técnico, mas o lookup funcional auditado está centralizado e os consumidores usam `capability.CapabilityId` vindo do descriptor do inventário, não strings reconstruídas localmente.
+
+A tipagem do dicionário neste momento tenderia a criar corte amplo sem resolver o risco remanescente mais concreto.
+
+### Resíduo aceito
+
+Os resíduos de maior atenção ficam nos scanners que ainda podem derivar `ownerId` funcional a partir de `ownerPath`:
+
+```text
+ActivityCapabilityCameraTargetScanner
+ActivityCapabilityActorPresentationScanner
+ActivityCapabilityActorAttributeScanner
+```
+
+Classificação: `High`, mas não `Blocker`.
+
+Eles não abrem nova frente agora. Se houver regressão concreta ou necessidade de reduzir esse risco, a ação futura deve ser um subcorte direto de `BASE-ID-1I`, focado apenas em remover `ownerPath` da owner identity funcional desses scanners. Não criar corte novo fora do plano apenas por aparecer `componentPath` em log.
+
+### Invariantes preservadas
+
+```text
+ActivityCapabilityInventory continua índice técnico, não owner de lifecycle.
+Pipelines continuam donos de ordem, lifecycle, policies e handoffs.
+Scanners produzem descriptors/references; não decidem lifecycle macro.
+componentPath, ownerPath, providerType, targetId e roleId podem permanecer como metadata/log quando não decidem lookup funcional.
+Sem IdentityManager.
+Sem IdentityCoordinator.
+Sem registry novo.
+Sem fallback silencioso.
+Sem alias/compat transitória.
+Sem branch player/nonplayer novo.
+Sem tipagem global por estética.
+```
+
+### Evidência aceita
+
+Os smokes dos cortes `BASE-ID-1A` a `BASE-ID-1H` validaram os cenários canônicos:
+
+```text
+sem error CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActorReset via endpoint_inventory preservado
+ActivityObject reset/snapshot/release/unregister preservados
+activity_02 no-content preservada
+```
+
+A auditoria `BASE-ID-1I-AUDIT` não alterou runtime; portanto não exige smoke próprio.

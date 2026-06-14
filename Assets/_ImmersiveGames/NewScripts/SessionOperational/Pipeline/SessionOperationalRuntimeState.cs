@@ -8,6 +8,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly List<string> _trace = new();
 
         public string SessionOperationalPipelineId { get; internal set; }
+        public string RouteIdentity { get; internal set; }
         public string RouteOperationId { get; internal set; }
         public string TransitionId { get; internal set; }
         public int TransitionSequence { get; internal set; }
@@ -26,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public void Reset(
             string sessionOperationalPipelineId,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -33,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string routeProfileId)
         {
             SessionOperationalPipelineId = sessionOperationalPipelineId;
+            RouteIdentity = routeIdentity;
             RouteOperationId = routeOperationId;
             TransitionId = transitionId;
             TransitionSequence = transitionSequence;
@@ -64,6 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             CurrentIdentity = identity;
             CurrentStage = identity.Stage;
             TransitionSequence = identity.TransitionSequence;
+            RouteIdentity = identity.RouteIdentity;
             RouteId = identity.RouteId;
             RouteProfileId = identity.RouteProfileId;
             RouteOperationId = identity.RouteOperationId;

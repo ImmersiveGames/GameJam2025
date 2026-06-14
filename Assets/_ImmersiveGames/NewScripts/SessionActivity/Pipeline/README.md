@@ -118,12 +118,22 @@ RouteActivitySave policy gap: current completed activity vs last useful snapshot
 
 ## Status canônico
 
-O resumo atual de `SessionActivity` fica em:
+O resumo atual de `SessionActivity` (consolidado) fica em:
 
 - `Docs/Reports/SessionActivity-2.0-Current-Status.md`
 
-Este README mantém apenas a documentação operacional do pipeline.
-O histórico de corte continua no ADR e nos relatórios específicos.
+O plano de normalização Base 2.0 (SA-19 wave) está em:
+
+- `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md`
+
+A auditoria paralela ao cleanup do SessionOperational (2026-06-14) está em:
+
+- `Docs/Reports/SessionActivity-Base2.0-Ownership-Canonization-Audit-2026-06-14.md`
+
+Este README mantém a documentação operacional do pipeline e o histórico detalhado dos cortes anteriores (SA-7B*, SA-8A*, SA-13/14/17/18 etc.).
+Todo trabalho de normalização a partir de junho/2026 deve seguir o plano SA-19 e o checklist anti-deslocamento do ADR-2.0-0001.
+
+**Antes de qualquer atividade SA-19+:** leia o plano + a auditoria + ADR-2.0-0002 + este README e responda as 10 perguntas anti-deslocamento.
 
 ### Smoke baseline
 

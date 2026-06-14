@@ -10,3 +10,10 @@ Docs/Reports/ACTOR-CAPACITY-3A-Passive-Actor-Snapshot-Restore-Release-Contracts.
 Motivo: contrato passivo transitório já consolidado em ADR/status canônico.
 Docs/Guides/SessionOperational-Application-Guide.md
 Motivo: espelho redundante do README.md canônico dentro de SessionOperational/ (conteúdo idêntico no cabeçalho e estrutura; README do módulo é a fonte viva com atualizações das Etapas de canonização). Remoção segue padrão de limpeza de docs redundantes (ver entradas anteriores em REMOVED_FILES.txt e normalizações de 2026-06-14).
+
+Docs/Plans/Plan-2.0-SessionActivity-Refactor.md (historical reference)
+Motivo: superseded by the 2026-06-14 SA-19 Canonization Normalization Plan + Current-Status report. Old plan references moved/consolidated.
+
+SessionActivity/Pipeline/Stages/PlayerInputBindingStage.cs
+SessionActivity/Pipeline/Stages/PlayerInputBindingStage.cs.meta
+Motivo: SA-Arch-H1 — Obsolete/legacy stage file (empty, with comment declaring the canonical path is now ActivityEntryPlayerInputBindingStage). Pure legacy rail removal as first item of architecture hygiene plan.

@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActorCommandBindingAdapter _actorCommandBindingAdapter;
         private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
-        private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
+        private readonly IActivityCapabilityInventoryPreviewSource _activityCapabilityInventoryPreviewSource;
         private readonly ActivityEntryInventoryRuntimeState _activityInventoryRuntimeState = new();
         private readonly ActivityParticipationRuntimeState _activityParticipationRuntimeState = new();
         private IReadOnlyList<SessionActivityActorMaterializationPlanEntry> _currentActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
             _actorCommandBindingAdapter = new ActorCommandBindingAdapter();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
-            _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
+            _activityCapabilityInventoryPreviewSource = new ActivityCapabilityInventoryPreviewSource();
         }
 
         public ActivityEntryPreparationResult PrepareEntry(
@@ -311,7 +311,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _activityPlayerActorRegistry,
                     _currentActorMaterializationPlanEntries,
                     _placementMarkerLookup,
-                    _runtimeBridge,
+                    _factBridge,
                     _logSink,
                     facts,
                     snapshots);
@@ -1005,7 +1005,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActorCommandBindingResult result = ActivityEntryActorCommandBindingStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _actorCommandBindingAdapter,
                     _activityPlayerActorRegistry,
                     facts,
@@ -1077,7 +1078,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command,
                     discoveryResult,
                     actorTargets,
-                    _activityCapabilityInventoryCoordinator,
+                    _activityCapabilityInventoryPreviewSource,
                     _runtimeBridge,
                     _activityInventoryRuntimeState,
                     facts,
@@ -1153,7 +1154,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryActorPresentationSetupResult result = ActivityEntryActorPresentationStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _activityInventoryRuntimeState.CurrentActivityPresentationSetupContributions,
                     _activityActorExitRuntimeState,
                     _actorPresentationBridge,
@@ -1196,7 +1198,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryActorAttributeSetupResult result = ActivityEntryActorAttributeStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _activityActorExitRuntimeState,
                     facts,
                     snapshots);
@@ -1235,7 +1238,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryActorParticipationEnterResult result = ActivityEntryActorParticipationStage.ExecuteEnter(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _activityInventoryRuntimeState.CurrentActorInventoryFeedResult,
                     _activityActorExitRuntimeState,
                     _actorParticipationBridge,
@@ -1276,7 +1280,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryPlayerInputBindingResult result = ActivityEntryPlayerInputBindingStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _playerInputBindingAdapter,
                     _activityPlayerActorRegistry,
                     facts,
@@ -1316,7 +1321,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryPermissionTargetPreparationResult result = ActivityGateBindingStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _permissionTargetBridge,
                     facts,
                     snapshots);
@@ -1355,7 +1361,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryMovementBindingResult result = ActivityEntryMovementBindingStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _activityPlayerActorRegistry,
                     _movementBindingAdapter,
                     _movementBindingBridge,
@@ -1401,7 +1408,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityEntryCameraBindingResult result = ActivityEntryCameraBindingStage.Execute(
                     command,
-                    _runtimeBridge,
+                    _identityBridge,
+                    _factBridge,
                     _activityCameraPreparationExecutor,
                     _activityInventoryRuntimeState.CurrentActivitySetupInventory,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,

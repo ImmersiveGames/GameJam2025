@@ -302,7 +302,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) &&
                 entry.IsValid)
             {
-                PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
+                PlayerActorIdentityRecord actorIdentity = PlayerActorIdentityRecord.Create(identity, participant);
                 handle = new PlayerActorRuntimeHandle(actorIdentity, entry.Instance, entry.Actor);
                 return handle.IsValid;
             }

@@ -62,6 +62,16 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public static bool operator ==(SessionParticipantId left, SessionParticipantId right) => left.Equals(right);
         public static bool operator !=(SessionParticipantId left, SessionParticipantId right) => !left.Equals(right);
 
+        public static SessionParticipantId FromPlayerSlotId(PlayerSlotId playerSlotId)
+        {
+            if (!playerSlotId.IsValid)
+            {
+                return default;
+            }
+
+            return new SessionParticipantId($"participant.{playerSlotId}");
+        }
+
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 

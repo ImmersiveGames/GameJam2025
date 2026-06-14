@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
@@ -15,7 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryActorPresentationSetupResult Execute(
             ActivityEntryActorPresentationSetupCommand command,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryIdentityRuntimeBridge identityBridge,
+            IActivityEntryFactRuntimeBridge factBridge,
             IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
             ActivityActorExitRuntimeState runtimeState,
             IActivityEntryActorPresentationRuntimeBridge bridge,
@@ -29,9 +29,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryActorPresentationSetupCommand is invalid.");
             }
 
-            if (endpoint == null)
+            if (identityBridge == null)
             {
-                throw new ArgumentNullException(nameof(endpoint));
+                throw new ArgumentNullException(nameof(identityBridge));
+            }
+
+            if (factBridge == null)
+            {
+                throw new ArgumentNullException(nameof(factBridge));
             }
 
             if (bridge == null)
@@ -56,9 +61,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             int entrySequence = command.Identity.EntrySequence;
             var startedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupStarted);
-            endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorPresentationSetupStarted);
-            endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupStarted, startedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started mode='SetupContributions'.");
-            endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started.");
+            identityBridge.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorPresentationSetupStarted);
+            factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupStarted, startedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started mode='SetupContributions'.");
+            factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started.");
             IReadOnlyList<ActorPresentationSetupContribution> presentationContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             int totalResolved = 0;
             int totalMaterialized = 0;
@@ -69,15 +74,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (presentationContributions.Count == 0)
             {
                 var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupSkippedOptional);
-                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationSetupSkippedOptional);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupSkippedOptional, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped reason='no_presentation_setup_contributions'.");
-                endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_skipped_optional", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped reason='no_presentation_setup_contributions'.");
+                identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationSetupSkippedOptional);
+                factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupSkippedOptional, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped reason='no_presentation_setup_contributions'.");
+                factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_skipped_optional", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped reason='no_presentation_setup_contributions'.");
                 DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationSetupSkippedOptional' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' reason='no_presentation_setup_contributions' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
 
                 var completedAfterSkipIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupCompleted);
-                endpoint.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.ActorPresentationSetupCompleted);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupCompleted, completedAfterSkipIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed with skip.");
-                endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_completed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed with skip.");
+                identityBridge.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.ActorPresentationSetupCompleted);
+                factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupCompleted, completedAfterSkipIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed with skip.");
+                factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_completed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed with skip.");
                 DebugUtility.Log(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationSetupCompleted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' mode='SkippedNoContributions' total='0' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
                 return new ActivityEntryActorPresentationSetupResult(
@@ -97,18 +102,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (!presentationContribution.IsValid)
                 {
                     var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' reason='presentation_contribution_invalid'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='presentation_contribution_invalid'.");
+                    identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' reason='presentation_contribution_invalid'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='presentation_contribution_invalid'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorPresentationStage][ActorPresentationSetup] Invalid presentation contribution actorId='{presentationContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}'.");
                 }
 
                 if (!IsSamePresentationScope(startedIdentity, presentationContribution.Identity))
                 {
                     var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='presentation_contribution_identity_mismatch'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='presentation_contribution_identity_mismatch'.");
+                    identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='presentation_contribution_identity_mismatch'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='presentation_contribution_identity_mismatch'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorPresentationStage][ActorPresentationSetup] Presentation contribution identity mismatch actorId='{presentationContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}'.");
                 }
 
@@ -116,9 +121,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (endpointReference == null)
                 {
                     var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='actor_presentation_endpoint_missing'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='actor_presentation_endpoint_missing'.");
+                    identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='actor_presentation_endpoint_missing'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='actor_presentation_endpoint_missing'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorPresentationStage][ActorPresentationSetup] Missing ActorPresentationEndpoint actorId='{presentationContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}'.");
                 }
 
@@ -138,25 +143,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (planResult.IsFailed)
                 {
                     var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{planResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='{planResult.ReasonCode}'.");
+                    identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{planResult.ReasonCode}'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='{planResult.ReasonCode}'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorPresentationStage][ActorPresentationSetup] Plan resolution failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' reason='{planResult.ReasonCode}' message='{planResult.Message}'.");
                 }
 
                 if (planResult.IsSkippedOptional)
                 {
                     var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupSkippedOptional);
-                    endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationSetupSkippedOptional);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupSkippedOptional, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{planResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_skipped_optional", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' reason='{planResult.ReasonCode}'.");
+                    identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationSetupSkippedOptional);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupSkippedOptional, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{planResult.ReasonCode}'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_skipped_optional", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' reason='{planResult.ReasonCode}'.");
                     continue;
                 }
 
                 var planResolvedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationPlanResolved);
-                endpoint.SetCurrentIdentity(planResolvedIdentity, SessionActivityStage.ActorPresentationPlanResolved);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationPlanResolved, planResolvedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation plan resolved actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' profileId='{planResult.ResolvedPlan.ProfileId}' componentPath='{presentationContribution.ComponentPath}'.");
-                endpoint.EmitSnapshot(snapshots, "actor_presentation_plan_resolved", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation plan resolved actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' profileId='{planResult.ResolvedPlan.ProfileId}'.");
+                identityBridge.SetCurrentIdentity(planResolvedIdentity, SessionActivityStage.ActorPresentationPlanResolved);
+                factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationPlanResolved, planResolvedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation plan resolved actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' profileId='{planResult.ResolvedPlan.ProfileId}' componentPath='{presentationContribution.ComponentPath}'.");
+                factBridge.EmitSnapshot(snapshots, "actor_presentation_plan_resolved", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation plan resolved actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' profileId='{planResult.ResolvedPlan.ProfileId}'.");
                 DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationPlanResolved' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' profileId='{planResult.ResolvedPlan.ProfileId}' componentPath='{presentationContribution.ComponentPath}' mode='SetupContributions' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
                 totalResolved += 1;
 
@@ -165,14 +170,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (CanRetainPresentationHandle(presentationContribution, activeHandle, planResult.ResolvedPlan))
                     {
                         var retainedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationRetained);
-                        endpoint.SetCurrentIdentity(retainedIdentity, SessionActivityStage.ActorPresentationRetained);
-                        endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationRetained, retainedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation retained actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' profileId='{activeHandle.ResolvedPlan.ProfileId}'.");
+                        identityBridge.SetCurrentIdentity(retainedIdentity, SessionActivityStage.ActorPresentationRetained);
+                        factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationRetained, retainedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation retained actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' profileId='{activeHandle.ResolvedPlan.ProfileId}'.");
                         DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationRetained' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' profileId='{activeHandle.ResolvedPlan.ProfileId}' mode='Retained' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
                         totalRetained += 1;
 
                         var readyRetainedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationReady);
-                        endpoint.SetCurrentIdentity(readyRetainedIdentity, SessionActivityStage.ActorPresentationReady);
-                        endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReady, readyRetainedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready retained actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' instance='{activeHandle.PresentationInstance.name}'.");
+                        identityBridge.SetCurrentIdentity(readyRetainedIdentity, SessionActivityStage.ActorPresentationReady);
+                        factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationReady, readyRetainedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready retained actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' instance='{activeHandle.PresentationInstance.name}'.");
                         DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationReady' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' profileId='{activeHandle.ResolvedPlan.ProfileId}' mode='Retained' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
                         totalReady += 1;
                         continue;
@@ -189,33 +194,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (materializationResult.IsFailed)
                 {
                     var failedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{materializationResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='{materializationResult.ReasonCode}'.");
+                    identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationSetupFailed);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupFailed, failedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{materializationResult.ReasonCode}'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_failed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup failed actorId='{presentationContribution.ActorId}' reason='{materializationResult.ReasonCode}'.");
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorPresentationStage][ActorPresentationSetup] Materialization failed actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' reason='{materializationResult.ReasonCode}' message='{materializationResult.Message}'.");
                 }
 
                 if (materializationResult.IsSkippedOptional)
                 {
                     var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupSkippedOptional);
-                    endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationSetupSkippedOptional);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupSkippedOptional, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{materializationResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_skipped_optional", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' reason='{materializationResult.ReasonCode}'.");
+                    identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationSetupSkippedOptional);
+                    factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupSkippedOptional, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' reason='{materializationResult.ReasonCode}'.");
+                    factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_skipped_optional", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup skipped optional actorId='{presentationContribution.ActorId}' reason='{materializationResult.ReasonCode}'.");
                     DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationSetupSkippedOptional' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' mode='SkippedOptional' reasonCode='{materializationResult.ReasonCode}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
                     totalSkipped += 1;
                     continue;
                 }
 
                 var materializedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationMaterialized);
-                endpoint.SetCurrentIdentity(materializedIdentity, SessionActivityStage.ActorPresentationMaterialized);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationMaterialized, materializedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation materialized actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' profileId='{materializationResult.ReadyFact.ResolvedPlan.ProfileId}' componentPath='{presentationContribution.ComponentPath}'.");
+                identityBridge.SetCurrentIdentity(materializedIdentity, SessionActivityStage.ActorPresentationMaterialized);
+                factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationMaterialized, materializedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation materialized actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' profileId='{materializationResult.ReadyFact.ResolvedPlan.ProfileId}' componentPath='{presentationContribution.ComponentPath}'.");
                 DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationMaterialized' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' profileId='{materializationResult.ReadyFact.ResolvedPlan.ProfileId}' mode='Materialized' componentPath='{presentationContribution.ComponentPath}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
                 totalMaterialized += 1;
 
                 var readyIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationReady);
-                endpoint.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActorPresentationReady);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReady, readyIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' instance='{materializationResult.ReadyFact.PresentationInstance.name}'.");
-                endpoint.EmitSnapshot(snapshots, "actor_presentation_ready", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}'.");
+                identityBridge.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActorPresentationReady);
+                factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationReady, readyIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' instance='{materializationResult.ReadyFact.PresentationInstance.name}'.");
+                factBridge.EmitSnapshot(snapshots, "actor_presentation_ready", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}'.");
                 DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationReady' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' profileId='{materializationResult.ReadyFact.ResolvedPlan.ProfileId}' mode='Materialized' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
                 StoreActiveActorPresentationMirror(
@@ -227,9 +232,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             var completedIdentity = BuildIdentity(command, SessionActivityStage.ActorPresentationSetupCompleted);
-            endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorPresentationSetupCompleted);
-            endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupCompleted, completedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed total='{totalReady}' resolved='{totalResolved}' materialized='{totalMaterialized}' retained='{totalRetained}' skipped='{totalSkipped}' mode='SetupContributions'.");
-            endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_completed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed total='{totalReady}' resolved='{totalResolved}' materialized='{totalMaterialized}' retained='{totalRetained}' skipped='{totalSkipped}'.");
+            identityBridge.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorPresentationSetupCompleted);
+            factBridge.EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupCompleted, completedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed total='{totalReady}' resolved='{totalResolved}' materialized='{totalMaterialized}' retained='{totalRetained}' skipped='{totalSkipped}' mode='SetupContributions'.");
+            factBridge.EmitSnapshot(snapshots, "actor_presentation_setup_completed", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup completed total='{totalReady}' resolved='{totalResolved}' materialized='{totalMaterialized}' retained='{totalRetained}' skipped='{totalSkipped}'.");
             DebugUtility.LogVerbose(typeof(ActivityEntryActorPresentationStage), $"event='ActorPresentationSetupCompleted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorPresentationStage' entryPipelineOwner='ActivityEntryPipeline' total='{totalReady}' resolved='{totalResolved}' materialized='{totalMaterialized}' retained='{totalRetained}' skipped='{totalSkipped}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
             return new ActivityEntryActorPresentationSetupResult(

@@ -144,11 +144,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         private readonly ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private readonly PlayerActorId _playerActorId;
         private readonly PlayerSlotId _playerSlotId;
-        private readonly string _receiverId;
+        private readonly ActivityCapabilityPermissionReceiverId _receiverId;
 
         public PlayerMovementPermissionReceiver(
             IActorMovementEndpoint movementEndpoint,
-            string receiverId,
+            ActivityCapabilityPermissionReceiverId receiverId,
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
@@ -175,26 +175,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("PlayerMovementPermissionReceiver requires valid PlayerActorId.");
             }
 
-            _receiverId = Normalize(receiverId);
-            if (string.IsNullOrWhiteSpace(_receiverId))
+            _receiverId = receiverId;
+            if (!_receiverId.IsValid)
             {
                 throw new InvalidOperationException("PlayerMovementPermissionReceiver requires non-empty receiverId.");
             }
         }
 
-        public string ReceiverId => _receiverId;
+        public ActivityCapabilityPermissionReceiverId ReceiverId => _receiverId;
 
-        public static string CreateReceiverId(
+        public static ActivityCapabilityPermissionReceiverId CreateReceiverId(
             ActivityCapabilityPermissionReceiverIdentity identity)
         {
             string normalizedPipelineId = Normalize(identity.PipelineId);
             string normalizedSessionStateId = Normalize(identity.SessionStateId);
             string normalizedActivityId = Normalize(identity.ActivityId);
             string normalizedActorInstanceRuntimeId = identity.ActorInstanceRuntimeId.IsValid ? identity.ActorInstanceRuntimeId.Value : string.Empty;
-            string normalizedPlayerSlotId = identity.PlayerSlotId.IsValid ? identity.PlayerSlotId.Value : string.Empty;
             string actorInstanceToken = string.IsNullOrWhiteSpace(normalizedActorInstanceRuntimeId) ? "actor.instance.unbound" : normalizedActorInstanceRuntimeId;
-            string slotToken = string.IsNullOrWhiteSpace(normalizedPlayerSlotId) ? "slot.unbound" : normalizedPlayerSlotId;
-            return $"movement.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actorInstance={actorInstanceToken}|slot={slotToken}";
+            return ActivityCapabilityPermissionReceiverId.FromString($"movement.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actorInstance={actorInstanceToken}");
         }
 
         public void OnPermissionChanged(ActivityCapabilityPermissionFact fact)

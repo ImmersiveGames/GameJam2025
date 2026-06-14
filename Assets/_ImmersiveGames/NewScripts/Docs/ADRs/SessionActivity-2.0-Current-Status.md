@@ -1,19 +1,47 @@
 # SessionActivity 2.0 — Current Status
 
-## Status atual
+**Atualizado:** 2026-06-14  
+**Escopo:** Base 2.0 / SessionActivity / SA-19 normalization
 
-Baseline funcional congelado após os cortes:
+## Status consolidado recente
 
 ```text
-RESET-ARCH-7
-RESET-OBS-1
-RESET-OBS-1-FIX1
-RESET-OBS-2
-RESET-OBS-3/FIX1/FIX2
-SA-12F5A
+BASE-ID identity stabilization — CLOSED FOR NOW
+SA-19B2-COMPLEX-AUDIT — CLOSED / No runtime changes
+SA-19B2-G1 — CLOSED / PASS funcional + PASS arquitetural
+SA-19B2-G2-H1 — CLOSED / PASS
+SA-19B2-G2 — CLOSED / PASS funcional + PASS arquitetural
 ```
 
-## Smoke aceito
+## Fechamento SA-19B2-G1/G2
+
+### G1 — Entry Setup Composite + Participant Resolution Narrowing
+
+- `ActivityCapabilityInventoryCoordinator` foi removido do caminho ativo.
+- O preview de inventory passou a usar `IActivityCapabilityInventoryPreviewSource` / `ActivityCapabilityInventoryPreviewSource`.
+- `ActivityEntryPipeline` continuou dono da ordem de setup.
+- Retained-player path foi preservado.
+
+### G2 — ActivityEntryObjectSetup Composite Split
+
+O antigo composite ativo foi dividido em stages concretos:
+
+- `ActivityEntryObjectContributorDiscoveryStage`
+- `ActivityEntrySetupInventoryStage`
+- `ActivityEntryCapabilityInventoryPreviewStage`
+- `ActivityEntryObjectResetStage`
+- `ActivityEntryObjectSnapshotRestoreStage`
+
+`ActivityEntryObjectSetupStages.cs` permanece aceito apenas como utility compartilhada, sem ownership de lifecycle.
+
+### G2-H1 — Owner label hygiene
+
+- O label legado `owner='ActivityEntryObjectSetupStages'` foi removido do caminho ativo.
+- Os owners concretos aparecem em log/fact:
+  - `ActivityEntryObjectContributorDiscoveryStage`
+  - `ActivityEntryCapabilityInventoryPreviewStage`
+
+## Evidência aceita
 
 ```text
 sem error CS
@@ -21,51 +49,47 @@ sem FATAL
 sem Exception
 sem route_transition_failed
 sem checkpointStatus='Failed'
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
+sem foreign/stale indevido
+sem fallback silencioso
+sem ActivityCapabilityInventoryCoordinator no caminho ativo
+sem owner='ActivityEntryObjectSetupStages' no caminho ativo
+ActivityCapabilityInventoryPreviewObserved preservado
+ActivityObjectContributorDiscovery Passed preservado
+ActivityObjectReset PassedApplied em activity_01 preservado
+ActivityObjectReset PassedNoCommands em activity_02 preservado
+ActivityObjectSnapshotRestore Passed quando payload existe
+CapabilitySnapshotEnvelopeCapture Passed preservado
+ActivityObjectRelease Passed preservado
+ActivityObjectContributorUnregister Passed preservado
+ActivityEntryParticipantBindingCompleted preservado
+ActivityEntryParticipantResetCompleted preservado
+ActivityParticipantResetAppliedFromInventory preservado
+ActivityParticipantActorMaterializationRetained preservado
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
 ```
 
-## Reset — decisões fechadas
+## Próximos passos permitidos
+
+- Não reabrir `BASE-ID` sem evidência concreta.
+- Não reabrir ObjectSetup composite sem regressão concreta.
+- Não iniciar Content unload/release apenas por limpeza; auditoria recente classificou como owner correto / baixo retorno.
+- Se continuar `SA-19B2`, auditar primeiro:
+  - `ActivityEntryParticipantBindingStage` / participant binding completo;
+  - `ActivityExitActorTeardownStage`.
+- Depois de B2, seguir para `SA-19C0/C1/C2` Host thinness + Route-Exit ownership.
+
+## Regras preservadas
 
 ```text
-ActivityResetBoundaryEligibility.All removido do runtime ativo.
-RuntimeAll é o agregado explícito quando o endpoint aceita todos os intents runtime aplicáveis.
-Reset continua dirigido por ActivityResetIntent + ActivityResetStateProfileKind.
-ResetGroup/ActivityStateResetGroup não voltam como policy de execução.
-TargetGroups permanecem reservados para corte futuro explícito.
-```
-
-Observabilidade de reset fechada por agora:
-
-```text
-ActorResetInventoryReferencesResolved fica no stage agregador.
-ActorResetEndpointAppliedFromInventory fica compacto por endpoint.
-ActorResetQaAppliedFromInventory não usa sourceReferenceCount no sucesso.
-ActorProjectileSpawnedRuntimeObjectsStateProfileApplied é o summary canônico de retorno ao pool.
-```
-
-## SessionActivity — decisões fechadas
-
-```text
-SA-12F5A removeu SessionActivityDefinition dos caminhos residuais conhecidos em commands/stages runtime.
-SessionActivityDefinition pode continuar em boundary/catálogo/stage quando authoring data real ainda é necessário.
-Commands runtime não devem usar SessionActivityDefinition como carrier genérico.
-```
-
-## Pendências reais
-
-```text
-SA-12F5B — auditoria final de SessionActivityDefinition residual no próximo pacote completo.
-SA-12F-MOV-H1 — mover retained PlayerActor target projection para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
-PERMISSION-OBS-1 — futuro, após auditoria; não pertence à frente RESET-OBS.
-ACT-OBS-* — futuro, para projectile/command logs; não pertence à frente RESET-OBS.
-```
-
-## Próxima ação
-
-```text
-Aguardar envio do pacote completo atualizado.
-Executar auditoria SA-12F5B.
-Não iniciar novo corte de implementação antes da auditoria.
+ActivityEntryPipeline decide ordem.
+Stages executam passos determinísticos.
+Commands carregam payload runtime resolvido.
+Facts/logs não executam side-effects.
+Inventory é índice técnico.
+Registry é índice técnico.
+Sem fallback silencioso.
+Sem bridge/coordinator genérico novo.
+Sem compat desnecessária.
 ```

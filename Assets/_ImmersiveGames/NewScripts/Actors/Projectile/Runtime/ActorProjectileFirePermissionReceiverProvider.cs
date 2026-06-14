@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     public sealed class ActorProjectileFirePermissionReceiverProvider : IActivityPermissionReceiverProvider
     {
         private readonly IActorProjectileFireEndpoint _projectileFireEndpoint;
-        private readonly string _receiverId;
+        private readonly ActivityCapabilityPermissionReceiverId _receiverId;
         private readonly ActorId _actorId;
         private readonly ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private readonly PlayerActorId _playerActorId;
@@ -19,26 +19,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public ActorProjectileFirePermissionReceiverProvider(
             IActorProjectileFireEndpoint projectileFireEndpoint,
-            string receiverId,
+            ActivityCapabilityPermissionReceiverId receiverId,
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
         {
             _projectileFireEndpoint = projectileFireEndpoint;
-            _receiverId = Normalize(receiverId);
+            _receiverId = receiverId;
             _actorId = actorId;
             _actorInstanceRuntimeId = actorInstanceRuntimeId;
             _playerActorId = playerActorId;
             _playerSlotId = playerSlotId;
         }
 
-        public string ReceiverId => _receiverId;
+        public ActivityCapabilityPermissionReceiverId ReceiverId => _receiverId;
 
         public bool TryCreateReceiver(out IActivityCapabilityPermissionReceiver receiver)
         {
             if (_projectileFireEndpoint == null ||
-                string.IsNullOrWhiteSpace(_receiverId) ||
+                !_receiverId.IsValid ||
                 !_actorId.IsValid ||
                 !_actorInstanceRuntimeId.IsValid ||
                 !_playerActorId.IsValid)
@@ -57,16 +57,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             return true;
         }
 
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
     }
 
     public sealed class ActorProjectileFirePermissionReceiver : IActorPermissionReceiver
     {
         private readonly IActorProjectileFireEndpoint _projectileFireEndpoint;
-        private readonly string _receiverId;
+        private readonly ActivityCapabilityPermissionReceiverId _receiverId;
         private readonly ActorId _actorId;
         private readonly ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private readonly PlayerActorId _playerActorId;
@@ -74,20 +70,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public ActorProjectileFirePermissionReceiver(
             IActorProjectileFireEndpoint projectileFireEndpoint,
-            string receiverId,
+            ActivityCapabilityPermissionReceiverId receiverId,
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
         {
             _projectileFireEndpoint = projectileFireEndpoint ?? throw new InvalidOperationException("ActorProjectileFirePermissionReceiver requires non-null IActorProjectileFireEndpoint.");
-            _receiverId = Normalize(receiverId);
+            _receiverId = receiverId;
             _actorId = actorId;
             _actorInstanceRuntimeId = actorInstanceRuntimeId;
             _playerActorId = playerActorId;
             _playerSlotId = playerSlotId;
 
-            if (string.IsNullOrWhiteSpace(_receiverId))
+            if (!_receiverId.IsValid)
             {
                 throw new InvalidOperationException("ActorProjectileFirePermissionReceiver requires non-empty receiverId.");
             }
@@ -108,18 +104,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
         }
 
-        public string ReceiverId => _receiverId;
+        public ActivityCapabilityPermissionReceiverId ReceiverId => _receiverId;
 
-        public static string CreateReceiverId(ActivityCapabilityPermissionReceiverIdentity identity)
+        public static ActivityCapabilityPermissionReceiverId CreateReceiverId(ActivityCapabilityPermissionReceiverIdentity identity)
         {
             string normalizedPipelineId = Normalize(identity.PipelineId);
             string normalizedSessionStateId = Normalize(identity.SessionStateId);
             string normalizedActivityId = Normalize(identity.ActivityId);
             string normalizedActorInstanceRuntimeId = identity.ActorInstanceRuntimeId.IsValid ? identity.ActorInstanceRuntimeId.Value : string.Empty;
-            string normalizedPlayerSlotId = identity.PlayerSlotId.IsValid ? identity.PlayerSlotId.Value : string.Empty;
             string actorInstanceToken = string.IsNullOrWhiteSpace(normalizedActorInstanceRuntimeId) ? "actor.instance.unbound" : normalizedActorInstanceRuntimeId;
-            string slotToken = string.IsNullOrWhiteSpace(normalizedPlayerSlotId) ? "slot.unbound" : normalizedPlayerSlotId;
-            return $"projectile_fire.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actorInstance={actorInstanceToken}|slot={slotToken}";
+            return ActivityCapabilityPermissionReceiverId.FromString($"projectile_fire.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actorInstance={actorInstanceToken}");
         }
 
         public void OnPermissionChanged(ActivityCapabilityPermissionFact fact)

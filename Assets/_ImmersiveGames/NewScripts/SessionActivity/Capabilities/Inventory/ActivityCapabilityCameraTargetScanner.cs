@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
@@ -13,13 +14,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
     public sealed class ActivityCapabilityCameraTargetScanner : IActivityCapabilityScanner
     {
-        private readonly IPlayerActorCapabilityIdentityResolver _identityResolver;
-
-        public ActivityCapabilityCameraTargetScanner(IPlayerActorCapabilityIdentityResolver identityResolver)
-        {
-            _identityResolver = identityResolver ?? throw new InvalidOperationException("ActivityCapabilityCameraTargetScanner requires non-null identity resolver.");
-        }
-
         public string ScannerId => "activity_capability_camera_target_scanner.v1";
         public int Order => 320;
 
@@ -57,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
-                if (!_identityResolver.TryResolve(target, out var playerIdentity))
+                if (!TryResolvePlayerIdentity(target, out var playerActorId, out var playerSlotId))
                 {
                     var endpointComponent = endpoint as Component;
                     string unresolvedComponentPath = endpointComponent != null
@@ -71,14 +65,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 string ownerPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform);
                 string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(
                     inventoryId,
-                    ActivityCapabilityOwnerKind.PlayerActor,
+                    ActivityCapabilityOwnerKind.Actor,
                     ownerPath,
                     target.ActorId);
 
                 if (ownerKeys.Add(ownerId))
                 {
                     owners.Add(new ActivityCapabilityOwnerDescriptor(
-                        ActivityCapabilityOwnerKind.PlayerActor,
+                        ActivityCapabilityOwnerKind.Actor,
                         ownerId,
                         ownerPath,
                         target.SourceSceneName,
@@ -89,7 +83,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 if (!ActorCameraBindingContributionBuilder.TryBuild(
                         context.Identity,
                         target,
-                        playerIdentity,
                         endpoint,
                         context.Source,
                         context.Reason,
@@ -118,6 +111,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 Array.Empty<ActivityPermissionReceiverContribution>(),
                 context.Source,
                 context.Reason);
+        }
+
+        private static bool TryResolvePlayerIdentity(
+            ActorScanTarget target,
+            out PlayerActorId playerActorId,
+            out PlayerSlotId playerSlotId)
+        {
+            playerActorId = default;
+            playerSlotId = default;
+
+            if (target.RuntimeActor == null)
+            {
+                return false;
+            }
+
+            var playerIdentity = target.RuntimeActor.GetComponent<PlayerActorIdentity>();
+            if (playerIdentity == null || !playerIdentity.IsValid)
+            {
+                return false;
+            }
+
+            playerActorId = playerIdentity.PlayerActorId;
+            playerSlotId = playerIdentity.PlayerSlotId;
+            return playerActorId.IsValid && playerSlotId.IsValid;
         }
     }
 }

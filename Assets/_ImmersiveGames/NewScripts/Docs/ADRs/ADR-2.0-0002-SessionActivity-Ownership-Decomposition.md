@@ -3,8 +3,8 @@
 ## Status
 
 Aceito / congelado incrementalmente.
-Ultimo checkpoint real consolidado: `SA-12F5A - residual SessionActivityDefinition command hygiene CLOSED / PASS funcional do corte`, com `RESET-ARCH-7` e `RESET-OBS-1..3` fechados no ADR-0006.
-O estado superior agora reflete o fechamento funcional/documental de SA-12F5A e nao deve contradizer os cortes posteriores ja registrados neste ADR.
+Ultimo checkpoint real consolidado: `SA-14B1 - ActivityObject exit correlation explicit entry result CLOSED / PASS funcional + PASS arquitetural do corte`.
+O estado superior agora reflete o fechamento funcional/documental de SA-14B1 e nao deve contradizer os cortes posteriores ja registrados neste ADR.
 
 ## Ãrea
 
@@ -1485,7 +1485,7 @@ A expansÃ£o foi aceita porque permaneceu dentro da mesma fronteira arquitetura
 
 ##### Checkpoint SA-12F â€” Reduce SessionActivityDefinition from ActivityEntry commands
 
-Status: `PARTIAL / KNOWN RESIDUAL COMMAND PATHS CLOSED BY SA-12F5A; pending final audit after next full package`.
+Status: `PARTIAL / IN PROGRESS`.
 
 Subcortes validados atÃ© este checkpoint:
 
@@ -1498,7 +1498,6 @@ SA-12F3C   â€” CLOSED / PASS funcional + PASS arquitetural do command bound
 SA-12F4A   â€” CLOSED / PASS funcional + PASS arquitetural do corte
 SA-12F4B   â€” CLOSED / PASS funcional + PASS arquitetural do corte
 SA-12F4C   â€” CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F5A   — CLOSED / PASS funcional do corte
 ```
 
 Escopo fechado:
@@ -1547,71 +1546,6 @@ ActorAttributeSetupCompleted preservado
 ActivityCapabilityInventoryValidationPassed preservado
 ActivityCapabilityInventoryPreviewObserved preservado
 ActivityObjectReset preservado como PassedApplied em activity_01 e PassedNoCommands em activity_02
-```
-
-
-##### Checkpoint SA-12F5A — residual SessionActivityDefinition command hygiene
-
-Status: `CLOSED / PASS funcional do corte`.
-
-Objetivo: remover `SessionActivityDefinition` dos caminhos residuais onde o command/stage já carregava payload runtime suficiente.
-
-Removido dos caminhos tratados:
-
-```text
-ActivityEntryContentLoadCompletionCommand
--> CompleteContentLoad(...) sem SessionActivityDefinition
-
-ActivityEntryContentLoadFailureCommand
--> FailContentLoad(...) sem SessionActivityDefinition
-
-ActivityEntryActorParticipationEnterCommand
--> ExecuteActorParticipationEnter(...) sem SessionActivityDefinition
-
-ActivityEntryActorParticipationStage.ExecuteEnter(...)
--> sem SessionActivityDefinition
-
-ActivityContentReleaseFinalizationStage.Execute(...)
--> sem SessionActivityDefinition
-
-ActivityObjectContributorUnregisterStage.Execute(...)
--> sem SessionActivityDefinition
-```
-
-Fronteira preservada:
-
-```text
-SessionActivityPipeline ainda pode resolver catálogo/definition para lifecycle macro.
-ExecuteSetupAndReadiness(..., SessionActivityDefinition definition, ...) permanece permitido enquanto consome authoring data real.
-SessionActivityDefinition não deve ser carrier de command runtime resolvido.
-```
-
-Decisão arquitetural:
-
-```text
-ActivityEntryPipeline é owner dos commands/runtime payloads de entry.
-Commands carregam payload runtime resolvido.
-Stages executam passos determinísticos.
-Authoring data fica em boundary/catálogo/stage quando realmente necessário, não como carrier genérico.
-```
-
-Evidência funcional aceita:
-
-```text
-sem error CS
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem checkpointStatus='Failed'
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
-```
-
-Pendência associada:
-
-```text
-SA-12F5B — auditoria final no pacote atualizado para confirmar que não restou SessionActivityDefinition como carrier indevido fora dos caminhos tratados.
 ```
 
 ##### Checkpoint SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 â€” retained PlayerActor movement in no-content activity
@@ -1696,9 +1630,8 @@ Manter ActivityCapabilityInventory como snapshot/Ã­ndice runtime passivo com w
 ##### PendÃªncias restantes de SA-12
 
 ```text
-SA-12F5A — CLOSED / PASS funcional do corte: residual SessionActivityDefinition command hygiene nos caminhos conhecidos.
-SA-12F5B — auditoria final no pacote atualizado para confirmar ausência de carriers indevidos restantes de SessionActivityDefinition.
-SA-12F-MOV-H1 — hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
+SA-12F5 â€” auditoria/correÃ§Ã£o final dos resÃ­duos de SessionActivityDefinition em ActivityEntryCommand, content-load completion/failure, ActorParticipationEnterCommand e ActivityContentReleaseFinalizationStageCommand.
+SA-12F-MOV-H1 â€” hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
 ```
 
 CritÃ©rio para os prÃ³ximos cortes:
@@ -1706,9 +1639,8 @@ CritÃ©rio para os prÃ³ximos cortes:
 ```text
 NÃ£o reabrir SA-12E salvo regressÃ£o explÃ­cita.
 NÃ£o reabrir o blocker funcional de movement em activity_02 salvo regressÃ£o de smoke.
-Não reabrir SA-12F5A sem regressão explícita de smoke/compile.
-Executar SA-12F5B apenas como auditoria final quando o pacote atualizado for enviado.
-Tratar SA-12F-MOV-H1 como hygiene futuro, não blocker funcional.
+Resolver SA-12F5 por cortes pequenos de residual command hygiene.
+Tratar SA-12F-MOV-H1 como hygiene futuro, nÃ£o blocker funcional.
 NÃ£o criar compat/fallback paralelo.
 NÃ£o criar pipeline novo.
 Preservar smoke macro completo.
@@ -1763,9 +1695,8 @@ DONE  SA-12B/C Command boundary + identity duplication cleanup
 DONE  SA-12D  ActorAttributeCommand typed identity
 DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
 PART  SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
-DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — PASS funcional / PASS arquitetural parcial
-DONE  SA-12F5A residual SessionActivityDefinition command hygiene — PASS funcional do corte
-PEND  SA-12F5B final residual SessionActivityDefinition audit after next full package
+DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 â€” PASS funcional / PASS arquitetural parcial
+PEND  SA-12F5 residual SessionActivityDefinition command hygiene
 DEBT  SA-12F-MOV-H1 Retained PlayerActor target projection ownership hygiene
 ```
 
@@ -6126,3 +6057,71 @@ RouteActivitySave preservou classificacao NoActivityContentContributors, sem reg
   - `SaveRuntime` continues to execute technical storage only.
   - No real route-scoped or session-scoped save contributors exist yet.
   - Do not create generic save-contributor infrastructure until a real capability and a clear owner exist.
+
+
+## SA-19B2-G1/G2 — Entry ObjectSetup composite narrowing closure
+
+Status: `CLOSED / PASS funcional + PASS arquitetural`.
+
+### Decisão
+
+`ActivityEntryPipeline` permanece dono da ordem de Entry Setup. O antigo shape em que `ActivityEntryObjectSetupStages.cs` concentrava o caminho ativo de object setup foi reduzido: o arquivo restante é aceito apenas como utility compartilhada, não como lifecycle owner ou bridge agregado.
+
+### Resultado normativo
+
+- `ActivityCapabilityInventoryCoordinator` foi removido do caminho ativo.
+- `IActivityCapabilityInventoryPreviewSource` / `ActivityCapabilityInventoryPreviewSource` são o port técnico explícito para preview de inventory.
+- O caminho ativo de ObjectSetup foi dividido em stages concretos:
+  - `ActivityEntryObjectContributorDiscoveryStage`
+  - `ActivityEntrySetupInventoryStage`
+  - `ActivityEntryCapabilityInventoryPreviewStage`
+  - `ActivityEntryObjectResetStage`
+  - `ActivityEntryObjectSnapshotRestoreStage`
+- Labels/facts de owner foram corrigidos: `ActivityEntryObjectSetupStages` não deve aparecer como owner ativo de stage.
+
+### Ownership final
+
+```text
+ActivityEntryPipeline: ordem de entry setup.
+ActivityEntryObjectContributorDiscoveryStage: descoberta determinística de contributors e facts do bloco.
+ActivityEntrySetupInventoryStage: build determinístico do inventory de setup.
+ActivityEntryCapabilityInventoryPreviewStage: preview técnico do inventory.
+ActivityEntryObjectResetStage: planejamento/execução de reset por endpoint.
+ActivityEntryObjectSnapshotRestoreStage: prontidão/aplicação de restore de snapshot.
+ActivityEntryObjectSetupStages: utility compartilhada, não owner de lifecycle.
+ActivityCapabilityInventory: índice técnico, não owner.
+```
+
+### Evidência aceita
+
+```text
+sem error CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+sem foreign/stale indevido
+sem fallback silencioso
+sem ActivityCapabilityInventoryCoordinator no caminho ativo
+sem owner='ActivityEntryObjectSetupStages' no caminho ativo
+ActivityCapabilityInventoryPreviewObserved preservado
+ActivityObjectContributorDiscovery Passed preservado
+ActivityObjectReset PassedApplied/PassedNoCommands preservado
+ActivityObjectSnapshotRestore Passed preservado quando payload existe
+CapabilitySnapshotEnvelopeCapture Passed preservado
+ActivityObjectRelease Passed preservado
+ActivityObjectContributorUnregister Passed preservado
+ActivityEntryParticipantBindingCompleted preservado
+ActivityEntryParticipantResetCompleted preservado
+ActivityParticipantResetAppliedFromInventory preservado
+ActivityParticipantActorMaterializationRetained preservado
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+### Resíduos controlados
+
+- `ActivityEntryObjectSetupStages.cs` ainda pode conter helpers compartilhados, mas não pode voltar a carregar execução de stage, policy, lifecycle, side-effects ou fallback.
+- `Content unload/release` não foi alterado neste fechamento e permanece sem ação imediata enquanto não houver regressão concreta.
+- ParticipantBinding completo e ExitActorTeardown só devem ser mexidos após auditoria curta específica dentro de `SA-19B2`.

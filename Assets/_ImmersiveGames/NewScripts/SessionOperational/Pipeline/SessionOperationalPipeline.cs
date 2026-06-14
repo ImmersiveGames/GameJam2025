@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
@@ -395,6 +394,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeOperationId,
                         transitionId,
                         routeSequence,
+                        routeIdentity,
                         routeIdentity,
                         routeIdentity,
                         source,
@@ -916,6 +916,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string routeOperationId,
             string transitionId,
             int transitionSequence,
+            string routeIdentity,
             string routeId,
             string routeProfileId,
             string source,
@@ -923,6 +924,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             string normalizedRouteOperationId = Normalize(routeOperationId);
             string normalizedTransitionId = Normalize(transitionId);
+            string normalizedRouteIdentity = Normalize(routeIdentity);
             string normalizedRouteId = Normalize(routeId);
             string normalizedRouteProfileId = Normalize(routeProfileId);
             string normalizedSource = Normalize(source);
@@ -931,6 +933,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (string.IsNullOrWhiteSpace(normalizedRouteOperationId) ||
                 string.IsNullOrWhiteSpace(normalizedTransitionId) ||
                 transitionSequence <= 0 ||
+                string.IsNullOrWhiteSpace(normalizedRouteIdentity) ||
                 string.IsNullOrWhiteSpace(normalizedRouteId) ||
                 string.IsNullOrWhiteSpace(normalizedRouteProfileId) ||
                 string.IsNullOrWhiteSpace(normalizedSource) ||
@@ -946,6 +949,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             _state.Reset(
                 _sessionOperationalPipelineId,
+                normalizedRouteIdentity,
                 normalizedRouteOperationId,
                 normalizedTransitionId,
                 transitionSequence,
@@ -955,6 +959,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: record directly via recorder after state setup (consolidation of fact entry point).
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.RouteOperationStarted,
+                normalizedRouteIdentity,
                 normalizedRouteOperationId,
                 normalizedTransitionId,
                 transitionSequence,
@@ -978,6 +983,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // This is part of consolidating fact orchestration so the recorder is the primary/only entry point.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.NavigationIntentObserved,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1000,6 +1006,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder (order/consistency now enforced centrally).
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.RouteResolved,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1022,6 +1029,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.TransitionRequested,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1044,6 +1052,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.TransitionStarted,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1066,6 +1075,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.CurtainClosed,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1088,6 +1098,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.PreviousRouteTeardownSkipped,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1110,6 +1121,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.RoutePhysicalApplyObserved,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1132,6 +1144,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.ScenesReadyObserved,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1154,6 +1167,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.SessionOperationalSetupNoOp,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1176,6 +1190,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.PlayerParticipationSeedObserved,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1198,6 +1213,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.PauseCapabilityPrepared,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1220,6 +1236,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.ReadyToOpenCurtain,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1242,6 +1259,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: high-level macro fact recorded directly via the recorder.
             return _factRecorder.TryRecordStage(
                 SessionOperationalStage.TransitionCompletedObserved,
+                _activeOperationalRouteIdentity,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1264,6 +1282,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // Etapa 4: direct to recorder (consolidation; order enforced in recorder for primary stage Completed).
             if (!_factRecorder.TryRecordStage(
                     SessionOperationalStage.Completed,
+                    _activeOperationalRouteIdentity,
                     routeOperationId,
                     transitionId,
                     transitionSequence,

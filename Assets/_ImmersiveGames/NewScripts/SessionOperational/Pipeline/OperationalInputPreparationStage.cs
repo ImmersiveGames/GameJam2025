@@ -168,13 +168,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalInputModeKind initialInputMode,
             string message)
         {
+            var currentIdentity = _factRecorder.CurrentIdentity;
             return _factRecorder.TryRecordInputStage(
                 stage,
+                command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
                 command.RouteSequence,
-                command.RouteIdentity,
-                command.RouteIdentity,
+                currentIdentity.RouteId,
+                currentIdentity.RouteProfileId,
                 command.RouteClass,
                 command.InputPolicy,
                 initialInputMode,
@@ -195,11 +197,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!result.IsSubmitted)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Input mode request rejected routeIdentity='{request.Identity.RouteId}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' resultKind='{result.Kind}' resultReason='{result.Reason}' detail='{result.Detail}' source='{request.Source}' reason='{request.Reason}'.");
+                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Input mode request rejected routeIdentity='{request.Identity.RouteIdentity}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' resultKind='{result.Kind}' resultReason='{result.Reason}' detail='{result.Detail}' source='{request.Source}' reason='{request.Reason}'.");
             }
 
             DebugUtility.Log(typeof(OperationalInputPreparationStage),
-                $"command='OperationalInputModeRequest' routeIdentity='{request.Identity.RouteId}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' contextSignature='{request.ContextSignature}' operationalSurfaceKind='{request.RouteClass}' inputPolicy='{request.InputPolicy}' initialInputMode='{request.InitialInputMode}' source='{request.Source}' reason='{request.Reason}'.",
+                $"command='OperationalInputModeRequest' routeIdentity='{request.Identity.RouteIdentity}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' contextSignature='{request.ContextSignature}' operationalSurfaceKind='{request.RouteClass}' inputPolicy='{request.InputPolicy}' initialInputMode='{request.InitialInputMode}' source='{request.Source}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -210,8 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 !string.Equals(currentIdentity.RouteOperationId, command.RouteOperationId, StringComparison.Ordinal) ||
                 !string.Equals(currentIdentity.TransitionId, command.TransitionId, StringComparison.Ordinal) ||
                 currentIdentity.TransitionSequence != command.RouteSequence ||
-                !string.Equals(currentIdentity.RouteId, command.RouteIdentity, StringComparison.Ordinal) ||
-                !string.Equals(currentIdentity.RouteProfileId, command.RouteIdentity, StringComparison.Ordinal))
+                !string.Equals(currentIdentity.RouteIdentity, command.RouteIdentity, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     $"[FATAL][H1][SessionOperationalPipeline][InputMode] Cannot submit initial input mode before matching InitialInputModePrepared fact routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' currentStage='{currentIdentity.Stage}' currentRouteOperationId='{currentIdentity.RouteOperationId}' currentTransitionId='{currentIdentity.TransitionId}' currentRouteSequence='{currentIdentity.TransitionSequence}' source='{command.Source}' reason='{command.Reason}'.");
@@ -222,13 +223,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalInputPreparationCommand command,
             SessionOperationalInputModeKind initialInputMode)
         {
+            var currentIdentity = _factRecorder.CurrentIdentity;
             SessionOperationalIdentity identity = new(
                 command.PipelineId,
+                currentIdentity.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
                 command.RouteSequence,
-                command.RouteIdentity,
-                command.RouteIdentity,
+                currentIdentity.RouteId,
+                currentIdentity.RouteProfileId,
                 command.Source,
                 command.Reason,
                 SessionOperationalStage.InitialInputModePrepared);

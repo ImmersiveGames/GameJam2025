@@ -16,11 +16,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
-using PlayerActivityParticipantRequirementId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantRequirementId;
-using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
-using PlayerSessionParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantBinding;
-using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
-using PlayerSessionParticipantRole = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantRole;
 using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -429,7 +424,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityCatalog Catalog => _catalog;
         public ActivityEntryPipeline EntryPipeline => _activityEntryPipeline ?? throw new InvalidOperationException("ActivityEntryPipeline is not bound.");
 
-        internal void BindEntryPipeline(ActivityEntryPipeline activityEntryPipeline)
+        // SA-19B1 — BindEntryPipeline seam REMOVED.
+        // The old Bind method has been deleted as part of real removal of the transitional seam.
+        // Temporary attachment point below while we move to direct construction with narrow contracts (see SA-19B2 batches).
+        // This will be eliminated once the macro pipeline no longer requires post-ctor attachment of EntryPipeline.
+        internal void AttachEntryPipeline(ActivityEntryPipeline activityEntryPipeline)
         {
             if (activityEntryPipeline == null)
             {
@@ -1641,6 +1640,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             ActivityObjectContributorUnregisterStage.Execute(
                 new ActivityObjectContributorUnregisterStageCommand(command.Identity, command, entrySequence),
+                this,
                 this,
                 _activityObjectExitRuntimeState,
                 facts,
@@ -3729,6 +3729,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
+            // Chamada para o controle de movimento macro (ainda usa a implementação PlayerMovementControlStage
+            // enquanto o rail PlayerActor não for completamente colapsado no H2 da hygiene wave).
             IReadOnlyList<MovementControlRecord> records = PlayerMovementControlStage.Execute(
                 identity,
                 targets,

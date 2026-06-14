@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             PermissionId = permissionId;
             Identity = identity;
             Receiver = receiver;
-            ReceiverId = receiver?.ReceiverId ?? string.Empty;
+            ReceiverId = receiver?.ReceiverId ?? default;
         }
 
         public string CapabilityId { get; }
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public string ComponentPath { get; }
         public ActivityCapabilityPermissionId PermissionId { get; }
         public ActivityCapabilityPermissionReceiverIdentity Identity { get; }
-        public string ReceiverId { get; }
+        public ActivityCapabilityPermissionReceiverId ReceiverId { get; }
         public IActivityCapabilityPermissionReceiver Receiver { get; }
 
         public bool IsValid =>
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             ActorInstanceRuntimeId.IsValid &&
             PlayerActorId.IsValid &&
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(ReceiverId) &&
+            ReceiverId.IsValid &&
             Receiver != null;
 
         private static string Normalize(string value)

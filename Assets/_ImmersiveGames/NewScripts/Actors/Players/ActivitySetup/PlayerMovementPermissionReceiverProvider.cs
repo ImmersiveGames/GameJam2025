@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     public sealed class PlayerMovementPermissionReceiverProvider : IActivityPermissionReceiverProvider
     {
         private readonly IActorMovementEndpoint _movementEndpoint;
-        private readonly string _receiverId;
+        private readonly ActivityCapabilityPermissionReceiverId _receiverId;
         private readonly ActorId _actorId;
         private readonly ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private readonly PlayerActorId _playerActorId;
@@ -16,25 +16,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public PlayerMovementPermissionReceiverProvider(
             IActorMovementEndpoint movementEndpoint,
-            string receiverId,
+            ActivityCapabilityPermissionReceiverId receiverId,
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
         {
             _movementEndpoint = movementEndpoint;
-            _receiverId = string.IsNullOrWhiteSpace(receiverId) ? "movement.permission.receiver" : receiverId.Trim();
+            _receiverId = receiverId;
             _actorId = actorId;
             _actorInstanceRuntimeId = actorInstanceRuntimeId;
             _playerActorId = playerActorId;
             _playerSlotId = playerSlotId;
         }
 
-        public string ReceiverId => _receiverId;
+        public ActivityCapabilityPermissionReceiverId ReceiverId => _receiverId;
 
         public bool TryCreateReceiver(out IActivityCapabilityPermissionReceiver receiver)
         {
-            if (_movementEndpoint == null)
+            if (_movementEndpoint == null ||
+                !_receiverId.IsValid)
             {
                 receiver = null;
                 return false;

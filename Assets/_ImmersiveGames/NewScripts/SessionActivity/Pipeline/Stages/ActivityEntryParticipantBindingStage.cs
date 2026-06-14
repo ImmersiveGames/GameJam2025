@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
@@ -1047,13 +1046,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, PlayerActivityParticipantBinding participant)
         {
-            var playerActorId = PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId);
-            if (!identity.IsValid || !participant.IsValid || !playerActorId.IsValid)
+            var actorIdentity = PlayerActorIdentityRecord.Create(identity, participant);
+            if (!actorIdentity.IsValid)
             {
                 throw new InvalidOperationException("Cannot build participant actor identity with invalid ActivityParticipantBinding.");
             }
 
-            return new PlayerActorIdentityRecord(identity, participant, playerActorId);
+            return actorIdentity;
         }
 
         private static SessionActivityActorMaterializationPlanEntry ResolveMaterializationPlanEntryForActivityParticipantOrFail(
@@ -1348,7 +1347,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return false;
             }
 
-            PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
+            PlayerActorIdentityRecord actorIdentity = PlayerActorIdentityRecord.Create(identity, participant);
             handle = new PlayerActorRuntimeHandle(actorIdentity, entry.Instance, entry.Actor);
             return handle.IsValid;
         }

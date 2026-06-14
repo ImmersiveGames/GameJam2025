@@ -244,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 var selectionId = entry.PlayerSelectionId;
                 var actorDefinitionId = entry.ActorDefinitionId;
                 var actorId = entry.ActorId;
-                var participantId = ResolveParticipantId(slotId);
+                var participantId = SessionParticipantId.FromPlayerSlotId(slotId);
                 var role = ResolveParticipantRole(entry, i);
 
                 if (!observedSlotIds.Add(slotId))
@@ -302,16 +302,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 RuntimePlayerJoinPolicyKind.Unsupported,
                 command.Source,
                 command.Reason);
-        }
-
-        private static SessionParticipantId ResolveParticipantId(PlayerSlotId slotId)
-        {
-            if (!slotId.IsValid)
-            {
-                return default;
-            }
-
-            return new SessionParticipantId($"participant.{slotId}");
         }
 
         private static SessionParticipantRole ResolveParticipantRole(PlayerParticipationSeedEntry entry, int index)

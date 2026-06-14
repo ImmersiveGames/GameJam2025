@@ -10,7 +10,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryPermissionTargetPreparationResult Execute(
             ActivityEntryPermissionTargetPreparationCommand command,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryIdentityRuntimeBridge identityBridge,
+            IActivityEntryFactRuntimeBridge factBridge,
             IActivityEntryPermissionTargetRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -20,20 +21,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryPermissionTargetPreparationCommand is invalid.");
             }
 
-            endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            identityBridge = identityBridge ?? throw new ArgumentNullException(nameof(identityBridge));
+            factBridge = factBridge ?? throw new ArgumentNullException(nameof(factBridge));
             bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
             var startedIdentity = BuildIdentity(command, SessionActivityStage.ActivitySetupStarted);
-            endpoint.EmitFact(
+            factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.PermissionTargetPreparationStarted,
                 startedIdentity,
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' gate binding started requiredReceivers='{command.RequireReceivers}' registerReceivers='{command.RegisterReceivers}' contributionCount='{command.PermissionReceiverContributions.Count}'.");
-            endpoint.EmitSnapshot(
+            factBridge.EmitSnapshot(
                 snapshots,
                 "gate_binding_started",
                 command.Source,
@@ -50,14 +52,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][GateBinding] Missing permission receiver contributions activityId='{command.ActivityId}' entrySequence='{startedIdentity.EntrySequence}'.");
                 }
 
-                endpoint.EmitFact(
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PermissionTargetPreparationSkippedNoReceivers,
                     startedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{command.ActivityId}' gate binding skipped because no permission receiver contributions were discovered.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "gate_binding_skipped_no_receivers",
                     command.Source,
@@ -108,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     contribution.ReceiverIdentity,
                     receiver));
 
-                endpoint.EmitFact(
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.PermissionTargetReceiverResolved,
                     startedIdentity,
@@ -122,14 +124,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 bridge.ReplacePermissionReceivers(receivers);
             }
 
-            endpoint.EmitFact(
+            factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.PermissionTargetPreparationCompleted,
                 startedIdentity,
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' gate binding completed receivers='{receivers.Count}' registered='{command.RegisterReceivers}'.");
-            endpoint.EmitSnapshot(
+            factBridge.EmitSnapshot(
                 snapshots,
                 "gate_binding_completed",
                 command.Source,

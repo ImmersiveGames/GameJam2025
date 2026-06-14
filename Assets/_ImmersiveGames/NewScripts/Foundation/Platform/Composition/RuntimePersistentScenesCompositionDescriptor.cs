@@ -1,5 +1,3 @@
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static class RuntimePersistentScenesCompositionDescriptor

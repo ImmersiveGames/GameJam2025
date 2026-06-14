@@ -1,5 +1,3 @@
-using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
-
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
     public enum OperationalInputModeRequestResultKind

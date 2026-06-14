@@ -55,11 +55,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 string ownerPath = !string.IsNullOrWhiteSpace(target.ComponentBasePath)
                     ? target.ComponentBasePath
                     : ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform);
-                string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(
+                string ownerId = BuildActorLifecycleOwnerId(
                     inventoryId,
                     ResolveOwnerKind(target),
-                    ownerPath,
-                    target.ActorId);
+                    target.ActorId,
+                    target.ActorInstanceRuntimeId,
+                    target.ActorKind,
+                    target.ActorRole,
+                    target.ActorScope);
 
                 if (ownerKeys.Add(ownerId))
                 {
@@ -178,14 +181,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     capabilityKeys,
                     capabilities,
                     runtimeReferences,
-                    providerTypeName,
+                        providerTypeName,
                     new ActorCapabilityResetEndpointReference(
-                        ActivityCapabilityInventoryId.DeriveCapabilityId(
+                        BuildActorLifecycleCapabilityId(
                             inventoryId,
                             ownerId,
                             ActivityCapabilityKind.ResetEndpoint,
-                            ModuleId,
-                            $"{contributionContext.ComponentPath}|providerType={providerTypeName}"),
+                            contribution.Descriptor.CapabilityId),
                         ownerId,
                         new ActorId(target.ActorId),
                         target.ActorInstanceRuntimeId,
@@ -249,12 +251,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     runtimeReferences,
                     string.Empty,
                     new ActorCapabilitySnapshotContributionReference(
-                        ActivityCapabilityInventoryId.DeriveCapabilityId(
+                        BuildActorLifecycleCapabilityId(
                             inventoryId,
                             ownerId,
                             ActivityCapabilityKind.SnapshotProvider,
-                            ModuleId,
-                            contributionContext.ComponentPath),
+                            contribution.Descriptor.CapabilityId),
                         ownerId,
                         new ActorId(target.ActorId),
                         target.ActorInstanceRuntimeId,
@@ -316,12 +317,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     runtimeReferences,
                     string.Empty,
                     new ActorCapabilitySnapshotRestoreContributionReference(
-                        ActivityCapabilityInventoryId.DeriveCapabilityId(
+                        BuildActorLifecycleCapabilityId(
                             inventoryId,
                             ownerId,
                             ActivityCapabilityKind.SnapshotRestoreEndpoint,
-                            ModuleId,
-                            contributionContext.ComponentPath),
+                            contribution.Descriptor.CapabilityId),
                         ownerId,
                         new ActorId(target.ActorId),
                         target.ActorInstanceRuntimeId,
@@ -383,12 +383,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     runtimeReferences,
                     string.Empty,
                     new ActorCapabilityReleaseEndpointReference(
-                        ActivityCapabilityInventoryId.DeriveCapabilityId(
+                        BuildActorLifecycleCapabilityId(
                             inventoryId,
                             ownerId,
                             ActivityCapabilityKind.ReleaseEndpoint,
-                            ModuleId,
-                            contributionContext.ComponentPath),
+                            contribution.Descriptor.CapabilityId),
                         ownerId,
                         new ActorId(target.ActorId),
                         target.ActorInstanceRuntimeId,
@@ -413,14 +412,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string providerComponentPath = provider is Component component
                 ? ActivityCapabilityTransformPathUtility.BuildTransformPath(component.transform)
                 : target.ComponentBasePath;
-            string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+            string capabilityId = BuildActorLifecycleCapabilityId(
                 inventoryId,
                 ownerId,
                 capabilityKind,
-                ModuleId,
-                string.IsNullOrWhiteSpace(capabilityIdentitySuffix)
-                    ? providerComponentPath
-                    : $"{providerComponentPath}|providerType={(string.IsNullOrWhiteSpace(capabilityIdentitySuffix) ? string.Empty : capabilityIdentitySuffix.Trim())}");
+                contribution.Descriptor.CapabilityId);
             if (!capabilityKeys.Add(capabilityId))
             {
                 return;
@@ -520,7 +516,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             if (target.ActorKind == ActorKind.Player)
             {
-                return ActivityCapabilityOwnerKind.PlayerActor;
+                return ActivityCapabilityOwnerKind.Actor;
             }
 
             if (target.ActorKind == ActorKind.Actor)
@@ -534,6 +530,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string BuildActorLifecycleOwnerId(
+            ActivityCapabilityInventoryId inventoryId,
+            ActivityCapabilityOwnerKind ownerKind,
+            string actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            ActorKind actorKind,
+            ActorRole actorRole,
+            ActorScope actorScope)
+        {
+            string normalizedActorId = Normalize(actorId);
+            string actorInstanceToken = actorInstanceRuntimeId.IsValid ? actorInstanceRuntimeId.Value : "actor.instance.unbound";
+            return $"{inventoryId.Signature}|ownerKind={ownerKind}|actorId={normalizedActorId}|actorInstance={actorInstanceToken}|actorKind={actorKind}|actorRole={actorRole}|actorScope={actorScope}";
+        }
+
+        private static string BuildActorLifecycleCapabilityId(
+            ActivityCapabilityInventoryId inventoryId,
+            string ownerId,
+            ActivityCapabilityKind capabilityKind,
+            ActorCapabilityId contributionCapabilityId)
+        {
+            return $"{inventoryId.Signature}|ownerId={Normalize(ownerId)}|capabilityKind={capabilityKind}|moduleId={ModuleId}|contributionCapabilityId={Normalize(contributionCapabilityId.Value)}";
         }
     }
 
