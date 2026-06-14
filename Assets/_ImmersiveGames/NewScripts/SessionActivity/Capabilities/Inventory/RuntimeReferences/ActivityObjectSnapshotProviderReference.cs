@@ -16,7 +16,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             TargetId = Normalize(targetId);
             ComponentPath = Normalize(componentPath);
             Provider = provider;
-            ContractView = provider as IActivityObjectSnapshotProviderContractView;
         }
 
         public string CapabilityId { get; }
@@ -24,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public string TargetId { get; }
         public string ComponentPath { get; }
         public IActivityObjectSnapshotProvider Provider { get; }
-        public IActivityObjectSnapshotProviderContractView ContractView { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && Provider != null;
 
         private static string Normalize(string value)

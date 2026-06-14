@@ -102,9 +102,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityContentLoadFailed = 42,
         ActivitySetupInventoryBuildStarted = 43,
         ActivitySetupInventoryBuilt = 44,
-        ActivitySetupInventoryValidated = 45,
         ActivitySetupInventorySkippedNoRequirements = 46,
-        ActivitySetupInventoryValidationFailed = 47,
+        ActivitySetupInventoryBuildFailed = 47,
         ActivityParticipantBindingStarted = 48,
         ActivityParticipantBindingSkippedNoRequirements = 49,
         ActivityParticipantBindingCompleted = 50,
@@ -254,10 +253,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
-                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
-                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
-                hashCode = hashCode * 397 ^ ActivityOrdinal;
-                hashCode = hashCode * 397 ^ EntrySequence;
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ ActivityOrdinal;
+                hashCode = (hashCode * 397) ^ EntrySequence;
                 return hashCode;
             }
         }
@@ -297,7 +296,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             unchecked
             {
-                return CycleKey.GetHashCode() * 397 ^ (int)Stage;
+                return (CycleKey.GetHashCode() * 397) ^ (int)Stage;
             }
         }
 
@@ -448,8 +447,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasValidNextActivityTransitionContinuePolicy => NextActivityTransitionContinuePolicy != ActivityTransitionContinuePolicy.Unknown;
 
         private bool IsActivityContentConfigurationValid =>
-            ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null ||
-            ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null;
+            (ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null) ||
+            (ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null);
 
         public override string ToString()
         {
@@ -753,11 +752,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotRestoreSkippedNoEndpointOptional = 156,
         ActivityObjectSnapshotRestoreFailed = 157,
         ActivityObjectSnapshotRestoreCompleted = 158,
-        ActivityObjectSnapshotContractValidationStarted = 159,
-        ActivityObjectSnapshotContractValidated = 160,
-        ActivityObjectSnapshotContractSkippedOptional = 161,
-        ActivityObjectSnapshotContractFailed = 162,
-        ActivityObjectSnapshotContractValidationCompleted = 163,
         ActivityParticipantReadinessStarted = 164,
         ActivityParticipantReadinessSkippedNoRequiredParticipant = 165,
         ActivityParticipantReadinessFailed = 166,
@@ -834,11 +828,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityCapabilityInventoryPreviewStarted = 245,
         ActivityCapabilityInventoryPreviewSkippedNoDiscovery = 246,
         ActivityCapabilityInventoryPreviewObserved = 247,
-        ActivityCapabilityInventoryValidationStarted = 248,
-        ActivityCapabilityInventoryValidationPassed = 249,
-        ActivityCapabilityInventoryValidationWarning = 250,
-        ActivityCapabilityInventoryValidationFailedPassive = 251,
-        ActivityCapabilityInventoryValidationCompleted = 252,
         PredefinedVisualSetupReady = 253,
         PermissionTargetPreparationStarted = 256,
         PermissionTargetReceiverResolved = 257,
@@ -848,8 +837,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivitySetupInventoryBuildStarted = 94,
         ActivitySetupInventoryBuilt = 95,
         ActivitySetupInventorySkippedNoRequirements = 96,
-        ActivitySetupInventoryValidated = 97,
-        ActivitySetupInventoryValidationFailed = 98,
+        ActivitySetupInventoryBuildFailed = 98,
         ActivityParticipantBindingStarted = 99,
         ActivityParticipantBindingSkippedNoRequirements = 100,
         ActivityParticipantRequirementDeclared = 101,

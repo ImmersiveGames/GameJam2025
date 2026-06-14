@@ -116,28 +116,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 SessionActivityStage.ActivityContentReleaseCompleted,
                 entrySequence);
 
-            LogFinalizationEvent(
-                "ActivityContentReleaseFinalizationStarted",
-                command,
-                loadedSetPresentBefore,
-                pendingContextPresentBefore,
-                awaitingBefore,
-                loadedSetPresentAfter: loadedSetPresentBefore,
-                pendingContextPresentAfter: pendingContextPresentBefore,
-                awaitingAfter: awaitingBefore,
-                DebugUtility.Colors.Info);
-
-            LogFinalizationEvent(
-                "ActivityContentReleaseFinalizationCleanupStarted",
-                command,
-                loadedSetPresentBefore,
-                pendingContextPresentBefore,
-                awaitingBefore,
-                loadedSetPresentAfter: loadedSetPresentBefore,
-                pendingContextPresentAfter: pendingContextPresentBefore,
-                awaitingAfter: awaitingBefore,
-                DebugUtility.Colors.Info);
-
             ActivityObjectContributorUnregisterStage.Execute(
                 new ActivityObjectContributorUnregisterStageCommand(
                     command.Command.Identity,
@@ -160,17 +138,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool pendingContextPresentAfter = releaseRuntimeState.HasPendingReleaseContext;
             bool awaitingAfter = releaseRuntimeState.IsAwaitingContinuation;
 
-            LogFinalizationEvent(
-                "ActivityContentReleaseFinalizationCleanupCompleted",
-                command,
-                loadedSetPresentBefore,
-                pendingContextPresentBefore,
-                awaitingBefore,
-                loadedSetPresentAfter,
-                pendingContextPresentAfter,
-                awaitingAfter,
-                DebugUtility.Colors.Success);
-
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityContentReleaseCompleted);
             endpoint.EmitFact(
                 facts,
@@ -179,6 +146,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
+            // O stage mantém apenas o completion canônico; início/cleanup já são narrados pelos stages vizinhos.
             LogFinalizationEvent(
                 "ActivityContentReleaseCompleted",
                 command,
@@ -202,17 +170,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
-
-            LogFinalizationEvent(
-                "ActivityContentReleaseFinalizationCompleted",
-                command,
-                loadedSetPresentBefore,
-                pendingContextPresentBefore,
-                awaitingBefore,
-                loadedSetPresentAfter,
-                pendingContextPresentAfter,
-                awaitingAfter,
-                DebugUtility.Colors.Success);
 
             return new ActivityContentReleaseFinalizationStageResult(
                 completed: true,

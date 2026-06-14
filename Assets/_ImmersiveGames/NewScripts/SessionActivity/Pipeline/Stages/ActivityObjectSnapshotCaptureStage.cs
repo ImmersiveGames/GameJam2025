@@ -184,10 +184,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<string> capturedTargetIds = new(StringComparer.Ordinal);
             List<ActivityCapabilitySnapshotRecord> capturedCapabilitySnapshots = new();
             var snapshotInventory = runtimeState.CurrentInventoryPreview;
-            var snapshotInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
             bool hasValidSnapshotInventory =
                 snapshotInventory.IsValid &&
-                snapshotInventoryValidation.IsValid &&
                 string.Equals(snapshotInventory.Id.PipelineId, captureIdentity.PipelineId, StringComparison.Ordinal) &&
                 string.Equals(snapshotInventory.Id.SessionStateId, captureIdentity.SessionId, StringComparison.Ordinal) &&
                 string.Equals(snapshotInventory.Id.ActivityId, captureIdentity.ActivityId, StringComparison.Ordinal) &&
@@ -416,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 bool captureFailed = failedCount > 0;
                 string failureDetail = failedCount > 0
-                    ? string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail)
+                    ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail))
                     : string.Empty;
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     default,

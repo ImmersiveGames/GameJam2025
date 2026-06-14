@@ -6,7 +6,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    public sealed class ActivityObjectTransformSnapshotRestoreEndpoint : MonoBehaviour, IActivityObjectSnapshotRestoreEndpoint, IActivityObjectSnapshotRestoreEndpointContractView, IActivityObjectLifecycleContributionProvider
+    public sealed class ActivityObjectTransformSnapshotRestoreEndpoint : MonoBehaviour, IActivityObjectSnapshotRestoreEndpoint, IActivityObjectLifecycleContributionProvider
     {
         [SerializeField] private string targetId;
         [SerializeField] private Transform targetTransform;
@@ -144,31 +144,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 command.Source,
                 command.Reason,
                 $"restore_transform targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' restoreEndpointPath='{BuildTransformPath(transform)}' targetTransformPath='{BuildTransformPath(targetTransform)}' objectName='{gameObject.name}' coordinateSpace='{coordinateSpace}' hasRigidbody='{hasRigidbody.ToString().ToLowerInvariant()}' hasRigidbody2D='{hasRigidbody2D.ToString().ToLowerInvariant()}' beforePosition='{beforePosition}' beforeRotation='{beforeRotation}' beforeScale='{beforeScale}' payloadPosition='{payloadPosition}' payloadRotation='{payloadRotation}' payloadScale='{payloadScale}' afterPosition='{afterPosition}' afterRotation='{afterRotation}' afterScale='{afterScale}' restoreVerified='{verified.ToString().ToLowerInvariant()}'");
-        }
-
-        public bool TryDescribeContract(
-            string requestedTargetId,
-            out string endpointPath,
-            out string targetTransformPath,
-            out string failureReason)
-        {
-            endpointPath = BuildTransformPath(transform);
-            targetTransformPath = BuildTransformPath(targetTransform);
-
-            if (!Supports(requestedTargetId))
-            {
-                failureReason = "target_not_supported";
-                return false;
-            }
-
-            if (targetTransform == null)
-            {
-                failureReason = "target_transform_missing";
-                return false;
-            }
-
-            failureReason = "resolved";
-            return true;
         }
 
         private void OnValidate()

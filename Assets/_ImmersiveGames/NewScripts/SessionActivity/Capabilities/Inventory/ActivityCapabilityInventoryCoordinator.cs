@@ -12,7 +12,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     {
         public ActivityCapabilityInventoryBuildResult(
             ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation,
             IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
             IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
             IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
@@ -27,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string reason)
         {
             Inventory = inventory;
-            Validation = validation;
             CameraBindingContributions = cameraBindingContributions ?? Array.Empty<ActorCameraBindingContribution>();
             AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
             PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
@@ -43,7 +41,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         }
 
         public ActivityCapabilityInventory Inventory { get; }
-        public ActivityCapabilityInventoryValidationResult Validation { get; }
         public IReadOnlyList<ActorCameraBindingContribution> CameraBindingContributions { get; }
         public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
         public IReadOnlyList<ActorPresentationSetupContribution> PresentationSetupContributions { get; }
@@ -56,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public int UnresolvedReportCount { get; }
         public string Source { get; }
         public string Reason { get; }
-        public bool IsValid => Inventory.IsValid && Validation.IsValid;
+        public bool IsValid => Inventory.IsValid;
 
         private static string Normalize(string value)
         {
@@ -70,7 +67,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         private readonly ActivityObjectCapabilityScanner _objectScanner;
         private readonly ActivityCapabilityActorLifecycleScanner _actorLifecycleScanner;
         private readonly ActivityCapabilityInventoryBuilder _inventoryBuilder;
-        private readonly ActivityCapabilityInventoryValidator _inventoryValidator;
 
         public ActivityCapabilityInventoryCoordinator()
         {
@@ -88,7 +84,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner(playerIdentityResolver));
 
             _inventoryBuilder = new ActivityCapabilityInventoryBuilder(scannerRegistry);
-            _inventoryValidator = new ActivityCapabilityInventoryValidator();
         }
 
         public string ActivityObjectScannerId => _objectScanner.ScannerId;
@@ -131,7 +126,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 out IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
                 out IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
                 out IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions);
-            var validation = _inventoryValidator.Validate(inventory, source, reason);
             CollectLifecycleCapabilitySummaries(
                 inventory,
                 out int activityObjectLifecycleCapabilityCount,
@@ -140,7 +134,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 out string actorLifecycleCapabilityKindsSummary);
             return new ActivityCapabilityInventoryBuildResult(
                 inventory,
-                validation,
                 cameraBindingContributions,
                 attributeSetupContributions,
                 presentationSetupContributions,

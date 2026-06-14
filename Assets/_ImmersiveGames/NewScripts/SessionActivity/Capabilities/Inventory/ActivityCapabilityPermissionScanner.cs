@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
                 if (!_identityResolver.TryResolve(target, out var playerIdentity))
                 {
-                    var endpointComponent = movementEndpoint as Component ?? projectileFireEndpoint as Component;
+                    var endpointComponent = (movementEndpoint as Component) ?? (projectileFireEndpoint as Component);
                     string unresolvedComponentPath = endpointComponent != null
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;

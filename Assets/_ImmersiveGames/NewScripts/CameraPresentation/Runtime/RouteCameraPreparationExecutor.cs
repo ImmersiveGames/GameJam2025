@@ -6,16 +6,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
     public sealed class RouteCameraPreparationExecutor : IRouteCameraPreparationExecutor
     {
         private readonly IRouteCameraDirector _director;
-        private readonly RouteCameraPresentationCommandValidator _validator;
 
         private RouteCameraBindingResult _activeBinding;
 
-        public RouteCameraPreparationExecutor(
-            IRouteCameraDirector director,
-            RouteCameraPresentationCommandValidator validator)
+        public RouteCameraPreparationExecutor(IRouteCameraDirector director)
         {
             this._director = director;
-            this._validator = validator;
         }
 
         public bool TryPrepare(
@@ -23,16 +19,37 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out RouteCameraPresentationResult result,
             out string reason)
         {
-            if (_validator == null)
+            if (command == null)
             {
-                reason = "route_camera_validator_missing";
+                reason = "route_camera_command_null";
                 result = BuildPrepareFailure(command, reason);
                 return false;
             }
 
-            if (!_validator.TryValidatePrepareCommand(command, out string validationReason))
+            if (command.Requirement == null)
             {
-                reason = validationReason;
+                reason = "route_camera_requirement_missing";
+                result = BuildPrepareFailure(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.PresentationRigPrefab == null)
+            {
+                reason = "route_camera_presentation_rig_prefab_missing";
+                result = BuildPrepareFailure(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.TrackingTarget == null)
+            {
+                reason = "route_camera_tracking_target_missing";
+                result = BuildPrepareFailure(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.ActivationTiming != RouteCameraActivationTiming.BeforeReveal)
+            {
+                reason = "route_camera_activation_timing_unsupported";
                 result = BuildPrepareFailure(command, reason);
                 return false;
             }
@@ -95,16 +112,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out RouteCameraReleaseResult result,
             out string reason)
         {
-            if (_validator == null)
+            if (command == null)
             {
-                reason = "route_camera_validator_missing";
-                result = BuildReleaseFailure(command, reason);
-                return false;
-            }
-
-            if (!_validator.TryValidateReleaseCommand(command, out string validationReason))
-            {
-                reason = validationReason;
+                reason = "route_camera_release_command_null";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }

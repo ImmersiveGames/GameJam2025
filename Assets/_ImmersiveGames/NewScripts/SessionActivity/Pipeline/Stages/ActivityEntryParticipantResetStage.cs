@@ -25,7 +25,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryParticipantBindingResult participantBindingResult,
             ActorInventoryFeedResult actorInventoryFeed,
             ActivityCapabilityInventory capabilityInventoryPreview,
-            ActivityCapabilityInventoryValidationResult capabilityInventoryValidation,
             IActorResetAdapter actorResetAdapter,
             ActivityPlayerActorRegistry playerActorRegistry,
             IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
@@ -76,13 +75,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 throw new InvalidOperationException(
                     $"ActivityEntryParticipantResetStage requires ActivityCapabilityInventory preview from the current activity cycle. activityId='{command.ActivityId}'.");
-            }
-
-            if (!capabilityInventoryValidation.IsValid ||
-                capabilityInventoryValidation.Status != ActivityCapabilityInventoryValidationStatus.Passed)
-            {
-                throw new InvalidOperationException(
-                    $"ActivityEntryParticipantResetStage requires ActivityCapabilityInventory validation passed. status='{capabilityInventoryValidation.Status}'.");
             }
 
             if (actorResetAdapter == null)

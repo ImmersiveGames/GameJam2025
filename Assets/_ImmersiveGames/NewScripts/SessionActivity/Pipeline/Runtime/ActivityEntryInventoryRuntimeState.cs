@@ -16,7 +16,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public ActorInventoryFeedResult CurrentActorInventoryFeedResult { get; private set; }
         public ActivitySetupInventory CurrentActivitySetupInventory { get; private set; }
         public ActivityCapabilityInventory CurrentActivityCapabilityInventoryPreview { get; private set; }
-        public ActivityCapabilityInventoryValidationResult CurrentActivityCapabilityInventoryPreviewValidation { get; private set; }
         public IReadOnlyList<ActorCameraBindingContribution> CurrentActivityCameraBindingContributions { get; private set; }
         public IReadOnlyList<ActorAttributeSetupContribution> CurrentActivityAttributeSetupContributions { get; private set; }
         public IReadOnlyList<ActorPresentationSetupContribution> CurrentActivityPresentationSetupContributions { get; private set; }
@@ -52,12 +51,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             CurrentActivitySetupInventory = default;
         }
 
-        public void SetCurrentActivityCapabilityInventoryPreview(
-            ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation)
+        public void SetCurrentActivityCapabilityInventoryPreview(ActivityCapabilityInventory inventory)
         {
             CurrentActivityCapabilityInventoryPreview = inventory;
-            CurrentActivityCapabilityInventoryPreviewValidation = validation;
         }
 
         public void SetCurrentActivityCameraBindingContributions(IReadOnlyList<ActorCameraBindingContribution> contributions)
@@ -83,7 +79,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public void ClearCurrentActivityCapabilityInventoryPreview()
         {
             CurrentActivityCapabilityInventoryPreview = default;
-            CurrentActivityCapabilityInventoryPreviewValidation = default;
             CurrentActivityCameraBindingContributions = Array.Empty<ActorCameraBindingContribution>();
             CurrentActivityAttributeSetupContributions = Array.Empty<ActorAttributeSetupContribution>();
             CurrentActivityPresentationSetupContributions = Array.Empty<ActorPresentationSetupContribution>();

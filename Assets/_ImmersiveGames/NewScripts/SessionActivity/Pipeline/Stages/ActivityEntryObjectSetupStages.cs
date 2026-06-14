@@ -236,7 +236,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static void Execute(
             ActivityEntryObjectSetupCommand command,
             ActivitySetupInventoryBuilder builder,
-            ActivitySetupInventoryValidator validator,
             IActivityEntryRuntimeBridge endpoint,
             ActivityEntryInventoryRuntimeState inventoryState,
             List<SessionActivityFact> facts,
@@ -267,11 +266,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivitySetupInventoryBuildResult buildResult = builder.Build(command.Plan);
             if (buildResult.IsFailed || !buildResult.IsValid)
             {
-                SessionActivityIdentity failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
-                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
+                SessionActivityIdentity failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryBuildFailed);
+                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryBuildFailed);
                 endpoint.EmitFact(
                     facts,
-                    SessionActivityFactKind.ActivitySetupInventoryValidationFailed,
+                    SessionActivityFactKind.ActivitySetupInventoryBuildFailed,
                     failedIdentity,
                     command.Source,
                     command.Reason,
@@ -325,221 +324,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' activity setup inventory built totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
             }
 
-            ActivitySetupInventoryValidationResult validationResult = validator.Validate(buildResult.Inventory, command.Source, command.Reason);
-            if (validationResult.IsFailed || !validationResult.IsValid)
-            {
-                SessionActivityIdentity failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
-                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
-                endpoint.EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivitySetupInventoryValidationFailed,
-                    failedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{command.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}' message='{validationResult.Message}'.");
-                endpoint.EmitSnapshot(
-                    snapshots,
-                    "activity_setup_inventory_validation_failed",
-                    command.Source,
-                    command.Reason,
-                    $"'{command.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}'.");
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActivityEntryPipeline][ActivitySetupInventory] Validation failed activityId='{command.ActivityId}' entrySequence='{entrySequence}' errors='{string.Join(" | ", validationResult.Errors)}'.");
-            }
-
-            SessionActivityIdentity validatedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryValidated);
-            endpoint.SetCurrentIdentity(validatedIdentity, SessionActivityStage.ActivitySetupInventoryValidated);
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActivitySetupInventoryValidated,
-                validatedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{command.ActivityId}' activity setup inventory validated inventoryId='{validationResult.Inventory.InventoryId}' totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
-            endpoint.EmitSnapshot(
-                snapshots,
-                "activity_setup_inventory_validated",
-                command.Source,
-                command.Reason,
-                $"'{command.ActivityId}' activity setup inventory validated totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
-        }
-    }
-
-    internal static class ActivityEntryObjectSnapshotContractValidationStage
-    {
-        public static void Execute(
-            ActivityEntryObjectSetupCommand command,
-            ActivityContentLoadedSet loadedSet,
-            ActivityObjectContributorDiscoveryResult discoveryResult,
-            IActivityEntryRuntimeBridge endpoint,
-            List<SessionActivityFact> facts)
-        {
-            if (!command.IsValid)
-            {
-                throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
-            }
-
-            int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity validationIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
-            endpoint.SetCurrentIdentity(validationIdentity, SessionActivityStage.ActivitySetupStarted);
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectSnapshotContractValidationStarted,
-                validationIdentity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' activity object snapshot contract validation started.");
-
-            if (!IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, validationIdentity) ||
-                discoveryResult.Reports.Count == 0)
-            {
-                endpoint.EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted,
-                    validationIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{command.Identity.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='0' skippedCount='0' failedCount='0' targetIds='<none>' providerPaths='<none>' restoreEndpointPaths='<none>' targetTransformPaths='<none>' mismatchReason='<none>'.");
-                return;
-            }
-
-            int validatedCount = 0;
-            int skippedCount = 0;
-            int failedCount = 0;
-            string mismatchReason = "<none>";
-            HashSet<string> targetIds = new(StringComparer.Ordinal);
-            HashSet<string> providerPaths = new(StringComparer.Ordinal);
-            HashSet<string> restoreEndpointPaths = new(StringComparer.Ordinal);
-            HashSet<string> targetTransformPaths = new(StringComparer.Ordinal);
-
-            for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
-            {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!IsReportForCurrentEntryForIdentity(report, command.Identity, entrySequence, validationIdentity))
-                {
-                    continue;
-                }
-
-                targetIds.Add(report.TargetId);
-                bool required = report.Requiredness == ActivitySetupRequirementRequiredness.Required;
-                GameObject targetObject = ResolveContributorObjectOrFailForActivityId(loadedSet, command.Identity.ActivityId, report);
-                IActivityObjectSnapshotProvider[] providers = ResolveObjectSnapshotProviders(targetObject);
-                IActivityObjectSnapshotRestoreEndpoint[] restoreEndpoints = ResolveObjectSnapshotRestoreEndpoints(targetObject);
-
-                bool providerFound = TryResolveSupportingSnapshotProvider(report.TargetId, providers, out IActivityObjectSnapshotProvider provider);
-                bool restoreFound = TryResolveSupportingSnapshotRestoreEndpoint(report.TargetId, restoreEndpoints, out IActivityObjectSnapshotRestoreEndpoint restoreEndpoint);
-
-                string providerPath = "<none>";
-                string providerTargetTransformPath = "<none>";
-                string providerFailureReason = providerFound ? "<none>" : "snapshot_provider_missing";
-                if (providerFound && provider is IActivityObjectSnapshotProviderContractView providerView)
-                {
-                    bool providerValid = providerView.TryDescribeContract(report.TargetId, out providerPath, out providerTargetTransformPath, out providerFailureReason);
-                    if (!providerValid && string.IsNullOrWhiteSpace(providerFailureReason))
-                    {
-                        providerFailureReason = "snapshot_provider_contract_invalid";
-                    }
-                }
-                else if (providerFound)
-                {
-                    providerFailureReason = "snapshot_provider_contract_view_missing";
-                }
-
-                string restorePath = "<none>";
-                string restoreTargetTransformPath = "<none>";
-                string restoreFailureReason = restoreFound ? "<none>" : "snapshot_restore_endpoint_missing";
-                if (restoreFound && restoreEndpoint is IActivityObjectSnapshotRestoreEndpointContractView restoreView)
-                {
-                    bool restoreValid = restoreView.TryDescribeContract(report.TargetId, out restorePath, out restoreTargetTransformPath, out restoreFailureReason);
-                    if (!restoreValid && string.IsNullOrWhiteSpace(restoreFailureReason))
-                    {
-                        restoreFailureReason = "snapshot_restore_contract_invalid";
-                    }
-                }
-                else if (restoreFound)
-                {
-                    restoreFailureReason = "snapshot_restore_contract_view_missing";
-                }
-
-                providerPaths.Add(string.IsNullOrWhiteSpace(providerPath) ? "<none>" : providerPath);
-                restoreEndpointPaths.Add(string.IsNullOrWhiteSpace(restorePath) ? "<none>" : restorePath);
-                if (!string.IsNullOrWhiteSpace(providerTargetTransformPath) && !string.Equals(providerTargetTransformPath, "<none>", StringComparison.Ordinal))
-                {
-                    targetTransformPaths.Add(providerTargetTransformPath);
-                }
-
-                if (!string.IsNullOrWhiteSpace(restoreTargetTransformPath) && !string.Equals(restoreTargetTransformPath, "<none>", StringComparison.Ordinal))
-                {
-                    targetTransformPaths.Add(restoreTargetTransformPath);
-                }
-
-                bool providerContractValid = providerFound && string.Equals(providerFailureReason, "resolved", StringComparison.Ordinal);
-                bool restoreContractValid = restoreFound && string.Equals(restoreFailureReason, "resolved", StringComparison.Ordinal);
-                bool transformMismatch = providerContractValid &&
-                                         restoreContractValid &&
-                                         !string.Equals(providerTargetTransformPath, restoreTargetTransformPath, StringComparison.Ordinal);
-                string failureReason = transformMismatch
-                    ? "snapshot_restore_target_transform_mismatch"
-                    : ResolveSnapshotContractFailureReason(providerFailureReason, restoreFailureReason, providerFound, restoreFound);
-
-                bool hasDeclaredSnapshotCapability = providerFound || restoreFound;
-                bool hasNoSnapshotCapability = !providerFound && !restoreFound;
-                bool contractValid = providerContractValid && restoreContractValid && !transformMismatch;
-
-                if (hasDeclaredSnapshotCapability && contractValid)
-                {
-                    validatedCount += 1;
-                    endpoint.EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotContractValidated,
-                        validationIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{command.Identity.ActivityId}' activity object snapshot contract validated targetId='{report.TargetId}' requiredness='{report.Requiredness}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='{providerTargetTransformPath}'.");
-                    continue;
-                }
-
-                if (hasNoSnapshotCapability && !required)
-                {
-                    skippedCount += 1;
-                    endpoint.EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotContractSkippedOptional,
-                        validationIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{command.Identity.ActivityId}' activity object snapshot contract skipped optional targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='snapshot_capability_not_declared_optional' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='<none>'.");
-                    continue;
-                }
-
-                failedCount += 1;
-                if (transformMismatch)
-                {
-                    mismatchReason = "snapshot_restore_target_transform_mismatch";
-                }
-                else if (!string.Equals(failureReason, "<none>", StringComparison.Ordinal))
-                {
-                    mismatchReason = failureReason;
-                }
-
-                endpoint.EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotContractFailed,
-                    validationIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{command.Identity.ActivityId}' activity object snapshot contract failed targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
-                throw new InvalidOperationException(
-                    $"snapshot_contract_validation_failed: activityId='{command.Identity.ActivityId}' targetId='{report.TargetId}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
-            }
-
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted,
-                validationIdentity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='{validatedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' targetIds='{JoinValues(targetIds)}' providerPaths='{JoinValues(providerPaths)}' restoreEndpointPaths='{JoinValues(restoreEndpointPaths)}' targetTransformPaths='{JoinValues(targetTransformPaths)}' mismatchReason='{mismatchReason}'.");
+            // Validação passiva removida: o builder já produz inventário válido ou falha.
+            // Checks obrigatórios restantes pertencem aos stages consumidores.
         }
     }
 
@@ -601,77 +387,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason);
             ActivityCapabilityInventory inventory = buildResult.Inventory;
-            ActivityCapabilityInventoryValidationResult validationResult = buildResult.Validation;
             inventoryState.SetCurrentActivityCameraBindingContributions(buildResult.CameraBindingContributions);
             inventoryState.SetCurrentActivityAttributeSetupContributions(buildResult.AttributeSetupContributions);
             inventoryState.SetCurrentActivityPresentationSetupContributions(buildResult.PresentationSetupContributions);
             inventoryState.SetCurrentActivityPermissionReceiverContributions(buildResult.PermissionReceiverContributions);
             string capabilityKindsSummary = FormatCapabilityKindsSummary(inventory.Capabilities);
-            inventoryState.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
-            string validationIssueCodes = FormatValidationIssueCodes(validationResult.Issues);
+            inventoryState.SetCurrentActivityCapabilityInventoryPreview(inventory);
             string activityObjectLifecycleCapabilityKinds = buildResult.ActivityObjectLifecycleCapabilityKindsSummary;
             string actorLifecycleCapabilityKinds = buildResult.ActorLifecycleCapabilityKindsSummary;
 
             endpoint.EmitFact(
                 facts,
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitEntryCapabilityInventoryLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
-                previewIdentity,
-                $"'{command.Identity.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-
-            SessionActivityFactKind validationOutcomeKind = validationResult.Status switch
-            {
-                ActivityCapabilityInventoryValidationStatus.Passed => SessionActivityFactKind.ActivityCapabilityInventoryValidationPassed,
-                ActivityCapabilityInventoryValidationStatus.PassedWithWarnings => SessionActivityFactKind.ActivityCapabilityInventoryValidationWarning,
-                ActivityCapabilityInventoryValidationStatus.FailedPassive => SessionActivityFactKind.ActivityCapabilityInventoryValidationFailedPassive,
-                _ => SessionActivityFactKind.ActivityCapabilityInventoryValidationWarning,
-            };
-
-            string validationOutcomeMessage =
-                $"'{command.Identity.ActivityId}' activity capability inventory validation outcome status='{validationResult.Status}' entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.";
-            endpoint.EmitFact(
-                facts,
-                validationOutcomeKind,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                validationOutcomeMessage);
-            EmitEntryCapabilityInventoryLog(validationOutcomeKind, previewIdentity, validationOutcomeMessage);
-
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitEntryCapabilityInventoryLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
-                previewIdentity,
-                $"'{command.Identity.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-
-            endpoint.EmitFact(
-                facts,
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}' actorScannerId='{coordinator.ActorLifecycleScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{coordinator.ActivityObjectScannerId}' actorScannerId='{coordinator.ActorLifecycleScannerId}'.");
             EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
                 previewIdentity,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}' actorScannerId='{coordinator.ActorLifecycleScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{coordinator.ActivityObjectScannerId}' actorScannerId='{coordinator.ActorLifecycleScannerId}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_capability_inventory_preview_observed",
                 command.Source,
                 command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}' actorScannerId='{coordinator.ActorLifecycleScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{coordinator.ActivityObjectScannerId}' actorScannerId='{coordinator.ActorLifecycleScannerId}'.");
 
             return buildResult;
         }
@@ -693,7 +434,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityResetScopePlan resetScopePlan,
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation,
             IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -777,7 +517,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool hasRequiredContributor = HasRequiredResetContributor(discoveryResult, resetIdentity);
             bool hasValidResetInventory =
                 inventory.IsValid &&
-                validation.IsValid &&
                 string.Equals(inventory.Id.PipelineId, resetIdentity.PipelineId, StringComparison.Ordinal) &&
                 string.Equals(inventory.Id.SessionStateId, resetIdentity.SessionId, StringComparison.Ordinal) &&
                 string.Equals(inventory.Id.ActivityId, resetIdentity.ActivityId, StringComparison.Ordinal) &&
@@ -793,7 +532,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         resetIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{command.ActivityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}'.");
+                        $"'{command.ActivityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}'.");
                     throw new InvalidOperationException(
                         $"required_reset_inventory_missing_or_invalid: activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
                 }
@@ -1014,7 +753,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation,
             IActivityEntryRuntimeBridge endpoint,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts)
@@ -1132,7 +870,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<string> matchedTargetIds = new(StringComparer.Ordinal);
             bool hasValidRestoreInventory =
                 inventory.IsValid &&
-                validation.IsValid &&
                 string.Equals(inventory.Id.PipelineId, restoreIdentity.PipelineId, StringComparison.Ordinal) &&
                 string.Equals(inventory.Id.SessionStateId, restoreIdentity.SessionId, StringComparison.Ordinal) &&
                 string.Equals(inventory.Id.ActivityId, restoreIdentity.ActivityId, StringComparison.Ordinal) &&
@@ -1146,7 +883,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' activity object snapshot restore failed reason='restore_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore failed reason='restore_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}'.");
                 throw new InvalidOperationException(
                     $"restore_inventory_missing_or_invalid: activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
             }
@@ -1514,52 +1251,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    report.Identity.EntrySequence == entrySequence;
         }
 
-        public static GameObject ResolveContributorObjectOrFailForActivityId(
-            ActivityContentLoadedSet loadedSet,
-            string activityId,
-            ActivityObjectContributionReport report)
-        {
-            for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
-            {
-                ActivityContentLoadedSceneRecord sceneRecord = loadedSet.Scenes[sceneIndex];
-                if (!sceneRecord.IsValid || !string.Equals(sceneRecord.SceneName, report.SceneName, StringComparison.Ordinal))
-                {
-                    continue;
-                }
 
-                Scene scene = SceneManager.GetSceneByName(sceneRecord.SceneName);
-                if (!scene.IsValid() || !scene.isLoaded)
-                {
-                    continue;
-                }
-
-                GameObject[] roots = scene.GetRootGameObjects();
-                for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
-                {
-                    ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
-                    for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
-                    {
-                        ActivityObjectContributor contributor = contributors[contributorIndex];
-                        if (contributor == null)
-                        {
-                            continue;
-                        }
-
-                        if (!string.Equals(contributor.TargetId, report.TargetId, StringComparison.Ordinal))
-                        {
-                            continue;
-                        }
-
-                        return contributor.gameObject;
-                    }
-                }
-            }
-
-            throw new InvalidOperationException(
-                $"Activity '{activityId}' could not resolve contributor object for targetId='{report.TargetId}' sceneName='{report.SceneName}'.");
-        }
-
-        public static bool IsDiscoveryResultForCurrentEntry(
+public static bool IsDiscoveryResultForCurrentEntry(
             ActivityObjectContributorDiscoveryResult result,
             SessionActivityIdentity identity,
             int entrySequence)
@@ -1807,184 +1500,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    !string.IsNullOrWhiteSpace(result.Command.TargetId);
         }
 
-        public static IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProviders(GameObject targetObject)
-        {
-            IReadOnlyList<IActivityObjectLifecycleContribution> contributions = ResolveObjectLifecycleContributions(targetObject);
-            if (contributions.Count == 0)
-            {
-                return Array.Empty<IActivityObjectSnapshotProvider>();
-            }
 
-            List<IActivityObjectSnapshotProvider> providers = new();
-            HashSet<IActivityObjectSnapshotProvider> unique = new();
-            for (int index = 0; index < contributions.Count; index++)
-            {
-                if (contributions[index] is not IActivityObjectSnapshotContribution snapshotContribution ||
-                    snapshotContribution.SnapshotProvider == null)
-                {
-                    continue;
-                }
 
-                if (unique.Add(snapshotContribution.SnapshotProvider))
-                {
-                    providers.Add(snapshotContribution.SnapshotProvider);
-                }
-            }
 
-            return providers.ToArray();
-        }
 
-        public static IActivityObjectSnapshotRestoreEndpoint[] ResolveObjectSnapshotRestoreEndpoints(GameObject targetObject)
-        {
-            IReadOnlyList<IActivityObjectLifecycleContribution> contributions = ResolveObjectLifecycleContributions(targetObject);
-            if (contributions.Count == 0)
-            {
-                return Array.Empty<IActivityObjectSnapshotRestoreEndpoint>();
-            }
-
-            List<IActivityObjectSnapshotRestoreEndpoint> endpoints = new();
-            HashSet<IActivityObjectSnapshotRestoreEndpoint> unique = new();
-            for (int index = 0; index < contributions.Count; index++)
-            {
-                if (contributions[index] is not IActivityObjectSnapshotRestoreContribution restoreContribution ||
-                    restoreContribution.RestoreEndpoint == null)
-                {
-                    continue;
-                }
-
-                if (unique.Add(restoreContribution.RestoreEndpoint))
-                {
-                    endpoints.Add(restoreContribution.RestoreEndpoint);
-                }
-            }
-
-            return endpoints.ToArray();
-        }
-
-        private static IReadOnlyList<IActivityObjectLifecycleContribution> ResolveObjectLifecycleContributions(GameObject targetObject)
-        {
-            if (targetObject == null)
-            {
-                return Array.Empty<IActivityObjectLifecycleContribution>();
-            }
-
-            ActivityObjectContributor contributor = targetObject.GetComponent<ActivityObjectContributor>();
-            if (contributor == null || !contributor.IsValid)
-            {
-                return Array.Empty<IActivityObjectLifecycleContribution>();
-            }
-
-            bool includeChildren = contributor.IncludeChildrenForEndpointDiscovery;
-            MonoBehaviour[] behaviours = includeChildren
-                ? targetObject.GetComponentsInChildren<MonoBehaviour>(true)
-                : targetObject.GetComponents<MonoBehaviour>();
-            ActivityObjectLifecycleContributionContext context = new(
-                default,
-                contributor.TargetId,
-                contributor.RoleId,
-                contributor.ContributorKind,
-                contributor.DefaultRequiredness,
-                nameof(ActivityEntryObjectSetupStageUtility),
-                "activity_object_lifecycle_contribution_lookup");
-            List<IActivityObjectLifecycleContribution> contributions = new();
-            for (int index = 0; index < behaviours.Length; index++)
-            {
-                if (behaviours[index] is IActivityObjectLifecycleContributionProvider provider)
-                {
-                    provider.CollectActivityObjectLifecycleContributions(context, contributions);
-                }
-            }
-
-            return contributions;
-        }
-
-        public static bool TryResolveSupportingSnapshotProvider(
-            string targetId,
-            IActivityObjectSnapshotProvider[] providers,
-            out IActivityObjectSnapshotProvider resolvedProvider)
-        {
-            resolvedProvider = null;
-            if (providers == null || providers.Length == 0)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < providers.Length; index++)
-            {
-                IActivityObjectSnapshotProvider provider = providers[index];
-                if (provider == null || !provider.Supports(targetId))
-                {
-                    continue;
-                }
-
-                resolvedProvider = provider;
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool TryResolveSupportingSnapshotRestoreEndpoint(
-            string targetId,
-            IActivityObjectSnapshotRestoreEndpoint[] endpoints,
-            out IActivityObjectSnapshotRestoreEndpoint resolvedEndpoint)
-        {
-            resolvedEndpoint = null;
-            if (endpoints == null || endpoints.Length == 0)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < endpoints.Length; index++)
-            {
-                IActivityObjectSnapshotRestoreEndpoint endpoint = endpoints[index];
-                if (endpoint == null || !endpoint.Supports(targetId))
-                {
-                    continue;
-                }
-
-                resolvedEndpoint = endpoint;
-                return true;
-            }
-
-            return false;
-        }
-
-        public static string ResolveSnapshotContractFailureReason(
-            string providerFailureReason,
-            string restoreFailureReason,
-            bool providerFound,
-            bool restoreFound)
-        {
-            if (!providerFound && !restoreFound)
-            {
-                return "snapshot_provider_and_restore_endpoint_missing";
-            }
-
-            if (!providerFound)
-            {
-                return "snapshot_provider_missing";
-            }
-
-            if (!restoreFound)
-            {
-                return "snapshot_restore_endpoint_missing";
-            }
-
-            if (!string.Equals(providerFailureReason, "resolved", StringComparison.Ordinal))
-            {
-                return string.IsNullOrWhiteSpace(providerFailureReason) ? "snapshot_provider_contract_invalid" : providerFailureReason;
-            }
-
-            if (!string.Equals(restoreFailureReason, "resolved", StringComparison.Ordinal))
-            {
-                return string.IsNullOrWhiteSpace(restoreFailureReason) ? "snapshot_restore_contract_invalid" : restoreFailureReason;
-            }
-
-            return "<none>";
-        }
-
-        public static ActivityObjectSnapshotRestoreResult ExecuteObjectSnapshotRestoreCommand(
+public static ActivityObjectSnapshotRestoreResult ExecuteObjectSnapshotRestoreCommand(
             ActivityObjectSnapshotRestoreCommand command,
             IActivityObjectSnapshotRestoreEndpoint[] endpoints,
             ActivityObjectContributionReport report)
@@ -2095,32 +1615,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return string.Join(",", segments);
         }
 
-        public static string FormatValidationIssueCodes(IReadOnlyList<ActivityCapabilityInventoryValidationIssue> issues)
-        {
-            if (issues == null || issues.Count == 0)
-            {
-                return "<none>";
-            }
 
-            Dictionary<string, int> countsByCode = new(StringComparer.Ordinal);
-            for (int index = 0; index < issues.Count; index++)
-            {
-                string code = string.IsNullOrWhiteSpace(issues[index].Code) ? "unknown" : issues[index].Code;
-                countsByCode.TryGetValue(code, out int count);
-                countsByCode[code] = count + 1;
-            }
-
-            List<string> codes = new(countsByCode.Keys);
-            codes.Sort(StringComparer.Ordinal);
-            List<string> segments = new(codes.Count);
-            for (int index = 0; index < codes.Count; index++)
-            {
-                string code = codes[index];
-                segments.Add($"{code}:{countsByCode[code]}");
-            }
-
-            return string.Join(",", segments);
-        }
 
         public static string ToCoordinateSpaceToken(ActivityObjectSnapshotCoordinateSpace coordinateSpace)
         {

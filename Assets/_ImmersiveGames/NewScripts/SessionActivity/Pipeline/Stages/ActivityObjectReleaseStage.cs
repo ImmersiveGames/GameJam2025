@@ -149,10 +149,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int skippedCount = 0;
             int failedCount = 0;
             var releaseInventory = runtimeState.CurrentInventoryPreview;
-            var releaseInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
             bool hasValidReleaseInventory =
                 releaseInventory.IsValid &&
-                releaseInventoryValidation.IsValid &&
                 string.Equals(releaseInventory.Id.PipelineId, releaseIdentity.PipelineId, StringComparison.Ordinal) &&
                 string.Equals(releaseInventory.Id.SessionStateId, releaseIdentity.SessionId, StringComparison.Ordinal) &&
                 string.Equals(releaseInventory.Id.ActivityId, releaseIdentity.ActivityId, StringComparison.Ordinal) &&
@@ -168,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object release failed reason='release_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{releaseInventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{releaseInventoryValidation.IsValid.ToString().ToLowerInvariant()}'.");
+                    $"'{definition.ActivityId}' object release failed reason='release_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{releaseInventory.IsValid.ToString().ToLowerInvariant()}'.");
                 throw new InvalidOperationException(
                     $"release_inventory_missing_or_invalid: activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
             }

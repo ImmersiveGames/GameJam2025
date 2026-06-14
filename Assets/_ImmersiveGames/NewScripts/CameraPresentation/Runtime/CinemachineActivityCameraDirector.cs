@@ -22,8 +22,37 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraBindingResult result,
             out string reason)
         {
-            if (!ActivityCameraBindingCommandValidator.TryValidate(command, out reason))
+            if (command == null)
             {
+                reason = "command_null";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement == null)
+            {
+                reason = "requirement_null";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.CameraRigPrefab == null)
+            {
+                reason = "camera_rig_prefab_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.TrackingTarget == null)
+            {
+                reason = "tracking_target_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.ActivationTiming != ActivityCameraActivationTiming.BeforeReveal)
+            {
+                reason = "activation_timing_unsupported";
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
             }

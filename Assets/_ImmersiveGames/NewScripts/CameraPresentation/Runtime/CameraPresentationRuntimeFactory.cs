@@ -29,8 +29,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public static IRouteCameraPreparationExecutor CreateRoutePreparationExecutor(IRouteCameraDirector director)
         {
-            var validator = new RouteCameraPresentationCommandValidator();
-            return new RouteCameraPreparationExecutor(director, validator);
+            return new RouteCameraPreparationExecutor(director);
         }
     }
 }

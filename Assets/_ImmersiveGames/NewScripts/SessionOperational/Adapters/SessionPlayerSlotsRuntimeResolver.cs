@@ -6,9 +6,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
-    public readonly struct SessionPlayerSlotsValidationContext
+    public readonly struct SessionPlayerSlotsRuntimeContext
     {
-        public SessionPlayerSlotsValidationContext(
+        public SessionPlayerSlotsRuntimeContext(
             Transform persistentRoot,
             PlayerInputManager playerInputManager,
             int maxPlayerSlots)
@@ -23,9 +23,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public int MaxPlayerSlots { get; }
     }
 
-    public static class SessionPlayerSlotsValidator
+    public static class SessionPlayerSlotsRuntimeResolver
     {
-        public static SessionPlayerSlotsValidationContext ValidateOrFail(
+        public static SessionPlayerSlotsRuntimeContext ResolveOrFail(
             RuntimeModeConfig runtimeModeConfig,
             string routeIdentity,
             string routeOperationId,
@@ -36,8 +36,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             var config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
 
-            DebugUtility.LogVerbose(typeof(SessionPlayerSlotsValidator),
-                BuildLog("SessionPlayerSlotsValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.LogVerbose(typeof(SessionPlayerSlotsRuntimeResolver),
+                BuildLog("SessionPlayerSlotsRuntimeResolutionStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"maxPlayerSlots='{config.MaxPlayerSlots}'"),
                 DebugUtility.Colors.Info);
 
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             var playerInputManager = playerInputManagers[0];
 
-            DebugUtility.LogVerbose(typeof(SessionPlayerSlotsValidator),
+            DebugUtility.LogVerbose(typeof(SessionPlayerSlotsRuntimeResolver),
                 BuildLog("PlayerInputManagerObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"playerInputManager='{playerInputManager.name}' observedMaxPlayerCount='{playerInputManager.maxPlayerCount}'"),
                 DebugUtility.Colors.Info);
@@ -79,12 +79,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 source,
                 reason);
 
-            DebugUtility.Log(typeof(SessionPlayerSlotsValidator),
-                BuildLog("MaxPlayerSlotsValidated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.Log(typeof(SessionPlayerSlotsRuntimeResolver),
+                BuildLog("SessionPlayerSlotsRuntimeResolved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"maxPlayerSlots='{config.MaxPlayerSlots}'"),
                 DebugUtility.Colors.Success);
 
-            return new SessionPlayerSlotsValidationContext(
+            return new SessionPlayerSlotsRuntimeContext(
                 persistentRoot,
                 playerInputManager,
                 config.MaxPlayerSlots);
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             if (root == null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
-                    "root persistente invalido para validacao de EventSystem.");
+                    "root persistente invalido para infraestrutura de input persistente.");
             }
 
             return root;
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string detail)
         {
             string message = BuildLog(
-                "SessionPlayerSlotsValidationFailed",
+                "SessionPlayerSlotsRuntimeResolutionFailed",
                 routeIdentity,
                 routeOperationId,
                 transitionId,
@@ -140,8 +140,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason,
                 detail);
 
-            DebugUtility.LogError(typeof(SessionPlayerSlotsValidator), $"[FATAL][Config][SessionPlayerSlots] {message}");
-            return new InvalidOperationException($"[FATAL][Config][SessionPlayerSlots] {message}");
+            DebugUtility.LogError(typeof(SessionPlayerSlotsRuntimeResolver), $"[FATAL][Config][SessionPlayerSlotsRuntime] {message}");
+            return new InvalidOperationException($"[FATAL][Config][SessionPlayerSlotsRuntime] {message}");
         }
 
         private static string BuildLog(

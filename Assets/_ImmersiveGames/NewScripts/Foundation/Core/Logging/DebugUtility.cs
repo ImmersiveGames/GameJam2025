@@ -277,7 +277,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         {
             lock (_verboseLogLock)
             {
-                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !_logFallbacks || !ShouldLog(type, null, DebugLevel.Verbose))
+                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose))
                 {
                     return;
                 }
@@ -331,7 +331,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             var type = typeof(T);
             lock (_verboseLogLock)
             {
-                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !_logFallbacks || !ShouldLog(type, instance, DebugLevel.Verbose))
+                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose))
                 {
                     return;
                 }

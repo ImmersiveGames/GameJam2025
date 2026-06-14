@@ -98,11 +98,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int reportEvaluatedCount = 0;
 
             ActivityCapabilityInventory resetInventory = context.ResetInventory;
-            ActivityCapabilityInventoryValidationResult resetInventoryValidation = context.ResetInventoryValidation;
             bool hasRequiredContributor = hasRequiredResetContributor(discoveryResult, activityId, activityOrdinal, entrySequence);
             bool hasValidResetInventory =
                 resetInventory.IsValid &&
-                resetInventoryValidation.IsValid &&
                 string.Equals(resetInventory.Id.PipelineId, resetIdentity.PipelineId, StringComparison.Ordinal) &&
                 string.Equals(resetInventory.Id.SessionStateId, resetIdentity.SessionId, StringComparison.Ordinal) &&
                 string.Equals(resetInventory.Id.ActivityId, resetIdentity.ActivityId, StringComparison.Ordinal) &&
@@ -114,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 {
                     emitFact(
                         SessionActivityFactKind.ObjectResetFailed,
-                        $"'{activityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{resetInventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{resetInventoryValidation.IsValid.ToString().ToLowerInvariant()}'.");
+                        $"'{activityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{resetInventory.IsValid.ToString().ToLowerInvariant()}'.");
                     throw new InvalidOperationException(
                         $"required_reset_inventory_missing_or_invalid: activityId='{activityId}' entrySequence='{entrySequence}'.");
                 }

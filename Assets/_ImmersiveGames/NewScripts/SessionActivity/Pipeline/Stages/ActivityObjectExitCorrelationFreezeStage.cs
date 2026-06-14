@@ -38,7 +38,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             var discoveryResult = exitCorrelation.ContributorDiscoveryResult;
             var inventoryPreview = exitCorrelation.InventoryPreview;
-            var inventoryValidation = exitCorrelation.InventoryPreviewValidation;
 
             runtimeState.StoreContributorDiscoveryResult(
                 discoveryResult,
@@ -48,7 +47,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 FreezeReason);
             runtimeState.StoreInventoryPreview(
                 inventoryPreview,
-                inventoryValidation,
                 activityId,
                 entrySequence,
                 Owner,
@@ -56,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             DebugUtility.LogVerbose(
                 typeof(ActivityObjectExitCorrelationFreezeStage),
-                $"event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}' inventoryValidationValid='{inventoryValidation.IsValid.ToString().ToLowerInvariant()}'.",
+                $"event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}'.",
                 DebugUtility.Colors.Info);
         }
 

@@ -71,7 +71,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActorCommandBindingAdapter _actorCommandBindingAdapter;
         private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
-        private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
         private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
         private readonly ActivityEntryInventoryRuntimeState _activityInventoryRuntimeState = new();
         private readonly ActivityParticipationRuntimeState _activityParticipationRuntimeState = new();
@@ -134,7 +133,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
             _actorCommandBindingAdapter = new ActorCommandBindingAdapter();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
-            _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
             _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
         }
 
@@ -327,7 +325,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     participantBindingResult,
                     _activityInventoryRuntimeState.CurrentActorInventoryFeedResult,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
-                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation,
                     _actorResetAdapter,
                     _activityPlayerActorRegistry,
                     _currentActorMaterializationPlanEntries,
@@ -497,8 +494,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             return new ActivityObjectExitCorrelationBundle(
                 _activityInventoryRuntimeState.CurrentActivityObjectContributorDiscoveryResult,
-                _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
-                _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation);
+                _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview);
         }
 
         private void BeginActivitySetupReadiness(
@@ -933,7 +929,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Identity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='setup_inventory_snapshot_contract'");
+                "owner='ActivityEntryPipeline' block='setup_inventory'");
 
             try
             {
@@ -960,25 +956,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityEntrySetupInventoryStage.Execute(
                     command,
                     _activitySetupInventoryBuilder,
-                    _activitySetupInventoryValidator,
                     _runtimeBridge,
                     _activityInventoryRuntimeState,
                     facts,
                     snapshots);
-
-                ActivityEntryObjectSnapshotContractValidationStage.Execute(
-                    command,
-                    loadedSet,
-                    _activityInventoryRuntimeState.CurrentActivityObjectContributorDiscoveryResult,
-                    _runtimeBridge,
-                    facts);
 
                 _logSink.LogEntryOwnerEvent(
                     "ActivityEntrySetupInfrastructureCompleted",
                     command.Identity,
                     command.Source,
                     command.Reason,
-                    "owner='ActivityEntryPipeline' block='setup_inventory_snapshot_contract'");
+                    "owner='ActivityEntryPipeline' block='setup_inventory'");
                 return new ActivityEntryObjectSetupResult(
                     completed: true,
                     command.Identity,
@@ -991,7 +979,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Identity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='setup_inventory_snapshot_contract' error='{exception.Message}'");
+                    $"owner='ActivityEntryPipeline' block='setup_inventory' error='{exception.Message}'");
                 throw;
             }
         }
@@ -1160,7 +1148,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     resetScopePlan,
                     discoveryResult,
                     buildResult.Inventory,
-                    buildResult.Validation,
                     _runtimeBridge,
                     facts,
                     snapshots);
@@ -1185,7 +1172,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command,
                     discoveryResult,
                     buildResult.Inventory,
-                    buildResult.Validation,
                     _runtimeBridge,
                     loadedSnapshotPayloadContext,
                     facts);
@@ -1538,7 +1524,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _activityCameraPreparationExecutor,
                     _activityInventoryRuntimeState.CurrentActivitySetupInventory,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
-                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation,
                     command.CameraBindingContributions,
                     _activityParticipationRuntimeState.CurrentParticipationContext?.Participants ?? Array.Empty<ActivityParticipantBinding>(),
                     _cameraBindingBridge,
@@ -1725,16 +1710,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview;
         }
 
-        public ActivityCapabilityInventoryValidationResult GetCurrentActivityCapabilityInventoryPreviewValidation()
+        public void SetCurrentActivityCapabilityInventoryPreview(ActivityCapabilityInventory inventory)
         {
-            return _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation;
-        }
-
-        public void SetCurrentActivityCapabilityInventoryPreview(
-            ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation)
-        {
-            _activityInventoryRuntimeState.SetCurrentActivityCapabilityInventoryPreview(inventory, validation);
+            _activityInventoryRuntimeState.SetCurrentActivityCapabilityInventoryPreview(inventory);
         }
 
         public void ClearCurrentActivityCapabilityInventoryPreview()

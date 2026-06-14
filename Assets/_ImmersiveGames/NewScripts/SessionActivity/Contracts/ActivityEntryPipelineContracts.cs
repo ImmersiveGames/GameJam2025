@@ -151,22 +151,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public ActivityObjectExitCorrelationBundle(
             ActivityObjectContributorDiscoveryResult contributorDiscoveryResult,
-            ActivityCapabilityInventory inventoryPreview,
-            ActivityCapabilityInventoryValidationResult inventoryPreviewValidation)
+            ActivityCapabilityInventory inventoryPreview)
         {
             ContributorDiscoveryResult = contributorDiscoveryResult;
             InventoryPreview = inventoryPreview;
-            InventoryPreviewValidation = inventoryPreviewValidation;
         }
 
         public ActivityObjectContributorDiscoveryResult ContributorDiscoveryResult { get; }
         public ActivityCapabilityInventory InventoryPreview { get; }
-        public ActivityCapabilityInventoryValidationResult InventoryPreviewValidation { get; }
 
         public bool HasContributorDiscoveryResult => ContributorDiscoveryResult.IsValid;
         public bool HasInventoryPreview => InventoryPreview.IsValid;
-        public bool HasInventoryPreviewValidation => InventoryPreviewValidation.IsValid;
-        public bool HasAnyData => HasContributorDiscoveryResult || HasInventoryPreview || HasInventoryPreviewValidation;
+        public bool HasAnyData => HasContributorDiscoveryResult || HasInventoryPreview;
         public bool IsEmpty => !HasAnyData;
     }
 
@@ -1328,10 +1324,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory);
         void ClearCurrentActivitySetupInventory();
         ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
-        ActivityCapabilityInventoryValidationResult GetCurrentActivityCapabilityInventoryPreviewValidation();
-        void SetCurrentActivityCapabilityInventoryPreview(
-            ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation);
+        void SetCurrentActivityCapabilityInventoryPreview(ActivityCapabilityInventory inventory);
         void ClearCurrentActivityCapabilityInventoryPreview();
         ActivityEntryPreparationResult PrepareEntry(
             ActivityEntryPreparationCommand command,

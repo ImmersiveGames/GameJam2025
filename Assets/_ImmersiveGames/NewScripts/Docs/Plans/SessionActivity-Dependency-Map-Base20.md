@@ -183,7 +183,6 @@ new UnityActorPresentationMaterializationAdapter();
 new PlayerInputBindingAdapter(...);
 new ActorCommandBindingAdapter();
 new ActivitySetupInventoryBuilder();
-new ActivitySetupInventoryValidator();
 new ActivityCapabilityInventoryCoordinator();
 ```
 

@@ -25,7 +25,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         [Header("Layout")]
         [SerializeField] private bool showOnGUI = true;
         [SerializeField] private bool showForeignStaleQa = false;
-        [SerializeField] private bool qaAutoDumpOnObservedStateChange = false;
 
         private GUIStyle _windowStyle;
         private GUIStyle _titleStyle;
@@ -54,7 +53,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly Dictionary<string, string> _lastActivityObjectContributorDiscoveryCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectResetCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectSnapshotCaptureCheckpointTokenByEntry = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, string> _lastActivityObjectSnapshotContractValidationCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectSnapshotRestoreCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectReleaseCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectContributorUnregisterCheckpointTokenByEntry = new(StringComparer.Ordinal);
@@ -146,63 +144,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.ExecuteCommand(BuildForeignPipelineCommand(), "SendForeignPipelineCommand");
-        }
-
-        [ContextMenu("DumpState")]
-        public void DumpState()
-        {
-            EnsureHost();
-            host.DumpState();
-        }
-
-        [ContextMenu("Trace")]
-        public void Trace()
-        {
-            EnsureHost();
-            host.DumpTrace();
-        }
-
-        [ContextMenu("DumpActivityContentReleaseEvidence")]
-        public void DumpActivityContentReleaseEvidence()
-        {
-            EnsureHost();
-            host.DumpActivityContentReleaseEvidence();
-        }
-
-        [ContextMenu("DumpCurrentActivityEvidence")]
-        public void DumpCurrentActivityEvidence()
-        {
-            EnsureHost();
-            host.DumpCurrentActivityEvidence();
-        }
-
-        [ContextMenu("DumpParticipantBindingEvidence")]
-        public void DumpParticipantBindingEvidence()
-        {
-            EnsureHost();
-            host.DumpParticipantBindingEvidence();
-        }
-
-        [ContextMenu("DumpTransitionEvidence")]
-        public void DumpTransitionEvidence()
-        {
-            EnsureHost();
-            host.DumpTransitionEvidence();
-        }
-
-        [ContextMenu("DumpSceneState")]
-        public void DumpSceneState()
-        {
-            EnsureHost();
-            host.DumpSceneState();
-        }
-
-        [ContextMenu("Dump Current Evidence")]
-        public void SmokeDumpCurrentEvidence()
-        {
-            EnsureHost();
-            DumpCurrentActivityEvidence();
-            DumpActivityContentReleaseEvidence();
         }
 
         [ContextMenu("Reset Current Player Actor")]
@@ -501,86 +442,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 host.State != null;
         }
 
-        private string BuildDumpText()
-        {
-            StringBuilder builder = new();
-            builder.AppendLine("DumpState");
-            builder.AppendLine($"host='{host.name}'");
-            builder.AppendLine($"pipelineId='{host.State.PipelineId}' sessionStateId='{host.State.SessionId}'");
-            builder.AppendLine($"entrySequence='{host.State.CurrentEntrySequence}'");
-            builder.AppendLine($"executionState='{host.State.CurrentExecutionState}'");
-            builder.AppendLine($"gateState='{host.GateState}'");
-            builder.AppendLine($"started='{host.State.HasStarted}' completed='{host.State.HasCompleted}' stage='{host.State.CurrentStage}' currentActivity='{host.State.CurrentDefinition.ActivityId}'");
-            builder.AppendLine($"definition='{host.State.CurrentDefinition}'");
-            builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
-            builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
-            builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
-            builder.AppendLine($"activityContentLoadedSet='{host.Pipeline.GetCurrentActivityContentLoadedSet()}'");
-            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory()}'");
-            builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
-            builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
-            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
-            builder.AppendLine("checkpointEvidenceFacts(currentActivity):");
-            string currentActivityId = host.State.CurrentDefinition.ActivityId;
-            int currentEntrySequence = host.State.CurrentEntrySequence;
-            for (int index = 0; index < host.State.Facts.Count; index++)
-            {
-                SessionActivityFact fact = host.State.Facts[index];
-                if (ShouldIncludeCheckpointEvidenceFact(fact, currentActivityId, currentEntrySequence))
-                {
-                    builder.AppendLine($"- {fact}");
-                }
-            }
-            builder.AppendLine("facts:");
-
-            for (int index = 0; index < host.State.Facts.Count; index++)
-            {
-                builder.AppendLine($"- {host.State.Facts[index]}");
-            }
-
-            builder.AppendLine("snapshots:");
-            for (int index = 0; index < host.State.Snapshots.Count; index++)
-            {
-                builder.AppendLine($"- {host.State.Snapshots[index]}");
-            }
-
-            builder.AppendLine("trace:");
-            for (int index = 0; index < host.State.Trace.Count; index++)
-            {
-                builder.AppendLine($"- {host.State.Trace[index]}");
-            }
-
-            return builder.ToString().TrimEnd();
-        }
-
-        private static bool ShouldIncludeCheckpointEvidenceFact(SessionActivityFact fact, string currentActivityId, int currentEntrySequence)
-        {
-            if (!fact.IsValid || !fact.Identity.IsValid)
-            {
-                return false;
-            }
-
-            if (!string.Equals(fact.Identity.ActivityId, currentActivityId, StringComparison.Ordinal) ||
-                fact.Identity.EntrySequence != currentEntrySequence)
-            {
-                return false;
-            }
-
-            return fact.Kind == SessionActivityFactKind.ActivityContentLoadSkippedNoContent ||
-                   fact.Kind == SessionActivityFactKind.ActivitySetupStarted ||
-                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuildStarted ||
-                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuilt ||
-                   fact.Kind == SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements ||
-                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryValidated ||
-                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingStarted ||
-                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements ||
-                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingCompleted ||
-                   fact.Kind == SessionActivityFactKind.ActivitySetupCompleted ||
-                   fact.Kind == SessionActivityFactKind.ActivityActivationStarted ||
-                   fact.Kind == SessionActivityFactKind.ActivityRunningEntered ||
-                   fact.Kind == SessionActivityFactKind.GameplayContentSkippedNoContent;
-        }
-
         private string BuildStateSummary()
         {
             StringBuilder builder = new();
@@ -777,9 +638,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 stage == SessionActivityStage.ActivityContentLoadFailed ||
                 stage == SessionActivityStage.ActivitySetupInventoryBuildStarted ||
                 stage == SessionActivityStage.ActivitySetupInventoryBuilt ||
-                stage == SessionActivityStage.ActivitySetupInventoryValidated ||
                 stage == SessionActivityStage.ActivitySetupInventorySkippedNoRequirements ||
-                stage == SessionActivityStage.ActivitySetupInventoryValidationFailed ||
+                stage == SessionActivityStage.ActivitySetupInventoryBuildFailed ||
                 stage == SessionActivityStage.ActivityParticipantBindingStarted ||
                 stage == SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements ||
                 stage == SessionActivityStage.ActivityParticipantBindingCompleted ||
@@ -963,16 +823,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
             TryEmitActivityObjectContributorDiscoveryCheckpoint();
-            TryEmitActivityObjectSnapshotContractValidationCheckpoint();
             TryEmitActivityObjectResetCheckpoint();
             TryEmitActivityObjectSnapshotCaptureCheckpoint();
             TryEmitActivityObjectSnapshotRestoreCheckpoint();
             TryEmitActivityObjectReleaseCheckpoint();
             TryEmitActivityObjectContributorUnregisterCheckpoint();
-            if (qaAutoDumpOnObservedStateChange)
-            {
-                host.DumpCurrentActivityEvidence();
-            }
         }
 
         private bool TryEmitRouteExitBackToMenuCheckpoint()
@@ -2178,140 +2033,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return "Waiting";
         }
 
-        private void TryEmitActivityObjectSnapshotContractValidationCheckpoint()
-        {
-            SessionActivityRuntimeState state = host.State;
-            if (state == null || state.Facts == null || state.Facts.Count == 0)
-            {
-                return;
-            }
-
-            Dictionary<string, ActivityObjectSnapshotContractValidationCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
-            for (int i = 0; i < state.Facts.Count; i++)
-            {
-                SessionActivityFact fact = state.Facts[i];
-                if (!fact.IsValid || !fact.Identity.IsValid)
-                {
-                    continue;
-                }
-
-                if (fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotContractValidationStarted &&
-                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotContractValidated &&
-                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotContractSkippedOptional &&
-                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotContractFailed &&
-                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted)
-                {
-                    continue;
-                }
-
-                string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectSnapshotContractValidationCheckpointAggregation aggregation))
-                {
-                    aggregation = new ActivityObjectSnapshotContractValidationCheckpointAggregation(
-                        fact.Identity.ActivityId,
-                        fact.Identity.EntrySequence);
-                }
-
-                if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractValidationStarted)
-                {
-                    aggregation.ValidationStarted = true;
-                }
-                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractValidated)
-                {
-                    aggregation.ValidatedCount += 1;
-                    aggregation.TargetIds.Add(ExtractToken(fact.Message, "targetId"));
-                    aggregation.ProviderPaths.Add(ExtractToken(fact.Message, "providerPath"));
-                    aggregation.RestoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "targetTransformPath"));
-                }
-                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractSkippedOptional)
-                {
-                    aggregation.SkippedCount += 1;
-                    aggregation.TargetIds.Add(ExtractToken(fact.Message, "targetId"));
-                    aggregation.ProviderPaths.Add(ExtractToken(fact.Message, "providerPath"));
-                    aggregation.RestoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "targetTransformPath"));
-                    string reason = ExtractToken(fact.Message, "reason");
-                    if (!string.IsNullOrWhiteSpace(reason) &&
-                        !string.Equals(reason, "<none>", StringComparison.Ordinal) &&
-                        !string.Equals(reason, "snapshot_capability_not_declared_optional", StringComparison.Ordinal))
-                    {
-                        aggregation.MismatchReason = reason;
-                    }
-                }
-                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractFailed)
-                {
-                    aggregation.FailedCount += 1;
-                    aggregation.TargetIds.Add(ExtractToken(fact.Message, "targetId"));
-                    aggregation.ProviderPaths.Add(ExtractToken(fact.Message, "providerPath"));
-                    aggregation.RestoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "providerTargetTransformPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "restoreTargetTransformPath"));
-                    string reason = ExtractToken(fact.Message, "reason");
-                    aggregation.MismatchReason = string.IsNullOrWhiteSpace(reason) ? "contract_failed" : reason;
-                }
-                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted)
-                {
-                    aggregation.ValidationCompleted = true;
-                    aggregation.ValidatedCount = Math.Max(aggregation.ValidatedCount, ParseIntToken(fact.Message, "validatedCount"));
-                    aggregation.SkippedCount = Math.Max(aggregation.SkippedCount, ParseIntToken(fact.Message, "skippedCount"));
-                    aggregation.FailedCount = Math.Max(aggregation.FailedCount, ParseIntToken(fact.Message, "failedCount"));
-                    AddCsvTokens(aggregation.TargetIds, ExtractToken(fact.Message, "targetIds"));
-                    AddCsvTokens(aggregation.ProviderPaths, ExtractToken(fact.Message, "providerPaths"));
-                    AddCsvTokens(aggregation.RestoreEndpointPaths, ExtractToken(fact.Message, "restoreEndpointPaths"));
-                    AddCsvTokens(aggregation.TargetTransformPaths, ExtractToken(fact.Message, "targetTransformPaths"));
-                    string mismatchReason = ExtractToken(fact.Message, "mismatchReason");
-                    if (!string.IsNullOrWhiteSpace(mismatchReason) && !string.Equals(mismatchReason, "<none>", StringComparison.Ordinal))
-                    {
-                        aggregation.MismatchReason = mismatchReason;
-                    }
-                }
-
-                byEntry[key] = aggregation;
-            }
-
-            foreach (KeyValuePair<string, ActivityObjectSnapshotContractValidationCheckpointAggregation> pair in byEntry)
-            {
-                ActivityObjectSnapshotContractValidationCheckpointAggregation aggregation = pair.Value;
-                string targetIds = JoinValues(aggregation.TargetIds);
-                string providerPaths = JoinValues(aggregation.ProviderPaths);
-                string restoreEndpointPaths = JoinValues(aggregation.RestoreEndpointPaths);
-                string targetTransformPaths = JoinValues(aggregation.TargetTransformPaths);
-                string checkpointStatus = ResolveActivityObjectSnapshotContractValidationCheckpointStatus(aggregation);
-
-                string token = $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ValidationStarted}|{aggregation.ValidatedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{providerPaths}|{restoreEndpointPaths}|{targetTransformPaths}|{aggregation.MismatchReason}|{aggregation.ValidationCompleted}|{checkpointStatus}";
-                if (_lastActivityObjectSnapshotContractValidationCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
-                    string.Equals(lastToken, token, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                _lastActivityObjectSnapshotContractValidationCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
-                    $"checkpoint='ActivityObjectSnapshotContractValidation' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' validationStarted='{aggregation.ValidationStarted.ToString().ToLowerInvariant()}' " +
-                    $"validatedCount='{aggregation.ValidatedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
-                    $"targetIds='{targetIds}' providerPaths='{providerPaths}' restoreEndpointPaths='{restoreEndpointPaths}' targetTransformPaths='{targetTransformPaths}' " +
-                    $"mismatchReason='{aggregation.MismatchReason}' validationCompleted='{aggregation.ValidationCompleted.ToString().ToLowerInvariant()}'");
-            }
-        }
-
-        private static string ResolveActivityObjectSnapshotContractValidationCheckpointStatus(ActivityObjectSnapshotContractValidationCheckpointAggregation aggregation)
-        {
-            if (aggregation.FailedCount > 0)
-            {
-                return "Failed";
-            }
-
-            if (aggregation.ValidationCompleted &&
-                string.Equals(aggregation.MismatchReason, "<none>", StringComparison.Ordinal))
-            {
-                return "Passed";
-            }
-
-            return "Waiting";
-        }
-
         private void TryEmitActivityObjectContributorUnregisterCheckpoint()
         {
             SessionActivityRuntimeState state = host.State;
@@ -2533,38 +2254,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public bool HasTransformPayload;
             public bool CaptureCompleted;
             public bool CaptureFailed;
-        }
-
-        private struct ActivityObjectSnapshotContractValidationCheckpointAggregation
-        {
-            public ActivityObjectSnapshotContractValidationCheckpointAggregation(string activityId, int entrySequence)
-            {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                ValidationStarted = false;
-                ValidatedCount = 0;
-                SkippedCount = 0;
-                FailedCount = 0;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                ProviderPaths = new HashSet<string>(StringComparer.Ordinal);
-                RestoreEndpointPaths = new HashSet<string>(StringComparer.Ordinal);
-                TargetTransformPaths = new HashSet<string>(StringComparer.Ordinal);
-                MismatchReason = "<none>";
-                ValidationCompleted = false;
-            }
-
-            public string ActivityId;
-            public int EntrySequence;
-            public bool ValidationStarted;
-            public int ValidatedCount;
-            public int SkippedCount;
-            public int FailedCount;
-            public HashSet<string> TargetIds;
-            public HashSet<string> ProviderPaths;
-            public HashSet<string> RestoreEndpointPaths;
-            public HashSet<string> TargetTransformPaths;
-            public string MismatchReason;
-            public bool ValidationCompleted;
         }
 
         private struct ActivityObjectSnapshotRestoreCheckpointAggregation

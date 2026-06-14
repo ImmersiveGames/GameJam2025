@@ -163,14 +163,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotCaptureResult CaptureSnapshot(ActivityObjectSnapshotCaptureCommand command);
     }
 
-    public interface IActivityObjectSnapshotProviderContractView
-    {
-        bool TryDescribeContract(
-            string targetId,
-            out string providerPath,
-            out string targetTransformPath,
-            out string failureReason);
-    }
 
     public readonly struct ActivityObjectSnapshotRestoreCommand
     {
@@ -307,12 +299,4 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotRestoreResult ApplyRestore(ActivityObjectSnapshotRestoreCommand command);
     }
 
-    public interface IActivityObjectSnapshotRestoreEndpointContractView
-    {
-        bool TryDescribeContract(
-            string targetId,
-            out string endpointPath,
-            out string targetTransformPath,
-            out string failureReason);
-    }
 }

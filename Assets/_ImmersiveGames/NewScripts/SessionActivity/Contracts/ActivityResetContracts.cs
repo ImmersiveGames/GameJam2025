@@ -245,17 +245,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityResetContext(
             ActivityObjectContributorDiscoveryResult discoveryResult,
-            ActivityCapabilityInventory resetInventory,
-            ActivityCapabilityInventoryValidationResult resetInventoryValidation)
+            ActivityCapabilityInventory resetInventory)
         {
             DiscoveryResult = discoveryResult;
             ResetInventory = resetInventory;
-            ResetInventoryValidation = resetInventoryValidation;
         }
 
         public ActivityObjectContributorDiscoveryResult DiscoveryResult { get; }
         public ActivityCapabilityInventory ResetInventory { get; }
-        public ActivityCapabilityInventoryValidationResult ResetInventoryValidation { get; }
     }
 
     public readonly struct ActivityResetResult

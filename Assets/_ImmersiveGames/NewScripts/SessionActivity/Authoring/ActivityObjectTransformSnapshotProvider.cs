@@ -6,7 +6,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    public sealed class ActivityObjectTransformSnapshotProvider : MonoBehaviour, IActivityObjectSnapshotProvider, IActivityObjectSnapshotProviderContractView, IActivityObjectLifecycleContributionProvider
+    public sealed class ActivityObjectTransformSnapshotProvider : MonoBehaviour, IActivityObjectSnapshotProvider, IActivityObjectLifecycleContributionProvider
     {
         [SerializeField] private string targetId;
         [SerializeField] private Transform targetTransform;
@@ -97,31 +97,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 command.Source,
                 command.Reason,
                 $"captured_transform targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' providerPath='{BuildTransformPath(transform)}' targetTransformPath='{BuildTransformPath(targetTransform)}' coordinateSpace='world_transform' capturedPosition='({position.x:0.###},{position.y:0.###},{position.z:0.###})' position='{position}' rotation='{rotation}' scale='{scale}'");
-        }
-
-        public bool TryDescribeContract(
-            string requestedTargetId,
-            out string providerPath,
-            out string targetTransformPath,
-            out string failureReason)
-        {
-            providerPath = BuildTransformPath(transform);
-            targetTransformPath = BuildTransformPath(targetTransform);
-
-            if (!Supports(requestedTargetId))
-            {
-                failureReason = "target_not_supported";
-                return false;
-            }
-
-            if (targetTransform == null)
-            {
-                failureReason = "target_transform_missing";
-                return false;
-            }
-
-            failureReason = "resolved";
-            return true;
         }
 
         private void OnValidate()

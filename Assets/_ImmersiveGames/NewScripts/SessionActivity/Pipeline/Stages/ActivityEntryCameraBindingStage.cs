@@ -19,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IActivityCameraPreparationExecutor cameraExecutor,
             ActivitySetupInventory inventory,
             ActivityCapabilityInventory cameraInventory,
-            ActivityCapabilityInventoryValidationResult validation,
             IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
             IReadOnlyList<PlayerActivityParticipantBinding> participantBindings,
             IActivityEntryCameraBindingRuntimeBridge bridge,
@@ -52,7 +51,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool hasValidCameraInventory =
                 startedIdentity.IsValid &&
                 cameraInventory.IsValid &&
-                validation.IsValid &&
                 string.Equals(cameraInventory.Id.PipelineId, startedIdentity.PipelineId, StringComparison.Ordinal) &&
                 string.Equals(cameraInventory.Id.SessionStateId, startedIdentity.SessionId, StringComparison.Ordinal) &&
                 string.Equals(cameraInventory.Id.ActivityId, startedIdentity.ActivityId, StringComparison.Ordinal) &&

@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             Vector3 velocityAfter = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
             Vector3 angularVelocityAfter = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
 
-            DebugUtility.LogVerbose(typeof(PlayerMovementController), $"event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{_movementEnabled}' hasRigidbody='{_rigidbody != null}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
+            DebugUtility.LogVerbose(typeof(PlayerMovementController), $"event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{_movementEnabled}' hasRigidbody='{(_rigidbody != null)}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
         }
 
         private static void EnsureMovementResetContext(ActorResetContext context, string operation)
@@ -174,8 +174,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
             if (command.CommandId != ActorCommandId.Move ||
                 command.Value.ValueKind != ActorCommandValueKind.Vector2 ||
-                command.Value.TriggerKind != ActorCommandTriggerKind.Continuous &&
-                command.Value.TriggerKind != ActorCommandTriggerKind.ValueChanged)
+                (command.Value.TriggerKind != ActorCommandTriggerKind.Continuous &&
+                    command.Value.TriggerKind != ActorCommandTriggerKind.ValueChanged))
             {
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(
                     $"movement_endpoint_has_no_sink_for_command='{command.CommandId}' valueKind='{command.Value.ValueKind}' trigger='{command.Value.TriggerKind}'.");

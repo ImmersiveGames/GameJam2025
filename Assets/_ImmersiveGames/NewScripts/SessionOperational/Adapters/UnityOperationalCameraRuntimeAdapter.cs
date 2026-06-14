@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             var prefabPersistentRoot = prefab.GetComponent<PersistentRuntimeObject>();
             DebugUtility.LogVerbose(typeof(UnityOperationalCameraRuntimeAdapter),
                 BuildLog("OperationalCameraPrefabObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
-                    $"prefab='{prefab.name}' cameraCount='{prefabCameraCount}' markerOnRoot='{prefabMarker != null}' persistentRoot='{prefabPersistentRoot != null}'"),
+                    $"prefab='{prefab.name}' cameraCount='{prefabCameraCount}' markerOnRoot='{(prefabMarker != null)}' persistentRoot='{(prefabPersistentRoot != null)}'"),
                 DebugUtility.Colors.Info);
 
             if (prefabCameraCount != 1)

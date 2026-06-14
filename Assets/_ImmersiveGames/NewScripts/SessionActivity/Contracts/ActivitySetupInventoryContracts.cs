@@ -108,14 +108,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Failed = 3,
     }
 
-    public enum ActivitySetupInventoryValidationResultKind
-    {
-        Unknown = 0,
-        Valid = 1,
-        ValidWithSkips = 2,
-        Failed = 3,
-    }
-
     public readonly struct ActivitySetupRequirement
     {
         public ActivitySetupRequirement(
@@ -657,54 +649,4 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
-    public readonly struct ActivitySetupInventoryValidationResult
-    {
-        public ActivitySetupInventoryValidationResult(
-            ActivitySetupInventoryValidationResultKind kind,
-            ActivitySetupInventory inventory,
-            IReadOnlyList<string> errors,
-            IReadOnlyList<string> skippedRequirementIds,
-            string source,
-            string reason,
-            string message)
-        {
-            Kind = kind;
-            Inventory = inventory;
-            Errors = errors ?? Array.Empty<string>();
-            SkippedRequirementIds = skippedRequirementIds ?? Array.Empty<string>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
-        }
-
-        public ActivitySetupInventoryValidationResultKind Kind { get; }
-        public ActivitySetupInventory Inventory { get; }
-        public IReadOnlyList<string> Errors { get; }
-        public IReadOnlyList<string> SkippedRequirementIds { get; }
-        public string Source { get; }
-        public string Reason { get; }
-        public string Message { get; }
-
-        public bool IsValidResult => Kind == ActivitySetupInventoryValidationResultKind.Valid || Kind == ActivitySetupInventoryValidationResultKind.ValidWithSkips;
-        public bool IsFailed => Kind == ActivitySetupInventoryValidationResultKind.Failed;
-        public bool HasErrors => Errors is { Count: > 0 };
-        public bool HasSkippedRequirements => SkippedRequirementIds is { Count: > 0 };
-        public bool IsValid =>
-            Kind != ActivitySetupInventoryValidationResultKind.Unknown &&
-            Inventory.IsValid &&
-            Errors != null &&
-            SkippedRequirementIds != null &&
-            !string.IsNullOrWhiteSpace(Source) &&
-            (!IsFailed || HasErrors);
-
-        public override string ToString()
-        {
-            return $"kind='{Kind}', inventory='{Inventory}', errors='{Errors.Count}', skippedRequirements='{SkippedRequirementIds.Count}', source='{Source}', reason='{Reason}', message='{Message}'";
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
 }
