@@ -118,11 +118,7 @@ RouteActivitySave policy gap: current completed activity vs last useful snapshot
 
 ## Status canônico
 
-O resumo atual de `SessionActivity` (consolidado) fica em:
-
-- `Docs/Reports/SessionActivity-2.0-Current-Status.md`
-
-O plano de normalização Base 2.0 (SA-19 wave) está em:
+O documento consolidado de plano, status e freeze de `SessionActivity` fica em:
 
 - `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md`
 

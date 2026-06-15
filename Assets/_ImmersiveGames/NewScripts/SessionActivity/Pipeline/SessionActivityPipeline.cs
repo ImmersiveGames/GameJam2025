@@ -16,6 +16,11 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
+using PlayerActivityParticipantRequirementId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantRequirementId;
+using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
+using PlayerSessionParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantBinding;
+using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
+using PlayerSessionParticipantRole = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantRole;
 using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -30,7 +35,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
-    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeBridge, IActivityEntryActorPresentationRuntimeBridge, IActivityEntryActorParticipationRuntimeBridge, IActivityEntryPermissionTargetRuntimeBridge, IActivityEntryMovementBindingRuntimeBridge, IActivityEntryCameraBindingRuntimeBridge, IActivityExitActorTeardownRuntimeBridge
+    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider
     {
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private const string RouteActivitySnapshotSchemaId = "progression.route_activity.object_snapshot.v1";
@@ -54,6 +59,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly SessionActorRuntimeStore _sessionActorRuntimeStore;
         private readonly ActivityActorExitRuntimeState _activityActorExitRuntimeState = new();
         private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
+        private readonly IActivityEntryRuntimeBridge _entryRuntimeBridge;
+        private readonly IActivityEntryActorPresentationRuntimeBridge _entryActorPresentationRuntimeBridge;
+        private readonly IActivityEntryActorParticipationRuntimeBridge _entryActorParticipationRuntimeBridge;
+        private readonly IActivityEntryPermissionTargetRuntimeBridge _entryPermissionTargetRuntimeBridge;
+        private readonly IActivityEntryMovementBindingRuntimeBridge _entryMovementBindingRuntimeBridge;
+        private readonly IActivityEntryCameraBindingRuntimeBridge _entryCameraBindingRuntimeBridge;
+        private readonly IActivityExitActorTeardownRuntimeBridge _activityExitActorTeardownRuntimeBridge;
         private ActivityEntryPipeline _activityEntryPipeline;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
@@ -410,6 +422,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _movementBindingAdapter = new MovementBindingAdapter(_permissionRuntime);
             _playerMovementControlAdapter = new PlayerMovementControlAdapter(_permissionRuntime);
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
+            _entryRuntimeBridge = new ActivityEntryRuntimeBridgeAdapter(this);
+            _entryActorPresentationRuntimeBridge = new ActivityEntryActorPresentationRuntimeBridgeAdapter(this);
+            _entryActorParticipationRuntimeBridge = new ActivityEntryActorParticipationRuntimeBridgeAdapter(this);
+            _entryPermissionTargetRuntimeBridge = new ActivityEntryPermissionTargetRuntimeBridgeAdapter(this);
+            _entryMovementBindingRuntimeBridge = new ActivityEntryMovementBindingRuntimeBridgeAdapter(this);
+            _entryCameraBindingRuntimeBridge = new ActivityEntryCameraBindingRuntimeBridgeAdapter(this);
+            _activityExitActorTeardownRuntimeBridge = new ActivityExitActorTeardownRuntimeBridgeAdapter(this);
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -459,6 +478,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityRailKind ActiveRailKind => _activeRailKind;
         internal ActivityActorExitRuntimeState ActivityActorExitRuntimeState => _activityActorExitRuntimeState;
         internal ActivityContentRuntimeState ActivityContentRuntimeState => _activityContentRuntimeState;
+        internal IActivityEntryRuntimeBridge EntryRuntimeBridge => _entryRuntimeBridge;
+        internal IActivityEntryActorPresentationRuntimeBridge EntryActorPresentationRuntimeBridge => _entryActorPresentationRuntimeBridge;
+        internal IActivityEntryActorParticipationRuntimeBridge EntryActorParticipationRuntimeBridge => _entryActorParticipationRuntimeBridge;
+        internal IActivityEntryPermissionTargetRuntimeBridge EntryPermissionTargetRuntimeBridge => _entryPermissionTargetRuntimeBridge;
+        internal IActivityEntryMovementBindingRuntimeBridge EntryMovementBindingRuntimeBridge => _entryMovementBindingRuntimeBridge;
+        internal IActivityEntryCameraBindingRuntimeBridge EntryCameraBindingRuntimeBridge => _entryCameraBindingRuntimeBridge;
+        internal IActivityExitActorTeardownRuntimeBridge ActivityExitActorTeardownRuntimeBridge => _activityExitActorTeardownRuntimeBridge;
         internal ActivitySceneActorRegistry EntryActorSceneRegistry => _activitySceneActorRegistry;
         internal ActivityPlayerActorRegistry EntryActorPlayerRegistry => _activityPlayerActorRegistry;
         internal SessionActorRuntimeStore EntrySessionActorRuntimeStore => _sessionActorRuntimeStore;
@@ -471,8 +497,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return _activityContentRuntimeState.CurrentLoadedSet;
         }
 
-        string IActivityEntryPipelineBoundary.PipelineId => PipelineId;
-        string IActivityEntryPipelineBoundary.SessionId => _sessionId;
+        internal ActivitySetupInventory GetCurrentActivitySetupInventory()
+        {
+            return _activityEntryPipeline == null
+                ? default
+                : _activityEntryPipeline.GetCurrentActivitySetupInventory();
+        }
+
+        internal void ValidateHostDisableOrFail(string requestedSessionStateId, string source, string reason)
+        {
+            if (!_state.HasStarted || _state.HasCompleted)
+            {
+                return;
+            }
+
+            SessionActivityStage stage = _state.CurrentStage;
+            if (stage == SessionActivityStage.Deactivation ||
+                stage == SessionActivityStage.Completed ||
+                stage == SessionActivityStage.ClosedForRouteExit ||
+                _activeRailKind == SessionActivityRailKind.ActivityRouteExitRail)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"[FATAL][Lifecycle][SessionActivityPipeline] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{_sessionId}' requestedSessionStateId='{Normalize(requestedSessionStateId)}' stage='{stage}' activityId='{_state.CurrentDefinition.ActivityId}' source='{Normalize(source)}' reason='{Normalize(reason)}' detail='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
+        }
+
 
         public SessionActivityCommand BuildStartCommand(string source, string reason)
         {
@@ -1288,7 +1339,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActivityObjectReleaseStage.Execute(
                 new ActivityObjectReleaseStageCommand(command.Identity, command, entrySequence),
                 definition,
-                this,
+                _entryRuntimeBridge,
                 _activityObjectExitRuntimeState,
                 facts,
                 snapshots);
@@ -1308,7 +1359,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     entrySequence,
                     RouteActivitySnapshotSchemaId),
                 definition,
-                this,
+                _entryRuntimeBridge,
                 _activityObjectExitRuntimeState,
                 facts,
                 snapshots);
@@ -1328,7 +1379,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             ActivityContentSceneUnloadDispatchStageResult result = ActivityContentSceneUnloadDispatchStage.Execute(
                 new ActivityContentSceneUnloadDispatchStageCommand(command),
-                this,
+                _entryRuntimeBridge,
                 contentRuntimeState,
                 _activityContentReleaseRuntimeState,
                 _pendingOperationRunner,
@@ -1401,7 +1452,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     completionKind: "Completed",
                     status: status,
                     continuationKind: telemetry.ContinuationKind),
-                this,
+                _entryRuntimeBridge,
                 _activityContentRuntimeState,
                 _activityContentReleaseRuntimeState,
                 _activityObjectExitRuntimeState,
@@ -1640,8 +1691,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             ActivityObjectContributorUnregisterStage.Execute(
                 new ActivityObjectContributorUnregisterStageCommand(command.Identity, command, entrySequence),
-                this,
-                this,
+                _entryRuntimeBridge,
+                _entryRuntimeBridge,
                 _activityObjectExitRuntimeState,
                 facts,
                 snapshots);
@@ -1883,7 +1934,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     syntheticCommand,
                     operation,
                     unloadResult.Kind),
-                this,
+                _entryRuntimeBridge,
                 context,
                 facts,
                 snapshots);
@@ -2488,9 +2539,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return ActivityExitActorTeardownStage.Execute(
                 new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, releaseRail),
                 definition,
-                this,
+                _entryRuntimeBridge,
                 _activityActorExitRuntimeState,
-                this,
+                _activityExitActorTeardownRuntimeBridge,
                 _sessionActorRuntimeStore,
                 facts,
                 snapshots);
@@ -3614,12 +3665,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorPresentationReleaseRail rail,
             ActorInstanceRuntimeId targetActorInstanceRuntimeId = default)
         {
-            ActivityExitActorTeardownStage.ExecuteActorPresentationRelease(
+            ActivityExitActorPresentationReleaseStage.Execute(
                 new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, rail, targetActorInstanceRuntimeId),
                 definition,
-                this,
+                _entryRuntimeBridge,
                 _activityActorExitRuntimeState,
-                this,
+                _activityExitActorTeardownRuntimeBridge,
                 facts,
                 snapshots);
         }
@@ -3634,9 +3685,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActivityExitActorTeardownStage.ExecuteActorParticipationExit(
                 new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, ActorPresentationReleaseRail.ActivityExit),
                 definition,
-                this,
+                _entryRuntimeBridge,
                 _activityActorExitRuntimeState,
-                this,
+                _activityExitActorTeardownRuntimeBridge,
                 _sessionActorRuntimeStore,
                 facts,
                 snapshots);
@@ -3649,12 +3700,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            ActivityExitActorTeardownStage.ExecuteActorAttributeRelease(
+            ActivityExitActorAttributeReleaseStage.Execute(
                 new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, ActorPresentationReleaseRail.ActivityExit),
                 definition,
-                this,
+                _entryRuntimeBridge,
                 _activityActorExitRuntimeState,
-                this,
+                _activityExitActorTeardownRuntimeBridge,
                 facts,
                 snapshots);
         }
@@ -4319,11 +4370,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorAttributeId runtimeAttributeId = new(Normalize(attributeId));
             string normalizedSource = Normalize(source);
             string normalizedReason = Normalize(reason);
-            string activityId = _state.CurrentDefinition.ActivityId;
             int entrySequence = _state.CurrentEntrySequence;
+            string currentActivityId = _state.CurrentIdentity.IsValid
+                ? _state.CurrentIdentity.ActivityId
+                : Normalize(_state.CurrentDefinition.ActivityId);
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorAttributeCommandRequested' activityId='{activityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' attributeId='{runtimeAttributeId}' operation='{operation}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                $"event='ActorAttributeCommandRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' attributeId='{runtimeAttributeId}' operation='{operation}' source='{normalizedSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             if (!_state.CurrentIdentity.IsValid || !commandIdentity.IsValid || !IsSameActivityCycle(commandIdentity, _state.CurrentIdentity))
@@ -4373,7 +4426,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             ActorAttributeChangedFact fact = result.Fact;
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorAttributeChanged' activityId='{activityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                $"event='ActorAttributeChanged' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -4809,7 +4862,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         commandIdentity.EntrySequence,
                         RouteActivitySnapshotSchemaId),
                     definition,
-                    this,
+                    _entryRuntimeBridge,
                     _activityObjectExitRuntimeState,
                     facts,
                     snapshots);
@@ -7259,6 +7312,77 @@ private bool HasLoadedSetForCurrentEntry(
                 "route_activity_save_payload_requested");
         }
 
+
+        public SessionActivityRouteExitTeardownPreflightResult EvaluateRouteExitTeardownPreflight(
+            string requestedSessionStateId,
+            string source,
+            string reason)
+        {
+            string normalizedSessionStateId = Normalize(requestedSessionStateId);
+            SessionActivityStage stage = _state.CurrentStage;
+            SessionActivityRailKind railKind = _activeRailKind;
+            bool hasPendingOperation = _state.CurrentPendingOperation.IsValid;
+            string triggerSource = Normalize(source);
+            string triggerReason = Normalize(reason);
+
+            if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                return BuildRouteExitTeardownPreflightResult(
+                    SessionActivityRouteExitTeardownPreflightKind.Failed,
+                    "route_exit_preflight_failed_stale_or_foreign_session_activity",
+                    $"preflight sessionStateId='{normalizedSessionStateId}' does not match pipeline sessionStateId='{_sessionId}'.",
+                    triggerSource,
+                    triggerReason);
+            }
+
+            if (!_state.HasStarted)
+            {
+                return BuildRouteExitTeardownPreflightResult(
+                    SessionActivityRouteExitTeardownPreflightKind.NotRequired,
+                    "handoff_exit_not_required",
+                    "session_activity_not_started",
+                    triggerSource,
+                    triggerReason);
+            }
+
+            if (hasPendingOperation)
+            {
+                return BuildRouteExitTeardownPreflightResult(
+                    SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy,
+                    "handoff_exit_pending_operation_active",
+                    "pending_operation_active",
+                    triggerSource,
+                    triggerReason);
+            }
+
+            if (IsRouteExitActivationWindowStage(stage))
+            {
+                return BuildRouteExitTeardownPreflightResult(
+                    SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy,
+                    "handoff_exit_activation_not_completed",
+                    "activation_window_not_completed",
+                    triggerSource,
+                    triggerReason);
+            }
+
+            if (IsRouteExitDeactivationWindowStage(stage) && railKind != SessionActivityRailKind.ActivityRouteExitRail)
+            {
+                return BuildRouteExitTeardownPreflightResult(
+                    SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy,
+                    "handoff_exit_target_transition_in_progress",
+                    "target_transition_in_progress",
+                    triggerSource,
+                    triggerReason);
+            }
+
+            return BuildRouteExitTeardownPreflightResult(
+                SessionActivityRouteExitTeardownPreflightKind.Accepted,
+                "accepted",
+                "route_exit_teardown_preflight_accepted",
+                triggerSource,
+                triggerReason);
+        }
+
         public Task<SessionActivityRouteExitTeardownResult> AwaitRouteExitTeardownAsync(
             string requestedSessionStateId,
             string source,
@@ -7358,6 +7482,56 @@ private bool HasLoadedSetForCurrentEntry(
                 _state.CurrentHandoff.IsValid,
                 "route_exit_started_close_for_route_exit_accepted",
                 $"Route-exit teardown started and is pending completion. stage='{_state.CurrentStage}' pendingOperation='{_state.CurrentPendingOperation}'.");
+        }
+
+
+        private SessionActivityRouteExitTeardownPreflightResult BuildRouteExitTeardownPreflightResult(
+            SessionActivityRouteExitTeardownPreflightKind kind,
+            string reason,
+            string detail,
+            string source,
+            string triggerReason)
+        {
+            SessionActivityRouteExitTeardownPreflightResult result = new(
+                kind,
+                _sessionId,
+                _state.CurrentStage,
+                _activeRailKind,
+                _state.CurrentDefinition.ActivityId,
+                _state.CurrentPendingOperation.IsValid,
+                reason,
+                detail);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"SessionActivityRouteExitTeardownPreflightEvaluated result='{result}' source='{Normalize(source)}' reason='{Normalize(triggerReason)}'.",
+                kind == SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy || kind == SessionActivityRouteExitTeardownPreflightKind.Failed
+                    ? DebugUtility.Colors.Warning
+                    : DebugUtility.Colors.Info);
+
+            return result;
+        }
+
+        private static bool IsRouteExitActivationWindowStage(SessionActivityStage stage)
+        {
+            return stage == SessionActivityStage.ActivationWindowStarted ||
+                   stage == SessionActivityStage.ActivationWindowSceneLoading ||
+                   stage == SessionActivityStage.ActivationWindowAdditiveSceneLoadStarted ||
+                   stage == SessionActivityStage.ActivationWindowAdditiveSceneLoaded ||
+                   stage == SessionActivityStage.ActivationWindowReady;
+        }
+
+        private static bool IsRouteExitDeactivationWindowStage(SessionActivityStage stage)
+        {
+            return stage == SessionActivityStage.DeactivationWindowStarted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
+                   stage == SessionActivityStage.DeactivationWindowReady ||
+                   stage == SessionActivityStage.DeactivationWindowCompleted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
+                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
         }
 
         private bool TryBuildImmediateRouteExitTeardownResult(out SessionActivityRouteExitTeardownResult result)
@@ -7649,298 +7823,373 @@ private bool HasLoadedSetForCurrentEntry(
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
-        SessionActivityIdentity IActivityEntryIdentityRuntimeBridge.BuildIdentity(SessionActivityDefinition definition, SessionActivityStage stage, int entrySequence)
-        {
-            return BuildIdentity(definition, stage, entrySequence);
-        }
 
-        void IActivityEntryIdentityRuntimeBridge.SetCurrentIdentity(SessionActivityIdentity identity, SessionActivityStage stage)
+        private sealed class ActivityEntryRuntimeBridgeAdapter : IActivityEntryRuntimeBridge
         {
-            _state.SetCurrentIdentity(identity, stage);
-        }
+            private readonly SessionActivityPipeline _pipeline;
 
-        void IActivityEntryFactRuntimeBridge.EmitFact(
-            List<SessionActivityFact> emittedFacts,
-            SessionActivityFactKind kind,
-            SessionActivityIdentity identity,
-            string source,
-            string reason,
-            string message)
-        {
-            EmitFact(emittedFacts, kind, identity, source, reason, message);
-        }
-
-        void IActivityEntryFactRuntimeBridge.EmitSnapshot(
-            List<SessionActivitySnapshot> emittedSnapshots,
-            string snapshotKind,
-            string source,
-            string reason,
-            string message)
-        {
-            EmitSnapshot(emittedSnapshots, snapshotKind, source, reason, message);
-        }
-
-        void IActivityEntryContentPendingOperationRuntimeBridge.SetPendingOperation(SessionActivityPendingOperation operation)
-        {
-            _state.SetPendingOperation(operation);
-        }
-
-        void IActivityEntryContentPendingOperationRuntimeBridge.ClearPendingOperation()
-        {
-            _state.ClearPendingOperation();
-        }
-
-        void IActivityEntryPreparationRuntimeBridge.ResetMovementControlStateForEntry()
-        {
-            _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
-            _movementControlEnableAllowedForCurrentEntry = false;
-            _lastMovementDisableEmissionKey = string.Empty;
-        }
-
-        void IActivityEntryPreparationRuntimeBridge.BeginActivityActorScope(SessionActivityIdentity identity)
-        {
-            _activitySceneActorRegistry.BeginActivityScope(identity);
-        }
-
-        void IActivityEntryPreparationRuntimeBridge.ClearActiveActorParticipations(string activityId, int entrySequence, string source, string reason)
-        {
-            _activityActorExitRuntimeState.ClearActiveActorParticipations(activityId, entrySequence, source, reason);
-        }
-
-        bool IActivityEntryPreparationRuntimeBridge.TryGetActivePlayerActorIdentities(SessionActivityIdentity identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors)
-        {
-            activeActors = Array.Empty<PlayerActorIdentityRecord>();
-            if (!identity.IsValid)
+            public ActivityEntryRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
             {
-                return false;
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             }
 
-            if (!_activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out activeActors))
+            public string PipelineId => SessionActivityPipeline.PipelineId;
+            public string SessionId => _pipeline._sessionId;
+
+            public SessionActivityIdentity BuildIdentity(SessionActivityDefinition definition, SessionActivityStage stage, int entrySequence)
             {
-                return false;
+                return _pipeline.BuildIdentity(definition, stage, entrySequence);
             }
 
-            return ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
-                _activityPlayerActorRegistry.ActiveScopeIdentity,
-                identity,
-                ActorScope.ActivityScoped);
-        }
-
-        void IActivityEntryPreparationRuntimeBridge.EmitPredefinedVisualSetupReadyFactIfApplicable(
-            SessionActivityDefinition definition,
-            List<SessionActivityFact> facts,
-            SessionActivityIdentity readinessIdentity,
-            string source,
-            string reason,
-            string readinessPoint)
-        {
-            EmitPredefinedVisualSetupReadyFactIfApplicable(definition, facts, readinessIdentity, source, reason, readinessPoint);
-        }
-
-        private void TrackSessionScopedHandle(PlayerActorRuntimeHandle handle)
-        {
-            SessionActorRuntimeEntry entry = SessionActorRuntimeStore.FromPlayerHandle(handle);
-            if (entry.IsValid)
+            public void SetCurrentIdentity(SessionActivityIdentity identity, SessionActivityStage stage)
             {
-                _sessionActorRuntimeStore.Register(entry);
-            }
-        }
-
-
-        void IActivityEntryPermissionTargetRuntimeBridge.BeginPermissionScope(SessionActivityIdentity identity)
-        {
-            if (!identity.IsValid)
-            {
-                throw new InvalidOperationException("Permission scope identity is invalid.");
+                _pipeline._state.SetCurrentIdentity(identity, stage);
             }
 
-            _permissionRuntime.BeginPermissionScope(
-                identity.PipelineId,
-                identity.SessionId,
-                identity.ActivityId,
-                identity.EntrySequence);
-        }
-
-        void IActivityEntryPermissionTargetRuntimeBridge.ReplacePermissionReceivers(IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers)
-        {
-            _permissionRuntime.ReplaceReceivers(receivers ?? Array.Empty<ActivityCapabilityPermissionReceiverReference>());
-        }
-
-        IReadOnlyList<PlayerActorIdentityRecord> IActivityEntryMovementBindingRuntimeBridge.ResolveRetainedMovementTargets(SessionActivityIdentity identity)
-        {
-            return ResolveRetainedMovementTargetsOrEmpty(identity);
-        }
-
-        void IActivityEntryMovementBindingRuntimeBridge.SetMovementControlTargets(IReadOnlyList<PlayerActorIdentityRecord> targets, bool enableAllowed)
-        {
-            _movementControlTargetsForCurrentEntry = targets ?? Array.Empty<PlayerActorIdentityRecord>();
-            _movementControlEnableAllowedForCurrentEntry = enableAllowed && _movementControlTargetsForCurrentEntry.Count > 0;
-        }
-
-        void IActivityEntryMovementBindingRuntimeBridge.PublishInitialMovementControlBlocked(
-            SessionActivityIdentity identity,
-            IReadOnlyList<PlayerActorIdentityRecord> targets,
-            string source,
-            string reason,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots)
-        {
-            if (!identity.IsValid)
+            public void EmitFact(
+                List<SessionActivityFact> emittedFacts,
+                SessionActivityFactKind kind,
+                SessionActivityIdentity identity,
+                string source,
+                string reason,
+                string message)
             {
-                throw new InvalidOperationException("Initial movement control block identity is invalid.");
+                _pipeline.EmitFact(emittedFacts, kind, identity, source, reason, message);
             }
 
-            if (targets == null || targets.Count == 0)
+            public void EmitSnapshot(
+                List<SessionActivitySnapshot> emittedSnapshots,
+                string snapshotKind,
+                string source,
+                string reason,
+                string message)
             {
-                return;
+                _pipeline.EmitSnapshot(emittedSnapshots, snapshotKind, source, reason, message);
             }
 
-            EmitInitialMovementControlBlocked(
-                identity,
-                targets,
-                source,
-                reason,
-                facts,
-                snapshots);
-        }
-
-        bool IActivityEntryCameraBindingRuntimeBridge.TryResolvePlayerActorHandle(
-            SessionActivityIdentity identity,
-            PlayerActivityParticipantBinding binding,
-            out PlayerActorRuntimeHandle handle)
-        {
-            handle = default;
-            if (!identity.IsValid || !binding.IsValid || !binding.RequiresPlayerActor)
+            public void SetPendingOperation(SessionActivityPendingOperation operation)
             {
-                return false;
+                _pipeline._state.SetPendingOperation(operation);
             }
 
-            try
+            public void ClearPendingOperation()
             {
-                if (!_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(binding.ParticipantId, out handle) || !handle.IsValid)
+                _pipeline._state.ClearPendingOperation();
+            }
+
+            public void ResetMovementControlStateForEntry()
+            {
+                _pipeline._movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
+                _pipeline._movementControlEnableAllowedForCurrentEntry = false;
+                _pipeline._lastMovementDisableEmissionKey = string.Empty;
+            }
+
+            public void BeginActivityActorScope(SessionActivityIdentity identity)
+            {
+                _pipeline._activitySceneActorRegistry.BeginActivityScope(identity);
+            }
+
+            public void ClearActiveActorParticipations(string activityId, int entrySequence, string source, string reason)
+            {
+                _pipeline._activityActorExitRuntimeState.ClearActiveActorParticipations(activityId, entrySequence, source, reason);
+            }
+
+            public bool TryGetActivePlayerActorIdentities(SessionActivityIdentity identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors)
+            {
+                activeActors = Array.Empty<PlayerActorIdentityRecord>();
+                if (!identity.IsValid)
                 {
                     return false;
                 }
 
-                return handle.IsValid;
+                if (!_pipeline._activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out activeActors))
+                {
+                    return false;
+                }
+
+                return ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
+                    _pipeline._activityPlayerActorRegistry.ActiveScopeIdentity,
+                    identity,
+                    ActorScope.ActivityScoped);
             }
-            catch (InvalidOperationException)
+
+            public void EmitPredefinedVisualSetupReadyFactIfApplicable(
+                SessionActivityDefinition definition,
+                List<SessionActivityFact> facts,
+                SessionActivityIdentity readinessIdentity,
+                string source,
+                string reason,
+                string readinessPoint)
+            {
+                _pipeline.EmitPredefinedVisualSetupReadyFactIfApplicable(definition, facts, readinessIdentity, source, reason, readinessPoint);
+            }
+
+            public void ObserveActivitySceneContractOrSkip(
+                SessionActivityDefinition definition,
+                string source,
+                string reason,
+                List<SessionActivityFact> facts,
+                List<SessionActivitySnapshot> snapshots,
+                int entrySequence)
+            {
+                _pipeline.ObserveActivitySceneContractOrSkip(definition, source, reason, facts, snapshots, entrySequence);
+            }
+        }
+
+        private sealed class ActivityEntryPermissionTargetRuntimeBridgeAdapter : IActivityEntryPermissionTargetRuntimeBridge
+        {
+            private readonly SessionActivityPipeline _pipeline;
+
+            public ActivityEntryPermissionTargetRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
+            {
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            }
+
+            public void BeginPermissionScope(SessionActivityIdentity identity)
+            {
+                if (!identity.IsValid)
+                {
+                    throw new InvalidOperationException("Permission scope identity is invalid.");
+                }
+
+                _pipeline._permissionRuntime.BeginPermissionScope(
+                    identity.PipelineId,
+                    identity.SessionId,
+                    identity.ActivityId,
+                    identity.EntrySequence);
+            }
+
+            public void ReplacePermissionReceivers(IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers)
+            {
+                _pipeline._permissionRuntime.ReplaceReceivers(receivers ?? Array.Empty<ActivityCapabilityPermissionReceiverReference>());
+            }
+        }
+
+        private sealed class ActivityEntryMovementBindingRuntimeBridgeAdapter : IActivityEntryMovementBindingRuntimeBridge
+        {
+            private readonly SessionActivityPipeline _pipeline;
+
+            public ActivityEntryMovementBindingRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
+            {
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            }
+
+            public IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargets(SessionActivityIdentity identity)
+            {
+                return _pipeline.ResolveRetainedMovementTargetsOrEmpty(identity);
+            }
+
+            public void SetMovementControlTargets(IReadOnlyList<PlayerActorIdentityRecord> targets, bool enableAllowed)
+            {
+                _pipeline._movementControlTargetsForCurrentEntry = targets ?? Array.Empty<PlayerActorIdentityRecord>();
+                _pipeline._movementControlEnableAllowedForCurrentEntry = enableAllowed && _pipeline._movementControlTargetsForCurrentEntry.Count > 0;
+            }
+
+            public void PublishInitialMovementControlBlocked(
+                SessionActivityIdentity identity,
+                IReadOnlyList<PlayerActorIdentityRecord> targets,
+                string source,
+                string reason,
+                List<SessionActivityFact> facts,
+                List<SessionActivitySnapshot> snapshots)
+            {
+                if (!identity.IsValid)
+                {
+                    throw new InvalidOperationException("Initial movement control block identity is invalid.");
+                }
+
+                if (targets == null || targets.Count == 0)
+                {
+                    return;
+                }
+
+                _pipeline.EmitInitialMovementControlBlocked(
+                    identity,
+                    targets,
+                    source,
+                    reason,
+                    facts,
+                    snapshots);
+            }
+        }
+
+        private sealed class ActivityEntryCameraBindingRuntimeBridgeAdapter : IActivityEntryCameraBindingRuntimeBridge
+        {
+            private readonly SessionActivityPipeline _pipeline;
+
+            public ActivityEntryCameraBindingRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
+            {
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            }
+
+            public bool TryResolvePlayerActorHandle(
+                SessionActivityIdentity identity,
+                PlayerActivityParticipantBinding binding,
+                out PlayerActorRuntimeHandle handle)
             {
                 handle = default;
-                return false;
+                if (!identity.IsValid || !binding.IsValid || !binding.RequiresPlayerActor)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    if (!_pipeline._activityPlayerActorRegistry.TryGetActiveHandleByParticipant(binding.ParticipantId, out handle) || !handle.IsValid)
+                    {
+                        return false;
+                    }
+
+                    return handle.IsValid;
+                }
+                catch (InvalidOperationException)
+                {
+                    handle = default;
+                    return false;
+                }
             }
         }
 
-        ActorPresentationResult IActivityExitActorTeardownRuntimeBridge.ReleaseActorPresentation(ActorPresentationRuntimeHandle handle, string source, string reason)
+        private sealed class ActivityExitActorTeardownRuntimeBridgeAdapter : IActivityExitActorTeardownRuntimeBridge
         {
-            return _actorPresentationMaterializationAdapter.Release(new ActorPresentationReleaseCommand(handle, source, reason));
-        }
+            private readonly SessionActivityPipeline _pipeline;
 
-        IReadOnlyList<PlayerActorParticipationExitRecord> IActivityExitActorTeardownRuntimeBridge.ExecutePlayerActorParticipationExit(
-            PlayerActorParticipationExitCommand command,
-            SessionActivityIdentity identity)
-        {
-            return _playerActorParticipationAdapter.Execute(command, identity, _activityPlayerActorRegistry);
-        }
-
-        bool IActivityEntryActorPresentationRuntimeBridge.TryGetActiveActorPresentationHandle(
-            ActorInstanceRuntimeId actorInstanceRuntimeId,
-            out ActorPresentationRuntimeHandle handle)
-        {
-            return TryGetActivePresentationHandle(actorInstanceRuntimeId, out handle);
-        }
-
-        void IActivityEntryActorPresentationRuntimeBridge.ReleaseActorPresentationBeforeRematerialization(
-            SessionActivityIdentity identity,
-            string source,
-            string reason,
-            ActorInstanceRuntimeId actorInstanceRuntimeId,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots)
-        {
-            SessionActivityCommand releaseCommand = new(
-                SessionActivityCommandKind.StartActivity,
-                identity,
-                source,
-                reason);
-            EmitActorPresentationReleaseGenericStage(
-                _state.CurrentDefinition,
-                releaseCommand,
-                facts,
-                snapshots,
-                identity.EntrySequence,
-                ActorPresentationReleaseRail.BeforeRematerialization,
-                actorInstanceRuntimeId);
-        }
-
-        ActorParticipationReadinessEvaluation IActivityEntryActorParticipationRuntimeBridge.EvaluateActorParticipationReadiness(
-            SessionActivityIdentity identity,
-            ActorInstanceRecord instance)
-        {
-            if (!instance.IsValid || instance.ActorRoot == null || instance.RuntimeActor == null)
+            public ActivityExitActorTeardownRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
             {
-                return new ActorParticipationReadinessEvaluation(
-                    isReady: false,
-                    isFailure: true,
-                    "actor_instance_invalid");
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             }
 
-            if (instance.CapabilitySurface == null)
+            public ActorPresentationResult ReleaseActorPresentation(ActorPresentationRuntimeHandle handle, string source, string reason)
             {
-                return new ActorParticipationReadinessEvaluation(
-                    isReady: false,
-                    isFailure: true,
-                    "actor_capability_surface_missing");
+                return _pipeline._actorPresentationMaterializationAdapter.Release(new ActorPresentationReleaseCommand(handle, source, reason));
             }
 
-            ActorPresentationEndpoint presentationEndpoint = instance.CapabilitySurface.PresentationEndpoint;
-            if (presentationEndpoint != null)
+            public IReadOnlyList<PlayerActorParticipationExitRecord> ExecutePlayerActorParticipationExit(
+                PlayerActorParticipationExitCommand command,
+                SessionActivityIdentity identity)
             {
-                ActorPresentationProfileAsset profile = presentationEndpoint.Profile;
-                if (profile == null)
+                return _pipeline._playerActorParticipationAdapter.Execute(command, identity, _pipeline._activityPlayerActorRegistry);
+            }
+        }
+
+        private sealed class ActivityEntryActorPresentationRuntimeBridgeAdapter : IActivityEntryActorPresentationRuntimeBridge
+        {
+            private readonly SessionActivityPipeline _pipeline;
+
+            public ActivityEntryActorPresentationRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
+            {
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            }
+
+            public bool TryGetActiveActorPresentationHandle(
+                ActorInstanceRuntimeId actorInstanceRuntimeId,
+                out ActorPresentationRuntimeHandle handle)
+            {
+                return _pipeline.TryGetActivePresentationHandle(actorInstanceRuntimeId, out handle);
+            }
+
+            public void ReleaseActorPresentationBeforeRematerialization(
+                SessionActivityIdentity identity,
+                string source,
+                string reason,
+                ActorInstanceRuntimeId actorInstanceRuntimeId,
+                List<SessionActivityFact> facts,
+                List<SessionActivitySnapshot> snapshots)
+            {
+                SessionActivityCommand releaseCommand = new(
+                    SessionActivityCommandKind.StartActivity,
+                    identity,
+                    source,
+                    reason);
+                _pipeline.EmitActorPresentationReleaseGenericStage(
+                    _pipeline._state.CurrentDefinition,
+                    releaseCommand,
+                    facts,
+                    snapshots,
+                    identity.EntrySequence,
+                    ActorPresentationReleaseRail.BeforeRematerialization,
+                    actorInstanceRuntimeId);
+            }
+        }
+
+        private sealed class ActivityEntryActorParticipationRuntimeBridgeAdapter : IActivityEntryActorParticipationRuntimeBridge
+        {
+            private readonly SessionActivityPipeline _pipeline;
+
+            public ActivityEntryActorParticipationRuntimeBridgeAdapter(SessionActivityPipeline pipeline)
+            {
+                _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            }
+
+            public ActorParticipationReadinessEvaluation EvaluateActorParticipationReadiness(
+                SessionActivityIdentity identity,
+                ActorInstanceRecord instance)
+            {
+                if (!instance.IsValid || instance.ActorRoot == null || instance.RuntimeActor == null)
                 {
                     return new ActorParticipationReadinessEvaluation(
                         isReady: false,
                         isFailure: true,
-                        "presentation_profile_missing");
+                        "actor_instance_invalid");
                 }
 
-                if (profile.IsRequired)
+                if (instance.CapabilitySurface == null)
                 {
-                    if (!_activityActorExitRuntimeState.TryGetActivePresentationState(instance.ActorInstanceRuntimeId, out ActivityActorExitRuntimeState.ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
+                    return new ActorParticipationReadinessEvaluation(
+                        isReady: false,
+                        isFailure: true,
+                        "actor_capability_surface_missing");
+                }
+
+                ActorPresentationEndpoint presentationEndpoint = instance.CapabilitySurface.PresentationEndpoint;
+                if (presentationEndpoint != null)
+                {
+                    ActorPresentationProfileAsset profile = presentationEndpoint.Profile;
+                    if (profile == null)
                     {
                         return new ActorParticipationReadinessEvaluation(
                             isReady: false,
                             isFailure: true,
-                            "required_presentation_not_ready");
+                            "presentation_profile_missing");
+                    }
+
+                    if (profile.IsRequired)
+                    {
+                        if (!_pipeline._activityActorExitRuntimeState.TryGetActivePresentationState(instance.ActorInstanceRuntimeId, out ActivityActorExitRuntimeState.ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
+                        {
+                            return new ActorParticipationReadinessEvaluation(
+                                isReady: false,
+                                isFailure: true,
+                                "required_presentation_not_ready");
+                        }
                     }
                 }
-            }
 
-            ActorAttributeEndpoint attributeEndpoint = instance.CapabilitySurface.AttributeEndpoint;
-            if (attributeEndpoint != null)
-            {
-                if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(instance.ActorInstanceRuntimeId, out ActorAttributeCapabilityState capabilityState))
+                ActorAttributeEndpoint attributeEndpoint = instance.CapabilitySurface.AttributeEndpoint;
+                if (attributeEndpoint != null)
                 {
-                    return new ActorParticipationReadinessEvaluation(
-                        isReady: false,
-                        isFailure: true,
-                        "required_attribute_not_ready");
+                    if (!_pipeline._activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(instance.ActorInstanceRuntimeId, out ActorAttributeCapabilityState capabilityState))
+                    {
+                        return new ActorParticipationReadinessEvaluation(
+                            isReady: false,
+                            isFailure: true,
+                            "required_attribute_not_ready");
+                    }
+
+                    if (!capabilityState.IsValid || capabilityState.Endpoint != attributeEndpoint)
+                    {
+                        return new ActorParticipationReadinessEvaluation(
+                            isReady: false,
+                            isFailure: true,
+                            "required_attribute_capability_invalid");
+                    }
                 }
 
-                if (!capabilityState.IsValid || capabilityState.Endpoint != attributeEndpoint)
-                {
-                    return new ActorParticipationReadinessEvaluation(
-                        isReady: false,
-                        isFailure: true,
-                        "required_attribute_capability_invalid");
-                }
+                return new ActorParticipationReadinessEvaluation(
+                    isReady: true,
+                    isFailure: false,
+                    "ready");
             }
-
-            return new ActorParticipationReadinessEvaluation(
-                isReady: true,
-                isFailure: false,
-                "ready");
         }
 
     }

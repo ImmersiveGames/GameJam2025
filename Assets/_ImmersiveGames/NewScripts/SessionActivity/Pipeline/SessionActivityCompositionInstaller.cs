@@ -70,15 +70,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 pendingOperationRunner);
 
             var activityEntryPipeline = new ActivityEntryPipeline(
-                _pipeline,
+                _pipeline.EntryRuntimeBridge,
                 _pipeline.EntryPlayerActorMaterializationAdapter,
                 _pipeline.EntryPlayerActorParticipationAdapter,
                 _pipeline.EntryActorResetAdapter,
-                _pipeline,
-                _pipeline,
-                _pipeline,
-                _pipeline,
-                _pipeline,
+                _pipeline.EntryActorPresentationRuntimeBridge,
+                _pipeline.EntryActorParticipationRuntimeBridge,
+                _pipeline.EntryPermissionTargetRuntimeBridge,
+                _pipeline.EntryMovementBindingRuntimeBridge,
+                _pipeline.EntryCameraBindingRuntimeBridge,
                 _pipeline.EntryActorSceneRegistry,
                 _pipeline.EntryActorPlayerRegistry,
                 _pipeline.EntrySessionActorRuntimeStore,

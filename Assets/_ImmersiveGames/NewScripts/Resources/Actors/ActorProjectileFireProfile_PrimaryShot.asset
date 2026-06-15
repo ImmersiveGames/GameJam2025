@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3ee21c2873744645b9a42c9b11c7cec3, type: 3}
-  m_Name: ActorProjectileFireProfile_PlayerPrimary
+  m_Name: ActorProjectileFireProfile_PrimaryShot
   m_EditorClassIdentifier: 
-  profileId: actor.projectile.fire.player.primary
+  profileId: actor.projectile.fire.primary
   defaultFireModeId: fire.primary.single
   fireModes:
   - fireModeId: fire.primary.single

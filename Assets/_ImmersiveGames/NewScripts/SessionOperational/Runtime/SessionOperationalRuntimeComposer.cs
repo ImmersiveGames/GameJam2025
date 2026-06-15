@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
@@ -149,7 +150,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 ResolveRequiredDependency<IRoutePlayerParticipationEndpoint>,
                 ResolveRequiredDependency<IPlayerParticipationRuntime>,
                 ResolveOptionalDependency<ISessionActivitySnapshotPayloadProvider>,
-                ResolveOptionalDependency<ISaveStateService>);
+                ResolveOptionalDependency<ISaveStateService>,
+                ResolveRequiredDependency<IPoolService>);
         }
 
 

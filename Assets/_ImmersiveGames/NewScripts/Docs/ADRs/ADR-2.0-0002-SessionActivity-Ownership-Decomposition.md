@@ -6059,69 +6059,71 @@ RouteActivitySave preservou classificacao NoActivityContentContributors, sem reg
   - Do not create generic save-contributor infrastructure until a real capability and a clear owner exist.
 
 
-## SA-19B2-G1/G2 — Entry ObjectSetup composite narrowing closure
+---
 
-Status: `CLOSED / PASS funcional + PASS arquitetural`.
-
-### Decisão
-
-`ActivityEntryPipeline` permanece dono da ordem de Entry Setup. O antigo shape em que `ActivityEntryObjectSetupStages.cs` concentrava o caminho ativo de object setup foi reduzido: o arquivo restante é aceito apenas como utility compartilhada, não como lifecycle owner ou bridge agregado.
-
-### Resultado normativo
-
-- `ActivityCapabilityInventoryCoordinator` foi removido do caminho ativo.
-- `IActivityCapabilityInventoryPreviewSource` / `ActivityCapabilityInventoryPreviewSource` são o port técnico explícito para preview de inventory.
-- O caminho ativo de ObjectSetup foi dividido em stages concretos:
-  - `ActivityEntryObjectContributorDiscoveryStage`
-  - `ActivityEntrySetupInventoryStage`
-  - `ActivityEntryCapabilityInventoryPreviewStage`
-  - `ActivityEntryObjectResetStage`
-  - `ActivityEntryObjectSnapshotRestoreStage`
-- Labels/facts de owner foram corrigidos: `ActivityEntryObjectSetupStages` não deve aparecer como owner ativo de stage.
-
-### Ownership final
+## Baseline freeze — SA-19D0-A1-H1 / 2026-06-15
 
 ```text
-ActivityEntryPipeline: ordem de entry setup.
-ActivityEntryObjectContributorDiscoveryStage: descoberta determinística de contributors e facts do bloco.
-ActivityEntrySetupInventoryStage: build determinístico do inventory de setup.
-ActivityEntryCapabilityInventoryPreviewStage: preview técnico do inventory.
-ActivityEntryObjectResetStage: planejamento/execução de reset por endpoint.
-ActivityEntryObjectSnapshotRestoreStage: prontidão/aplicação de restore de snapshot.
-ActivityEntryObjectSetupStages: utility compartilhada, não owner de lifecycle.
-ActivityCapabilityInventory: índice técnico, não owner.
+SA-19D0-A1-H1 — CLOSED / PASS
+Phase 3 — CLOSED
+Baseline — FROZEN TEMPORARY FUNCTIONAL BASELINE
 ```
 
 ### Evidência aceita
 
 ```text
-sem error CS
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem checkpointStatus='Failed'
-sem foreign/stale indevido
-sem fallback silencioso
-sem ActivityCapabilityInventoryCoordinator no caminho ativo
-sem owner='ActivityEntryObjectSetupStages' no caminho ativo
-ActivityCapabilityInventoryPreviewObserved preservado
-ActivityObjectContributorDiscovery Passed preservado
-ActivityObjectReset PassedApplied/PassedNoCommands preservado
-ActivityObjectSnapshotRestore Passed preservado quando payload existe
-CapabilitySnapshotEnvelopeCapture Passed preservado
-ActivityObjectRelease Passed preservado
-ActivityObjectContributorUnregister Passed preservado
-ActivityEntryParticipantBindingCompleted preservado
-ActivityEntryParticipantResetCompleted preservado
-ActivityParticipantResetAppliedFromInventory preservado
-ActivityParticipantActorMaterializationRetained preservado
-RestartCurrentActivity Passed
-Activity01ToActivity02 Passed
-RouteExitBackToMenu Passed
+error CS: 0
+warning CS: 0
+FATAL: 0
+Exception: 0
+route_transition_failed: 0
+checkpointStatus='Failed': 0
+RejectedForeign: 0
+RejectedStale: 0
+fallback: 0
+RestartCurrentActivity Passed: 1
+Activity01ToActivity02 Passed: 1
+RouteExitBackToMenu Passed: 1
+ActivityCapabilityInventoryPreviewObserved: 3
+ActivityCapabilityInventoryCoordinator: 0
 ```
 
-### Resíduos controlados
+### Decisão congelada
 
-- `ActivityEntryObjectSetupStages.cs` ainda pode conter helpers compartilhados, mas não pode voltar a carregar execução de stage, policy, lifecycle, side-effects ou fallback.
-- `Content unload/release` não foi alterado neste fechamento e permanece sem ação imediata enquanto não houver regressão concreta.
-- ParticipantBinding completo e ExitActorTeardown só devem ser mexidos após auditoria curta específica dentro de `SA-19B2`.
+```text
+ActivityEntryPipeline continua order owner.
+ActivityEntryCapabilityInventoryBuildStage é build boundary determinístico.
+ActivityEntryCapabilityInventoryPreviewStage é preview/fact/snapshot owner.
+ActivityCapabilityInventory permanece snapshot/index passivo.
+ActivityCapabilityInventoryCoordinator não deve voltar ao active path.
+PendingOperationRunner não vira corte agora; ganho classificado como baixo/limpeza.
+```
+
+### Continuidade
+
+```text
+Não abrir D1.
+Não reabrir B2/B3/C2 sem regressão concreta.
+Próxima frente somente com auditoria + matriz de ownership.
+```
+
+
+---
+
+## 2026-06-15 — Activity Freeze after SA-19D0-A1-H1
+
+`SessionActivity` is frozen as the current Base 2.0 temporary functional baseline.
+
+The accepted state preserves:
+
+```text
+SessionActivityPipeline as macro lifecycle owner
+ActivityEntryPipeline as deterministic entry order owner
+SessionActivityHost as thin MonoBehaviour boundary
+RouteExit teardown decision inside SessionActivityPipeline
+ActivityCapabilityInventory as passive transversal inventory
+ActivityEntryCapabilityInventoryBuildStage as deterministic build boundary
+ActivityEntryCapabilityInventoryPreviewStage as preview/fact/snapshot owner
+```
+
+Remaining plan items must not be treated as automatic runtime work. Reopen Activity only with a new audit proving concrete behavior gain, regression fix, or owner-risk. Cosmetic cleanup is explicitly insufficient.

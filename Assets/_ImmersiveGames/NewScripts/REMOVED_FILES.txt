@@ -17,3 +17,13 @@ Motivo: superseded by the 2026-06-14 SA-19 Canonization Normalization Plan + Cur
 SessionActivity/Pipeline/Stages/PlayerInputBindingStage.cs
 SessionActivity/Pipeline/Stages/PlayerInputBindingStage.cs.meta
 Motivo: SA-Arch-H1 — Obsolete/legacy stage file (empty, with comment declaring the canonical path is now ActivityEntryPlayerInputBindingStage). Pure legacy rail removal as first item of architecture hygiene plan.
+
+Resources/Actors/ActorProjectileFireProfile_PlayerPrimary.asset
+Resources/Actors/ActorProjectileFireProfile_PlayerPrimary.asset.meta
+Resources/Actors/ActorProjectileSpawnProfile_PlayerPrimaryProjectile.asset
+Resources/Actors/ActorProjectileSpawnProfile_PlayerPrimaryProjectile.asset.meta
+Resources/Actors/PoolDefinition_PlayerPrimaryProjectile.asset
+Resources/Actors/PoolDefinition_PlayerPrimaryProjectile.asset.meta
+Resources/Actors/ProjectileActor_PlayerPrimary.prefab
+Resources/Actors/ProjectileActor_PlayerPrimary.prefab.meta
+Motivo: ACT-PROJ-AUTHORING-1B — renomeados para nomes neutros de Actor projectile (`PrimaryShot` / `PrimaryProjectile`) preservando GUIDs. O objetivo é remover leitura errada de rail Player-specific em assets/ids de projectile; `PlayerInput` continua sendo apenas command source.

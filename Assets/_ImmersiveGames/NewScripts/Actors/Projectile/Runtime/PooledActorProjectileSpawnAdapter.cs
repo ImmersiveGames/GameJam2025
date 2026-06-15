@@ -378,10 +378,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         private static ActorId BuildSpawnedActorId(ActorProjectileFireCommand command)
         {
-            string ownerActor = command.ActorId.IsValid ? command.ActorId.Value : "actor";
-            string fireMode = command.FireModeId.IsValid ? command.FireModeId.Value : "fire";
+            // Mantém a identidade semântica do projectile neutra.
+            // O owner já é registrado separadamente em RuntimeSpawnOriginMetadata
+            // e no ActorInstanceRuntimeId do spawned actor.
             int sequence = command.CommandEnvelope.Sequence < 0 ? 0 : command.CommandEnvelope.Sequence;
-            return new ActorId($"actor.projectile.{ownerActor}.{fireMode}.{sequence}");
+            return new ActorId($"actor.projectile.runtime.spawn.{sequence}");
         }
 
         private static string BuildInstancePath(Transform transform)

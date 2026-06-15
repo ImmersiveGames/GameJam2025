@@ -370,3 +370,70 @@ Se quiser que eu:
 - Atualizar o Current-Status.md com o estado mais recente
 
 É só falar. Vamos manter o ritmo até o plano estar em "largely complete".
+
+
+---
+
+## Baseline freeze — SA-19D0-A1-H1 / 2026-06-15
+
+```text
+SA-19D0-A1-H1 — CLOSED / PASS
+Phase 3 — CLOSED
+Baseline — FROZEN TEMPORARY FUNCTIONAL BASELINE
+```
+
+### Evidência aceita
+
+```text
+error CS: 0
+warning CS: 0
+FATAL: 0
+Exception: 0
+route_transition_failed: 0
+checkpointStatus='Failed': 0
+RejectedForeign: 0
+RejectedStale: 0
+fallback: 0
+RestartCurrentActivity Passed: 1
+Activity01ToActivity02 Passed: 1
+RouteExitBackToMenu Passed: 1
+ActivityCapabilityInventoryPreviewObserved: 3
+ActivityCapabilityInventoryCoordinator: 0
+```
+
+### Decisão congelada
+
+```text
+ActivityEntryPipeline continua order owner.
+ActivityEntryCapabilityInventoryBuildStage é build boundary determinístico.
+ActivityEntryCapabilityInventoryPreviewStage é preview/fact/snapshot owner.
+ActivityCapabilityInventory permanece snapshot/index passivo.
+ActivityCapabilityInventoryCoordinator não deve voltar ao active path.
+PendingOperationRunner não vira corte agora; ganho classificado como baixo/limpeza.
+```
+
+### Continuidade
+
+```text
+Não abrir D1.
+Não reabrir B2/B3/C2 sem regressão concreta.
+Próxima frente somente com auditoria + matriz de ownership.
+```
+
+
+---
+
+## Activity Freeze Decision — 2026-06-15
+
+After `SA-19D0-A1-H1`, this plan is not a mandate to continue opening runtime cuts.
+
+The remaining entries are frozen as follows:
+
+```text
+SA-19D1 — do not open now; no proven lifecycle ownership bug.
+SA-19E0/E1 — audit/documentation only unless concrete writer conflict appears.
+SA-19F0/F1 — do not execute for cosmetic macro surface reduction.
+SA-19Z* — documentation/evidence maintenance only.
+```
+
+`SessionActivity` is considered a temporary functional baseline. Reopen only with a new audit showing concrete behavior gain, regression fix, or architectural owner risk.

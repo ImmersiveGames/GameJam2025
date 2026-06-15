@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3b0f8c50a5a94ed49ed9e521ba2d31a7, type: 3}
-  m_Name: ActorProjectileSpawnProfile_PlayerPrimaryProjectile
+  m_Name: ActorProjectileSpawnProfile_PrimaryProjectile
   m_EditorClassIdentifier: 
-  profileId: actor.projectile.spawn.player.primary
+  profileId: actor.projectile.spawn.primary
   poolDefinition: {fileID: 11400000, guid: 2829820cd78e491b98b4cfdf684fb795, type: 2}
   materializationKind: 3
   lifetimePolicy: 4

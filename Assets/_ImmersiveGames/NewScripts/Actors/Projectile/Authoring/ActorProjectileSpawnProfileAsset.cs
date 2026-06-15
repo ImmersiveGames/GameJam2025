@@ -11,29 +11,29 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
         order = 71)]
     public sealed class ActorProjectileSpawnProfileAsset : ScriptableObject
     {
-        [Header("Profile Identity")]
-        [SerializeField, Tooltip("Identificador canônico do profile de spawn de projectile. Ex.: actor.projectile.spawn.player.primary.")]
+        [Header("Perfil de spawn")]
+        [SerializeField, InspectorName("Nome interno do spawn"), Tooltip("Identificador técnico do perfil de spawn. Ex.: actor.projectile.spawn.primary. Não é nome visual do prefab.")]
         private string profileId;
 
-        [Header("Pool Binding")]
-        [SerializeField, Tooltip("Definição de pool canônica usada pelo adapter técnico para materializar o projectile.")]
+        [Header("Pool usado pelo projétil")]
+        [SerializeField, InspectorName("Pool usado pelo projétil"), Tooltip("Definição de pool canônica usada pelo adapter técnico para materializar/reutilizar o projectile.")]
         private PoolDefinitionAsset poolDefinition;
 
-        [Header("Materialization")]
-        [SerializeField, Tooltip("Projectiles do MVP devem ser materializados em runtime via pool.")]
+        [Header("Actor gerado")]
+        [SerializeField, InspectorName("Como o projétil nasce"), Tooltip("Projectiles do MVP devem nascer como RuntimeSpawned via pool. Outros modos ficam fora deste corte.")]
         private ActorMaterializationKind materializationKind = ActorMaterializationKind.RuntimeSpawned;
-        [SerializeField, Tooltip("Policy autoral do lifetime do actor spawnado. O executor real de lifetime/return ainda fica fora deste corte.")]
-        private ActorLifetimePolicy.PolicyKind lifetimePolicy = ActorLifetimePolicy.PolicyKind.RuntimeTransient;
-        [SerializeField, Tooltip("Reset do spawned projectile. ReturnToOriginPool é o contrato validado do MVP.")]
-        private ActorSpawnedResetPolicy resetPolicy = ActorSpawnedResetPolicy.ReturnToOriginPool;
-        [SerializeField, Tooltip("Policy de snapshot. Projectiles runtime transient normalmente usam SkipRuntimeTransient.")]
-        private ActorSnapshotPolicy snapshotPolicy = ActorSnapshotPolicy.SkipRuntimeTransient;
-
-        [Header("Spawned Actor Metadata")]
-        [SerializeField, Tooltip("Role aplicado ao RuntimeSpawnedActor no rent. O prefab não carrega role fixa.")]
+        [SerializeField, InspectorName("Classificação do actor gerado"), Tooltip("Role aplicado ao actor spawnado no rent. O prefab não deve carregar role fixa para este trilho.")]
         private ActorRole spawnedActorRole = ActorRole.RuntimeSpawnedActor;
-        [SerializeField, Tooltip("Scope aplicado ao RuntimeSpawnedActor no rent. O prefab não carrega scope fixo.")]
+        [SerializeField, InspectorName("Escopo do actor gerado"), Tooltip("Scope aplicado ao actor spawnado no rent. ActivityScoped é o padrão atual para projectile runtime.")]
         private ActorScope spawnedActorScope = ActorScope.ActivityScoped;
+
+        [Header("Lifecycle")]
+        [SerializeField, InspectorName("Tempo de vida lógico"), Tooltip("Policy autoral do lifetime do actor spawnado. A execução real de lifetime/return continua fora deste corte de organização.")]
+        private ActorLifetimePolicy.PolicyKind lifetimePolicy = ActorLifetimePolicy.PolicyKind.RuntimeTransient;
+        [SerializeField, InspectorName("Comportamento no reset"), Tooltip("Reset do spawned projectile. ReturnToOriginPool é o contrato validado do MVP.")]
+        private ActorSpawnedResetPolicy resetPolicy = ActorSpawnedResetPolicy.ReturnToOriginPool;
+        [SerializeField, InspectorName("Salvar em snapshot?"), Tooltip("Policy de snapshot. Projectiles runtime transient normalmente usam SkipRuntimeTransient.")]
+        private ActorSnapshotPolicy snapshotPolicy = ActorSnapshotPolicy.SkipRuntimeTransient;
 
         public ActorProjectileSpawnProfileId ProfileId => new(Normalize(profileId));
         public PoolDefinitionAsset PoolDefinition => poolDefinition;

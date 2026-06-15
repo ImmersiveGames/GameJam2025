@@ -78,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage;
         private readonly OperationalRouteActivitySaveLoadOnEnterStage _routeActivitySaveLoadOnEnterStage;
         private readonly OperationalRouteActivitySaveSaveOnExitStage _routeActivitySaveSaveOnExitStage;
+        private readonly OperationalActivityPoolReleaseStage _activityPoolReleaseStage;
         private readonly OperationalRouteMaterializationBoundary _routeMaterializationBoundary;
         private readonly OperationalLoadingStage _loadingStage;
         private readonly OperationalRouteAudioStage _routeAudioStage;
@@ -119,8 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _sceneCompositionStage = new OperationalSceneCompositionStage(_factRecorder, _dependencies.ResolveSceneCompositionPort);
             _handoffExitStage = new OperationalHandoffExitStage(
                 _factRecorder,
-                _dependencies.ResolveRouteHandoffExitPort,
-                _dependencies.ResolveSessionActivityRouteExitTeardownBoundary);
+                _dependencies.ResolveRouteHandoffExitPort);
             _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_factRecorder, _dependencies.RouteCameraAdapter);
             _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_factRecorder, _dependencies.RouteCameraAdapter);
             _inputPreparationStage = new OperationalInputPreparationStage(_factRecorder, _dependencies.ResolveInputModeRequestPort);
@@ -141,6 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 _dependencies.ProgressionSlotContextResolver,
                 ResolveActivitySnapshotPayloadProviderOrNull,
                 RouteActivitySnapshotSchemaId);
+            _activityPoolReleaseStage = new OperationalActivityPoolReleaseStage(_dependencies.ResolvePoolService);
             _loadingStage = new OperationalLoadingStage(_factRecorder, _dependencies.LoadingAdapter);
             _routeAudioStage = new OperationalRouteAudioStage(_factRecorder, _dependencies.ResolveRouteAudioPort);
             _routeRevealStage = new OperationalRouteRevealStage(_factRecorder);
@@ -553,6 +554,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] Session reset after previous route exit failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' result='{sessionResetResult}'.");
+                }
+
+                var activityPoolReleaseResult = _activityPoolReleaseStage.Execute(
+                    new OperationalActivityPoolReleaseCommand(
+                        command,
+                        previousCompletedRoute.RouteIdentity,
+                        previousCompletedRoute.ActivityIdentity,
+                        handoffExitResult,
+                        sourceText,
+                        reasonText));
+                if (!activityPoolReleaseResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalActivityPoolReleaseStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{activityPoolReleaseResult.Kind}' reason='{activityPoolReleaseResult.Reason}' detail='{activityPoolReleaseResult.Detail}'.");
                 }
 
                 var previousRouteExitCompleteResult =

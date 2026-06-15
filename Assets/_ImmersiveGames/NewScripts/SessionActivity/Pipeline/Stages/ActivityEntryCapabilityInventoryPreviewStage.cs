@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityObjectContributorDiscoveryResult discoveryResult,
             IReadOnlyList<ActorScanTarget> actorTargets,
-            IActivityCapabilityInventoryPreviewSource inventoryPreviewSource,
+            ActivityEntryCapabilityInventoryBuildStage buildStage,
             IActivityEntryRuntimeBridge endpoint,
             ActivityEntryInventoryRuntimeState inventoryState,
             List<SessionActivityFact> facts,
@@ -25,7 +25,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            inventoryPreviewSource = inventoryPreviewSource ?? throw new ArgumentNullException(nameof(inventoryPreviewSource));
             int entrySequence = command.Identity.EntrySequence;
             SessionActivityIdentity previewIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             endpoint.SetCurrentIdentity(previewIdentity, SessionActivityStage.ActivitySetupStarted);
@@ -35,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{inventoryPreviewSource.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{buildStage.ActivityObjectScannerId}'.");
             bool hasDiscoveryForCurrentEntry = IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, previewIdentity);
             bool hasActorTargets = actorTargets != null && actorTargets.Count > 0;
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
@@ -47,15 +46,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     previewIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{command.Identity.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{inventoryPreviewSource.ActivityObjectScannerId}'.");
+                    $"'{command.Identity.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{buildStage.ActivityObjectScannerId}'.");
                 EmitEntryCapabilityInventoryLog(
                     SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
                     previewIdentity,
-                    $"'{command.Identity.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{inventoryPreviewSource.ActivityObjectScannerId}'.");
+                    $"'{command.Identity.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{buildStage.ActivityObjectScannerId}'.");
                 return default;
             }
 
-            ActivityCapabilityInventoryBuildResult buildResult = inventoryPreviewSource.BuildForEntry(
+            ActivityCapabilityInventoryBuildResult buildResult = buildStage.BuildForEntry(
                 previewIdentity,
                 hasDiscoveryForCurrentEntry ? discoveryResult : default,
                 actorTargets,
@@ -77,17 +76,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{inventoryPreviewSource.ActivityObjectScannerId}' actorScannerId='{inventoryPreviewSource.ActorLifecycleScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{buildStage.ActivityObjectScannerId}' actorScannerId='{buildStage.ActorLifecycleScannerId}'.");
             EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
                 previewIdentity,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{inventoryPreviewSource.ActivityObjectScannerId}' actorScannerId='{inventoryPreviewSource.ActorLifecycleScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{buildStage.ActivityObjectScannerId}' actorScannerId='{buildStage.ActorLifecycleScannerId}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_capability_inventory_preview_observed",
                 command.Source,
                 command.Reason,
-                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{inventoryPreviewSource.ActivityObjectScannerId}' actorScannerId='{inventoryPreviewSource.ActorLifecycleScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' activityObjectLifecycleCapabilityCount='{buildResult.ActivityObjectLifecycleCapabilityCount}' activityObjectLifecycleCapabilityKinds='{activityObjectLifecycleCapabilityKinds}' actorLifecycleCapabilityCount='{buildResult.ActorLifecycleCapabilityCount}' actorLifecycleCapabilityKinds='{actorLifecycleCapabilityKinds}' unresolvedReports='{buildResult.UnresolvedReportCount}' scannerId='{buildStage.ActivityObjectScannerId}' actorScannerId='{buildStage.ActorLifecycleScannerId}'.");
 
             return buildResult;
         }

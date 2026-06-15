@@ -71,24 +71,35 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
     public enum ActorProjectileSpawnPatternKind
     {
+        [InspectorName("Não definido")]
         Unknown = 0,
+        [InspectorName("Único (ativo)")]
         Single = 1,
+        [InspectorName("Sequência linear (planejado)")]
         LinearBurst = 2,
+        [InspectorName("Arco radial (planejado)")]
         RadialArc = 3,
     }
 
     public enum ActorProjectileMuzzlePolicyKind
     {
+        [InspectorName("Não definido")]
         Unknown = 0,
+        [InspectorName("Forward do Actor (ativo)")]
         ActorForward = 1,
+        [InspectorName("Socket nomeado (planejado)")]
         NamedMuzzleSocket = 2,
     }
 
     public enum ActorProjectileSpreadPolicyKind
     {
+        [InspectorName("Não definido")]
         Unknown = 0,
+        [InspectorName("Sem variação (ativo)")]
         None = 1,
+        [InspectorName("Ângulo fixo (planejado)")]
         FixedAngle = 2,
+        [InspectorName("Faixa aleatória (planejado)")]
         RandomRange = 3,
     }
 

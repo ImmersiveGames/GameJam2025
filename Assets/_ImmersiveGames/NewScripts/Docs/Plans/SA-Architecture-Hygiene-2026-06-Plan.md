@@ -8,7 +8,7 @@
 - Main ownership audit (2026-06-14) and reorganized normalization plan  
 - SessionActivity/Pipeline/README.md
 
-**Status:** In progress / partially closed. H1/H2 identity stabilization and SA-19B2 ObjectSetup hygiene have delivered structural wins; remaining items must stay audit-driven and must not reopen closed surfaces without evidence.
+**Status:** Proposed / Ready for execution. This is a dedicated hygiene wave focused on structural/architectural debt (distinct from pure bridge-narrowing/observability work).
 
 **Goal:** Eliminate obsolete rails, reduce duplication, enforce canonical ownership and folder hygiene, and clean up architectural smells so that future Base 2.0 work (and maintenance) is not slowed by legacy parallel paths and duplicated logic.
 
@@ -32,7 +32,7 @@
 - One scanner + contribution builder per capability (Attributes, Camera, Presentation, Permission, Lifecycle, Object, TransformPathUtility...).
 - Repeated `BuildIdentity` + EmitFact/EmitSnapshot + SetCurrentIdentity boilerplate across 30+ stages.
 - Duplicated PlayerActor resolution logic scattered across Inventory, Permissions, reset paths, etc.
-- `ActivityEntryObjectSetupStages.cs` as a composite god-file — **mitigated by SA-19B2-G2**: active object setup blocks were split into concrete stages; the remaining file is a shared utility, not a lifecycle owner.
+- `ActivityEntryObjectSetupStages.cs` as a composite god-file.
 
 **Lack of Canonical / Architecture Smells (Medium-High):**
 - Broad `IActivityEntryRuntimeBridge` still in use in several places.
@@ -131,11 +131,9 @@ All tasks must produce a short closure note (or update to the hygiene audit) wit
 ### Phase 3 — Architecture & Folder Hygiene
 
 **SA-Arch-H7 — Clean Composite Files & Stage Organization**
-- **Status:** PARTIAL / OBJECT SETUP CLOSED.
-- `SA-19B2-G2` split the active `ActivityEntryObjectSetupStages.cs` composite into concrete stages for contributor discovery, setup inventory, capability preview, object reset and snapshot restore.
-- `SA-19B2-G2-H1` removed legacy owner labels from the active path.
-- Remaining `ActivityEntryObjectSetupStages.cs` content is accepted only as shared utility; it must not become a lifecycle owner again.
-- **Acceptance:** No active ObjectSetup god-composite path. Clear ownership per extracted stage file.
+- Split or properly document `ActivityEntryObjectSetupStages.cs` (multiple internal stages in one file is a smell).
+- Ensure each stage file has single responsibility.
+- **Acceptance:** No god-composite files. Clear ownership per stage file.
 
 **SA-Arch-H8 — Folder Structure Cleanup**
 - Remove leftover Player* files (already in H1).
@@ -147,7 +145,7 @@ All tasks must produce a short closure note (or update to the hygiene audit) wit
 **SA-Arch-H9 — Enforce Narrow Contracts & Reduce God-Object Surface**
 - Finish migration away from broad `IActivityEntryRuntimeBridge` in remaining stages (build on previous B2 work).
 - Reduce the number of I*RuntimeBridge interfaces implemented by `SessionActivityPipeline` and `ActivityEntryPipeline`.
-- Replace or narrow `ActivityCapabilityInventoryCoordinator` (push to explicit policy + stage ownership) — **DONE in SA-19B2-G1**: removed from active path and replaced by explicit preview source port.
+- Replace or narrow `ActivityCapabilityInventoryCoordinator` (push to explicit policy + stage ownership).
 - Review CompositionInstaller wiring for manual service-locator patterns.
 - **Acceptance:** Fewer broad-bridge usages. Visible reduction in interfaces on the two pipelines. Coordinator usage justified or removed. Ownership matrix improved.
 
@@ -182,8 +180,7 @@ All tasks must produce a short closure note (or update to the hygiene audit) wit
 - H4, H5, H6 (scanners, boilerplate, resolution logic)
 
 **Wave 3 (Deeper cleanup):**
-- H7 is partially closed for ObjectSetup via `SA-19B2-G2/G2-H1`.
-- H8/H9 remain future work; do not reopen ObjectSetup unless a concrete regression appears.
+- H7, H8, H9 (composites, folders, god-object surface)
 
 **Wave 4 (Governance):**
 - H10
@@ -199,7 +196,6 @@ All tasks must produce a short closure note (or update to the hygiene audit) wit
 - No more Player* stage files or "ponte transitória SA-7B0" comments in production code.
 - Significant reduction in PlayerActor special-casing and duplicated scanner/builder/resolution code.
 - Cleaner folder structure with no dead files mixed in.
-- ObjectSetup active path no longer relies on a single god-composite file or `ActivityCapabilityInventoryCoordinator`.
 - Measurable improvement in ownership matrix (fewer broad interfaces, clearer stage responsibilities).
 - All changes follow anti-deslocamento checklist.
 - Documentation (this plan + main audit + Pipeline/README) reflects the work and new rules.
@@ -220,24 +216,119 @@ All tasks must produce a short closure note (or update to the hygiene audit) wit
 This hygiene wave is meant to run alongside (or immediately after) the current B2 bridge-narrowing work, but with a distinct structural focus. It directly addresses the gaps highlighted in the re-focused architecture audit.
 
 Update this plan after each atomic task. Cross-reference with the main SA-19 normalization plan and the 2026-06-14 audits.
+## Checkpoint complementar — BASE-ID identity stabilization closure (2026-06-14)
+
+Status: `BASE-ID identity stabilization — CLOSED FOR NOW`.
+
+Esta atualização registra o fechamento da frente complementar de identidade iniciada durante a higiene de arquitetura. Ela não substitui `SA-Arch-H2`; apenas congela o resultado dos cortes de estabilização de identidade já aceitos.
+
+### Fechado
+
+```text
+BASE-ID-0        CLOSED / AUDIT
+BASE-ID-1A       CLOSED / PASS
+BASE-ID-1B       CLOSED / PASS
+BASE-ID-1C       CLOSED / PASS
+BASE-ID-1D       CLOSED / PASS
+BASE-ID-1E       CLOSED / PASS
+BASE-ID-1F       CLOSED / AUDIT
+BASE-ID-1G       CLOSED / PASS
+BASE-ID-1H       CLOSED / PASS
+BASE-ID-1I-AUDIT CLOSED / NO RUNTIME CHANGES
+BASE-ID-1I       DEFERRED
+```
+
+### Decisão operacional
+
+Não executar `BASE-ID-1I — Type inventory lookup keys` agora.
+
+Motivo: a auditoria concluiu que o risco restante não está no `Dictionary<string, IActivityCapabilityRuntimeReference>` em si. O inventário continua sendo índice técnico centralizado e os consumidores auditados usam `capability.CapabilityId` vindo do descriptor do inventário. A tipagem agora seria ampla e com ganho baixo.
+
+### Resíduo aceito para backlog controlado
+
+```text
+ActivityCapabilityCameraTargetScanner
+ActivityCapabilityActorPresentationScanner
+ActivityCapabilityActorAttributeScanner
+```
+
+Esses scanners ainda podem derivar owner funcional via `ownerPath`. A correção futura, se necessária, deve ser tratada como subcorte direto de `BASE-ID-1I`, não como nova frente. Não reabrir apenas por `componentPath` aparecer em log ou metadata.
+
+### Regra de continuidade
+
+A partir deste checkpoint, não abrir novos cortes de identity sem uma das condições abaixo:
+
+```text
+1. item já existente em plano/ADR;
+2. subcorte direto de item existente;
+3. regressão concreta demonstrada por smoke/log/auditoria.
+```
+
+Qualquer mudança futura nessa área deve responder a matriz de ownership antes da implementação e preservar o baseline de smoke canônico.
+
 
 ---
 
-## Checkpoint — SA-19B2-G1/G2 ObjectSetup hygiene closure
+## Baseline freeze — SA-19D0-A1-H1 / 2026-06-15
 
-Status: `CLOSED / PASS funcional + PASS arquitetural`.
+```text
+SA-19D0-A1-H1 — CLOSED / PASS
+Phase 3 — CLOSED
+Baseline — FROZEN TEMPORARY FUNCTIONAL BASELINE
+```
 
-- `SA-19B2-G1` removed `ActivityCapabilityInventoryCoordinator` from the active Entry Setup path and introduced the explicit preview port `IActivityCapabilityInventoryPreviewSource`.
-- `SA-19B2-G2` split the active object setup composite into concrete stage files:
-  - `ActivityEntryObjectContributorDiscoveryStage`
-  - `ActivityEntrySetupInventoryStage`
-  - `ActivityEntryCapabilityInventoryPreviewStage`
-  - `ActivityEntryObjectResetStage`
-  - `ActivityEntryObjectSnapshotRestoreStage`
-- `SA-19B2-G2-H1` corrected active owner labels so `ActivityEntryObjectSetupStages` no longer appears as stage owner in the active path.
-- `ActivityEntryPipeline` remains owner of order; the extracted stages execute deterministic steps.
-- Inventory remains a technical index, not lifecycle owner.
-- Retained-player path remained untouched and validated by smoke.
+### Evidência aceita
 
-Residual rule:
-`ActivityEntryObjectSetupStages` may remain only as a utility/support file. It must not regain stage ownership, lifecycle decisions, broad bridge behavior, coordinator behavior, fallback behavior or side-effects.
+```text
+error CS: 0
+warning CS: 0
+FATAL: 0
+Exception: 0
+route_transition_failed: 0
+checkpointStatus='Failed': 0
+RejectedForeign: 0
+RejectedStale: 0
+fallback: 0
+RestartCurrentActivity Passed: 1
+Activity01ToActivity02 Passed: 1
+RouteExitBackToMenu Passed: 1
+ActivityCapabilityInventoryPreviewObserved: 3
+ActivityCapabilityInventoryCoordinator: 0
+```
+
+### Decisão congelada
+
+```text
+ActivityEntryPipeline continua order owner.
+ActivityEntryCapabilityInventoryBuildStage é build boundary determinístico.
+ActivityEntryCapabilityInventoryPreviewStage é preview/fact/snapshot owner.
+ActivityCapabilityInventory permanece snapshot/index passivo.
+ActivityCapabilityInventoryCoordinator não deve voltar ao active path.
+PendingOperationRunner não vira corte agora; ganho classificado como baixo/limpeza.
+```
+
+### Continuidade
+
+```text
+Não abrir D1.
+Não reabrir B2/B3/C2 sem regressão concreta.
+Próxima frente somente com auditoria + matriz de ownership.
+```
+
+
+---
+
+## Activity Freeze Constraint — 2026-06-15
+
+This hygiene plan must not be used to continue `SessionActivity` cleanup by inertia.
+
+After `SA-19D0-A1-H1`, Activity runtime is frozen. Hygiene waves may continue only when a focused audit proves non-cosmetic value:
+
+```text
+concrete behavior improvement
+or measurable ownership correction
+or removal of active duplicated lifecycle owner
+or required dependency for a new runtime feature
+```
+
+Cosmetic file/folder cleanup, naming cleanup, comment cleanup, or manual wiring cleanup is not enough to reopen Activity.

@@ -109,6 +109,39 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             ReturnInternal(runtimeInstance, PoolReturnReason.Manual);
         }
 
+        public int ReturnAllRentedObjects(string reason)
+        {
+            if (_rentedObjects.Count == 0)
+            {
+                return 0;
+            }
+
+            var rentedSnapshot = new List<GameObject>(_rentedObjects);
+            int returnedCount = 0;
+            for (int index = 0; index < rentedSnapshot.Count; index++)
+            {
+                GameObject instance = rentedSnapshot[index];
+                if (instance == null || !_instancesByObject.TryGetValue(instance, out PoolRuntimeInstance runtimeInstance))
+                {
+                    continue;
+                }
+
+                if (!_rentedObjects.Contains(instance))
+                {
+                    continue;
+                }
+
+                ReturnInternal(runtimeInstance, PoolReturnReason.Manual);
+                returnedCount++;
+            }
+
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolRentedObjectsDrained' asset='{Definition.name}' returnedCount='{returnedCount}' active='{ActiveCount}' inactive='{InactiveCount}' total='{TotalCount}' reason='{Sanitize(reason)}'.",
+                DebugUtility.Colors.Info);
+
+            return returnedCount;
+        }
+
         public void Cleanup()
         {
             _autoReturnTracker.Clear("pool-cleanup");
@@ -255,6 +288,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                     $"ReturnManual complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private static string Sanitize(string text)
+        {
+            return string.IsNullOrWhiteSpace(text) ? string.Empty : text.Trim();
         }
 
         private static void CallPoolCreated(GameObject instance)

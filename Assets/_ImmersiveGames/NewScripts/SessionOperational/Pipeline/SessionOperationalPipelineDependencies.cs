@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
@@ -23,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly Func<IPlayerParticipationRuntime> _playerParticipationRuntimeResolver;
         private readonly Func<ISessionActivitySnapshotPayloadProvider> _activitySnapshotPayloadProviderResolver;
         private readonly Func<ISaveStateService> _saveStateServiceResolver;
+        private readonly Func<IPoolService> _poolServiceResolver;
 
         public SessionOperationalPipelineDependencies(
             RuntimeModeConfig runtimeModeConfig,
@@ -43,7 +45,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Func<IRoutePlayerParticipationEndpoint> routePlayerParticipationEndpointResolver,
             Func<IPlayerParticipationRuntime> playerParticipationRuntimeResolver,
             Func<ISessionActivitySnapshotPayloadProvider> activitySnapshotPayloadProviderResolver,
-            Func<ISaveStateService> saveStateServiceResolver)
+            Func<ISaveStateService> saveStateServiceResolver,
+            Func<IPoolService> poolServiceResolver)
         {
             RuntimeModeConfig = runtimeModeConfig ?? throw new ArgumentNullException(nameof(runtimeModeConfig));
             PersistentScenesPolicy = persistentScenesPolicy ?? throw new ArgumentNullException(nameof(persistentScenesPolicy));
@@ -64,6 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _playerParticipationRuntimeResolver = playerParticipationRuntimeResolver ?? throw new ArgumentNullException(nameof(playerParticipationRuntimeResolver));
             _activitySnapshotPayloadProviderResolver = activitySnapshotPayloadProviderResolver ?? throw new ArgumentNullException(nameof(activitySnapshotPayloadProviderResolver));
             _saveStateServiceResolver = saveStateServiceResolver ?? throw new ArgumentNullException(nameof(saveStateServiceResolver));
+            _poolServiceResolver = poolServiceResolver ?? throw new ArgumentNullException(nameof(poolServiceResolver));
         }
 
         public RuntimeModeConfig RuntimeModeConfig { get; }
@@ -134,6 +138,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             saveStateService = _saveStateServiceResolver();
             return saveStateService != null;
+        }
+
+        public IPoolService ResolvePoolService()
+        {
+            return _poolServiceResolver();
         }
     }
 }

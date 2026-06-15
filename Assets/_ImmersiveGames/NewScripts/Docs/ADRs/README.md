@@ -113,21 +113,6 @@ IActivityEntryContentLoadedSetRuntimeBridge cleanup
 IActivityEntryContentRuntimeBridge aggregate cleanup
 ```
 
-
-## SA-19B2-G1/G2 - Entry ObjectSetup composite narrowing
-
-- Status: `CLOSED / PASS funcional + PASS arquitetural`.
-- `ActivityCapabilityInventoryCoordinator` saiu do caminho ativo; o preview de inventory agora passa por `IActivityCapabilityInventoryPreviewSource` / `ActivityCapabilityInventoryPreviewSource`.
-- `ActivityEntryObjectSetupStages.cs` deixou de ser o composite ativo de object setup. O caminho ativo foi dividido em stages concretos:
-  - `ActivityEntryObjectContributorDiscoveryStage`
-  - `ActivityEntrySetupInventoryStage`
-  - `ActivityEntryCapabilityInventoryPreviewStage`
-  - `ActivityEntryObjectResetStage`
-  - `ActivityEntryObjectSnapshotRestoreStage`
-- `ActivityEntryObjectSetupStages` pode permanecer apenas como utility compartilhada; não é owner de lifecycle.
-- Owner labels legados foram corrigidos: o caminho ativo não deve emitir `owner='ActivityEntryObjectSetupStages'`.
-- Smoke aceito preservou RestartCurrentActivity, Activity01ToActivity02, RouteExitBackToMenu, retained player, inventory preview, object reset, snapshot restore/capture, release e unregister.
-
 ## Status canônico
 
 O resumo atual de `SessionActivity` fica em:
@@ -156,4 +141,80 @@ ActivityObjectSnapshotCapture, ActivityObjectRelease, ActivityObjectContributorU
 DEFER_HIGH_RISK items must not be reopened without concrete regression evidence.
 RouteActivitySave last useful payload is a new policy, not a local bug.
 Any future change in the pending-operation callback path requires full smoke validation.
+```
+## BASE-ID identity stabilization — fechamento documental
+
+- Status: `CLOSED FOR NOW`.
+- `BASE-ID-0` a `BASE-ID-1H` foram fechados com auditoria/PASS conforme aplicável.
+- `BASE-ID-1I-AUDIT` foi fechado sem alteração de runtime.
+- `BASE-ID-1I — Type inventory lookup keys` fica `DEFERRED`.
+- Motivo: o risco restante não está no lookup central do `ActivityCapabilityInventory`; está nos scanners remanescentes que ainda podem derivar owner funcional via `ownerPath`.
+- Resíduo aceito para backlog controlado:
+  - `ActivityCapabilityCameraTargetScanner`
+  - `ActivityCapabilityActorPresentationScanner`
+  - `ActivityCapabilityActorAttributeScanner`
+- Não abrir novos cortes de identity sem plano/ADR, subcorte direto ou regressão concreta demonstrada.
+- Não reabrir apenas porque `componentPath`, `ownerPath` ou `providerType` aparecem como metadata/log.
+- `ActivityCapabilityInventory` permanece índice técnico, não owner de lifecycle.
+
+
+---
+
+## Baseline freeze — SA-19D0-A1-H1 / 2026-06-15
+
+```text
+SA-19D0-A1-H1 — CLOSED / PASS
+Phase 3 — CLOSED
+Baseline — FROZEN TEMPORARY FUNCTIONAL BASELINE
+```
+
+### Evidência aceita
+
+```text
+error CS: 0
+warning CS: 0
+FATAL: 0
+Exception: 0
+route_transition_failed: 0
+checkpointStatus='Failed': 0
+RejectedForeign: 0
+RejectedStale: 0
+fallback: 0
+RestartCurrentActivity Passed: 1
+Activity01ToActivity02 Passed: 1
+RouteExitBackToMenu Passed: 1
+ActivityCapabilityInventoryPreviewObserved: 3
+ActivityCapabilityInventoryCoordinator: 0
+```
+
+### Decisão congelada
+
+```text
+ActivityEntryPipeline continua order owner.
+ActivityEntryCapabilityInventoryBuildStage é build boundary determinístico.
+ActivityEntryCapabilityInventoryPreviewStage é preview/fact/snapshot owner.
+ActivityCapabilityInventory permanece snapshot/index passivo.
+ActivityCapabilityInventoryCoordinator não deve voltar ao active path.
+PendingOperationRunner não vira corte agora; ganho classificado como baixo/limpeza.
+```
+
+### Continuidade
+
+```text
+Não abrir D1.
+Não reabrir B2/B3/C2 sem regressão concreta.
+Próxima frente somente com auditoria + matriz de ownership.
+```
+
+
+---
+
+## Activity Freeze Reference — 2026-06-15
+
+`SessionActivity` is frozen after `SA-19D0-A1-H1`.
+
+Canonical freeze evidence:
+
+```text
+Docs/Reports/Evidence/SessionActivity-Base2.0-Activity-Freeze-2026-06-15.md
 ```

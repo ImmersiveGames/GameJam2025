@@ -118,11 +118,75 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
+
+    public enum SessionActivityRouteExitTeardownPreflightKind
+    {
+        Unknown = 0,
+        Accepted = 1,
+        NotRequired = 2,
+        RejectedByPolicy = 3,
+        Failed = 4,
+    }
+
+    public readonly struct SessionActivityRouteExitTeardownPreflightResult
+    {
+        public SessionActivityRouteExitTeardownPreflightResult(
+            SessionActivityRouteExitTeardownPreflightKind kind,
+            string sessionStateId,
+            SessionActivityStage stage,
+            SessionActivityRailKind railKind,
+            string activityId,
+            bool hasPendingOperation,
+            string reason,
+            string detail)
+        {
+            Kind = kind;
+            SessionStateId = Normalize(sessionStateId);
+            Stage = stage;
+            RailKind = railKind;
+            ActivityId = Normalize(activityId);
+            HasPendingOperation = hasPendingOperation;
+            Reason = Normalize(reason);
+            Detail = Normalize(detail);
+        }
+
+        public SessionActivityRouteExitTeardownPreflightKind Kind { get; }
+        public string SessionStateId { get; }
+        public SessionActivityStage Stage { get; }
+        public SessionActivityRailKind RailKind { get; }
+        public string ActivityId { get; }
+        public bool HasPendingOperation { get; }
+        public string Reason { get; }
+        public string Detail { get; }
+
+        public bool IsValid =>
+            Kind != SessionActivityRouteExitTeardownPreflightKind.Unknown &&
+            !string.IsNullOrWhiteSpace(Reason);
+
+        public bool IsAccepted =>
+            Kind == SessionActivityRouteExitTeardownPreflightKind.Accepted ||
+            Kind == SessionActivityRouteExitTeardownPreflightKind.NotRequired;
+
+        public bool IsRejected => Kind == SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy;
+        public bool IsFailed => Kind == SessionActivityRouteExitTeardownPreflightKind.Failed;
+
+        public override string ToString()
+        {
+            return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', railKind='{RailKind}', activityId='{ActivityId}', hasPendingOperation='{HasPendingOperation}', reason='{Reason}', detail='{Detail}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public interface ISessionActivityRouteExitTeardownBoundary
     {
-        SessionActivityRailKind CurrentRailKind { get; }
-        SessionActivityStage CurrentStage { get; }
-        bool HasPendingOperation { get; }
+        SessionActivityRouteExitTeardownPreflightResult EvaluateRouteExitTeardownPreflight(
+            string sessionStateId,
+            string source,
+            string reason);
 
         SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(
             string sessionStateId,

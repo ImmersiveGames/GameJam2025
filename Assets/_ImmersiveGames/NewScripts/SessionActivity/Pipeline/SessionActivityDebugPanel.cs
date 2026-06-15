@@ -438,7 +438,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private bool TryEnsureHostOperational()
         {
             return host != null &&
-                host.Pipeline != null &&
+                host.HasPipeline &&
                 host.State != null;
         }
 
@@ -457,7 +457,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
-            builder.AppendLine($"activityContentLoadedSet='{host.Pipeline.GetCurrentActivityContentLoadedSet()}'");
+            builder.AppendLine($"activityContentLoadedSet='{host.GetCurrentActivityContentLoadedSet()}'");
             builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory()}'");
             if (host.GateState != null)
             {
@@ -2773,12 +2773,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string FormatActivitySetupInventory()
         {
-            if (host == null || host.Pipeline == null)
+            if (host == null || !host.HasPipeline)
             {
                 return "<none>";
             }
 
-            ActivitySetupInventory inventory = host.Pipeline.EntryPipeline.GetCurrentActivitySetupInventory();
+            ActivitySetupInventory inventory = host.GetCurrentActivitySetupInventory();
             if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
             {
                 return "<none>";

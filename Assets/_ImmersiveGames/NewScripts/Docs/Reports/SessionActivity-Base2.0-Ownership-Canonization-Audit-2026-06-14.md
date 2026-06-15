@@ -19,7 +19,7 @@ SessionActivity is larger and more complex than SessionOperational because it ow
 - `SessionActivityPipeline` still implements a large number of `I*RuntimeBridge` interfaces and acts as a central callback/owner for many concerns.
 - `SessionActivityHost` implements key Operational boundaries but is not yet a pure thin delegator.
 - Multiple runtime state stores + inventory snapshot concerns (actively worked in prior audits, still tracked risk).
-- Documentation points to a missing `Docs/Reports/SessionActivity-2.0-Current-Status.md`.
+- Documentation points to the consolidated plan/status file `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md`.
 
 **Positive signals:**
 - Contracts/ folder is clean and centralized.
@@ -137,7 +137,7 @@ These match the warning in multiple ADRs: "Não criar manager/coordinator/proces
 ### 7. Documentation & Status Report Debt
 
 - `SessionActivity/Pipeline/README.md` is the best current operational view and is refreshingly honest ("congelado como sandbox funcional minimo Base 1.1", lists many SA- cuts, defers RunPipeline, etc.).
-- It references `Docs/Reports/SessionActivity-2.0-Current-Status.md` as the place for the resumo atual. That file does not exist at the documented path (as of this audit).
+- It references the consolidated plan/status file `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md` as the place for the resumo atual.
 - Rich history lives in `SessionActivity/Docs/Audits/` (10 focused documents, mostly SA-7B* bridge decomposition and SA-8A* exit policy/route-exit enforcement).
 
 **Finding:** Operational documentation is more up-to-date in one place (the module README + Etapa notes). SessionActivity has better per-cut audit granularity but the consolidated status report is missing or mis-referenced.
@@ -177,14 +177,14 @@ Per the original rule ("se alguma coisa tiver dúvida sobre remoção, porque es
 3. **`ISessionActivityPendingOperationRunner` / window & content operation dispatch** — confirm as technical runner (like Operational adapters) with narrow contract; do not let it absorb lifecycle decisions.
 4. **Host as boundary implementer** — explicitly document the minimal surface it must expose to Operational (the two *Boundary interfaces) and the rule that it must not own teardown or readiness decisions.
 5. **Writer uniqueness for runtime states (content release, object exit correlation, inventory preview)** — continue the store-source discipline; any new consumer that writes must be treated as a bug.
-6. **Missing `SessionActivity-2.0-Current-Status.md`** — either create it or update the reference in the Pipeline README. Treat as documentation canonical-track item.
+6. **Consolidated status file** — keep `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md` as the canonical status hub and update references accordingly. Treat as documentation canonical-track item.
 
 ---
 
 ## Recommendations & Proposed Next Steps (Prioritized)
 
 1. **Short term (low risk hygiene)**
-   - Create or correctly locate the consolidated `Docs/Reports/SessionActivity-2.0-Current-Status.md` (or equivalent) and keep it in sync with the Pipeline README.
+   - Keep the consolidated status block in `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md` in sync with the Pipeline README.
    - Continue the pattern of small, named SA-* audit + closure documents for each remaining bridge or store split.
    - Clean any remaining `.cs~` or editor artifacts if they reappear (already done once).
 
@@ -214,7 +214,7 @@ Per the original rule ("se alguma coisa tiver dúvida sobre remoção, porque es
 
 As part of executing the SA-19 plan ("faça 0 e 1"):
 
-- **SA-19A0 (Documentation Baseline)**: Created `Docs/Reports/SessionActivity-2.0-Current-Status.md` (consolidated view pointing to plan + audit + Pipeline/README). Updated cross-references in `SessionActivity/Pipeline/README.md`, `Docs/ADRs/README.md`, and the plan itself.
+- **SA-19A0 (Documentation Baseline)**: Created the consolidated plan/status/freeze block in `Docs/Plans/SessionActivity-Base2.0-Canonization-Normalization-Plan-2026-06-14.md`. Updated cross-references in `SessionActivity/Pipeline/README.md`, `Docs/ADRs/README.md`, and this plan.
 - **SA-19A1 (Governance Refresh)**: Added mandatory "OBRIGATÓRIO ANTES DE QUALQUER ATIVIDADE SA-19+" box (the 10 anti-deslocamento questions + required reading order) to the top of the SA-19 plan.
 - **SA-19B0 (Bridge Surface Freeze)**: Created `SessionActivity/Docs/Audits/SA-19B0-Bridge-Surface-Freeze.md` — full inventory of the current `IActivityEntryRuntimeBridge` aggregate, the "ponte transitória SA-7B0" comment, the `BindEntryPipeline` seam, list of stages still using the aggregate, and an initial current → target mapping.
 - **SA-19B1 real removal completed**:
@@ -294,4 +294,4 @@ This addition ensures the main audit now reflects both the previous observabilit
 
 **End of audit snapshot.** This document is intended as a living evaluation artifact. Update it (or supersede with a new SA- cut) when the next bridge split, SA-13 work, or Host thinness normalization lands.
 
-Next action suggestion: if the team agrees on priorities, we can execute the highest-confidence safe normalizations (e.g. further narrow the bridges in a new SA- cut) or produce the missing consolidated status report.
+Next action suggestion: if the team agrees on priorities, we can execute the highest-confidence safe normalizations (e.g. further narrow the bridges in a new SA- cut) or update the consolidated status block.

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -67,6 +68,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
+                ActorReleaseContributionStage.ExecuteOrFail(new ActorReleaseContributionStageCommand(
+                    handle.ActorIdentity.Identity,
+                    handle.ActorId,
+                    handle.ActorInstanceRuntimeId,
+                    ActorKind.Unknown,
+                    handle.Actor.ActorRoleMetadata,
+                    handle.Actor.ActorScopeMetadata,
+                    handle.CapabilitySurface,
+                    handle.Instance.name,
+                    ActorLifetimeTrigger.RouteExit,
+                    source,
+                    reason));
+
                 Object.Destroy(handle.Instance);
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
                     $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(handle.ActorIdentity.Identity.ActivityId)}' entrySequence='{handle.ActorIdentity.Identity.EntrySequence}' trigger='RouteScopedIndexReset' actorId='{handle.ActorId}' actorInstanceRuntimeId='{handle.ActorInstanceRuntimeId}' actorScope='RouteScoped' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
@@ -106,6 +120,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         reason,
                         $"Actor lifetime decision resolved actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='SessionReset' decision='Release'.");
                 }
+
+                ActorReleaseContributionStage.ExecuteOrFail(new ActorReleaseContributionStageCommand(
+                    identity,
+                    entry.ActorId,
+                    entry.ActorInstanceRuntimeId,
+                    ActorKind.Unknown,
+                    entry.Actor.ActorRoleMetadata,
+                    entry.ActorScope,
+                    entry.Actor.CapabilitySurface,
+                    entry.Instance != null ? entry.Instance.name : entry.ActorId.Value,
+                    ActorLifetimeTrigger.SessionReset,
+                    source,
+                    reason));
 
                 if (entry.Instance != null)
                 {

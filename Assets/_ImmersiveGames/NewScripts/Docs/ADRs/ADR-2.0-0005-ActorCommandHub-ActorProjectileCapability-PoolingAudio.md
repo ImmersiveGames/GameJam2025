@@ -146,6 +146,73 @@ O prÃ³ximo corte pode avanÃ§ar para preparar `FirePrimary` no mesmo modelo d
 
 ---
 
+## Checkpoint ACT-PROJ-AUTHORING-1A/1B — Projectile authoring clarity e neutral naming
+
+### Status
+
+`ACT-PROJ-AUTHORING-1A` está `CLOSED / PASS de compile + PASS de authoring clarity`.
+
+`ACT-PROJ-AUTHORING-1B` está `Applied / Pending compile`.
+
+### Decisões aplicadas
+
+```text
+As opções futuras de fire mode permanecem visíveis no Inspector de propósito.
+LinearBurst, RadialArc, SpreadPolicy, ProjectileCount, RadialArcDegrees e NamedMuzzleSocket ficam marcados como planejados / sem efeito runtime completo no MVP atual.
+Não remover esses campos sem substituir por um plano runtime real de múltiplos spawns.
+```
+
+```text
+Nomes de assets e ids de projectile não devem usar Player quando a capacidade é genérica de Actor.
+PlayerInput pode continuar sendo a source atual do comando.
+Projectile fire continua sendo Actor capability, não Player capability.
+```
+
+Renomes aceitos neste corte:
+
+```text
+ActorProjectileFireProfile_PlayerPrimary -> ActorProjectileFireProfile_PrimaryShot
+ActorProjectileSpawnProfile_PlayerPrimaryProjectile -> ActorProjectileSpawnProfile_PrimaryProjectile
+PoolDefinition_PlayerPrimaryProjectile -> PoolDefinition_PrimaryProjectile
+ProjectileActor_PlayerPrimary -> ProjectileActor_Primary
+actor.projectile.fire.player.primary -> actor.projectile.fire.primary
+actor.projectile.spawn.player.primary -> actor.projectile.spawn.primary
+pool.projectile.player.primary -> pool.projectile.primary
+actor.projectile.fire.endpoint.player.primary -> actor.projectile.fire.endpoint.primary
+actor.projectile.spawn.adapter.pooled.player.primary -> actor.projectile.spawn.adapter.pooled.primary
+```
+
+### Fronteiras documentadas
+
+```text
+ActivityEntryPipeline prepara/readiness/binding de command/capability.
+ActivityEntryPipeline não executa disparo.
+SessionActivityPipeline não executa disparo.
+ActorCommandHub recebe/lê source local e despacha ActorCommandEnvelope.
+ActorProjectileFireEndpoint executa a capability local.
+PooledActorProjectileSpawnAdapter executa Rent/Spawn técnico via pool.
+PoolDefinitionAsset é authoring data de infraestrutura técnica de pool.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+Não foi criado SpawnPlan runtime.
+Não foi implementado LinearBurst/RadialArc/Spread runtime.
+Não foi removido required do endpoint.
+Não foi migrado ActorCommandBindingAdapter para caminho actor-generic fora de Players/ActivitySetup.
+Não foi alterada permission identity.
+Não foi removido service locator do PooledActorProjectileSpawnAdapter.
+```
+
+### Próximos cortes possíveis
+
+```text
+ACT-PROJ-BIND-1A — Actor-generic projectile command binding.
+ACT-PROJ-POOL-1A — Injetar IPoolService/port técnico no spawn adapter/tracker.
+ACT-PROJ-RUNTIME-1A — ActorProjectileSpawnPlan para múltiplos spawn requests.
+```
+
 ## Ãrea
 
 ```text
@@ -1890,3 +1957,30 @@ PoolDefinitionAsset.prewarm=true
 - Sem alteracao de `IPoolService`.
 - Sem alterar reset/persistencia.
 - Sem `RuntimeSpawnedActorLifetime` ou adapter paralelo de return.
+
+## ACT-PROJ-BIND-1A — Actor-generic projectile command binding split
+
+`ActorCommandBindingAdapter` ainda resolve o Actor ativo a partir do contexto de participante da Activity, porque essa lookup depende de `ActivityPlayerActorRegistry` no shape atual.
+
+A decisão específica de projectile saiu do adapter e passou para:
+
+```text
+Actors/Projectile/Binding/ActorProjectileFireCommandBindingExecutor
+```
+
+Fronteira aceita:
+
+```text
+ActorCommandBindingAdapter
+= resolve participante/Actor ativo e entrega CapabilitySurface.
+
+ActorProjectileFireCommandBindingExecutor
+= valida FirePrimary no ActorCommandSourceHub;
+= valida ActorProjectileFireEndpoint;
+= configura PooledActorProjectileSpawnAdapter;
+= binda FirePrimary no endpoint de projectile.
+```
+
+Isso mantém `PlayerInput` como source atual do comando, mas remove o conhecimento de projectile da área `Players/ActivitySetup`.
+
+Não criar `PlayerShoot`, `EnemyShoot`, `NonPlayerProjectile` ou binding paralelo por tipo de Actor.

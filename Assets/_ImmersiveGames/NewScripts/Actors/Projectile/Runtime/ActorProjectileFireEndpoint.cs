@@ -12,11 +12,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     [DisallowMultipleComponent]
     public sealed class ActorProjectileFireEndpoint : MonoBehaviour, IActorProjectileFireEndpoint
     {
-        [SerializeField, Tooltip("Identificador técnico do endpoint de fire/projectile.")]
-        private string endpointId = "actor.projectile.fire.endpoint.player.primary";
-        [SerializeField, Tooltip("Profile autoral tipado da capability de fire/projectile.")]
+        [Header("Projectile Fire Endpoint")]
+        [SerializeField, InspectorName("Nome interno do endpoint"), Tooltip("Identificador técnico do endpoint local de fire/projectile. Usado para logs, readiness e correlação interna; não é nome visual do projétil.")]
+        private string endpointId = "actor.projectile.fire.endpoint.primary";
+        [SerializeField, InspectorName("Perfil de disparo"), Tooltip("Perfil autoral da capability de disparo. O perfil define modos de disparo e aponta para o spawn profile do projectile.")]
         private ActorProjectileFireProfileAsset fireProfile;
-        [SerializeField] private bool required;
+
+        [Header("Readiness / temporário")]
+        [SerializeField, InspectorName("Obrigatório por padrão (temporário)"), Tooltip("Indica se este endpoint local bloqueia readiness quando o perfil está ausente. Preferir mover a obrigatoriedade para requirement/binding da Activity em corte futuro.")]
+        private bool required;
 
         private Actor _actor;
         private IActorProjectileSpawnAdapter _spawnAdapter;

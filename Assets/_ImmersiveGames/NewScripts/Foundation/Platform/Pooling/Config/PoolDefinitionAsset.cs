@@ -4,39 +4,48 @@ using UnityEngine;
 using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
 {
+    public enum PoolLifetimeScope
+    {
+        Global = 0,
+        Activity = 1,
+    }
+
     [CreateAssetMenu(
         fileName = "PoolDefinitionAsset",
         menuName = "ImmersiveGames/Infrastructure/Pooling/PoolDefinitionAsset",
         order = 20)]
     public sealed class PoolDefinitionAsset : ScriptableObject
     {
-        [Header("Prefab")]
-        [SerializeField, Tooltip("Prefab técnico alugado por este pool. A identidade final de gameplay deve ser aplicada no rent, não no prefab.")]
+        [Header("Objeto reutilizado")]
+        [SerializeField, InspectorName("Prefab reutilizado"), Tooltip("Prefab técnico alugado por este pool. A identidade final de gameplay deve ser aplicada no rent, não no prefab.")]
         private GameObject prefab;
 
-        [Header("Capacity")]
-        [SerializeField, Tooltip("Quantidade inicial criada quando o pool é preparado/preaquecido.")]
+        [Header("Capacidade")]
+        [SerializeField, InspectorName("Instâncias iniciais"), Tooltip("Quantidade inicial criada quando o pool é preparado/preaquecido.")]
         private int initialSize = 1;
-        [SerializeField, Tooltip("Permite criar novas instâncias quando o pool esgota.")]
+        [SerializeField, InspectorName("Pode crescer se acabar"), Tooltip("Permite criar novas instâncias quando o pool esgota.")]
         private bool canExpand = true;
-        [SerializeField, Tooltip("Limite máximo de instâncias quando Can Expand está ativo.")]
+        [SerializeField, InspectorName("Limite máximo"), Tooltip("Limite máximo de instâncias quando 'Pode crescer se acabar' está ativo.")]
         private int maxSize = 32;
 
-        [Header("Lifetime")]
-        [SerializeField, Tooltip("Retorno automático técnico em segundos. 0 desativa. Para projectiles, o reset canônico futuro deve retornar ao pool por policy/objeto, não por fallback silencioso.")]
+        [Header("Lifetime técnico")]
+        [SerializeField, InspectorName("Escopo do pool"), Tooltip("Escopo de vida do pool. Global preserva o comportamento atual. Activity materializa apenas durante rotas SessionActivity e libera o pool ao sair delas.")]
+        private PoolLifetimeScope lifetimeScope = PoolLifetimeScope.Global;
+        [SerializeField, InspectorName("Retorno técnico automático (s)"), Tooltip("Retorno automático técnico em segundos. 0 desativa. Lifetime de gameplay deve ficar em profile/policy do objeto gerado quando esse fluxo existir.")]
         private float autoReturnSeconds;
 
-        [Header("Identity / Bootstrap")]
-        [SerializeField, Tooltip("Label técnico observacional do pool. Não deve substituir referência tipada ao PoolDefinitionAsset.")]
+        [Header("Debug / bootstrap")]
+        [SerializeField, InspectorName("Nome amigável do pool"), Tooltip("Label observacional do pool no Inspector/log. Não substitui referência tipada ao PoolDefinitionAsset.")]
         private string poolLabel = "pool";
         [FormerlySerializedAs("prewarmOnEnsure")]
-        [SerializeField, Tooltip("Se ativo, o pool é preaquecido quando garantido pelo serviço canônico.")]
+        [SerializeField, InspectorName("Criar instâncias ao registrar"), Tooltip("Se ativo, o pool é preaquecido quando garantido pelo serviço canônico.")]
         private bool prewarm;
 
         public GameObject Prefab => prefab;
         public int InitialSize => initialSize;
         public bool CanExpand => canExpand;
         public int MaxSize => maxSize;
+        public PoolLifetimeScope LifetimeScope => lifetimeScope;
         public float AutoReturnSeconds => autoReturnSeconds;
         public string PoolLabel => poolLabel;
         public bool Prewarm => prewarm;

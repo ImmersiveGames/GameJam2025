@@ -63,6 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IMovementBindingAdapter _movementBindingAdapter;
         private readonly IActivityCameraPreparationExecutor _activityCameraPreparationExecutor;
         private readonly ActivityActorExitRuntimeState _activityActorExitRuntimeState;
+        private readonly IActivityRetainedParticipantLookup _activityRetainedParticipantLookup;
         private readonly ISessionActivityPendingOperationRunner _pendingOperationRunner;
         private readonly ISessionActivityPendingOperationCallback _pendingOperationCallback;
         private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
@@ -71,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActorCommandBindingAdapter _actorCommandBindingAdapter;
         private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
-        private readonly IActivityCapabilityInventoryPreviewSource _activityCapabilityInventoryPreviewSource;
+        private readonly ActivityEntryCapabilityInventoryBuildStage _activityEntryCapabilityInventoryBuildStage;
         private readonly ActivityEntryInventoryRuntimeState _activityInventoryRuntimeState = new();
         private readonly ActivityParticipationRuntimeState _activityParticipationRuntimeState = new();
         private IReadOnlyList<SessionActivityActorMaterializationPlanEntry> _currentActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
@@ -128,12 +129,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingOperationCallback = pendingOperationCallback ?? throw new ArgumentNullException(nameof(pendingOperationCallback));
             _canonicalPlayerInputActionsAsset = canonicalPlayerInputActionsAsset ?? throw new ArgumentNullException(nameof(canonicalPlayerInputActionsAsset));
             _activityActorExitRuntimeState = activityActorExitRuntimeState ?? throw new ArgumentNullException(nameof(activityActorExitRuntimeState));
+            _activityRetainedParticipantLookup = new ActivityRetainedParticipantLookup(_activityPlayerActorRegistry, _sessionActorRuntimeStore);
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
             _actorCommandBindingAdapter = new ActorCommandBindingAdapter();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
-            _activityCapabilityInventoryPreviewSource = new ActivityCapabilityInventoryPreviewSource();
+            _activityEntryCapabilityInventoryBuildStage = new ActivityEntryCapabilityInventoryBuildStage();
         }
 
         public ActivityEntryPreparationResult PrepareEntry(
@@ -968,6 +970,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _sessionActorRuntimeStore,
                     _activityParticipationRuntimeState,
                     _activityActorExitRuntimeState,
+                    _activityRetainedParticipantLookup,
                     facts,
                     snapshots);
 
@@ -1078,7 +1081,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command,
                     discoveryResult,
                     actorTargets,
-                    _activityCapabilityInventoryPreviewSource,
+                    _activityEntryCapabilityInventoryBuildStage,
                     _runtimeBridge,
                     _activityInventoryRuntimeState,
                     facts,

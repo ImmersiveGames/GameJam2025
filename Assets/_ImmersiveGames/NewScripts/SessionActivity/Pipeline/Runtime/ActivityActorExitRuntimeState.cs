@@ -10,6 +10,74 @@ using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerPart
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 {
+    internal enum ActivityActorParticipationExitBindingResolutionKind
+    {
+        Unknown = 0,
+        Resolved = 1,
+        Missed = 2,
+        RejectedInvalidIdentity = 3,
+        RejectedInvalidActor = 4,
+        RejectedForeign = 5,
+        RejectedStale = 6
+    }
+
+    internal enum ActivityActorParticipationExitBindingResolutionSourceKind
+    {
+        Unknown = 0,
+        None = 1,
+        ActiveIndex = 2,
+        CurrentContext = 3
+    }
+
+    internal readonly struct ActivityActorParticipationExitBindingResolutionResult
+    {
+        private ActivityActorParticipationExitBindingResolutionResult(
+            ActivityActorParticipationExitBindingResolutionKind kind,
+            ActivityActorParticipationExitBindingResolutionSourceKind sourceKind,
+            PlayerActivityParticipantBinding binding,
+            string reason)
+        {
+            Kind = kind;
+            SourceKind = sourceKind;
+            Binding = binding;
+            Reason = Normalize(reason);
+        }
+
+        public ActivityActorParticipationExitBindingResolutionKind Kind { get; }
+        public ActivityActorParticipationExitBindingResolutionSourceKind SourceKind { get; }
+        public PlayerActivityParticipantBinding Binding { get; }
+        public string Reason { get; }
+
+        public bool IsResolved => Kind == ActivityActorParticipationExitBindingResolutionKind.Resolved && Binding.IsValid;
+        public bool IsRejected =>
+            Kind == ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidIdentity ||
+            Kind == ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidActor ||
+            Kind == ActivityActorParticipationExitBindingResolutionKind.RejectedForeign ||
+            Kind == ActivityActorParticipationExitBindingResolutionKind.RejectedStale;
+
+        public static ActivityActorParticipationExitBindingResolutionResult Resolved(
+            PlayerActivityParticipantBinding binding,
+            ActivityActorParticipationExitBindingResolutionSourceKind sourceKind) =>
+            new(ActivityActorParticipationExitBindingResolutionKind.Resolved, sourceKind, binding, string.Empty);
+
+        public static ActivityActorParticipationExitBindingResolutionResult Missed(string reason) =>
+            new(ActivityActorParticipationExitBindingResolutionKind.Missed, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedInvalidIdentity(string reason) =>
+            new(ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidIdentity, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedInvalidActor(string reason) =>
+            new(ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidActor, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedForeign(string reason) =>
+            new(ActivityActorParticipationExitBindingResolutionKind.RejectedForeign, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedStale(string reason) =>
+            new(ActivityActorParticipationExitBindingResolutionKind.RejectedStale, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     internal sealed class ActivityActorExitRuntimeState
     {
         public readonly struct ActorPresentationCapabilityState
@@ -57,20 +125,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public int ActiveParticipationCount => _activeActorParticipationsByActorInstanceRuntimeId.Count;
         public int ActivePlayerParticipantBindingCount => _activePlayerParticipantBindingsByActorId.Count;
         public bool HasActorInventoryFeedResult => _currentActorInventoryFeedResult.IsValid;
-
-        public IReadOnlyList<PlayerActivityParticipantBinding> GetActivePlayerParticipantBindings()
-        {
-            List<PlayerActivityParticipantBinding> bindings = new(_activePlayerParticipantBindingsByActorId.Count);
-            foreach (KeyValuePair<ActorId, PlayerActivityParticipantBinding> pair in _activePlayerParticipantBindingsByActorId)
-            {
-                if (pair.Value.IsValid)
-                {
-                    bindings.Add(pair.Value);
-                }
-            }
-
-            return bindings;
-        }
+        public PlayerActivityParticipationContext CurrentActivityParticipationContext => _currentActivityParticipationContext;
 
         public bool TryGetActivePresentationHandle(
             ActorInstanceRuntimeId actorInstanceRuntimeId,
@@ -281,58 +336,73 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public void StoreActivityParticipationExitCorrelation(PlayerActivityParticipationContext context)
         {
             _currentActivityParticipationContext = context;
+            _activePlayerParticipantBindingsByActorId.Clear();
 
-            bool hasExplicitParticipants = context is { IsValid: true, Participants: { Count: > 0 } };
-
-            if (hasExplicitParticipants)
+            if (context is not { IsValid: true, Participants: { Count: > 0 } })
             {
-                _activePlayerParticipantBindingsByActorId.Clear();
-
-                for (int index = 0; index < context.Participants.Count; index++)
-                {
-                    var binding = context.Participants[index];
-                    if (!binding.IsValid || !binding.RequiresPlayerActor || !binding.ActorId.IsValid)
-                    {
-                        continue;
-                    }
-
-                    _activePlayerParticipantBindingsByActorId[binding.ActorId] = binding;
-                }
+                return;
             }
 
+            for (int index = 0; index < context.Participants.Count; index++)
+            {
+                var binding = context.Participants[index];
+                if (!binding.IsValid || !binding.RequiresPlayerActor || !binding.ActorId.IsValid)
+                {
+                    continue;
+                }
+
+                _activePlayerParticipantBindingsByActorId[binding.ActorId] = binding;
+            }
         }
 
-        public bool TryResolveActivePlayerParticipantBindingForExit(
-            ActorParticipationExitActorResult actorResult,
-            ActorInstanceRecord instance,
-            out PlayerActivityParticipantBinding binding,
-            out string failureReason)
+        public ActivityActorParticipationExitBindingResolutionResult ResolveActivePlayerParticipantBindingForExit(
+            SessionActivityIdentity expectedIdentity,
+            ActorInstanceRecord instance)
         {
-            binding = default;
-            failureReason = "unknown";
+            if (!expectedIdentity.IsValid)
+            {
+                return ActivityActorParticipationExitBindingResolutionResult.RejectedInvalidIdentity("expected_identity_invalid");
+            }
 
             if (!instance.IsValid)
             {
-                failureReason = "actor_instance_invalid";
-                return false;
+                return ActivityActorParticipationExitBindingResolutionResult.RejectedInvalidActor("actor_instance_invalid");
             }
 
             ActorId actorId = new(instance.ActorId);
             if (!actorId.IsValid)
             {
-                failureReason = "actor_id_missing_in_actor_participation_record";
-                return false;
+                return ActivityActorParticipationExitBindingResolutionResult.RejectedInvalidActor("actor_id_missing_in_actor_participation_record");
+            }
+
+            if (_currentActivityParticipationContext is not { IsValid: true })
+            {
+                string reason = _activePlayerParticipantBindingsByActorId.Count > 0
+                    ? "active_binding_index_without_valid_context"
+                    : "activity_participant_binding_context_missing";
+                return ActivityActorParticipationExitBindingResolutionResult.RejectedStale(reason);
+            }
+
+            SessionActivityIdentity contextIdentity = _currentActivityParticipationContext.SessionActivityIdentity;
+            if (!IsSameActivityCycle(contextIdentity, expectedIdentity))
+            {
+                if (IsSamePipelineSessionActivity(contextIdentity, expectedIdentity))
+                {
+                    return ActivityActorParticipationExitBindingResolutionResult.RejectedStale("activity_participant_binding_context_stale");
+                }
+
+                return ActivityActorParticipationExitBindingResolutionResult.RejectedForeign("activity_participant_binding_context_foreign");
             }
 
             if (_activePlayerParticipantBindingsByActorId.TryGetValue(actorId, out var activeBinding) &&
                 activeBinding.IsValid)
             {
-                binding = activeBinding;
-                failureReason = string.Empty;
-                return true;
+                return ActivityActorParticipationExitBindingResolutionResult.Resolved(
+                    activeBinding,
+                    ActivityActorParticipationExitBindingResolutionSourceKind.ActiveIndex);
             }
 
-            if (_currentActivityParticipationContext is { IsValid: true, Participants: not null })
+            if (_currentActivityParticipationContext.Participants != null)
             {
                 for (int index = 0; index < _currentActivityParticipationContext.Participants.Count; index++)
                 {
@@ -344,15 +414,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
                     if (candidate.ActorId == actorId)
                     {
-                        binding = candidate;
-                        failureReason = string.Empty;
-                        return true;
+                        return ActivityActorParticipationExitBindingResolutionResult.Resolved(
+                            candidate,
+                            ActivityActorParticipationExitBindingResolutionSourceKind.CurrentContext);
                     }
                 }
             }
 
-            failureReason = "activity_participant_binding_missing_for_actor_id";
-            return false;
+            return ActivityActorParticipationExitBindingResolutionResult.Missed("activity_participant_binding_missing_for_actor_id");
         }
 
         public void StoreActorInventoryFeedResult(
@@ -406,6 +475,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                    string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
                    string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
                    left.EntrySequence == right.EntrySequence;
+        }
+
+        private static bool IsSamePipelineSessionActivity(SessionActivityIdentity left, SessionActivityIdentity right)
+        {
+            return left.IsValid &&
+                   right.IsValid &&
+                   string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal);
         }
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();

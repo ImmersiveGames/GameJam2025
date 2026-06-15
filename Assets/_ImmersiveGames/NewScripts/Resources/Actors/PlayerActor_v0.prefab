@@ -266,7 +266,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c9d1f01bda24a55a7cc2e339adf7a61, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  endpointId: actor.projectile.fire.endpoint.player.primary
+  endpointId: actor.projectile.fire.endpoint.primary
   fireProfile: {fileID: 11400000, guid: 6e7909166f3043ce8cdcf2de050620d4, type: 2}
   required: 1
 --- !u!114 &777777777777777777

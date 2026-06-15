@@ -14,7 +14,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class ActorProjectileSpawnRuntimeTracker : MonoBehaviour, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
+    public sealed class ActorProjectileSpawnRuntimeTracker : MonoBehaviour, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider, IActorReleaseContributionProvider, IActorCapabilityReleaseEndpoint
     {
         [Header("Reset")]
         [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
@@ -38,6 +38,95 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             contribution = new SpawnedRuntimeObjectsResetContribution(context, resetBoundaryEligibility);
             return true;
         }
+
+        public bool TryCreateReleaseContribution(
+            ActorCapabilityContributionContext context,
+            out IActorReleaseContribution contribution)
+        {
+            if (!context.IsValid)
+            {
+                contribution = null;
+                return false;
+            }
+
+            contribution = new SpawnedRuntimeObjectsReleaseContribution(context, this);
+            return true;
+        }
+
+        public bool TryRelease(
+            ActorCapabilityContributionContext context,
+            out ActorCapabilityReleaseResult result)
+        {
+            if (!context.IsValid)
+            {
+                result = new ActorCapabilityReleaseResult(
+                    false,
+                    "invalid_release_context",
+                    nameof(ActorProjectileSpawnRuntimeTracker),
+                    "runtime_spawned_objects_release");
+                return false;
+            }
+
+            return TryReleaseSpawnedRuntimeObjectsForOwner(context, out result);
+        }
+        private bool TryReleaseSpawnedRuntimeObjectsForOwner(
+            ActorCapabilityContributionContext context,
+            out ActorCapabilityReleaseResult result)
+        {
+            RefreshOwnerActor();
+            PruneTrackedSpawns("release_prune_stale_entries");
+
+            int trackedCountBefore = _trackedSpawns.Count;
+            if (trackedCountBefore == 0)
+            {
+                DebugUtility.Log(
+                    typeof(ActorProjectileSpawnRuntimeTracker),
+                    $"event='ActorProjectileSpawnedRuntimeObjectsReleaseSkipped' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' trackedCountBefore='0' returnedCount='0' skippedCount='0' trackedCountAfter='0' source='{Normalize(context.Source)}' trigger='owner_release' reason='no_tracked_runtime_objects'.",
+                    DebugUtility.Colors.Info);
+
+                result = new ActorCapabilityReleaseResult(
+                    true,
+                    "no_tracked_runtime_objects",
+                    context.Source,
+                    context.Reason);
+                return true;
+            }
+
+            int returnedCount = 0;
+            int skippedCount = 0;
+            TrackedSpawnedRuntimeObject[] snapshot = _trackedSpawns.ToArray();
+            for (int index = 0; index < snapshot.Length; index++)
+            {
+                if (TryReturnTrackedSpawnedRuntimeObject(snapshot[index], context.Source, context.Reason, "owner_release"))
+                {
+                    returnedCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                }
+            }
+
+            ClearTrackedSpawns();
+
+            bool released = skippedCount == 0;
+            string outcomeReason = released
+                ? "runtime_spawned_objects_released"
+                : "runtime_spawned_objects_release_incomplete";
+
+            DebugUtility.Log(
+                typeof(ActorProjectileSpawnRuntimeTracker),
+                $"event='ActorProjectileSpawnedRuntimeObjectsReleased' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' trackedCountBefore='{trackedCountBefore}' returnedCount='{returnedCount}' skippedCount='{skippedCount}' trackedCountAfter='{_trackedSpawns.Count}' releaseMandatory='true' source='{Normalize(context.Source)}' trigger='owner_release' reason='{Normalize(context.Reason)}' outcomeReason='{outcomeReason}'.",
+                released ? DebugUtility.Colors.Success : DebugUtility.Colors.Error);
+
+            result = new ActorCapabilityReleaseResult(
+                released,
+                outcomeReason,
+                context.Source,
+                context.Reason);
+            return released;
+        }
+
         private void ApplySpawnedRuntimeObjectsStateProfile(ActorResetContext context)
         {
             if (!context.IsValid)
@@ -592,6 +681,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 SpawnedActor.OwnerActorInstanceRuntimeId == OwnerActorInstanceRuntimeId &&
                 SpawnedActor.OriginPoolDefinition != null &&
                 SpawnedActor.OriginPoolDefinition == SpawnOrigin.PoolDefinition;
+        }
+
+        private readonly struct SpawnedRuntimeObjectsReleaseContribution : IActorReleaseContribution
+        {
+            public SpawnedRuntimeObjectsReleaseContribution(
+                ActorCapabilityContributionContext context,
+                IActorCapabilityReleaseEndpoint releaseEndpoint)
+            {
+                Descriptor = new ActorCapabilityContributionDescriptor(
+                    new ActorCapabilityId("actor.capability.projectile.spawn_runtime_objects.release"),
+                    ActorCapabilityContributionPhase.Release,
+                    ActorCapabilityContributionRequirement.Required,
+                    context.ActorId,
+                    context.ActorInstanceRuntimeId,
+                    context.ActorKind,
+                    context.ActorRole,
+                    context.ActorScope,
+                    context.ComponentPath,
+                    nameof(ActorProjectileSpawnRuntimeTracker),
+                    "projectile_spawn_runtime_objects_release_contribution");
+                ReleaseEndpoint = releaseEndpoint;
+            }
+
+            public ActorCapabilityContributionDescriptor Descriptor { get; }
+            public IActorCapabilityReleaseEndpoint ReleaseEndpoint { get; }
+            public bool IsValid => Descriptor.IsValid && ReleaseEndpoint != null;
         }
 
         private readonly struct SpawnedRuntimeObjectsResetContribution : IActorResetContribution

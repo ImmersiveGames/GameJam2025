@@ -31,11 +31,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public SessionActivityRuntimeState State => _pipeline?.State;
         public SessionActivityCatalog Catalog => _catalog;
-        public SessionActivityPipeline Pipeline => _pipeline;
         public ActivityExecutionBlockingState GateState => _pipeline?.GateState;
-        public SessionActivityRailKind CurrentRailKind => _pipeline?.ActiveRailKind ?? SessionActivityRailKind.None;
-        public SessionActivityStage CurrentStage => _pipeline != null ? _pipeline.State.CurrentStage : SessionActivityStage.Unknown;
-        public bool HasPendingOperation => _pipeline != null && _pipeline.State.CurrentPendingOperation.IsValid;
+        internal bool HasPipeline => _pipeline != null;
 
         private void Awake()
         {
@@ -64,22 +61,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void OnDisable()
         {
-            if (_pipeline == null || !_pipeline.State.HasStarted || _pipeline.State.HasCompleted)
-            {
-                return;
-            }
-
-            var stage = _pipeline.State.CurrentStage;
-            if (stage == SessionActivityStage.Deactivation ||
-                stage == SessionActivityStage.Completed ||
-                stage == SessionActivityStage.ClosedForRouteExit ||
-                _pipeline.ActiveRailKind == SessionActivityRailKind.ActivityRouteExitRail)
-            {
-                return;
-            }
-
-            throw new InvalidOperationException(
-                $"[FATAL][Lifecycle][SessionActivityPipeline][Host] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{sessionStateId}' stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' reason='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
+            _pipeline?.ValidateHostDisableOrFail(
+                sessionStateId,
+                "SessionActivityHost/OnDisable",
+                "host_disabled");
         }
 
         private void Update()
@@ -118,29 +103,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void CompleteCurrentActivity()
         {
             EnsurePipeline();
-            var result = _pipeline.CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
-            LogResult("CompleteCurrentActivity", result);
+            SessionActivityHostQaCommandSurface.CompleteCurrentActivity(_pipeline);
         }
 
         public void CompleteActivationWindow()
         {
             EnsurePipeline();
-            var result = _pipeline.CompleteActivationWindow(QaSource("CompleteActivationWindow"), QaReason("CompleteActivationWindow"));
-            LogResult("CompleteActivationWindow", result);
+            SessionActivityHostQaCommandSurface.CompleteActivationWindow(_pipeline);
         }
 
         public void CompleteDeactivationWindow()
         {
             EnsurePipeline();
-            var result = _pipeline.CompleteDeactivationWindow(QaSource("CompleteDeactivationWindow"), QaReason("CompleteDeactivationWindow"));
-            LogResult("CompleteDeactivationWindow", result);
+            SessionActivityHostQaCommandSurface.CompleteDeactivationWindow(_pipeline);
         }
 
         public void ContinueToNextActivity()
         {
             EnsurePipeline();
-            var result = _pipeline.ContinueToNextActivity(QaSource("ContinueToNextActivity"), QaReason("ContinueToNextActivity"));
-            LogResult("ContinueToNextActivity", result);
+            SessionActivityHostQaCommandSurface.ContinueToNextActivity(_pipeline);
         }
 
         public void GoToNextActivity()
@@ -158,15 +139,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void RestartCurrentActivity()
         {
             EnsurePipeline();
-            var result = _pipeline.RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
-            LogResult("RestartCurrentActivity", result);
+            SessionActivityHostQaCommandSurface.RestartCurrentActivity(_pipeline);
         }
 
         public void ResetSession()
         {
             EnsurePipeline();
-            var result = _pipeline.ResetSession(QaSource("ResetSession"), QaReason("ResetSession"));
-            LogResult("ResetSession", result);
+            SessionActivityHostQaCommandSurface.ResetSession(_pipeline);
         }
 
         public SessionActivitySessionResetResult ResetSessionAfterRouteExit(
@@ -187,118 +166,68 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void RequestPause()
         {
             EnsurePipeline();
-            var result = _pipeline.PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
-            LogResult("RequestPause", result);
+            SessionActivityHostQaCommandSurface.RequestPause(_pipeline);
         }
 
         public void RequestResume()
         {
             EnsurePipeline();
-            var result = _pipeline.ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
-            LogResult("RequestResume", result);
+            SessionActivityHostQaCommandSurface.RequestResume(_pipeline);
         }
 
         internal bool QaSubtractActorAttribute(string actorId, string attributeId, float amount = 10f)
         {
-            return QaApplyActorAttributeCommand("QaSubtractActorAttribute", actorId, attributeId, ActorAttributeOperation.Subtract, amount, 0f);
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeCommand(_pipeline, "QaSubtractActorAttribute", actorId, attributeId, ActorAttributeOperation.Subtract, amount, 0f);
         }
 
         internal bool QaAddActorAttribute(string actorId, string attributeId, float amount = 5f)
         {
-            return QaApplyActorAttributeCommand("QaAddActorAttribute", actorId, attributeId, ActorAttributeOperation.Add, amount, 0f);
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeCommand(_pipeline, "QaAddActorAttribute", actorId, attributeId, ActorAttributeOperation.Add, amount, 0f);
         }
 
         internal bool QaSetActorAttribute(string actorId, string attributeId, float value)
         {
-            return QaApplyActorAttributeCommand("QaSetActorAttribute", actorId, attributeId, ActorAttributeOperation.Set, 0f, value);
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeCommand(_pipeline, "QaSetActorAttribute", actorId, attributeId, ActorAttributeOperation.Set, 0f, value);
         }
 
         internal bool QaResetActorAttributeToInitial(string actorId, string attributeId)
         {
-            return QaApplyActorAttributeCommand("QaResetActorAttributeToInitial", actorId, attributeId, ActorAttributeOperation.ResetToInitial, 0f, 0f);
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeCommand(_pipeline, "QaResetActorAttributeToInitial", actorId, attributeId, ActorAttributeOperation.ResetToInitial, 0f, 0f);
         }
 
         internal bool QaRestoreActorAttributeToMax(string actorId, string attributeId)
         {
-            return QaApplyActorAttributeCommand("QaRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeCommand(_pipeline, "QaRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
         }
 
         internal bool QaResetCurrentPlayerActor()
         {
             EnsurePipeline();
-            bool applied;
-            string outcomeReason;
-            try
-            {
-                applied = _pipeline.TryQaResetCurrentPlayerActor(
-                    State.CurrentIdentity,
-                    QaSource("QaResetCurrentPlayerActor"),
-                    QaReason("QaResetCurrentPlayerActor"),
-                    out outcomeReason);
-            }
-            catch (Exception exception)
-            {
-                applied = false;
-                outcomeReason = $"actor_reset_qa_failed_exception:{exception.GetType().Name}";
-                DebugUtility.LogError(typeof(SessionActivityHost), 
-                    $"event='ActorResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
-            }
-
-            DebugUtility.Log(typeof(SessionActivityHost), 
-                $"action='QaResetCurrentPlayerActor' outcomeKind='{(applied ? "Applied" : "Rejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
-            return applied;
+            return SessionActivityHostQaCommandSurface.ResetCurrentPlayerActor(_pipeline);
         }
 
         internal bool QaResetCurrentActivityObjects()
         {
             EnsurePipeline();
-            bool applied;
-            string outcomeReason;
-            try
-            {
-                applied = _pipeline.TryQaResetCurrentActivityObjects(
-                    State.CurrentIdentity,
-                    QaSource("QaResetCurrentActivityObjects"),
-                    QaReason("QaResetCurrentActivityObjects"),
-                    out outcomeReason);
-            }
-            catch (Exception exception)
-            {
-                applied = false;
-                outcomeReason = $"activity_object_reset_qa_failed_exception:{exception.GetType().Name}";
-                DebugUtility.LogError(typeof(SessionActivityHost), 
-                    $"event='ActivityObjectResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
-            }
-
-            DebugUtility.Log(typeof(SessionActivityHost), 
-                $"action='QaResetCurrentActivityObjects' outcomeKind='{(applied ? "Applied" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
-            return applied;
+            return SessionActivityHostQaCommandSurface.ResetCurrentActivityObjects(_pipeline);
         }
 
         internal bool QaCaptureCurrentActivitySnapshotPayload()
         {
             EnsurePipeline();
-            bool captured;
-            string outcomeReason;
-            try
-            {
-                captured = _pipeline.TryQaCaptureCurrentActivitySnapshotPayload(
-                    State.CurrentIdentity,
-                    QaSource("QaCaptureCurrentActivitySnapshotPayload"),
-                    QaReason("QaCaptureCurrentActivitySnapshotPayload"),
-                    out outcomeReason);
-            }
-            catch (Exception exception)
-            {
-                captured = false;
-                outcomeReason = $"activity_snapshot_capture_qa_failed_exception:{exception.GetType().Name}";
-                DebugUtility.LogError(typeof(SessionActivityHost), 
-                    $"event='ActivitySnapshotCaptureQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
-            }
+            return SessionActivityHostQaCommandSurface.CaptureCurrentActivitySnapshotPayload(_pipeline);
+        }
 
-            DebugUtility.LogVerbose(typeof(SessionActivityHost), 
-                $"action='QaCaptureCurrentActivitySnapshotPayload' outcomeKind='{(captured ? "Captured" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
-            return captured;
+
+        public SessionActivityRouteExitTeardownPreflightResult EvaluateRouteExitTeardownPreflight(string requestedSessionStateId, string source, string reason)
+        {
+            EnsurePipeline();
+            return _pipeline.EvaluateRouteExitTeardownPreflight(requestedSessionStateId, source, reason);
         }
 
         public SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(string requestedSessionStateId, string source, string reason)
@@ -328,9 +257,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)
         {
             EnsurePipeline();
-            var result = _pipeline.Execute(command);
-            LogResult(actionLabel, result);
-            return result;
+            return SessionActivityHostQaCommandSurface.ExecuteCommand(_pipeline, command, actionLabel);
         }
 
         private void EnsurePipeline()
@@ -341,25 +268,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             throw new InvalidOperationException("SessionActivityHost pipeline is not initialized.");
-        }
-
-        private void LogResult(string action, SessionActivityCommandResult result)
-        {
-            if (!result.IsValid)
-            {
-                throw new InvalidOperationException($"Invalid result returned by action '{action}'.");
-            }
-
-            if (!result.IsStarted)
-            {
-                string outcome = result.Kind.ToString();
-                DebugUtility.LogVerbose(typeof(SessionActivityHost), $"action='{action}' outcomeKind='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}'");
-            }
-
-            for (int index = 0; index < result.Facts.Count; index++)
-            {
-                DebugUtility.LogVerbose(typeof(SessionActivityHost), $"{result.Facts[index]}");
-            }
         }
 
         private string GetPendingHandoffTarget()
@@ -435,16 +343,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return $"stage='{State.CurrentStage}' entrySequence='{State.CurrentEntrySequence}' activity='{State.CurrentDefinition.ActivityId}' pendingOperation='{pendingToken}' handoff='{handoffToken}'";
         }
 
-        private static string QaSource(string action)
-        {
-            return $"SessionActivityHost/QA/{action}";
-        }
-
-        private static string QaReason(string action)
-        {
-            return $"SessionActivityHost/QA/{action}";
-        }
-
         private static bool IsQaDebugAllowed()
         {
             return Application.isEditor || Debug.isDebugBuild;
@@ -461,6 +359,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return gameObject.AddComponent<SessionActivityCompositionInstaller>();
         }
 
+
+        internal ActivityContentLoadedSet GetCurrentActivityContentLoadedSet()
+        {
+            EnsurePipeline();
+            return _pipeline.GetCurrentActivityContentLoadedSet();
+        }
+
+        internal ActivitySetupInventory GetCurrentActivitySetupInventory()
+        {
+            EnsurePipeline();
+            return _pipeline.GetCurrentActivitySetupInventory();
+        }
+
         internal void BindComposition(SessionActivityCatalog catalog, SessionActivityPipeline pipeline)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
@@ -469,68 +380,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
 
-        private bool QaApplyActorAttributeCommand(
-            string action,
-            string actorId,
-            string attributeId,
-            ActorAttributeOperation operation,
-            float amount,
-            float setValue)
-        {
-            EnsurePipeline();
-
-            bool applied = _pipeline.TryApplyActorAttributeCommand(
-                State.CurrentIdentity,
-                actorId,
-                operation,
-                attributeId,
-                amount,
-                setValue,
-                QaSource(action),
-                QaReason(action),
-                out var result);
-
-            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
-            DebugUtility.LogVerbose(typeof(SessionActivityHost), 
-                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}'");
-
-            if (applied && result.HasFact)
-            {
-                var fact = result.Fact;
-                DebugUtility.Log(typeof(SessionActivityHost), 
-                    $"operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
-            }
-
-            return applied;
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
         private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
         {
             var current = State.CurrentDefinition;
             return current.IsValid
                 ? current.NextActivityTransitionContinuePolicy
                 : ActivityTransitionContinuePolicy.Unknown;
-        }
-
-        private string FormatActivitySetupInventory()
-        {
-            if (_pipeline == null)
-            {
-                return "<none>";
-            }
-
-            var inventory = _pipeline.EntryPipeline.GetCurrentActivitySetupInventory();
-            if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
-            {
-                return "<none>";
-            }
-
-            return $"inventoryId='{inventory.InventoryId}', totalRequirements='{inventory.TotalRequirementCount}'";
         }
     }
 }

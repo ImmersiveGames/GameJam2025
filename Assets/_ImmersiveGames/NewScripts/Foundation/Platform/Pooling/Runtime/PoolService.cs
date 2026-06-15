@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
+                $"Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' lifetimeScope='{validatedDefinition.LifetimeScope}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -102,6 +102,74 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             DebugUtility.LogVerbose(typeof(PoolService),
                 $"Return asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
+        }
+
+
+        public PoolScopeReleaseResult ReleasePoolsForScope(PoolLifetimeScope scope)
+        {
+            if (scope == PoolLifetimeScope.Global)
+            {
+                throw new InvalidOperationException("[FATAL][Pooling] ReleasePoolsForScope(Global) is not allowed. Global pools use Shutdown only.");
+            }
+
+            int releasedPoolCount = 0;
+            int activeObjectCountBeforeRelease = 0;
+            int inactiveObjectCountBeforeRelease = 0;
+            List<PoolDefinitionAsset> definitionsToRelease = null;
+
+            foreach (KeyValuePair<PoolDefinitionAsset, GameObjectPool> kv in _pools)
+            {
+                PoolDefinitionAsset definition = kv.Key;
+                GameObjectPool pool = kv.Value;
+                if (definition == null || pool == null || definition.LifetimeScope != scope)
+                {
+                    continue;
+                }
+
+                if (definitionsToRelease == null)
+                {
+                    definitionsToRelease = new List<PoolDefinitionAsset>();
+                }
+
+                definitionsToRelease.Add(definition);
+                activeObjectCountBeforeRelease += pool.ActiveCount;
+                inactiveObjectCountBeforeRelease += pool.InactiveCount;
+            }
+
+            if (definitionsToRelease == null || definitionsToRelease.Count == 0)
+            {
+                DebugUtility.LogVerbose(typeof(PoolService),
+                    $"event='PoolScopeReleaseSkipped' scope='{scope}' reason='no_registered_pools_for_scope'.",
+                    DebugUtility.Colors.Info);
+
+                return new PoolScopeReleaseResult(
+                    scope,
+                    0,
+                    0,
+                    0,
+                    "no_registered_pools_for_scope");
+            }
+
+            int returnedObjectCountBeforeRelease = 0;
+            foreach (PoolDefinitionAsset definition in definitionsToRelease)
+            {
+                GameObjectPool pool = _pools[definition];
+                returnedObjectCountBeforeRelease += pool.ReturnAllRentedObjects("scope_release_before_pool_cleanup");
+                pool.Cleanup();
+                _pools.Remove(definition);
+                releasedPoolCount += 1;
+            }
+
+            DebugUtility.Log(typeof(PoolService),
+                $"event='PoolScopeReleased' scope='{scope}' releasedPoolCount='{releasedPoolCount}' activeObjectCountBeforeRelease='{activeObjectCountBeforeRelease}' inactiveObjectCountBeforeRelease='{inactiveObjectCountBeforeRelease}' returnedObjectCountBeforeRelease='{returnedObjectCountBeforeRelease}' reason='scope_release_completed'.",
+                DebugUtility.Colors.Success);
+
+            return new PoolScopeReleaseResult(
+                scope,
+                releasedPoolCount,
+                activeObjectCountBeforeRelease,
+                inactiveObjectCountBeforeRelease,
+                "scope_release_completed");
         }
 
         public void Shutdown()

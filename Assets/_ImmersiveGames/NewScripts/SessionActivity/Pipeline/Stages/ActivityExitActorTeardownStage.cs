@@ -374,94 +374,63 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand = PrepareActorParticipationExitBoundaryCommand(command, definition, endpoint);
+            ActivityActorParticipationExitBoundaryResult boundaryResult = ExecuteActorParticipationExitBoundary(
+                boundaryCommand,
+                runtimeState,
+                bridge,
+                sessionActorRuntimeStore,
+                endpoint,
+                facts,
+                snapshots);
+            return boundaryResult.CompletedIdentity;
+        }
+
+        private static ActivityActorParticipationExitBoundaryCommand PrepareActorParticipationExitBoundaryCommand(
+            ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
+            IActivityEntryRuntimeBridge endpoint)
+        {
             int entrySequence = command.EntrySequence;
             ActorLifetimeTrigger lifetimeTrigger = ResolveLifetimeTrigger(command.ReleaseRail);
             SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitStarted, entrySequence);
-            endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorParticipationExitStarted);
-            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit started mode='inventory_feed'.");
-            endpoint.EmitSnapshot(snapshots, "actor_participation_exit_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit started.");
-            ActorInventoryFeedResult feedResult = runtimeState.GetActorInventoryFeedForExit(startedIdentity, command.Source, command.Reason);
-            ActorParticipationExitCommand exitCommand = new(
-                startedIdentity,
-                definition.ActivityId,
-                entrySequence,
-                feedResult,
-                command.Source,
-                command.Reason);
-            ActorParticipationExitResult exitResult = runtimeState.ExecuteActorParticipationExit(exitCommand);
-            int total = exitResult.Total;
-            int exited = exitResult.Exited;
-            int skipped = exitResult.Skipped;
-            int failed = exitResult.Failed;
+            return new ActivityActorParticipationExitBoundaryCommand(command, definition, startedIdentity, lifetimeTrigger);
+        }
+
+        private static ActivityActorParticipationExitBoundaryResult ExecuteActorParticipationExitBoundary(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            ActivityActorExitRuntimeState runtimeState,
+            IActivityExitActorTeardownRuntimeBridge bridge,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!boundaryCommand.IsValid)
+            {
+                throw new InvalidOperationException("ActivityActorParticipationExitBoundaryCommand is invalid.");
+            }
+
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            int entrySequence = command.EntrySequence;
+
+            EmitActorParticipationExitStarted(boundaryCommand, endpoint, facts, snapshots);
+
+            ActorParticipationExitResult exitResult = ExecuteActorParticipationExitTechnicalStep(boundaryCommand, runtimeState);
+
             List<PlayerActorIdentityRecord> exitedPlayerActors = new();
             HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds = new();
-
-            for (int index = 0; index < exitResult.ActorResults.Count; index++)
-            {
-                ActorParticipationExitActorResult actorResult = exitResult.ActorResults[index];
-                if (!actorResult.IsValid)
-                {
-                    continue;
-                }
-
-                ActorInstanceRecord instance = actorResult.Instance;
-                if (actorResult.IsSkipped)
-                {
-                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
-                    endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationExitSkipped);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_participation_exit_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipOrFailureKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
-                    continue;
-                }
-
-                if (actorResult.IsFailed)
-                {
-                    SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_participation_exit_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{actorResult.SkipOrFailureKind}' failureReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
-                    throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                }
-
-                ActorInstanceRuntimeId actorInstanceRuntimeId = instance.ActorInstanceRuntimeId;
-                if (!actorInstanceRuntimeId.IsValid)
-                {
-                    SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
-                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
-                    endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='actor_instance_runtime_id_invalid'.");
-                    endpoint.EmitSnapshot(snapshots, "actor_participation_exit_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='actor_instance_runtime_id_invalid'.");
-                    throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] runtime actor instance id invalid actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}'.");
-                }
-
-                runtimeState.RemoveActiveActorParticipation(actorInstanceRuntimeId, definition.ActivityId, entrySequence, command.Source, command.Reason);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExited, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exited actorId='{instance.ActorId}' actorRole='{instance.Role}'.");
-                endpoint.EmitSnapshot(snapshots, "actor_participation_exited", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exited actorId='{instance.ActorId}'.");
-                EmitActorLifetimeDecision(endpoint, facts, startedIdentity, command, instance, lifetimeTrigger);
-                if (instance.ActorInstanceRuntimeId.IsValid)
-                {
-                    actorLifetimeDecisionRuntimeIds.Add(instance.ActorInstanceRuntimeId);
-                }
-
-                if (runtimeState.TryResolveActivePlayerParticipantBindingForExit(
-                        actorResult,
-                        instance,
-                        out PlayerActivityParticipantBinding participantBinding,
-                        out string participantBindingFailureReason))
-                {
-                    PlayerActorIdentityRecord resolvedIdentity = new(
-                        startedIdentity,
-                        participantBinding,
-                        actorResult.PlayerActorId);
-                    exitedPlayerActors.Add(resolvedIdentity);
-                }
-                else if (actorResult.HasResolvedPlayerIdentity)
-                {
-                    throw new InvalidOperationException(
-                        $"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] player_participant_binding_resolution_failed reason='{participantBindingFailureReason}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
-                }
-            }
+            ApplyActorParticipationExitResults(
+                boundaryCommand,
+                runtimeState,
+                endpoint,
+                facts,
+                snapshots,
+                exitResult,
+                exitedPlayerActors,
+                actorLifetimeDecisionRuntimeIds);
 
             EmitRouteExitSessionActorLifetimeDecisions(
                 command,
@@ -476,20 +445,549 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ExecutePlayerActorParticipationExit(command, definition, endpoint, bridge, facts, snapshots, startedIdentity, exitedPlayerActors);
             }
 
+            int total = exitResult.Total;
+            int exited = exitResult.Exited;
+            int skipped = exitResult.Skipped;
+            int failed = exitResult.Failed;
             if (exited == 0)
             {
                 skipped += 1;
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
-                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationExitSkipped);
-                endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped reason='no_exited_actors'.");
-                endpoint.EmitSnapshot(snapshots, "actor_participation_exit_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped reason='no_exited_actors'.");
-                DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_exited_actors' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+                EmitActorParticipationExitSkippedForNoExitedActors(command, definition, endpoint, facts, snapshots, entrySequence);
             }
 
+            SessionActivityIdentity completedIdentity = EmitActorParticipationExitCompleted(
+                boundaryCommand,
+                endpoint,
+                facts,
+                snapshots,
+                total,
+                exited,
+                skipped,
+                failed);
+
+            return new ActivityActorParticipationExitBoundaryResult(
+                completedIdentity,
+                total,
+                exited,
+                skipped,
+                failed,
+                exitedPlayerActors,
+                actorLifetimeDecisionRuntimeIds);
+        }
+
+        private static ActorParticipationExitResult ExecuteActorParticipationExitTechnicalStep(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            ActivityActorExitRuntimeState runtimeState)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            int entrySequence = command.EntrySequence;
+
+            ActorInventoryFeedResult feedResult = runtimeState.GetActorInventoryFeedForExit(startedIdentity, command.Source, command.Reason);
+            ActorParticipationExitCommand exitCommand = new(
+                startedIdentity,
+                definition.ActivityId,
+                entrySequence,
+                feedResult,
+                command.Source,
+                command.Reason);
+            return runtimeState.ExecuteActorParticipationExit(exitCommand);
+        }
+
+        private static void EmitActorParticipationExitStarted(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+
+            endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorParticipationExitStarted);
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit started mode='inventory_feed'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_exit_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit started.");
+            DebugUtility.LogVerbose(
+                typeof(ActivityExitActorTeardownStage),
+                $"event='ActivityParticipationExitStarted' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{command.EntrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void ApplyActorParticipationExitResults(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            ActivityActorExitRuntimeState runtimeState,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            ActorParticipationExitResult exitResult,
+            List<PlayerActorIdentityRecord> exitedPlayerActors,
+            HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            int entrySequence = command.EntrySequence;
+
+            for (int index = 0; index < exitResult.ActorResults.Count; index++)
+            {
+                ActorParticipationExitActorResult actorResult = exitResult.ActorResults[index];
+                ApplyActorParticipationExitActorResult(
+                    boundaryCommand,
+                    runtimeState,
+                    endpoint,
+                    facts,
+                    snapshots,
+                    startedIdentity,
+                    entrySequence,
+                    actorResult,
+                    exitedPlayerActors,
+                    actorLifetimeDecisionRuntimeIds);
+            }
+        }
+
+        private static void ApplyActorParticipationExitActorResult(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            ActivityActorExitRuntimeState runtimeState,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityIdentity startedIdentity,
+            int entrySequence,
+            ActorParticipationExitActorResult actorResult,
+            List<PlayerActorIdentityRecord> exitedPlayerActors,
+            HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
+        {
+            if (!actorResult.IsValid)
+            {
+                return;
+            }
+
+            if (actorResult.IsSkipped)
+            {
+                HandleActorParticipationExitSkippedResult(
+                    endpoint,
+                    facts,
+                    snapshots,
+                    boundaryCommand,
+                    entrySequence,
+                    actorResult);
+                return;
+            }
+
+            if (actorResult.IsFailed)
+            {
+                HandleActorParticipationExitFailedResult(
+                    endpoint,
+                    facts,
+                    snapshots,
+                    boundaryCommand,
+                    entrySequence,
+                    actorResult);
+                return;
+            }
+
+            ApplyActorParticipationExitSucceededResult(
+                boundaryCommand,
+                runtimeState,
+                endpoint,
+                facts,
+                snapshots,
+                startedIdentity,
+                entrySequence,
+                actorResult,
+                exitedPlayerActors,
+                actorLifetimeDecisionRuntimeIds);
+        }
+
+        private static void HandleActorParticipationExitSkippedResult(
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            int entrySequence,
+            ActorParticipationExitActorResult actorResult)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            ActorInstanceRecord instance = actorResult.Instance;
+            EmitActorParticipationExitSkipped(
+                endpoint,
+                facts,
+                snapshots,
+                definition,
+                command,
+                entrySequence,
+                instance,
+                actorResult);
+        }
+
+        private static void HandleActorParticipationExitFailedResult(
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            int entrySequence,
+            ActorParticipationExitActorResult actorResult)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            ActorInstanceRecord instance = actorResult.Instance;
+
+            EmitActorParticipationExitFailed(
+                endpoint,
+                facts,
+                snapshots,
+                definition,
+                command,
+                entrySequence,
+                instance,
+                actorResult);
+
+            throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
+        }
+
+        private static void ApplyActorParticipationExitSucceededResult(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            ActivityActorExitRuntimeState runtimeState,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityIdentity startedIdentity,
+            int entrySequence,
+            ActorParticipationExitActorResult actorResult,
+            List<PlayerActorIdentityRecord> exitedPlayerActors,
+            HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            ActorInstanceRecord instance = actorResult.Instance;
+            ActorInstanceRuntimeId actorInstanceRuntimeId = instance.ActorInstanceRuntimeId;
+            if (!actorInstanceRuntimeId.IsValid)
+            {
+                EmitActorParticipationExitFailed(
+                    endpoint,
+                    facts,
+                    snapshots,
+                    definition,
+                    command,
+                    entrySequence,
+                    instance,
+                    actorResult,
+                    "actor_instance_runtime_id_invalid");
+                throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] runtime actor instance id invalid actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}'.");
+            }
+
+            ApplyActorParticipationRuntimeCleanup(
+                runtimeState,
+                actorInstanceRuntimeId,
+                definition.ActivityId,
+                entrySequence,
+                command.Source,
+                command.Reason);
+
+            EmitActorParticipationExitExited(endpoint, facts, snapshots, definition, command, startedIdentity, instance);
+
+            ApplyActorParticipationExitLifetimeDecision(
+                boundaryCommand,
+                endpoint,
+                facts,
+                instance,
+                startedIdentity,
+                actorInstanceRuntimeId,
+                actorLifetimeDecisionRuntimeIds);
+
+            ResolveActorParticipationExitPlayerBinding(
+                runtimeState,
+                actorResult,
+                instance,
+                startedIdentity,
+                definition.ActivityId,
+                entrySequence,
+                exitedPlayerActors);
+        }
+
+        private static void ApplyActorParticipationRuntimeCleanup(
+            ActivityActorExitRuntimeState runtimeState,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            string activityId,
+            int entrySequence,
+            string source,
+            string reason)
+        {
+            runtimeState.RemoveActiveActorParticipation(actorInstanceRuntimeId, activityId, entrySequence, source, reason);
+        }
+
+        private static void ApplyActorParticipationExitLifetimeDecision(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            ActorInstanceRecord instance,
+            SessionActivityIdentity startedIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            ActivityActorParticipationExitDecisionRecord lifetimeDecision = ResolveActorParticipationExitLifetimeDecision(
+                command,
+                startedIdentity,
+                instance,
+                boundaryCommand.LifetimeTrigger);
+            if (lifetimeDecision.Decision == ActorLifetimeDecision.Release)
+            {
+                ActorReleaseContributionStage.ExecuteOrFail(new ActorReleaseContributionStageCommand(
+                    startedIdentity,
+                    new ActorId(instance.ActorId),
+                    instance.ActorInstanceRuntimeId,
+                    instance.Kind,
+                    instance.Role,
+                    instance.Scope,
+                    instance.CapabilitySurface,
+                    instance.ComponentBasePath,
+                    boundaryCommand.LifetimeTrigger,
+                    command.Source,
+                    command.Reason));
+            }
+
+            EmitActorLifetimeDecision(endpoint, facts, lifetimeDecision);
+            if (actorInstanceRuntimeId.IsValid)
+            {
+                actorLifetimeDecisionRuntimeIds.Add(actorInstanceRuntimeId);
+            }
+        }
+
+        private static void ResolveActorParticipationExitPlayerBinding(
+            ActivityActorExitRuntimeState runtimeState,
+            ActorParticipationExitActorResult actorResult,
+            ActorInstanceRecord instance,
+            SessionActivityIdentity startedIdentity,
+            string activityId,
+            int entrySequence,
+            List<PlayerActorIdentityRecord> exitedPlayerActors)
+        {
+            if (TryResolvePlayerActorIdentityForParticipationExit(
+                    runtimeState,
+                    actorResult,
+                    instance,
+                    out PlayerActivityParticipantBinding participantBinding,
+                    out string participantBindingFailureReason))
+            {
+                PlayerActorIdentityRecord resolvedIdentity = new(
+                    startedIdentity,
+                    participantBinding,
+                    actorResult.PlayerActorId);
+                exitedPlayerActors.Add(resolvedIdentity);
+                return;
+            }
+
+            if (actorResult.HasResolvedPlayerIdentity)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] player_participant_binding_resolution_failed reason='{participantBindingFailureReason}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}' activityId='{activityId}' entrySequence='{entrySequence}'.");
+            }
+        }
+
+        private static void EmitActorParticipationExitSkipped(
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityDefinition definition,
+            ActivityExitActorTeardownCommand command,
+            int entrySequence,
+            ActorInstanceRecord instance,
+            ActorParticipationExitActorResult actorResult)
+        {
+            SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
+            endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationExitSkipped);
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_exit_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
+            DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipOrFailureKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+        }
+
+        private static void EmitActorParticipationExitFailed(
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityDefinition definition,
+            ActivityExitActorTeardownCommand command,
+            int entrySequence,
+            ActorInstanceRecord instance,
+            ActorParticipationExitActorResult actorResult,
+            string reasonCodeOverride = null)
+        {
+            string reasonCode = string.IsNullOrWhiteSpace(reasonCodeOverride) ? actorResult.ReasonCode : reasonCodeOverride.Trim();
+            SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
+            endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{reasonCode}'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_exit_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{reasonCode}'.");
+            DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{reasonCode}' failureReason='{reasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+        }
+
+        private static void EmitActorParticipationExitExited(
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityDefinition definition,
+            ActivityExitActorTeardownCommand command,
+            SessionActivityIdentity startedIdentity,
+            ActorInstanceRecord instance)
+        {
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExited, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exited actorId='{instance.ActorId}' actorRole='{instance.Role}'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_exited", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exited actorId='{instance.ActorId}'.");
+            DebugUtility.LogVerbose(
+                typeof(ActivityExitActorTeardownStage),
+                $"event='ActivityParticipationExited' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' actorScope='{instance.Scope}' resultKind='Exited' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static bool TryResolvePlayerActorIdentityForParticipationExit(
+            ActivityActorExitRuntimeState runtimeState,
+            ActorParticipationExitActorResult actorResult,
+            ActorInstanceRecord instance,
+            out PlayerActivityParticipantBinding binding,
+            out string failureReason)
+        {
+            binding = default;
+            failureReason = "unknown";
+
+            if (!actorResult.HasResolvedPlayerIdentity)
+            {
+                failureReason = "player_identity_not_resolved";
+                return false;
+            }
+
+            if (!instance.IsValid)
+            {
+                failureReason = "actor_instance_invalid";
+                return false;
+            }
+
+            ActorId actorId = new(instance.ActorId);
+            if (!actorId.IsValid)
+            {
+                failureReason = "actor_id_missing_in_actor_participation_record";
+                return false;
+            }
+
+            var participationContext = runtimeState.CurrentActivityParticipationContext;
+            if (participationContext is { IsValid: true, Participants: not null })
+            {
+                for (int index = 0; index < participationContext.Participants.Count; index++)
+                {
+                    var candidate = participationContext.Participants[index];
+                    if (!candidate.IsValid || !candidate.RequiresPlayerActor || !candidate.ActorId.IsValid)
+                    {
+                        continue;
+                    }
+
+                    if (candidate.ActorId == actorId)
+                    {
+                        binding = candidate;
+                        failureReason = string.Empty;
+                        return true;
+                    }
+                }
+            }
+
+            failureReason = "activity_participant_binding_missing_for_actor_id";
+            return false;
+        }
+
+        private static ActivityActorParticipationExitDecisionRecord ResolveActorParticipationExitLifetimeDecision(
+            ActivityExitActorTeardownCommand command,
+            SessionActivityIdentity identity,
+            ActorInstanceRecord instance,
+            ActorLifetimeTrigger trigger)
+        {
+            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(instance.Scope, trigger);
+            return BuildActorParticipationExitDecisionRecord(command, identity, instance, trigger, decision);
+        }
+
+        private static ActivityActorParticipationExitDecisionRecord ResolveActorParticipationExitLifetimeDecision(
+            ActivityExitActorTeardownCommand command,
+            SessionActivityIdentity identity,
+            SessionActorRuntimeEntry entry,
+            ActorLifetimeTrigger trigger)
+        {
+            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, trigger);
+            return BuildActorParticipationExitDecisionRecord(command, identity, entry, trigger, decision);
+        }
+
+        private static ActivityActorParticipationExitDecisionRecord BuildActorParticipationExitDecisionRecord(
+            ActivityExitActorTeardownCommand command,
+            SessionActivityIdentity identity,
+            ActorInstanceRecord instance,
+            ActorLifetimeTrigger trigger,
+            ActorLifetimeDecision decision)
+        {
+            return new ActivityActorParticipationExitDecisionRecord(
+                identity,
+                command.Identity.ActivityId,
+                command.EntrySequence,
+                instance.ActorId,
+                instance.ActorInstanceRuntimeId,
+                instance.Scope,
+                trigger,
+                decision,
+                command.Source,
+                command.Reason);
+        }
+
+        private static ActivityActorParticipationExitDecisionRecord BuildActorParticipationExitDecisionRecord(
+            ActivityExitActorTeardownCommand command,
+            SessionActivityIdentity identity,
+            SessionActorRuntimeEntry entry,
+            ActorLifetimeTrigger trigger,
+            ActorLifetimeDecision decision)
+        {
+            return new ActivityActorParticipationExitDecisionRecord(
+                identity,
+                command.Identity.ActivityId,
+                command.EntrySequence,
+                entry.ActorId.Value,
+                entry.ActorInstanceRuntimeId,
+                entry.ActorScope,
+                trigger,
+                decision,
+                command.Source,
+                command.Reason);
+        }
+
+        private static void EmitActorParticipationExitSkippedForNoExitedActors(
+            ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
+            endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationExitSkipped);
+            endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped reason='no_exited_actors'.");
+            endpoint.EmitSnapshot(snapshots, "actor_participation_exit_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped reason='no_exited_actors'.");
+            DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_exited_actors' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+        }
+
+        private static SessionActivityIdentity EmitActorParticipationExitCompleted(
+            ActivityActorParticipationExitBoundaryCommand boundaryCommand,
+            IActivityEntryRuntimeBridge endpoint,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int total,
+            int exited,
+            int skipped,
+            int failed)
+        {
+            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
+            SessionActivityDefinition definition = boundaryCommand.Definition;
+            int entrySequence = command.EntrySequence;
             SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitCompleted, entrySequence);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorParticipationExitCompleted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit completed total='{total}' exited='{exited}' skipped='{skipped}' failed='{failed}'.");
             endpoint.EmitSnapshot(snapshots, "actor_participation_exit_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit completed total='{total}' exited='{exited}' skipped='{skipped}' failed='{failed}'.");
+            DebugUtility.LogVerbose(
+                typeof(ActivityExitActorTeardownStage),
+                $"event='ActivityParticipationExitCompleted' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' total='{total}' exited='{exited}' skipped='{skipped}' failed='{failed}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Info);
             return completedIdentity;
         }
 
@@ -529,7 +1027,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                EmitActorLifetimeDecision(endpoint, facts, identity, command, entry, ActorLifetimeTrigger.RouteExit);
+                ActivityActorParticipationExitDecisionRecord lifetimeDecision = ResolveActorParticipationExitLifetimeDecision(command, identity, entry, ActorLifetimeTrigger.RouteExit);
+                EmitActorLifetimeDecision(endpoint, facts, lifetimeDecision);
                 resolvedRuntimeIds.Add(runtimeId);
             }
         }
@@ -537,85 +1036,44 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static void EmitActorLifetimeDecision(
             IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts,
-            SessionActivityIdentity identity,
-            ActivityExitActorTeardownCommand command,
-            SessionActorRuntimeEntry entry,
-            ActorLifetimeTrigger trigger)
+            ActivityActorParticipationExitDecisionRecord decisionRecord)
         {
-            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, trigger);
+            if (!decisionRecord.IsValid)
+            {
+                throw new InvalidOperationException("ActivityActorParticipationExitDecisionRecord is invalid.");
+            }
+
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActorLifetimeDecisionResolved,
-                identity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' actor lifetime decision resolved actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}' decision='{decision}'.");
+                decisionRecord.Identity,
+                decisionRecord.Source,
+                decisionRecord.Reason,
+                $"'{decisionRecord.ActivityId}' actor lifetime decision resolved actorId='{decisionRecord.ActorId}' actorInstanceRuntimeId='{decisionRecord.ActorInstanceRuntimeId}' actorScope='{decisionRecord.ActorScope}' trigger='{decisionRecord.Trigger}' decision='{decisionRecord.Decision}'.");
             DebugUtility.LogVerbose(
                 typeof(ActivityExitActorTeardownStage),
-                $"event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{command.Identity.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}' decision='{decision}' source='{command.Source}' reason='{command.Reason}'.",
+                $"event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{decisionRecord.ActivityId}' entrySequence='{decisionRecord.EntrySequence}' actorId='{decisionRecord.ActorId}' actorInstanceRuntimeId='{decisionRecord.ActorInstanceRuntimeId}' actorScope='{decisionRecord.ActorScope}' trigger='{decisionRecord.Trigger}' decision='{decisionRecord.Decision}' source='{decisionRecord.Source}' reason='{decisionRecord.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            if (decision == ActorLifetimeDecision.Retain)
+            if (decisionRecord.Decision == ActorLifetimeDecision.Retain)
             {
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActorLifetimeRetained,
-                    identity,
-                    command.Source,
-                    command.Reason,
-                    $"'{command.Identity.ActivityId}' actor lifetime retained actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}'.");
+                    decisionRecord.Identity,
+                    decisionRecord.Source,
+                    decisionRecord.Reason,
+                    $"'{decisionRecord.ActivityId}' actor lifetime retained actorId='{decisionRecord.ActorId}' actorInstanceRuntimeId='{decisionRecord.ActorInstanceRuntimeId}' actorScope='{decisionRecord.ActorScope}' trigger='{decisionRecord.Trigger}'.");
                 return;
             }
 
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActorLifetimeReleased,
-                identity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' actor lifetime released actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}'.");
-        }
-
-        private static void EmitActorLifetimeDecision(
-            IActivityEntryRuntimeBridge endpoint,
-            List<SessionActivityFact> facts,
-            SessionActivityIdentity identity,
-            ActivityExitActorTeardownCommand command,
-            ActorInstanceRecord instance,
-            ActorLifetimeTrigger trigger)
-        {
-            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(instance.Scope, trigger);
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActorLifetimeDecisionResolved,
-                identity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' actor lifetime decision resolved actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' actorScope='{instance.Scope}' trigger='{trigger}' decision='{decision}'.");
-            DebugUtility.LogVerbose(
-                typeof(ActivityExitActorTeardownStage),
-                $"event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{command.Identity.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' actorScope='{instance.Scope}' trigger='{trigger}' decision='{decision}' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
-
-            if (decision == ActorLifetimeDecision.Retain)
-            {
-                endpoint.EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActorLifetimeRetained,
-                    identity,
-                    command.Source,
-                    command.Reason,
-                    $"'{command.Identity.ActivityId}' actor lifetime retained actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' actorScope='{instance.Scope}' trigger='{trigger}'.");
-                return;
-            }
-
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActorLifetimeReleased,
-                identity,
-                command.Source,
-                command.Reason,
-                $"'{command.Identity.ActivityId}' actor lifetime released actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' actorScope='{instance.Scope}' trigger='{trigger}'.");
+                decisionRecord.Identity,
+                decisionRecord.Source,
+                decisionRecord.Reason,
+                $"'{decisionRecord.ActivityId}' actor lifetime released actorId='{decisionRecord.ActorId}' actorInstanceRuntimeId='{decisionRecord.ActorInstanceRuntimeId}' actorScope='{decisionRecord.ActorScope}' trigger='{decisionRecord.Trigger}'.");
         }
 
         private static string ResolveActorScopeLabel(ActorInstanceRuntimeId actorInstanceRuntimeId)

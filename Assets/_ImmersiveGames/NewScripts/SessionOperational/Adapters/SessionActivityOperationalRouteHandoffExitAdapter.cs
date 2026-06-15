@@ -25,12 +25,43 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "No active handoff identity was present on the previous route.");
             }
 
-            ResolveBoundaryOrFail();
+            var boundary = ResolveBoundaryOrFail();
+            var preflight = boundary.EvaluateRouteExitTeardownPreflight(
+                request.HandoffIdentity,
+                request.Source,
+                request.Reason);
 
-            return new OperationalRouteHandoffExitPreflightResult(
-                OperationalRouteHandoffExitPreflightKind.Accepted,
-                "accepted",
-                string.Empty);
+            if (!preflight.IsValid)
+            {
+                return new OperationalRouteHandoffExitPreflightResult(
+                    OperationalRouteHandoffExitPreflightKind.Failed,
+                    "handoff_exit_preflight_invalid_result",
+                    "session_activity_route_exit_teardown_preflight_invalid_result");
+            }
+
+            return preflight.Kind switch
+            {
+                SessionActivityRouteExitTeardownPreflightKind.NotRequired => new OperationalRouteHandoffExitPreflightResult(
+                    OperationalRouteHandoffExitPreflightKind.NotRequired,
+                    string.IsNullOrWhiteSpace(preflight.Reason) ? "handoff_exit_not_required" : preflight.Reason,
+                    string.IsNullOrWhiteSpace(preflight.Detail) ? "session_activity_route_exit_teardown_not_required" : preflight.Detail),
+                SessionActivityRouteExitTeardownPreflightKind.Accepted => new OperationalRouteHandoffExitPreflightResult(
+                    OperationalRouteHandoffExitPreflightKind.Accepted,
+                    string.IsNullOrWhiteSpace(preflight.Reason) ? "accepted" : preflight.Reason,
+                    string.IsNullOrWhiteSpace(preflight.Detail) ? "session_activity_route_exit_teardown_preflight_accepted" : preflight.Detail),
+                SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy => new OperationalRouteHandoffExitPreflightResult(
+                    OperationalRouteHandoffExitPreflightKind.RejectedByPolicy,
+                    string.IsNullOrWhiteSpace(preflight.Reason) ? "handoff_exit_rejected_by_session_activity_policy" : preflight.Reason,
+                    string.IsNullOrWhiteSpace(preflight.Detail) ? "session_activity_route_exit_teardown_preflight_rejected" : preflight.Detail),
+                SessionActivityRouteExitTeardownPreflightKind.Failed => new OperationalRouteHandoffExitPreflightResult(
+                    OperationalRouteHandoffExitPreflightKind.Failed,
+                    string.IsNullOrWhiteSpace(preflight.Reason) ? "handoff_exit_preflight_failed" : preflight.Reason,
+                    string.IsNullOrWhiteSpace(preflight.Detail) ? "session_activity_route_exit_teardown_preflight_failed" : preflight.Detail),
+                _ => new OperationalRouteHandoffExitPreflightResult(
+                    OperationalRouteHandoffExitPreflightKind.Failed,
+                    "handoff_exit_preflight_unknown_result",
+                    $"session_activity_route_exit_teardown_preflight_unknown_kind kind='{preflight.Kind}'"),
+            };
         }
 
         public async Task<OperationalRouteHandoffExitResult> RequestExitAsync(

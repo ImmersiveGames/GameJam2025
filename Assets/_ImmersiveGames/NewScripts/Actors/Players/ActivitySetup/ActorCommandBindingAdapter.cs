@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
-using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Actors.Projectile.Binding;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class ActorCommandBindingAdapter : IActorCommandBindingAdapter
     {
+        private readonly ActorProjectileFireCommandBindingExecutor _projectileFireCommandBindingExecutor = new();
+
         public IReadOnlyList<ActorCommandBindingRecord> Execute(
             ActorCommandBindingCommand command,
             SessionActivityIdentity activeIdentity,
@@ -55,119 +54,35 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 var capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorCapabilitySurface.");
-                var commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing Actor command input hub.");
-                if (!commandHub.IsPrepared)
-                {
-                    if (requirement.Required)
-                    {
-                        throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' actor command hub is not prepared.");
-                    }
-
-                    DebugUtility.LogVerbose(
-                        typeof(ActorCommandBindingAdapter),
-                        $"event='ActorCommandBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' state='SkippedOptional' sink='none' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_hub_not_prepared'.",
-                        DebugUtility.Colors.Info);
-
-                    records.Add(new ActorCommandBindingRecord(
-                        requirement,
-                        actorHandle.ActorIdentity,
-                        ActorCommandBindingState.SkippedOptional,
-                        observedEndpoint: "optional_hub_not_prepared"));
-                    continue;
-                }
-
-                if (!commandHub.HasBinding(
-                    ActorCommandId.FirePrimary,
-                    ActorCommandTriggerKind.Pressed))
-                {
-                    if (requirement.Required)
-                    {
-                        throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing active FirePrimary binding on ActorCommandSourceHub.");
-                    }
-
-                    DebugUtility.LogVerbose(
-                        typeof(ActorCommandBindingAdapter),
-                        $"event='ActorCommandBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' state='SkippedOptional' sink='none' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_fireprimary_binding_missing'.",
-                        DebugUtility.Colors.Info);
-
-                    records.Add(new ActorCommandBindingRecord(
-                        requirement,
-                        actorHandle.ActorIdentity,
-                        ActorCommandBindingState.SkippedOptional,
-                        observedEndpoint: "optional_fireprimary_binding_missing"));
-                    continue;
-                }
-
-                DebugUtility.LogVerbose(
-                    typeof(ActorCommandBindingAdapter),
-                    $"event='ActorCommandBindingReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Prepared' hubType='{commandHub.GetType().Name}' hubPrepared='{commandHub.IsPrepared}' source='{command.Source}' reason='{command.Reason}'.",
-                    DebugUtility.Colors.Info);
-
+                var commandHub = capabilitySurface.ActorCommandSourceHub;
                 var projectileFireEndpoint = capabilitySurface.ActorProjectileFireEndpoint;
-                if (projectileFireEndpoint == null)
+                var bindingContext = new ActorProjectileFireCommandBindingContext(
+                    requirement.ParticipantBinding.ActorId,
+                    actorHandle.ActorInstanceRuntimeId,
+                    requirement.ParticipantBinding.ParticipantId.ToString(),
+                    requirement.Required,
+                    command.Source,
+                    command.Reason);
+
+                ActorProjectileFireCommandBindingResult projectileBinding = _projectileFireCommandBindingExecutor.Execute(
+                    bindingContext,
+                    commandHub,
+                    projectileFireEndpoint);
+
+                if (!projectileBinding.IsValid)
                 {
-                    if (requirement.Required)
-                    {
-                        throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorProjectileFireEndpoint.");
-                    }
-
-                    DebugUtility.LogVerbose(
-                        typeof(ActorCommandBindingAdapter),
-                        $"event='ActorProjectileFireEndpointSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='SkippedOptional' reason='optional_projectile_fire_endpoint_missing' source='{nameof(ActorCommandBindingAdapter)}'.",
-                        DebugUtility.Colors.Info);
-
-                    records.Add(new ActorCommandBindingRecord(
-                        requirement,
-                        actorHandle.ActorIdentity,
-                        ActorCommandBindingState.SkippedOptional,
-                        observedEndpoint: "optional_projectile_fire_endpoint_missing"));
-                    continue;
+                    throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' projectile binding returned invalid result.");
                 }
 
-                if (!projectileFireEndpoint.TryGetReadiness(ActorCommandId.FirePrimary, out var readiness) || !readiness.IsPrepared)
-                {
-                    if (requirement.Required || projectileFireEndpoint.IsRequired)
-                    {
-                        throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' projectile fire endpoint is not ready. state='{readiness.Kind}' reason='{readiness.Reason}'.");
-                    }
-
-                    DebugUtility.LogVerbose(
-                        typeof(ActorCommandBindingAdapter),
-                        $"event='ActorProjectileFireEndpointReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='False' source='{command.Source}' reason='{readiness.Reason}'.",
-                        DebugUtility.Colors.Info);
-
-                    records.Add(new ActorCommandBindingRecord(
-                        requirement,
-                        actorHandle.ActorIdentity,
-                        ActorCommandBindingState.SkippedOptional,
-                        observedEndpoint: $"{projectileFireEndpoint.GetType().Name}|state={readiness.Kind}|reason={readiness.Reason}"));
-                    continue;
-                }
-
-                DebugUtility.LogVerbose(
-                    typeof(ActorCommandBindingAdapter),
-                    $"event='ActorProjectileFireEndpointReadinessObserved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='True' source='{command.Source}' reason='{command.Reason}'.",
-                    DebugUtility.Colors.Success);
-
-                IActorProjectileSpawnAdapter spawnAdapter = new PooledActorProjectileSpawnAdapter(
-                    "actor.projectile.spawn.adapter.pooled.player.primary");
-                projectileFireEndpoint.ConfigureSpawnAdapter(
-                    spawnAdapter,
-                    nameof(ActorCommandBindingAdapter),
-                    "projectile_spawn_adapter_configured_by_actor_command_binding");
-
-                commandHub.BindCommandSink(ActorCommandId.FirePrimary, projectileFireEndpoint);
-
-                DebugUtility.Log(
-                    typeof(ActorCommandBindingAdapter),
-                    $"event='ActorCommandSinkBound' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' commandId='FirePrimary' state='Executable' sink='{projectileFireEndpoint.GetType().Name}' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' adapter='{projectileFireEndpoint.SpawnAdapterName}' source='{nameof(ActorCommandBindingAdapter)}' reason='projectile_fire_spawn_adapter_sink_bound'.",
-                    DebugUtility.Colors.Success);
+                ActorCommandBindingState bindingState = projectileBinding.IsExecutable
+                    ? ActorCommandBindingState.Executable
+                    : ActorCommandBindingState.SkippedOptional;
 
                 records.Add(new ActorCommandBindingRecord(
                     requirement,
                     actorHandle.ActorIdentity,
-                    ActorCommandBindingState.Executable,
-                    observedEndpoint: $"{projectileFireEndpoint.GetType().Name}|endpointId={projectileFireEndpoint.EndpointId}|profileId={projectileFireEndpoint.ProfileId}|fireModeId={projectileFireEndpoint.DefaultFireModeId}|spawnAdapter={projectileFireEndpoint.SpawnAdapterName}"));
+                    bindingState,
+                    observedEndpoint: projectileBinding.ObservedEndpoint));
             }
 
             return records;
