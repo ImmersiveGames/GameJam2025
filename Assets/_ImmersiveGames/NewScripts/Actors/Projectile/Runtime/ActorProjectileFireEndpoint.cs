@@ -1,16 +1,20 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class ActorProjectileFireEndpoint : MonoBehaviour, IActorProjectileFireEndpoint
+    public sealed class ActorProjectileFireEndpoint : MonoBehaviour, IActorProjectileFireEndpoint, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider, IActorReleaseContributionProvider, IActorCapabilityReleaseEndpoint
     {
         [Header("Projectile Fire Endpoint")]
         [SerializeField, InspectorName("Nome interno do endpoint"), Tooltip("Identificador técnico do endpoint local de fire/projectile. Usado para logs, readiness e correlação interna; não é nome visual do projétil.")]
@@ -22,10 +26,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         [SerializeField, InspectorName("Obrigatório por padrão (temporário)"), Tooltip("Indica se este endpoint local bloqueia readiness quando o perfil está ausente. Preferir mover a obrigatoriedade para requirement/binding da Activity em corte futuro.")]
         private bool required;
 
+        [Header("Reset")]
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
+
+        private readonly ActorProjectileSpawnRuntimeState _spawnRuntimeState = new();
         private Actor _actor;
         private IActorProjectileSpawnAdapter _spawnAdapter;
         private string _spawnAdapterName = string.Empty;
-        private ActorProjectileSpawnRuntimeTracker _spawnRuntimeTracker;
         private bool _projectileFireEnabled;
         private readonly Dictionary<ActorProjectileFireModeId, float> _nextAllowedFireTimeByMode = new();
 
@@ -38,6 +45,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         public bool IsProjectileFireEnabled => _projectileFireEnabled;
         public bool HasSpawnAdapter => _spawnAdapter != null;
         public string SpawnAdapterName => Normalize(_spawnAdapterName);
+        public int TrackedSpawnCount => _spawnRuntimeState.TrackedSpawnCount;
+        public bool HasConfiguredSpawnRuntimePoolService => _spawnRuntimeState.HasConfiguredPoolService;
 
         public void ConfigureSpawnAdapter(
             IActorProjectileSpawnAdapter spawnAdapter,
@@ -56,6 +65,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 typeof(ActorProjectileFireEndpoint),
                 $"event='ActorProjectileSpawnAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{SpawnAdapterName}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        public void ConfigureSpawnRuntimeStatePoolService(
+            IPoolService poolService,
+            string source,
+            string reason)
+        {
+            if (poolService == null)
+            {
+                throw new ArgumentNullException(nameof(poolService));
+            }
+
+            _spawnRuntimeState.ConfigurePoolService(
+                poolService,
+                ActorId,
+                ActorInstanceRuntimeId,
+                source,
+                reason);
         }
 
         public void SetProjectileFireEnabled(bool enabled)
@@ -360,11 +387,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 throw new InvalidOperationException($"{origin} invalid projectile fire endpoint: kind='{readiness.Kind}' reason='{readiness.Reason}' message='{readiness.Message}'.");
             }
 
-            if (ResolveSpawnRuntimeTracker() == null)
-            {
-                string origin = string.IsNullOrWhiteSpace(source) ? nameof(ActorProjectileFireEndpoint) : source.Trim();
-                throw new InvalidOperationException($"{origin} requires ActorProjectileSpawnRuntimeTracker.");
-            }
         }
 
         private bool TryBuildDescriptor(
@@ -458,23 +480,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             return _actor;
         }
 
-        private ActorProjectileSpawnRuntimeTracker ResolveSpawnRuntimeTracker()
-        {
-            if (_spawnRuntimeTracker != null)
-            {
-                return _spawnRuntimeTracker;
-            }
-
-            var actor = ResolveActor();
-            if (actor == null)
-            {
-                return null;
-            }
-
-            _spawnRuntimeTracker = actor.GetComponentInChildren<ActorProjectileSpawnRuntimeTracker>(includeInactive: true);
-            return _spawnRuntimeTracker;
-        }
-
         private void TryTrackSpawnedRuntimeObject(ActorProjectileSpawnAdapterResult adapterResult, string source, string reason)
         {
             if (!adapterResult.IsAccepted || adapterResult.SpawnedInstance == null || adapterResult.SpawnedActor == null)
@@ -491,21 +496,87 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            var spawnRuntimeTracker = ResolveSpawnRuntimeTracker();
-            if (spawnRuntimeTracker == null)
+            var actor = ResolveActor();
+            if (actor == null)
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
-                    $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_missing'.");
+                    $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='owner_actor_missing'.");
                 return;
             }
 
-            if (!spawnRuntimeTracker.TryTrackSpawnedRuntimeObject(adapterResult.SpawnedInstance, spawnedActor, source, reason))
+            if (!_spawnRuntimeState.TryTrackSpawnedRuntimeObject(actor, adapterResult.SpawnedInstance, spawnedActor, source, reason))
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
                     $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_rejected_spawn'.");
             }
+        }
+
+
+        public bool TryCreateResetContribution(
+            ActorCapabilityContributionContext context,
+            out IActorResetContribution contribution)
+        {
+            if (!context.IsValid)
+            {
+                contribution = null;
+                return false;
+            }
+
+            contribution = new SpawnedRuntimeObjectsResetContribution(context, resetBoundaryEligibility);
+            return true;
+        }
+
+        public bool TryCreateReleaseContribution(
+            ActorCapabilityContributionContext context,
+            out IActorReleaseContribution contribution)
+        {
+            if (!context.IsValid)
+            {
+                contribution = null;
+                return false;
+            }
+
+            contribution = new SpawnedRuntimeObjectsReleaseContribution(context, this);
+            return true;
+        }
+
+        public bool TryRelease(
+            ActorCapabilityContributionContext context,
+            out ActorCapabilityReleaseResult result)
+        {
+            return _spawnRuntimeState.TryReleaseSpawnedRuntimeObjects(context, out result);
+        }
+
+        public void ApplyEntryInitializeReset(ActorResetContext context)
+        {
+            _spawnRuntimeState.ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeLocalReset(ActorResetContext context)
+        {
+            _spawnRuntimeState.ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeActivityReset(ActorResetContext context)
+        {
+            _spawnRuntimeState.ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
+        {
+            _spawnRuntimeState.ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
+        {
+            _spawnRuntimeState.ApplySpawnedRuntimeObjectsStateProfile(context);
+        }
+
+        private void OnDestroy()
+        {
+            _spawnRuntimeState.Clear();
         }
 
         private static ActorProjectileFireBlockedReasonKind ToBlockedReason(ActorProjectileFireEndpointReadinessKind readinessKind)
@@ -545,6 +616,57 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             return true;
+        }
+
+
+        private readonly struct SpawnedRuntimeObjectsReleaseContribution : IActorReleaseContribution
+        {
+            public SpawnedRuntimeObjectsReleaseContribution(
+                ActorCapabilityContributionContext context,
+                IActorCapabilityReleaseEndpoint releaseEndpoint)
+            {
+                Descriptor = new ActorCapabilityContributionDescriptor(
+                    new ActorCapabilityId("actor.capability.projectile.spawn_runtime_objects.release"),
+                    ActorCapabilityContributionPhase.Release,
+                    ActorCapabilityContributionRequirement.Required,
+                    context.ActorId,
+                    context.ActorInstanceRuntimeId,
+                    context.ActorKind,
+                    context.ActorRole,
+                    context.ActorScope,
+                    context.ComponentPath,
+                    nameof(ActorProjectileFireEndpoint),
+                    "projectile_spawn_runtime_objects_release_contribution");
+                ReleaseEndpoint = releaseEndpoint;
+            }
+
+            public ActorCapabilityContributionDescriptor Descriptor { get; }
+            public IActorCapabilityReleaseEndpoint ReleaseEndpoint { get; }
+            public bool IsValid => Descriptor.IsValid && ReleaseEndpoint != null;
+        }
+
+        private readonly struct SpawnedRuntimeObjectsResetContribution : IActorResetContribution
+        {
+            public SpawnedRuntimeObjectsResetContribution(ActorCapabilityContributionContext context, ActivityResetBoundaryEligibility resetBoundaryEligibility)
+            {
+                Descriptor = new ActorCapabilityContributionDescriptor(
+                    new ActorCapabilityId("actor.capability.projectile.spawn_runtime_objects"),
+                    ActorCapabilityContributionPhase.Reset,
+                    ActorCapabilityContributionRequirement.Optional,
+                    context.ActorId,
+                    context.ActorInstanceRuntimeId,
+                    context.ActorKind,
+                    context.ActorRole,
+                    context.ActorScope,
+                    context.ComponentPath,
+                    nameof(ActorProjectileFireEndpoint),
+                    "projectile_spawn_runtime_objects_reset_contribution");
+                ResetBoundaryEligibility = resetBoundaryEligibility;
+            }
+
+            public ActorCapabilityContributionDescriptor Descriptor { get; }
+            public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
+            public bool IsValid => Descriptor.IsValid;
         }
 
 #if UNITY_EDITOR

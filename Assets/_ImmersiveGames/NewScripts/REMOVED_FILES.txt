@@ -27,3 +27,7 @@ Resources/Actors/PoolDefinition_PlayerPrimaryProjectile.asset.meta
 Resources/Actors/ProjectileActor_PlayerPrimary.prefab
 Resources/Actors/ProjectileActor_PlayerPrimary.prefab.meta
 Motivo: ACT-PROJ-AUTHORING-1B — renomeados para nomes neutros de Actor projectile (`PrimaryShot` / `PrimaryProjectile`) preservando GUIDs. O objetivo é remover leitura errada de rail Player-specific em assets/ids de projectile; `PlayerInput` continua sendo apenas command source.
+
+Actors/Projectile/Runtime/ActorProjectileSpawnRuntimeTracker.cs
+Actors/Projectile/Runtime/ActorProjectileSpawnRuntimeTracker.cs.meta
+Motivo: ACT-PROJ-POOL-1C — removido como MonoBehaviour separado. O tracking de spawned projectiles agora é estado runtime puro (`ActorProjectileSpawnRuntimeState`) mantido por endpoint em `ActorProjectileFireEndpoint`, preservando tracking por endpoint e reduzindo componentes no prefab.

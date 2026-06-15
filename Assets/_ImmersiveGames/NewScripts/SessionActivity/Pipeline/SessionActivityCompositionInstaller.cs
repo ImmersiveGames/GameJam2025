@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
@@ -48,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EnsureDependencyManagerOrFail();
             var activityCameraPreparationExecutor = ResolveActivityCameraPreparationExecutorOrFail();
             var canonicalPlayerInputActionsAsset = ResolveCanonicalPlayerInputActionsAssetOrFail();
+            var poolService = ResolvePoolServiceOrFail();
 
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
@@ -88,7 +90,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 pendingOperationRunner,
                 _pipeline,
                 canonicalPlayerInputActionsAsset,
-                _pipeline.ActivityActorExitRuntimeState);
+                _pipeline.ActivityActorExitRuntimeState,
+                poolService);
             // SA-19B1 — BindEntryPipeline seam removed (real removal step).
             // Old method deleted. Using transitional AttachEntryPipeline for now.
             // See SA-19B0-Bridge-Surface-Freeze.md and SA-19 plan.
@@ -142,6 +145,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] Required dependency missing type='IActivityCameraPreparationExecutor'.");
+        }
+
+        private static IPoolService ResolvePoolServiceOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPoolService>(out var poolService) &&
+                poolService != null)
+            {
+                return poolService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] Required dependency missing type='IPoolService'.");
         }
 
         private static InputActionAsset ResolveCanonicalPlayerInputActionsAssetOrFail()

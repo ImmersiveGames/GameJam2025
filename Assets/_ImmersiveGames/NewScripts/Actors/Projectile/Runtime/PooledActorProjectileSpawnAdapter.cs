@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using UnityEngine;
@@ -17,13 +16,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         private readonly string _adapterId;
         private readonly Transform _spawnParent;
-        private IPoolService _poolService;
+        private readonly IPoolService _poolService;
 
         public PooledActorProjectileSpawnAdapter(
             string adapterId,
+            IPoolService poolService,
             Transform spawnParent = null)
         {
             _adapterId = Normalize(adapterId);
+            _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
             _spawnParent = spawnParent;
         }
 
@@ -58,19 +59,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     command,
                     "projectile_pool_definition_missing",
                     "Projectile spawn requires a PoolDefinitionAsset resolved from the projectile spawn profile.");
-            }
-
-            if (!TryResolvePoolService(nameof(Execute)))
-            {
-                DebugUtility.LogVerbose(
-                    typeof(PooledActorProjectileSpawnAdapter),
-                    $"event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='pool_service_unavailable'.",
-                    DebugUtility.Colors.Info);
-
-                return ActorProjectileSpawnAdapterResult.Failed(
-                    command,
-                    "pool_service_unavailable",
-                    "Canonical IPoolService is unavailable for projectile spawn.");
             }
 
             GameObject instance = null;
@@ -354,26 +342,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     typeof(PooledActorProjectileSpawnAdapter),
                     $"event='ActorProjectileSpawnFailedInstanceReturnToPoolFailed' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{Normalize(reason)}' message='{Normalize(ex.Message)}'.");
             }
-        }
-
-        private bool TryResolvePoolService(string source)
-        {
-            if (_poolService != null)
-            {
-                return true;
-            }
-
-            if (DependencyManager.Provider == null || !DependencyManager.Provider.TryGetGlobal<IPoolService>(out var resolved) || resolved == null)
-            {
-                return false;
-            }
-
-            _poolService = resolved;
-            DebugUtility.LogVerbose(
-                typeof(PooledActorProjectileSpawnAdapter),
-                $"event='ActorProjectileSpawnPoolServiceResolved' adapterId='{AdapterId}' source='{Normalize(source)}' reason='canonical_pool_service_resolved'.",
-                DebugUtility.Colors.Info);
-            return true;
         }
 
         private static ActorId BuildSpawnedActorId(ActorProjectileFireCommand command)

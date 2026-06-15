@@ -1984,3 +1984,143 @@ ActorProjectileFireCommandBindingExecutor
 Isso mantém `PlayerInput` como source atual do comando, mas remove o conhecimento de projectile da área `Players/ActivitySetup`.
 
 Não criar `PlayerShoot`, `EnemyShoot`, `NonPlayerProjectile` ou binding paralelo por tipo de Actor.
+
+## ACT-PROJ-BIND-1B — Projectile spawn adapter id neutralization
+
+`ActorProjectileFireCommandBindingExecutor` não usa mais `actor.projectile.spawn.adapter.pooled.primary` como id fixo do adapter.
+
+O `adapterId` agora é derivado do endpoint/profile/Actor resolvido no binding:
+
+```text
+ActorProjectileFireEndpoint.EndpointId
+-> ActorProjectileFireEndpoint.ProfileId
+-> ActorId
+-> actor.projectile.spawn.adapter.pooled
+```
+
+Shape esperado no sandbox atual:
+
+```text
+actor.projectile.spawn.adapter.pooled.actor.projectile.fire.endpoint.primary
+```
+
+A decisão evita que `primary` vire semântica funcional do adapter. O Player continua podendo ser source de input, mas o adapter técnico de spawn passa a ser nomeado a partir da capability resolvida no Actor.
+
+Fronteira preservada:
+
+```text
+ActivityEntryPipeline = owner da fase de binding.
+ActorCommandBindingAdapter = resolve participante para Actor ativo.
+ActorProjectileFireCommandBindingExecutor = configura o adapter técnico do endpoint de projectile.
+PooledActorProjectileSpawnAdapter = executa Rent/Spawn via pool.
+```
+
+Sem alteração de pool service, reset/release, permission/gate ou spawn runtime.
+
+## ACT-PROJ-POOL-1A — Injected Pool Service for Projectile Spawn Adapter
+
+`PooledActorProjectileSpawnAdapter` não resolve mais `IPoolService` por `DependencyManager.Provider` durante `Execute(...)`.
+
+A dependência obrigatória passa a ser resolvida no composition root e propagada por construtor:
+
+```text
+SessionActivityCompositionInstaller
+-> ActivityEntryPipeline
+-> ActorCommandBindingAdapter
+-> ActorProjectileFireCommandBindingExecutor
+-> PooledActorProjectileSpawnAdapter
+```
+
+Fronteira aceita:
+
+```text
+SessionActivityCompositionInstaller = resolve dependência obrigatória.
+ActivityEntryPipeline = recebe dependência e mantém ownership da fase de binding.
+ActorCommandBindingAdapter = resolve participante para Actor ativo.
+ActorProjectileFireCommandBindingExecutor = cria adapter técnico com dependências explícitas.
+PooledActorProjectileSpawnAdapter = executa Rent/Spawn via IPoolService injetado.
+```
+
+Decisão normativa:
+
+- `IPoolService` ausente é erro de configuração.
+- `PooledActorProjectileSpawnAdapter` não pode criar fallback silencioso para pool.
+- `PooledActorProjectileSpawnAdapter` não pode consultar `DependencyManager.Provider`.
+- O tracker de runtime spawned fica fora deste corte; ele pertence à frente de reset/release/lifecycle.
+
+Sem alteração de reset/release, permission/gate, pool definition, spawn profile ou `IPoolService`.
+
+
+## ACT-PROJ-POOL-1B — Injected Pool Service for Projectile Spawn Runtime Tracker
+
+`ActorProjectileSpawnRuntimeTracker` deixou de resolver `IPoolService` por `DependencyManager.Provider` durante reset/release.
+
+Como o tracker ainda era `MonoBehaviour` neste corte, ele não recebeu dependência por construtor. A dependência obrigatória passou a ser configurada explicitamente durante o binding da capability de projectile:
+
+```text
+SessionActivityCompositionInstaller
+-> ActivityEntryPipeline
+-> ActorCommandBindingAdapter
+-> ActorProjectileFireCommandBindingExecutor
+-> ActorProjectileFireEndpoint.ConfigureSpawnRuntimeTrackerPoolService(...)
+-> ActorProjectileSpawnRuntimeTracker.ConfigurePoolService(...)
+```
+
+Fronteira aceita como transitória:
+
+```text
+SessionActivityCompositionInstaller = resolve dependência obrigatória.
+ActivityEntryPipeline = owner da fase de binding.
+ActorProjectileFireCommandBindingExecutor = configura dependências técnicas da capability resolvida.
+ActorProjectileFireEndpoint = endpoint local de fire.
+ActorProjectileSpawnRuntimeTracker = bridge transitória de tracking/reset/release.
+```
+
+Decisão normativa transitória:
+
+- `IPoolService` ausente continua sendo erro de configuração.
+- `ActorProjectileSpawnRuntimeTracker` não pode consultar `DependencyManager.Provider`.
+- `ActorProjectileSpawnRuntimeTracker` não cria fallback silencioso.
+- Reset/release continua sendo comandado por `ActivityEntryParticipantResetStage` / teardown; o pool apenas executa o retorno técnico.
+
+Sem alteração de pool service, spawn profile, pool definition, permission/gate ou política de reset.
+
+
+## ACT-PROJ-POOL-1C — Fire Endpoint Owned Spawn Runtime State
+
+`ActorProjectileSpawnRuntimeTracker` deixa de existir como `MonoBehaviour` separado. O tracking de spawned projectiles passa a ser estado runtime puro mantido pelo próprio `ActorProjectileFireEndpoint`.
+
+Shape normativo:
+
+```text
+ActorProjectileFireEndpoint : MonoBehaviour
+    - command sink de FirePrimary
+    - provider de reset/release da capability de projectile fire
+    - owner de ActorProjectileSpawnRuntimeState
+
+ActorProjectileSpawnRuntimeState
+    - classe C# pura
+    - tracking de spawned runtime objects daquele endpoint
+    - retorno ao pool usando IPoolService injetado
+```
+
+Fronteira aceita:
+
+```text
+SessionActivityCompositionInstaller = resolve dependência obrigatória.
+ActivityEntryPipeline = owner da fase de binding.
+ActorProjectileFireCommandBindingExecutor = injeta IPoolService no endpoint/capability resolvida.
+ActorProjectileFireEndpoint = única borda Unity da capability de projectile fire.
+ActorProjectileSpawnRuntimeState = runtime state por endpoint, não scanner, não MonoBehaviour.
+```
+
+Decisão normativa:
+
+- `ActorProjectileSpawnRuntimeTracker` não deve ser preservado como componente de compatibilidade.
+- O scanner passa a ver `ActorProjectileFireEndpoint` como provider de reset/release.
+- Cada endpoint de fire possui seu próprio `ActorProjectileSpawnRuntimeState`.
+- Se um Actor tiver múltiplos fire endpoints no futuro, o tracking permanece por endpoint.
+- Não criar state compartilhado por Actor antes de necessidade concreta.
+- `ActorProjectileSpawnRuntimeState` não consulta `DependencyManager.Provider` e não cria fallback silencioso.
+
+Sem alteração de pool service, spawn profile, pool definition, permission/gate, multiplayer ou política de reset.

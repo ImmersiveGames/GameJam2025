@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
@@ -97,7 +98,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ISessionActivityPendingOperationRunner pendingOperationRunner,
             ISessionActivityPendingOperationCallback pendingOperationCallback,
             InputActionAsset canonicalPlayerInputActionsAsset,
-            ActivityActorExitRuntimeState activityActorExitRuntimeState)
+            ActivityActorExitRuntimeState activityActorExitRuntimeState,
+            IPoolService poolService)
         {
             if (endpoint == null)
             {
@@ -133,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
-            _actorCommandBindingAdapter = new ActorCommandBindingAdapter();
+            _actorCommandBindingAdapter = new ActorCommandBindingAdapter(poolService ?? throw new ArgumentNullException(nameof(poolService)));
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activityEntryCapabilityInventoryBuildStage = new ActivityEntryCapabilityInventoryBuildStage();
         }

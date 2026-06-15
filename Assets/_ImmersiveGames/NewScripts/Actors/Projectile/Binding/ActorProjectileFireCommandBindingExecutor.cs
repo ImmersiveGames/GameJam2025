@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
 {
@@ -74,7 +75,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
 
     public sealed class ActorProjectileFireCommandBindingExecutor
     {
-        private const string AdapterId = "actor.projectile.spawn.adapter.pooled.primary";
+        private const string AdapterIdPrefix = "actor.projectile.spawn.adapter.pooled";
+
+        private readonly IPoolService _poolService;
+
+        public ActorProjectileFireCommandBindingExecutor(IPoolService poolService)
+        {
+            _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
+        }
 
         public ActorProjectileFireCommandBindingResult Execute(
             ActorProjectileFireCommandBindingContext context,
@@ -169,7 +177,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
                 $"event='ActorProjectileFireEndpointReadinessObserved' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' participantId='{context.ParticipantId}' commandId='FirePrimary' endpointId='{projectileFireEndpoint.EndpointId}' profileId='{projectileFireEndpoint.ProfileId}' fireModeId='{projectileFireEndpoint.DefaultFireModeId}' state='{readiness.Kind}' readinessAccepted='True' source='{context.Source}' reason='{context.Reason}'.",
                 DebugUtility.Colors.Success);
 
-            IActorProjectileSpawnAdapter spawnAdapter = new PooledActorProjectileSpawnAdapter(AdapterId);
+            projectileFireEndpoint.ConfigureSpawnRuntimeStatePoolService(
+                _poolService,
+                nameof(ActorProjectileFireCommandBindingExecutor),
+                "projectile_spawn_runtime_state_pool_service_configured_by_actor_projectile_binding");
+
+            string adapterId = BuildAdapterId(context, projectileFireEndpoint);
+            IActorProjectileSpawnAdapter spawnAdapter = new PooledActorProjectileSpawnAdapter(
+                adapterId,
+                _poolService);
             projectileFireEndpoint.ConfigureSpawnAdapter(
                 spawnAdapter,
                 nameof(ActorProjectileFireCommandBindingExecutor),
@@ -185,6 +201,38 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
             return new ActorProjectileFireCommandBindingResult(
                 ActorProjectileFireCommandBindingState.Executable,
                 $"{projectileFireEndpoint.GetType().Name}|endpointId={projectileFireEndpoint.EndpointId}|profileId={projectileFireEndpoint.ProfileId}|fireModeId={projectileFireEndpoint.DefaultFireModeId}|spawnAdapter={projectileFireEndpoint.SpawnAdapterName}");
+        }
+
+        private static string BuildAdapterId(
+            ActorProjectileFireCommandBindingContext context,
+            IActorProjectileFireEndpoint projectileFireEndpoint)
+        {
+            string endpointId = NormalizeAdapterSegment(projectileFireEndpoint.EndpointId.ToString());
+            if (!string.IsNullOrWhiteSpace(endpointId))
+            {
+                return $"{AdapterIdPrefix}.{endpointId}";
+            }
+
+            string profileId = NormalizeAdapterSegment(projectileFireEndpoint.ProfileId.ToString());
+            if (!string.IsNullOrWhiteSpace(profileId))
+            {
+                return $"{AdapterIdPrefix}.{profileId}";
+            }
+
+            string actorId = NormalizeAdapterSegment(context.ActorId.ToString());
+            return string.IsNullOrWhiteSpace(actorId)
+                ? AdapterIdPrefix
+                : $"{AdapterIdPrefix}.{actorId}";
+        }
+
+        private static string NormalizeAdapterSegment(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return value.Trim();
         }
     }
 }

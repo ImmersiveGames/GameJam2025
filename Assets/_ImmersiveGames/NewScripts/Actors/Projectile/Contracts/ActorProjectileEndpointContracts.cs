@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
 
@@ -187,6 +188,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         void ConfigureSpawnAdapter(
             IActorProjectileSpawnAdapter spawnAdapter,
+            string source,
+            string reason);
+
+        void ConfigureSpawnRuntimeStatePoolService(
+            IPoolService poolService,
             string source,
             string reason);
 

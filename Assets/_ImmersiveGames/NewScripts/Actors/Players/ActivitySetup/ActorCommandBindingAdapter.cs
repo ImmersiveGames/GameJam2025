@@ -2,12 +2,19 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Binding;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class ActorCommandBindingAdapter : IActorCommandBindingAdapter
     {
-        private readonly ActorProjectileFireCommandBindingExecutor _projectileFireCommandBindingExecutor = new();
+        private readonly ActorProjectileFireCommandBindingExecutor _projectileFireCommandBindingExecutor;
+
+        public ActorCommandBindingAdapter(IPoolService poolService)
+        {
+            _projectileFireCommandBindingExecutor = new ActorProjectileFireCommandBindingExecutor(
+                poolService ?? throw new ArgumentNullException(nameof(poolService)));
+        }
 
         public IReadOnlyList<ActorCommandBindingRecord> Execute(
             ActorCommandBindingCommand command,
