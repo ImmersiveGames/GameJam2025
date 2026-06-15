@@ -2124,3 +2124,89 @@ Decisão normativa:
 - `ActorProjectileSpawnRuntimeState` não consulta `DependencyManager.Provider` e não cria fallback silencioso.
 
 Sem alteração de pool service, spawn profile, pool definition, permission/gate, multiplayer ou política de reset.
+
+## ACT-PROJ-AUDIO-1A — Projectile Fire Pooled SFX
+
+Projectile fire audio uses the existing `AudioRuntime` pooled SFX path instead of creating a projectile-local audio pool.
+
+Boundary:
+
+```text
+ActorProjectileFireProfileAsset / FireMode = chooses the AudioSfxCueAsset for a shot.
+ActorProjectileFireEndpoint = plays the cue after an accepted spawn.
+ActorProjectileFireAudioAdapter = calls IGlobalAudioService with a spatial playback context.
+AudioGlobalSfxService = owns SFX playback, pooling policy, budget and voice return.
+PoolDefinition_AudioProjectileFireVoices = global technical pool of audio voices.
+```
+
+Decision:
+
+- Projectile fire may be activity/profile scoped.
+- Audio voice pools are global runtime infrastructure.
+- Multiple fire modes can use different cues and share the same global projectile-fire voice pool.
+- `ActorProjectileFireAudioAdapter` must not reference `IPoolService`.
+- `ActorProjectileFireEndpoint` must not create `AudioSource` instances directly.
+- `AudioGlobalSfxService.Pooling` positions pooled spatial voices before playback.
+- Missing `fireAudioCue` means the fire mode has no configured audio; it is not a pool fallback.
+
+Initial asset set:
+
+```text
+PoolDefinition_AudioProjectileFireVoices
+AudioSfxVoiceProfile_ProjectileFire
+AudioSfxExecution_ProjectileFire_PooledSpatial
+AudioSfxEmission_ProjectileFire_Spatial3D
+AudioSfxCue_ProjectileFire_Primary
+```
+
+
+## ACT-PROJ-AUDIO-1B — Fire Mode Audio Volume Scale
+
+Projectile fire audio volume is configurable per fire mode.
+
+Boundary:
+
+```text
+ActorProjectileFireProfileAsset / FireMode = owns the shot-local SFX volume multiplier.
+ActorProjectileFireAudioAdapter = forwards the resolved multiplier through AudioPlaybackContext.
+AudioGlobalSfxService = applies final playback volume to the AudioSource.
+```
+
+Decision:
+
+- `fireAudioVolumeScale` is authoring data of the shot/fire mode.
+- `fireAudioVolumeScale` may be greater than `1` to compensate spatial SFX perception without changing global audio settings.
+- Audio voice pools remain global technical infrastructure and do not own shot volume.
+- `AudioGlobalSfxService` no longer clamps final `AudioSource.volume` with `Clamp01`; callers that pass `volumeScale > 1` are intentionally allowed to amplify playback.
+- The initial primary projectile fire mode uses `fireAudioVolumeScale: 2.5`.
+
+No change to projectile pool, audio voice pool ownership, command binding, reset/release or permission/gate.
+
+
+## ACT-PROJ-AUDIO-1C — Pooled SFX Observability and Documentation
+
+O caminho de áudio de tiro passa a ter observabilidade explícita no `AudioGlobalSfxService`.
+
+Decisão normativa:
+
+```text
+Projectile define qual cue e volume tocar.
+AudioRuntime define como tocar.
+Pool de vozes continua infraestrutura global.
+Observabilidade deve provar o caminho interno, não apenas o aceite do adapter de projectile.
+```
+
+Logs canônicos esperados:
+
+```text
+ActorProjectileFireAudioCuePlayed
+[Audio][SFX] Source configured
+[Audio][SFX] Pool rent event='AudioSfxPooledVoiceRented'
+[Audio][SFX] Pool return event='AudioSfxPooledVoiceReturned'
+```
+
+Os logs de `Source configured` devem expor `volumeScale`, `finalVolume`, `spatialBlend`, `minDistance`, `maxDistance`, `pitch` e `outputMixerGroup`.
+
+Os logs de `AudioSfxPooledVoiceRented` devem expor `cue`, `profile`, `pool`, `activeBefore`, `activeAfter`, `budget`, `allowDirectFallback`, `position`, `finalVolume` e configuração espacial.
+
+Sem alteração de gameplay, binding, permission/gate, reset/release, pool de projectile ou política de lifecycle.

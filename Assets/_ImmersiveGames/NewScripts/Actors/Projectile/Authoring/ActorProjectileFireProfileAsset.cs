@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using UnityEngine;
@@ -22,6 +23,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             [SerializeField, InspectorName("Perfil de spawn do projétil"), Tooltip("Define o que nasce quando este modo dispara: pool, role/scope e policies do actor spawnado. Não coloque prefab/pool direto no FireProfile.")]
             private ActorProjectileSpawnProfileAsset projectileSpawnProfile;
 
+            [Header("Áudio do disparo")]
+            [SerializeField, InspectorName("Cue de SFX"), Tooltip("Cue de áudio tocado quando este modo de disparo gera o projectile com sucesso. O cue decide clips/perfil; o pool de vozes pertence ao AudioRuntime global.")]
+            private AudioSfxCueAsset fireAudioCue;
+            [SerializeField, Min(0f), InspectorName("Volume do SFX"), Tooltip("Multiplicador de volume aplicado somente ao áudio deste modo de disparo. Pode ser maior que 1 para compensar áudio espacial baixo sem alterar o volume global nem o pool de vozes.")]
+            private float fireAudioVolumeScale = 1f;
+
             [Header("Runtime ativo")]
             [SerializeField, InspectorName("Origem/direção do disparo"), Tooltip("Política de origem/direção do disparo. ActorForward está ativo no MVP; NamedMuzzleSocket fica reservado até existir resolução de muzzle socket.")]
             private ActorProjectileMuzzlePolicyKind muzzlePolicy = ActorProjectileMuzzlePolicyKind.Unknown;
@@ -40,6 +47,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 
             public string FireModeId => Normalize(fireModeId);
             public ActorProjectileSpawnProfileAsset ProjectileSpawnProfile => projectileSpawnProfile;
+            public AudioSfxCueAsset FireAudioCue => fireAudioCue;
+            public float FireAudioVolumeScale => fireAudioVolumeScale < 0f ? 0f : fireAudioVolumeScale;
             public ActorProjectileSpawnPatternKind SpawnPattern => spawnPattern;
             public ActorProjectileMuzzlePolicyKind MuzzlePolicy => muzzlePolicy;
             public ActorProjectileSpreadPolicyKind SpreadPolicy => spreadPolicy;
@@ -114,6 +123,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     pattern,
                     muzzlePolicy,
                     spreadPolicy,
+                    fireAudioCue,
+                    FireAudioVolumeScale,
                     CooldownSeconds,
                     "projectile_fire_profile_authoring");
 
@@ -126,6 +137,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             {
                 fireModeId = Normalize(fireModeId);
                 cooldownSeconds = CooldownSeconds;
+                fireAudioVolumeScale = FireAudioVolumeScale;
                 projectileCount = spawnPattern == ActorProjectileSpawnPatternKind.Single ? 1 : Math.Max(2, ProjectileCount);
                 radialArcDegrees = spawnPattern == ActorProjectileSpawnPatternKind.RadialArc ? Math.Max(0.01f, RadialArcDegrees) : RadialArcDegrees;
             }

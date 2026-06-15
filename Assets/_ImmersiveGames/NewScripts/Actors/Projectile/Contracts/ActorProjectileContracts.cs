@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
@@ -158,6 +159,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorProjectileSpawnPattern spawnPattern,
             ActorProjectileMuzzlePolicyKind muzzlePolicy,
             ActorProjectileSpreadPolicyKind spreadPolicy,
+            AudioSfxCueAsset fireAudioCue,
+            float fireAudioVolumeScale,
             float cooldownSeconds,
             string reason)
         {
@@ -169,6 +172,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnPattern = spawnPattern;
             MuzzlePolicy = muzzlePolicy;
             SpreadPolicy = spreadPolicy;
+            FireAudioCue = fireAudioCue;
+            FireAudioVolumeScale = fireAudioVolumeScale < 0f ? 0f : fireAudioVolumeScale;
             CooldownSeconds = cooldownSeconds < 0f ? 0f : cooldownSeconds;
             Reason = Normalize(reason);
         }
@@ -181,6 +186,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorProjectileSpawnPattern SpawnPattern { get; }
         public ActorProjectileMuzzlePolicyKind MuzzlePolicy { get; }
         public ActorProjectileSpreadPolicyKind SpreadPolicy { get; }
+        public AudioSfxCueAsset FireAudioCue { get; }
+        public float FireAudioVolumeScale { get; }
         public float CooldownSeconds { get; }
         public string Reason { get; }
         public bool HasCooldown => CooldownSeconds > 0f;

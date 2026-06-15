@@ -1,8 +1,10 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Projectile.Audio;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 
@@ -78,10 +80,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
         private const string AdapterIdPrefix = "actor.projectile.spawn.adapter.pooled";
 
         private readonly IPoolService _poolService;
+        private readonly IGlobalAudioService _globalAudioService;
 
-        public ActorProjectileFireCommandBindingExecutor(IPoolService poolService)
+        public ActorProjectileFireCommandBindingExecutor(
+            IPoolService poolService,
+            IGlobalAudioService globalAudioService)
         {
             _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
+            _globalAudioService = globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService));
         }
 
         public ActorProjectileFireCommandBindingResult Execute(
@@ -190,6 +196,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
                 spawnAdapter,
                 nameof(ActorProjectileFireCommandBindingExecutor),
                 "projectile_spawn_adapter_configured_by_actor_projectile_binding");
+
+            projectileFireEndpoint.ConfigureFireAudioAdapter(
+                new ActorProjectileFireAudioAdapter(_globalAudioService),
+                nameof(ActorProjectileFireCommandBindingExecutor),
+                "projectile_fire_audio_adapter_configured_by_actor_projectile_binding");
 
             commandHub.BindCommandSink(ActorCommandId.FirePrimary, projectileFireEndpoint);
 

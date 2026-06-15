@@ -131,6 +131,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return true;
             }
 
+            rentedInstance.transform.position = context.followTarget != null
+                ? context.followTarget.position
+                : context.worldPosition;
+
             var source = rentedInstance.GetComponent<AudioSource>();
             if (source == null)
             {
@@ -158,11 +162,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             RegisterHandle(cue.GetInstanceID(), handle);
             RegisterPooledHandle(handle, profile, poolDefinition, rentedInstance, profile.ReleaseGraceSeconds);
+            int activeAfterProfile = GetActivePooledForProfile(profile);
 
             source.Play();
 
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                $"[Audio][SFX] Pool rent cue='{cue.name}' profile='{profile.name}' source='{profileSource}' pool='{poolDefinition.name}' mode='{mode}' reason='{reason}'.",
+                $"[Audio][SFX] Pool rent event='AudioSfxPooledVoiceRented' cue='{cue.name}' cueId='{cue.GetInstanceID()}' profile='{profile.name}' profileSource='{profileSource}' pool='{poolDefinition.name}' instance='{rentedInstance.name}' mode='{mode}' path='pooled' activeBefore='{activeForProfile}' activeAfter='{activeAfterProfile}' budget='{budget}' allowDirectFallback='{profile.AllowDirectFallback}' releaseGraceSeconds='{Mathf.Max(0f, profile.ReleaseGraceSeconds):0.###}' position='{rentedInstance.transform.position}' finalVolume='{source.volume:0.###}' volumeScale='{Mathf.Max(0f, context.volumeScale):0.###}' spatialBlend='{source.spatialBlend:0.###}' minDistance='{source.minDistance:0.###}' maxDistance='{source.maxDistance:0.###}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return true;
@@ -222,11 +227,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return;
             }
 
+            string profileName = state.profile != null ? state.profile.name : "<none>";
             try
             {
                 _poolService.Return(state.definition, state.instance);
                 DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Pool return cueInstance='{state.instance.name}' pool='{state.definition.name}' delayed={delayed} completion='{completionReason}'.",
+                    $"[Audio][SFX] Pool return event='AudioSfxPooledVoiceReturned' cueInstance='{state.instance.name}' profile='{profileName}' pool='{state.definition.name}' activeAfter='{GetActivePooledForProfile(state.profile)}' delayed='{delayed}' completion='{completionReason}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
@@ -234,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 if (ex.Message != null && ex.Message.IndexOf("not currently rented", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pool return skipped cueInstance='{state.instance.name}' pool='{state.definition.name}' delayed={delayed} completion='{completionReason}' reason='already_returned'.",
+                        $"[Audio][SFX] Pool return skipped event='AudioSfxPooledVoiceReturnSkipped' cueInstance='{state.instance.name}' profile='{profileName}' pool='{state.definition.name}' delayed='{delayed}' completion='{completionReason}' reason='already_returned'.",
                         DebugUtility.Colors.Info);
                     return;
                 }

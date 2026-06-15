@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -50,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             var activityCameraPreparationExecutor = ResolveActivityCameraPreparationExecutorOrFail();
             var canonicalPlayerInputActionsAsset = ResolveCanonicalPlayerInputActionsAssetOrFail();
             var poolService = ResolvePoolServiceOrFail();
+            var globalAudioService = ResolveGlobalAudioServiceOrFail();
 
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
@@ -91,7 +93,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline,
                 canonicalPlayerInputActionsAsset,
                 _pipeline.ActivityActorExitRuntimeState,
-                poolService);
+                poolService,
+                globalAudioService);
             // SA-19B1 — BindEntryPipeline seam removed (real removal step).
             // Old method deleted. Using transitional AttachEntryPipeline for now.
             // See SA-19B0-Bridge-Surface-Freeze.md and SA-19 plan.
@@ -156,6 +159,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] Required dependency missing type='IPoolService'.");
+        }
+
+        private static IGlobalAudioService ResolveGlobalAudioServiceOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out var globalAudioService) &&
+                globalAudioService != null)
+            {
+                return globalAudioService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] Required dependency missing type='IGlobalAudioService'.");
         }
 
         private static InputActionAsset ResolveCanonicalPlayerInputActionsAssetOrFail()

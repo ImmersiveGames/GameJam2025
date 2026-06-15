@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -99,7 +100,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ISessionActivityPendingOperationCallback pendingOperationCallback,
             InputActionAsset canonicalPlayerInputActionsAsset,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
-            IPoolService poolService)
+            IPoolService poolService,
+            IGlobalAudioService globalAudioService)
         {
             if (endpoint == null)
             {
@@ -135,7 +137,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
-            _actorCommandBindingAdapter = new ActorCommandBindingAdapter(poolService ?? throw new ArgumentNullException(nameof(poolService)));
+            _actorCommandBindingAdapter = new ActorCommandBindingAdapter(
+                poolService ?? throw new ArgumentNullException(nameof(poolService)),
+                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)));
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activityEntryCapabilityInventoryBuildStage = new ActivityEntryCapabilityInventoryBuildStage();
         }

@@ -32,7 +32,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         private readonly ActorProjectileSpawnRuntimeState _spawnRuntimeState = new();
         private Actor _actor;
         private IActorProjectileSpawnAdapter _spawnAdapter;
+        private IActorProjectileFireAudioAdapter _fireAudioAdapter;
         private string _spawnAdapterName = string.Empty;
+        private string _fireAudioAdapterName = string.Empty;
         private bool _projectileFireEnabled;
         private readonly Dictionary<ActorProjectileFireModeId, float> _nextAllowedFireTimeByMode = new();
 
@@ -45,6 +47,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         public bool IsProjectileFireEnabled => _projectileFireEnabled;
         public bool HasSpawnAdapter => _spawnAdapter != null;
         public string SpawnAdapterName => Normalize(_spawnAdapterName);
+        public bool HasFireAudioAdapter => _fireAudioAdapter != null;
+        public string FireAudioAdapterName => Normalize(_fireAudioAdapterName);
         public int TrackedSpawnCount => _spawnRuntimeState.TrackedSpawnCount;
         public bool HasConfiguredSpawnRuntimePoolService => _spawnRuntimeState.HasConfiguredPoolService;
 
@@ -83,6 +87,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 ActorInstanceRuntimeId,
                 source,
                 reason);
+        }
+
+        public void ConfigureFireAudioAdapter(
+            IActorProjectileFireAudioAdapter fireAudioAdapter,
+            string source,
+            string reason)
+        {
+            _fireAudioAdapter = fireAudioAdapter ?? throw new ArgumentNullException(nameof(fireAudioAdapter));
+            _fireAudioAdapterName = fireAudioAdapter.AdapterName;
+
+            DebugUtility.LogVerbose(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileFireAudioAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{FireAudioAdapterName}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                DebugUtility.Colors.Info);
         }
 
         public void SetProjectileFireEnabled(bool enabled)
@@ -196,6 +214,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             TryTrackSpawnedRuntimeObject(adapterResult, command.Source, command.Reason);
+            TryPlayFireAudioCue(fireMode, fireCommand, command.Source, command.Reason);
 
             if (fireMode.HasCooldown)
             {
@@ -478,6 +497,33 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             _actor = GetComponentInParent<Actor>(includeInactive: true);
             return _actor;
+        }
+
+        private void TryPlayFireAudioCue(
+            ActorProjectileFireMode fireMode,
+            ActorProjectileFireCommand fireCommand,
+            string source,
+            string reason)
+        {
+            if (fireMode.FireAudioCue == null)
+            {
+                return;
+            }
+
+            if (_fireAudioAdapter == null)
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileFireAudioCueSkipped' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cue='{fireMode.FireAudioCue.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_audio_adapter_missing'.");
+                return;
+            }
+
+            _fireAudioAdapter.PlayFireCue(
+                fireMode.FireAudioCue,
+                fireCommand.Origin,
+                fireMode.FireAudioVolumeScale,
+                source,
+                reason);
         }
 
         private void TryTrackSpawnedRuntimeObject(ActorProjectileSpawnAdapterResult adapterResult, string source, string reason)

@@ -1,4 +1,6 @@
 using System;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
@@ -174,6 +176,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
+
+    public interface IActorProjectileFireAudioAdapter
+    {
+        string AdapterName { get; }
+
+        IAudioPlaybackHandle PlayFireCue(
+            AudioSfxCueAsset cue,
+            Vector3 worldPosition,
+            float volumeScale,
+            string source,
+            string reason);
+    }
+
     public interface IActorProjectileFireEndpoint : IActorCommandSink
     {
         ActorProjectileFireEndpointId EndpointId { get; }
@@ -193,6 +208,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         void ConfigureSpawnRuntimeStatePoolService(
             IPoolService poolService,
+            string source,
+            string reason);
+
+        void ConfigureFireAudioAdapter(
+            IActorProjectileFireAudioAdapter fireAudioAdapter,
             string source,
             string reason);
 
