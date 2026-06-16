@@ -26,6 +26,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             [SerializeField, InspectorName("Perfil de spawn do projétil"), Tooltip("Define o que nasce quando este modo dispara: pool, role/scope e policies do actor spawnado. Não coloque prefab/pool direto no FireProfile.")]
             private ActorProjectileSpawnProfileAsset projectileSpawnProfile;
 
+            [Header("Movimento")]
+            [SerializeField, InspectorName("Estratégia de movimento"), Tooltip("Estratégia de movimento deste fire mode. Este corte aceita apenas Linear.")]
+            private ActorProjectileMotionStrategyKind motionStrategy = ActorProjectileMotionStrategyKind.Linear;
+            [SerializeField, Min(0f), InspectorName("Velocidade linear"), Tooltip("Velocidade linear aplicada ao projectile runtime-spawned quando este fire mode dispara.")]
+            private float linearSpeed = 18f;
+
             [Header("Áudio do disparo")]
             [SerializeField, InspectorName("Cue de SFX"), Tooltip("Cue de áudio tocado quando este modo de disparo gera o projectile com sucesso. O cue decide clips/perfil; o pool de vozes pertence ao AudioRuntime global.")]
             private AudioSfxCueAsset fireAudioCue;
@@ -54,6 +60,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 
             public string FireModeId => Normalize(fireModeId);
             public ActorProjectileSpawnProfileAsset ProjectileSpawnProfile => projectileSpawnProfile;
+            public ActorProjectileMotionStrategyKind MotionStrategy => motionStrategy;
+            public float LinearSpeed => linearSpeed < 0f ? 0f : linearSpeed;
             public AudioSfxCueAsset FireAudioCue => fireAudioCue;
             public float FireAudioVolumeScale => fireAudioVolumeScale < 0f ? 0f : fireAudioVolumeScale;
             public ActorProjectileSpawnPatternKind SpawnPattern => spawnPattern;
@@ -122,6 +130,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     return false;
                 }
 
+                if (motionStrategy != ActorProjectileMotionStrategyKind.Linear)
+                {
+                    reason = "projectile_fire_motion_strategy_linear_required";
+                    return false;
+                }
+
+                if (LinearSpeed <= 0f)
+                {
+                    reason = "projectile_fire_linear_speed_missing";
+                    return false;
+                }
+
                 var pattern = BuildSpawnPattern();
                 if (!pattern.IsValid)
                 {
@@ -132,12 +152,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                 fireMode = new ActorProjectileFireMode(
                     new ActorProjectileFireModeId(FireModeId),
                     projectileSpawnProfile.ProfileId,
+                    projectileSpawnProfile,
                     projectileSpawnProfile.PoolDefinition,
                     projectileSpawnProfile.SpawnedActorRole,
                     projectileSpawnProfile.SpawnedActorScope,
                     pattern,
                     muzzlePolicy,
                     spreadPolicy,
+                    motionStrategy,
+                    LinearSpeed,
                     SpawnOriginId,
                     SpawnOriginResolutionMode,
                     fireAudioCue,
@@ -153,6 +176,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             public void NormalizeForEditor()
             {
                 fireModeId = Normalize(fireModeId);
+                motionStrategy = motionStrategy == ActorProjectileMotionStrategyKind.Linear ? motionStrategy : ActorProjectileMotionStrategyKind.Linear;
+                linearSpeed = LinearSpeed;
                 cooldownSeconds = CooldownSeconds;
                 fireAudioVolumeScale = FireAudioVolumeScale;
                 spawnOriginId = Normalize(spawnOriginId);

@@ -12,9 +12,11 @@ PlayerActorCommandInputHub
 -> PooledActorProjectileSpawnAdapter
 -> IPoolService
 -> RuntimeSpawnedActor
+-> ActorProjectileMotionEndpoint
 ```
 
 `ActorProjectileFireEndpoint` consome a surface de origem exposta por `ActorPresentationEndpoint` antes de montar o `ActorProjectileFireCommand`. O origin do tiro vem do `ActorProjectileFireProfileAsset` (`spawnOriginId` + `spawnOriginResolutionMode`) e a resolução acontece no endpoint, não no adapter técnico.
+`ActorProjectileFireEndpoint` também resolve o bootstrap de movimento linear a partir do `ActorProjectileFireProfileAsset.FireMode` e entrega `direction + speed + strategy` ao adapter.
 
 ## Pool preparation
 
@@ -182,6 +184,7 @@ Não criar `RuntimeSpawnedActorLifetime`, `RuntimeSpawnedActorPoolReturnAdapter`
 - `ActorPresentationPlanResolver` resolve o plano sem side-effects.
 - `UnityActorPresentationMaterializationAdapter` materializa o visual no container local.
 - `PooledActorProjectileSpawnAdapter` não passa a ser owner de materialização visual; ele permanece no trilho técnico de spawn.
+- `ActorProjectileMotionEndpoint` é o owner do movimento linear do projectile runtime-spawned.
 
 Regra observada:
 
@@ -189,6 +192,8 @@ Regra observada:
 - a presentation preparada pode existir sem ser requisito do tiro;
 - o contrato `visualContract='optional_for_runtime_spawn'` continua sendo o marcador de observabilidade.
 - `ActorPresentationEndpoint` pode expor `IPoolableSpawnOriginSurface` para consumers futuros, sem ligar ainda esse surface ao tiro.
+- `ActorProjectileFireProfileAsset.FireMode` carrega `motionStrategy=Linear` e `linearSpeed`; o spawn profile só referencia pool/materialization/lifecycle do projectile.
+- `ActorProjectileMotionTickAdvanced` é throttled no endpoint para evitar spam; o owner do movimento continua sendo `ActorProjectileMotionEndpoint`.
 
 ## ACT-PROJ-PRESENTATION-1A — Runtime-spawned projectile local presentation
 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   clips:
   - {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
-  mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
+  mixerGroup: {fileID: 8053365113438216514, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   baseVolume: 1
   loop: 0
   pitchMin: 0.98

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   runtimePolicy:
     runtimePersistentScenesPolicy: {fileID: 11400000, guid: 5cb9202de0bb9304c867f0d410f61dab, type: 2}
-    loggingConfig: {fileID: 11400000, guid: 20b21d047cb64a7bbf6fd8db8e9aa773, type: 2}
+    loggingConfig: {fileID: 11400000, guid: 53c663e53405a0b4a96d7d3e07a9e101, type: 2}
     reporter:
       dedupStrategy: 1
       cooldownSeconds: 5

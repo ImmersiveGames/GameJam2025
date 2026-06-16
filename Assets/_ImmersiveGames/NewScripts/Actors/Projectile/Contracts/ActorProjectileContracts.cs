@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
@@ -149,17 +150,59 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         };
     }
 
+    public enum ActorProjectileMotionStrategyKind
+    {
+        [InspectorName("Não definido")]
+        Unknown = 0,
+        [InspectorName("Linear")]
+        Linear = 1,
+    }
+
+    public readonly struct ActorProjectileMotionBootstrap
+    {
+        public ActorProjectileMotionBootstrap(
+            Vector3 direction,
+            float speed,
+            ActorProjectileMotionStrategyKind strategy,
+            string source,
+            string reason)
+        {
+            Direction = direction;
+            Speed = speed < 0f ? 0f : speed;
+            Strategy = strategy;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public Vector3 Direction { get; }
+        public float Speed { get; }
+        public ActorProjectileMotionStrategyKind Strategy { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public bool IsValid =>
+            Strategy == ActorProjectileMotionStrategyKind.Linear &&
+            Direction.sqrMagnitude > 0f &&
+            Speed > 0f &&
+            !string.IsNullOrWhiteSpace(Source) &&
+            !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public readonly struct ActorProjectileFireMode
     {
         public ActorProjectileFireMode(
             ActorProjectileFireModeId fireModeId,
             ActorProjectileSpawnProfileId spawnProfileId,
+            ActorProjectileSpawnProfileAsset spawnProfileAsset,
             PoolDefinitionAsset poolDefinition,
             ActorRole spawnedActorRole,
             ActorScope spawnedActorScope,
             ActorProjectileSpawnPattern spawnPattern,
             ActorProjectileMuzzlePolicyKind muzzlePolicy,
             ActorProjectileSpreadPolicyKind spreadPolicy,
+            ActorProjectileMotionStrategyKind motionStrategy,
+            float linearSpeed,
             PoolableSpawnOriginId spawnOriginId,
             PoolableSpawnOriginResolutionMode spawnOriginResolutionMode,
             AudioSfxCueAsset fireAudioCue,
@@ -169,12 +212,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         {
             FireModeId = fireModeId;
             SpawnProfileId = spawnProfileId;
+            SpawnProfileAsset = spawnProfileAsset;
             PoolDefinition = poolDefinition;
             SpawnedActorRole = spawnedActorRole;
             SpawnedActorScope = spawnedActorScope;
             SpawnPattern = spawnPattern;
             MuzzlePolicy = muzzlePolicy;
             SpreadPolicy = spreadPolicy;
+            MotionStrategy = motionStrategy;
+            LinearSpeed = linearSpeed < 0f ? 0f : linearSpeed;
             SpawnOriginId = spawnOriginId;
             SpawnOriginResolutionMode = spawnOriginResolutionMode;
             FireAudioCue = fireAudioCue;
@@ -185,12 +231,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public ActorProjectileFireModeId FireModeId { get; }
         public ActorProjectileSpawnProfileId SpawnProfileId { get; }
+        public ActorProjectileSpawnProfileAsset SpawnProfileAsset { get; }
         public PoolDefinitionAsset PoolDefinition { get; }
         public ActorRole SpawnedActorRole { get; }
         public ActorScope SpawnedActorScope { get; }
         public ActorProjectileSpawnPattern SpawnPattern { get; }
         public ActorProjectileMuzzlePolicyKind MuzzlePolicy { get; }
         public ActorProjectileSpreadPolicyKind SpreadPolicy { get; }
+        public ActorProjectileMotionStrategyKind MotionStrategy { get; }
+        public float LinearSpeed { get; }
         public PoolableSpawnOriginId SpawnOriginId { get; }
         public PoolableSpawnOriginResolutionMode SpawnOriginResolutionMode { get; }
         public AudioSfxCueAsset FireAudioCue { get; }
@@ -201,12 +250,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public bool IsValid =>
             FireModeId.IsValid &&
             SpawnProfileId.IsValid &&
+            SpawnProfileAsset != null &&
+            SpawnProfileAsset.IsValid &&
             PoolDefinition != null &&
             SpawnedActorRole != ActorRole.Unknown &&
             SpawnedActorScope != ActorScope.Unknown &&
             SpawnPattern.IsValid &&
             MuzzlePolicy != ActorProjectileMuzzlePolicyKind.Unknown &&
             SpreadPolicy != ActorProjectileSpreadPolicyKind.Unknown &&
+            MotionStrategy == ActorProjectileMotionStrategyKind.Linear &&
+            LinearSpeed > 0f &&
             SpawnOriginId.IsValid;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -225,6 +278,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorScope spawnedActorScope,
             Vector3 origin,
             Vector3 direction,
+            ActorProjectileMotionBootstrap motionBootstrap,
             string source,
             string reason)
         {
@@ -238,6 +292,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnedActorScope = spawnedActorScope;
             Origin = origin;
             Direction = direction;
+            MotionBootstrap = motionBootstrap;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -252,6 +307,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorScope SpawnedActorScope { get; }
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
+        public ActorProjectileMotionBootstrap MotionBootstrap { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool HasDirection => Direction.sqrMagnitude > 0f;
@@ -266,6 +322,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnedActorRole != ActorRole.Unknown &&
             SpawnedActorScope != ActorScope.Unknown &&
             HasDirection &&
+            MotionBootstrap.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
 

@@ -212,14 +212,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
+                $"event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' motionStrategy='{fireCommand.MotionBootstrap.Strategy}' linearSpeed='{fireCommand.MotionBootstrap.Speed:0.###}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
                 DebugUtility.Colors.Info);
 
             if (_spawnAdapter == null)
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"event='ActorProjectileSpawnAdapterMissing' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' spawnExecuted='False' poolCalled='False' dispatchStatus='RejectedUnsupportedCommand' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_adapter_missing'.",
+                    $"event='ActorProjectileSpawnAdapterMissing' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' motionStrategy='{fireCommand.MotionBootstrap.Strategy}' linearSpeed='{fireCommand.MotionBootstrap.Speed:0.###}' spawnExecuted='False' poolCalled='False' dispatchStatus='RejectedUnsupportedCommand' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_adapter_missing'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_spawn_adapter_missing");
@@ -229,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireSpawnAdapterCompleted' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' adapter='{SpawnAdapterName}' adapterResult='{adapterResult.Kind}' spawnExecuted='{adapterResult.SpawnExecuted}' poolCalled='{adapterResult.PoolCalled}' source='{nameof(ActorProjectileFireEndpoint)}' reason='{adapterResult.Reason}'.",
+                $"event='ActorProjectileFireSpawnAdapterCompleted' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' motionStrategy='{fireCommand.MotionBootstrap.Strategy}' linearSpeed='{fireCommand.MotionBootstrap.Speed:0.###}' adapter='{SpawnAdapterName}' adapterResult='{adapterResult.Kind}' spawnExecuted='{adapterResult.SpawnExecuted}' poolCalled='{adapterResult.PoolCalled}' source='{nameof(ActorProjectileFireEndpoint)}' reason='{adapterResult.Reason}'.",
                 adapterResult.IsFailed ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
             if (adapterResult.IsFailed || !adapterResult.IsAccepted)
@@ -408,6 +408,68 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
+            var spawnProfile = fireMode.SpawnProfileAsset;
+            if (spawnProfile == null)
+            {
+                const string missingSpawnProfileReason = "projectile_spawn_profile_missing";
+                readiness = ActorProjectileFireEndpointReadiness.Blocked(
+                    ActorProjectileFireEndpointReadinessKind.MissingProfile,
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
+                    resolvedFireModeId,
+                    ActorProjectileFireBlockedReasonKind.MissingSpawnProfile,
+                    missingSpawnProfileReason,
+                    "ActorProjectileFireEndpoint requires a spawn profile asset to resolve motion bootstrap.");
+                return false;
+            }
+
+            if (!spawnProfile.TryValidate(out string spawnProfileReason))
+            {
+                readiness = ActorProjectileFireEndpointReadiness.Blocked(
+                    ActorProjectileFireEndpointReadinessKind.MissingProfile,
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
+                    resolvedFireModeId,
+                    ActorProjectileFireBlockedReasonKind.MissingSpawnProfile,
+                    $"projectile_spawn_profile_invalid:{spawnProfileReason}",
+                    spawnProfileReason);
+                return false;
+            }
+
+            if (fireMode.MotionStrategy != ActorProjectileMotionStrategyKind.Linear)
+            {
+                readiness = ActorProjectileFireEndpointReadiness.Blocked(
+                    ActorProjectileFireEndpointReadinessKind.NotExecutable,
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
+                    resolvedFireModeId,
+                    ActorProjectileFireBlockedReasonKind.NotExecutable,
+                    "projectile_motion_strategy_linear_required",
+                    "ActorProjectileFireEndpoint currently supports only linear projectile motion.");
+                return false;
+            }
+
+            float linearSpeed = fireMode.LinearSpeed;
+            if (linearSpeed <= 0f)
+            {
+                readiness = ActorProjectileFireEndpointReadiness.Blocked(
+                    ActorProjectileFireEndpointReadinessKind.NotExecutable,
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
+                    resolvedFireModeId,
+                    ActorProjectileFireBlockedReasonKind.NotExecutable,
+                    "projectile_motion_linear_speed_invalid",
+                    "ActorProjectileFireEndpoint requires a positive linearSpeed.");
+                return false;
+            }
+
+            var motionBootstrap = new ActorProjectileMotionBootstrap(
+                direction.normalized,
+                linearSpeed,
+                fireMode.MotionStrategy,
+                nameof(ActorProjectileFireEndpoint),
+                "projectile_motion_bootstrap_resolved");
+
             command = new ActorProjectileFireCommand(
                 commandEnvelope.ActorId,
                 commandEnvelope.ActorInstanceRuntimeId,
@@ -419,6 +481,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 fireMode.SpawnedActorScope,
                 origin,
                 direction.normalized,
+                motionBootstrap,
                 nameof(ActorProjectileFireEndpoint),
                 "projectile_fire_command_built_passively");
 

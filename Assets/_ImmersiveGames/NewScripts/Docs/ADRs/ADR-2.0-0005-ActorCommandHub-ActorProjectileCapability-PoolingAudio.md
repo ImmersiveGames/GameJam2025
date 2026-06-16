@@ -2124,6 +2124,10 @@ ActivityEntryActorPresentationStage = owner apenas de actors que entram pela Act
 PooledActorProjectileSpawnAdapter = spawn técnico + observação de presentation, não owner de visual.
 ActorProjectileFireEndpoint = consumer da surface de origem materializada; o origin do tiro vem do `ActorPresentationEndpoint`, não do adapter.
 ActorProjectileFireProfileAsset = authoring source de `spawnOriginId` e `spawnOriginResolutionMode` para o fire mode.
+ActorProjectileFireProfileAsset.FireMode = authoring source de `motionStrategy=Linear` e `linearSpeed` para o projectile runtime-spawned.
+ActorProjectileSpawnProfileAsset = authoring source do pool/materialization/lifecycle do projectile runtime-spawned.
+ActorProjectileMotionEndpoint = owner do movimento linear por frame do projectile runtime-spawned.
+ActorProjectileMotionTickAdvanced = observability throttled (primeiro tick após bootstrap), não log por frame.
 ```
 
 Regra do corte:
@@ -2164,6 +2168,7 @@ Regra do corte:
 - o spawn lógico continua sendo validado por estado técnico/materialização lógica, não por visuais.
 - `ActorPresentationEndpoint` indexa anchors de origem materializados e expõe a surface runtime consumida pelo `ActorProjectileFireEndpoint`.
 - O mesmo rebuild da surface é acionado também pelo `ActivityEntryActorPresentationStage` para actors Activity-born; o endpoint segue como owner único do índice.
+- O `ActorProjectileMotionEndpoint` recebe bootstrap explícito de `direction + speed + strategy` depois do rent e do bind; o adapter não executa movimento por frame.
 
 
 ## ACT-PROJ-POOL-1B — Injected Pool Service for Projectile Spawn Runtime Tracker

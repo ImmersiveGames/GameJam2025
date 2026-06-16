@@ -15,8 +15,8 @@ MonoBehaviour:
   profileId: actor.projectile.spawn.primary
   poolDefinition: {fileID: 11400000, guid: 2829820cd78e491b98b4cfdf684fb795, type: 2}
   materializationKind: 3
+  spawnedActorRole: 4
+  spawnedActorScope: 1
   lifetimePolicy: 4
   resetPolicy: 1
   snapshotPolicy: 1
-  spawnedActorRole: 4
-  spawnedActorScope: 1
