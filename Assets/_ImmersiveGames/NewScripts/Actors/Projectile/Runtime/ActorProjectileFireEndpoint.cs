@@ -395,6 +395,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
+            var layerBootstrap = ResolveLayerBootstrap(
+                commandEnvelope,
+                resolvedFireModeId,
+                fireMode);
+
             if (direction.sqrMagnitude <= 0f)
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
@@ -482,6 +487,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 origin,
                 direction.normalized,
                 motionBootstrap,
+                layerBootstrap,
                 nameof(ActorProjectileFireEndpoint),
                 "projectile_fire_command_built_passively");
 
@@ -496,6 +502,83 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 throw new InvalidOperationException($"{origin} invalid projectile fire endpoint: kind='{readiness.Kind}' reason='{readiness.Reason}' message='{readiness.Message}'.");
             }
 
+        }
+
+        private ActorProjectileLayerBootstrap ResolveLayerBootstrap(
+            ActorCommandEnvelope commandEnvelope,
+            ActorProjectileFireModeId fireModeId,
+            ActorProjectileFireMode fireMode)
+        {
+            var skippedBootstrap = ActorProjectileLayerBootstrap.None;
+
+            if (fireMode.SpawnLayerMode == ActorProjectileSpawnLayerModeKind.None)
+            {
+                DebugUtility.Log(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileSpawnLayerOverrideSkipped' actorId='{commandEnvelope.ActorId}' actorInstanceRuntimeId='{commandEnvelope.ActorInstanceRuntimeId}' commandId='{commandEnvelope.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireModeId}' layerMode='None' layerIndex='-1' layerName='' applyLayerToChildren='{fireMode.ApplyLayerToChildren}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_layer_override_skipped' skipReason='projectile_spawn_layer_mode_none'.");
+                return skippedBootstrap;
+            }
+
+            if (fireMode.SpawnLayerMode != ActorProjectileSpawnLayerModeKind.Override)
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileSpawnLayerOverrideSkipped' actorId='{commandEnvelope.ActorId}' actorInstanceRuntimeId='{commandEnvelope.ActorInstanceRuntimeId}' commandId='{commandEnvelope.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireModeId}' layerMode='{fireMode.SpawnLayerMode}' layerIndex='-1' layerName='' applyLayerToChildren='{fireMode.ApplyLayerToChildren}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_layer_override_skipped' skipReason='projectile_spawn_layer_mode_invalid'.");
+                return skippedBootstrap;
+            }
+
+            uint mask = unchecked((uint)fireMode.SpawnLayerMask.value);
+            if (mask == 0)
+            {
+                DebugUtility.Log(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileSpawnLayerOverrideSkipped' actorId='{commandEnvelope.ActorId}' actorInstanceRuntimeId='{commandEnvelope.ActorInstanceRuntimeId}' commandId='{commandEnvelope.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireModeId}' layerMode='Override' layerIndex='-1' layerName='' applyLayerToChildren='{fireMode.ApplyLayerToChildren}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_layer_override_skipped' skipReason='projectile_spawn_layer_mask_empty'.");
+                return skippedBootstrap;
+            }
+
+            int resolvedLayerIndex = -1;
+            int bitCount = 0;
+            for (int bitIndex = 0; bitIndex < 32; bitIndex++)
+            {
+                int bit = 1 << bitIndex;
+                if (((int)mask & bit) == 0)
+                {
+                    continue;
+                }
+
+                bitCount++;
+                resolvedLayerIndex = bitIndex;
+            }
+
+            if (bitCount != 1)
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileSpawnLayerOverrideSkipped' actorId='{commandEnvelope.ActorId}' actorInstanceRuntimeId='{commandEnvelope.ActorInstanceRuntimeId}' commandId='{commandEnvelope.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireModeId}' layerMode='Override' layerIndex='-1' layerName='' applyLayerToChildren='{fireMode.ApplyLayerToChildren}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_layer_override_skipped' skipReason='projectile_spawn_layer_mask_invalid' maskBits='{mask}' bitCount='{bitCount}'.");
+                return skippedBootstrap;
+            }
+
+            string layerName = LayerMask.LayerToName(resolvedLayerIndex);
+            if (string.IsNullOrWhiteSpace(layerName))
+            {
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileSpawnLayerOverrideSkipped' actorId='{commandEnvelope.ActorId}' actorInstanceRuntimeId='{commandEnvelope.ActorInstanceRuntimeId}' commandId='{commandEnvelope.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireModeId}' layerMode='Override' layerIndex='{resolvedLayerIndex}' layerName='' applyLayerToChildren='{fireMode.ApplyLayerToChildren}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_layer_override_skipped' skipReason='projectile_spawn_layer_name_missing' maskBits='{mask}'.");
+                return skippedBootstrap;
+            }
+
+            var layerBootstrap = new ActorProjectileLayerBootstrap(
+                ActorProjectileSpawnLayerModeKind.Override,
+                resolvedLayerIndex,
+                layerName,
+                fireMode.ApplyLayerToChildren);
+
+            DebugUtility.Log(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileSpawnLayerResolved' actorId='{commandEnvelope.ActorId}' actorInstanceRuntimeId='{commandEnvelope.ActorInstanceRuntimeId}' commandId='{commandEnvelope.CommandId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireModeId}' layerMode='Override' layerIndex='{resolvedLayerIndex}' layerName='{layerName}' applyLayerToChildren='{fireMode.ApplyLayerToChildren}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_layer_resolved'.",
+                DebugUtility.Colors.Success);
+
+            return layerBootstrap;
         }
 
         private bool TryBuildDescriptor(

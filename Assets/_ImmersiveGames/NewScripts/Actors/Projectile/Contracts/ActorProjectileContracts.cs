@@ -158,6 +158,45 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         Linear = 1,
     }
 
+    public enum ActorProjectileSpawnLayerModeKind
+    {
+        [InspectorName("None")]
+        None = 0,
+        [InspectorName("Override")]
+        Override = 1,
+    }
+
+    public readonly struct ActorProjectileLayerBootstrap
+    {
+        public static ActorProjectileLayerBootstrap None => new(
+            ActorProjectileSpawnLayerModeKind.None,
+            -1,
+            string.Empty,
+            false);
+
+        public ActorProjectileLayerBootstrap(
+            ActorProjectileSpawnLayerModeKind mode,
+            int layerIndex,
+            string layerName,
+            bool applyLayerToChildren)
+        {
+            Mode = mode;
+            LayerIndex = mode == ActorProjectileSpawnLayerModeKind.None ? -1 : layerIndex;
+            LayerName = Normalize(layerName);
+            ApplyLayerToChildren = applyLayerToChildren;
+        }
+
+        public ActorProjectileSpawnLayerModeKind Mode { get; }
+        public int LayerIndex { get; }
+        public string LayerName { get; }
+        public bool ApplyLayerToChildren { get; }
+        public bool IsValid =>
+            Mode == ActorProjectileSpawnLayerModeKind.None ||
+            (Mode == ActorProjectileSpawnLayerModeKind.Override && LayerIndex >= 0 && LayerIndex <= 31 && !string.IsNullOrWhiteSpace(LayerName));
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public readonly struct ActorProjectileMotionBootstrap
     {
         public ActorProjectileMotionBootstrap(
@@ -201,6 +240,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorProjectileSpawnPattern spawnPattern,
             ActorProjectileMuzzlePolicyKind muzzlePolicy,
             ActorProjectileSpreadPolicyKind spreadPolicy,
+            ActorProjectileSpawnLayerModeKind spawnLayerMode,
+            LayerMask spawnLayerMask,
+            bool applyLayerToChildren,
             ActorProjectileMotionStrategyKind motionStrategy,
             float linearSpeed,
             PoolableSpawnOriginId spawnOriginId,
@@ -219,6 +261,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnPattern = spawnPattern;
             MuzzlePolicy = muzzlePolicy;
             SpreadPolicy = spreadPolicy;
+            SpawnLayerMode = spawnLayerMode;
+            SpawnLayerMask = spawnLayerMask;
+            ApplyLayerToChildren = applyLayerToChildren;
             MotionStrategy = motionStrategy;
             LinearSpeed = linearSpeed < 0f ? 0f : linearSpeed;
             SpawnOriginId = spawnOriginId;
@@ -238,6 +283,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorProjectileSpawnPattern SpawnPattern { get; }
         public ActorProjectileMuzzlePolicyKind MuzzlePolicy { get; }
         public ActorProjectileSpreadPolicyKind SpreadPolicy { get; }
+        public ActorProjectileSpawnLayerModeKind SpawnLayerMode { get; }
+        public LayerMask SpawnLayerMask { get; }
+        public bool ApplyLayerToChildren { get; }
         public ActorProjectileMotionStrategyKind MotionStrategy { get; }
         public float LinearSpeed { get; }
         public PoolableSpawnOriginId SpawnOriginId { get; }
@@ -258,6 +306,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnPattern.IsValid &&
             MuzzlePolicy != ActorProjectileMuzzlePolicyKind.Unknown &&
             SpreadPolicy != ActorProjectileSpreadPolicyKind.Unknown &&
+            (SpawnLayerMode == ActorProjectileSpawnLayerModeKind.None || SpawnLayerMode == ActorProjectileSpawnLayerModeKind.Override) &&
             MotionStrategy == ActorProjectileMotionStrategyKind.Linear &&
             LinearSpeed > 0f &&
             SpawnOriginId.IsValid;
@@ -279,6 +328,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Vector3 origin,
             Vector3 direction,
             ActorProjectileMotionBootstrap motionBootstrap,
+            ActorProjectileLayerBootstrap layerBootstrap,
             string source,
             string reason)
         {
@@ -293,6 +343,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Origin = origin;
             Direction = direction;
             MotionBootstrap = motionBootstrap;
+            LayerBootstrap = layerBootstrap;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -308,6 +359,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
         public ActorProjectileMotionBootstrap MotionBootstrap { get; }
+        public ActorProjectileLayerBootstrap LayerBootstrap { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool HasDirection => Direction.sqrMagnitude > 0f;
@@ -323,6 +375,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnedActorScope != ActorScope.Unknown &&
             HasDirection &&
             MotionBootstrap.IsValid &&
+            LayerBootstrap.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
 

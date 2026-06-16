@@ -16,7 +16,7 @@ PlayerActorCommandInputHub
 ```
 
 `ActorProjectileFireEndpoint` consome a surface de origem exposta por `ActorPresentationEndpoint` antes de montar o `ActorProjectileFireCommand`. O origin do tiro vem do `ActorProjectileFireProfileAsset` (`spawnOriginId` + `spawnOriginResolutionMode`) e a resolução acontece no endpoint, não no adapter técnico.
-`ActorProjectileFireEndpoint` também resolve o bootstrap de movimento linear a partir do `ActorProjectileFireProfileAsset.FireMode` e entrega `direction + speed + strategy` ao adapter.
+`ActorProjectileFireEndpoint` também resolve o bootstrap de movimento linear e o bootstrap de layer a partir do `ActorProjectileFireProfileAsset.FireMode` e entrega `direction + speed + strategy` e `layer` ao adapter.
 
 ## Pool preparation
 
@@ -54,6 +54,7 @@ Use it for:
 
 - fire mode identity;
 - origin id and resolution mode for the runtime spawn origin surface;
+- spawn layer mode/name/apply children para override runtime do actor spawnado;
 - spawn pattern;
 - muzzle policy;
 - spread policy;
@@ -65,6 +66,7 @@ Do not use it for:
 - pool capacity;
 - prefab identity;
 - spawned actor lifecycle execution;
+- layer override;
 - damage/collision/VFX/audio.
 
 ### ActorProjectileSpawnProfileAsset
@@ -76,7 +78,8 @@ Use it for:
 - typed `PoolDefinitionAsset` reference;
 - materialization kind;
 - lifetime/reset/snapshot policies for the spawned actor;
-- role/scope applied to `RuntimeSpawnedActor` during rent.
+- role/scope applied to `RuntimeSpawnedActor` during rent;
+- runtime layer baseline capture/restore is handled by `RuntimeSpawnedActor`, not authored here.
 
 Do not use it for:
 
@@ -107,6 +110,7 @@ Do not use it for:
 ## RuntimeSpawnedActor rule
 
 `RuntimeSpawnedActor` must remain prefab-neutral. ActorId, ActorInstanceRuntimeId, ActorRole and ActorScope are applied by `BindRuntimeMetadata(...)` after rent.
+When a fire mode requests a layer override, `RuntimeSpawnedActor` captures the root/children baseline once, applies the override, and restores the baseline on pool return.
 
 The prefab must not carry a concrete gameplay actor id for a specific pool/source.
 
@@ -193,6 +197,7 @@ Regra observada:
 - o contrato `visualContract='optional_for_runtime_spawn'` continua sendo o marcador de observabilidade.
 - `ActorPresentationEndpoint` pode expor `IPoolableSpawnOriginSurface` para consumers futuros, sem ligar ainda esse surface ao tiro.
 - `ActorProjectileFireProfileAsset.FireMode` carrega `motionStrategy=Linear` e `linearSpeed`; o spawn profile só referencia pool/materialization/lifecycle do projectile.
+- `ActorProjectileFireProfileAsset.FireMode` também carrega `spawnLayerMode`, `spawnLayerMask` e `applyLayerToChildren`; mask vazio significa sem override, sem fallback para `Default`, e o `RuntimeSpawnedActor` restaura o baseline de layer no retorno ao pool.
 - `ActorProjectileMotionTickAdvanced` é throttled no endpoint para evitar spam; o owner do movimento continua sendo `ActorProjectileMotionEndpoint`.
 
 ## ACT-PROJ-PRESENTATION-1A — Runtime-spawned projectile local presentation

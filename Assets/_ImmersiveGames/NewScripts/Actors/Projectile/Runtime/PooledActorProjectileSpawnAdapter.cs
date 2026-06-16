@@ -115,6 +115,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     spawnOrigin,
                     nameof(PooledActorProjectileSpawnAdapter));
 
+                if (command.LayerBootstrap.Mode == ActorProjectileSpawnLayerModeKind.Override &&
+                    !runtimeSpawnedActor.TryApplyLayerBootstrap(
+                        command.LayerBootstrap,
+                        nameof(PooledActorProjectileSpawnAdapter),
+                        "projectile_spawn_layer_bootstrap_applied",
+                        out string layerFailureReason,
+                        out string layerFailureMessage))
+                {
+                    ReturnRentedInstanceIfNeeded(poolDefinition, instance, layerFailureReason);
+                    return ActorProjectileSpawnAdapterResult.Failed(
+                        command,
+                        poolCalled,
+                        instance,
+                        runtimeSpawnedActor,
+                        layerFailureReason,
+                        layerFailureMessage);
+                }
+
                 var motionEndpoint = instance.GetComponent<ActorProjectileMotionEndpoint>();
                 if (motionEndpoint == null)
                 {

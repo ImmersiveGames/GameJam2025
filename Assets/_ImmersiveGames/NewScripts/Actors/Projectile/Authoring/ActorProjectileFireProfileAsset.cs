@@ -26,6 +26,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             [SerializeField, InspectorName("Perfil de spawn do projétil"), Tooltip("Define o que nasce quando este modo dispara: pool, role/scope e policies do actor spawnado. Não coloque prefab/pool direto no FireProfile.")]
             private ActorProjectileSpawnProfileAsset projectileSpawnProfile;
 
+            [Header("Layer do spawn")]
+            [SerializeField, InspectorName("Modo de layer"), Tooltip("Layer do projectile runtime-spawned. None não altera o layer; Override aplica o layer resolvido no RuntimeSpawnedActor.")]
+            private ActorProjectileSpawnLayerModeKind spawnLayerMode = ActorProjectileSpawnLayerModeKind.None;
+            [SerializeField, InspectorName("LayerMask do spawn"), Tooltip("LayerMask opcional usado quando o modo é Override. Mask vazio significa não aplicar override.")]
+            private LayerMask spawnLayerMask;
+            [SerializeField, InspectorName("Aplicar em children"), Tooltip("Quando ligado, o override de layer é aplicado também nos filhos do spawned actor.")]
+            private bool applyLayerToChildren;
+
             [Header("Movimento")]
             [SerializeField, InspectorName("Estratégia de movimento"), Tooltip("Estratégia de movimento deste fire mode. Este corte aceita apenas Linear.")]
             private ActorProjectileMotionStrategyKind motionStrategy = ActorProjectileMotionStrategyKind.Linear;
@@ -60,6 +68,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 
             public string FireModeId => Normalize(fireModeId);
             public ActorProjectileSpawnProfileAsset ProjectileSpawnProfile => projectileSpawnProfile;
+            public ActorProjectileSpawnLayerModeKind SpawnLayerMode => spawnLayerMode;
+            public LayerMask SpawnLayerMask => spawnLayerMask;
+            public bool ApplyLayerToChildren => applyLayerToChildren;
             public ActorProjectileMotionStrategyKind MotionStrategy => motionStrategy;
             public float LinearSpeed => linearSpeed < 0f ? 0f : linearSpeed;
             public AudioSfxCueAsset FireAudioCue => fireAudioCue;
@@ -130,6 +141,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     return false;
                 }
 
+                if (spawnLayerMode != ActorProjectileSpawnLayerModeKind.None && spawnLayerMode != ActorProjectileSpawnLayerModeKind.Override)
+                {
+                    reason = "projectile_spawn_layer_mode_invalid";
+                    return false;
+                }
+
                 if (motionStrategy != ActorProjectileMotionStrategyKind.Linear)
                 {
                     reason = "projectile_fire_motion_strategy_linear_required";
@@ -159,6 +176,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     pattern,
                     muzzlePolicy,
                     spreadPolicy,
+                    spawnLayerMode,
+                    SpawnLayerMask,
+                    ApplyLayerToChildren,
                     motionStrategy,
                     LinearSpeed,
                     SpawnOriginId,

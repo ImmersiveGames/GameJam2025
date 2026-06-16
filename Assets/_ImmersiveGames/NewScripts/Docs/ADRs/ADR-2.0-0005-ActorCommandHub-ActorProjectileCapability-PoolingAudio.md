@@ -2124,10 +2124,11 @@ ActivityEntryActorPresentationStage = owner apenas de actors que entram pela Act
 PooledActorProjectileSpawnAdapter = spawn técnico + observação de presentation, não owner de visual.
 ActorProjectileFireEndpoint = consumer da surface de origem materializada; o origin do tiro vem do `ActorPresentationEndpoint`, não do adapter.
 ActorProjectileFireProfileAsset = authoring source de `spawnOriginId` e `spawnOriginResolutionMode` para o fire mode.
-ActorProjectileFireProfileAsset.FireMode = authoring source de `motionStrategy=Linear` e `linearSpeed` para o projectile runtime-spawned.
+ActorProjectileFireProfileAsset.FireMode = authoring source de `spawnLayerMode`, `spawnLayerMask`, `applyLayerToChildren`, `motionStrategy=Linear` e `linearSpeed` para o projectile runtime-spawned; mask vazio significa skip sem bloquear o tiro e sem fallback para `Default`.
 ActorProjectileSpawnProfileAsset = authoring source do pool/materialization/lifecycle do projectile runtime-spawned.
 ActorProjectileMotionEndpoint = owner do movimento linear por frame do projectile runtime-spawned.
 ActorProjectileMotionTickAdvanced = observability throttled (primeiro tick após bootstrap), não log por frame.
+RuntimeSpawnedActor = owner da captura/restauração do baseline de layer no retorno ao pool.
 ```
 
 Regra do corte:

@@ -17,6 +17,11 @@ MonoBehaviour:
   fireModes:
   - fireModeId: fire.primary.single
     projectileSpawnProfile: {fileID: 11400000, guid: 51c969da3d1e4e129635d668e1bb65ee, type: 2}
+    spawnLayerMode: 1
+    spawnLayerMask:
+      serializedVersion: 2
+      m_Bits: 0
+    applyLayerToChildren: 1
     motionStrategy: 1
     linearSpeed: 18
     fireAudioCue: {fileID: 11400000, guid: e727285f5bb24cb6a6946aa1d77950f8, type: 2}
