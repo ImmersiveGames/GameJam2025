@@ -13,8 +13,7 @@ MonoBehaviour:
   m_Name: AudioSfxCue_ProjectileFire_Primary
   m_EditorClassIdentifier: 
   clips:
-  - {fileID: 8300000, guid: 05bcb9ac9fd43a04cb00a0b2bc69ba6e, type: 3}
-  - {fileID: 8300000, guid: 4f66a3b63139ff1469327f274505a1de, type: 3}
+  - {fileID: 8300000, guid: f7d7142862c5b8143b09ba8eaa0465db, type: 3}
   mixerGroup: {fileID: -4318554636943458447, guid: 6fd23e139137ef442ada1bb7ad0162da, type: 2}
   baseVolume: 1
   loop: 0

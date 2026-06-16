@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: AudioSfxEmission_ProjectileFire_Spatial3D
   m_EditorClassIdentifier: 
   emissionMode: 1
-  spatialBlend: 1
-  minDistance: 0.75
+  spatialBlend: 0.65
+  minDistance: 3
   maxDistance: 45

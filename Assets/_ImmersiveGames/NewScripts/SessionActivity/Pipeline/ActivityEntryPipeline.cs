@@ -72,6 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
         private readonly IActorCommandBindingAdapter _actorCommandBindingAdapter;
+        private readonly IPoolService _poolService;
         private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivityEntryCapabilityInventoryBuildStage _activityEntryCapabilityInventoryBuildStage;
@@ -137,8 +138,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
+            _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
             _actorCommandBindingAdapter = new ActorCommandBindingAdapter(
-                poolService ?? throw new ArgumentNullException(nameof(poolService)),
+                _poolService,
                 globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)));
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activityEntryCapabilityInventoryBuildStage = new ActivityEntryCapabilityInventoryBuildStage();
@@ -1125,6 +1127,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _runtimeBridge,
                     loadedSnapshotPayloadContext,
                     facts);
+
+                ActivityEntryPoolPreparationStage.Execute(
+                    command.Identity,
+                    actorInventoryFeed,
+                    _poolService,
+                    command.Source,
+                    command.Reason);
 
                 _logSink.LogEntryOwnerEvent(
                     "ActivityEntryCapabilityObjectSetupCompleted",

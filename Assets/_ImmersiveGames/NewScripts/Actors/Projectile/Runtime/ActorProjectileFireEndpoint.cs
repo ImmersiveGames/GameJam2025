@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -14,7 +15,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class ActorProjectileFireEndpoint : MonoBehaviour, IActorProjectileFireEndpoint, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider, IActorReleaseContributionProvider, IActorCapabilityReleaseEndpoint
+    public sealed class ActorProjectileFireEndpoint : MonoBehaviour, IActorProjectileFireEndpoint, IActorRuntimePoolDependencyProvider, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider, IActorReleaseContributionProvider, IActorCapabilityReleaseEndpoint
     {
         [Header("Projectile Fire Endpoint")]
         [SerializeField, InspectorName("Nome interno do endpoint"), Tooltip("Identificador técnico do endpoint local de fire/projectile. Usado para logs, readiness e correlação interna; não é nome visual do projétil.")]
@@ -51,6 +52,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         public string FireAudioAdapterName => Normalize(_fireAudioAdapterName);
         public int TrackedSpawnCount => _spawnRuntimeState.TrackedSpawnCount;
         public bool HasConfiguredSpawnRuntimePoolService => _spawnRuntimeState.HasConfiguredPoolService;
+        public IReadOnlyList<PoolDefinitionAsset> RuntimePoolDefinitions => fireProfile == null
+            ? Array.Empty<PoolDefinitionAsset>()
+            : fireProfile.GetRuntimePoolDefinitions();
 
         public void ConfigureSpawnAdapter(
             IActorProjectileSpawnAdapter spawnAdapter,

@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (_pools.TryGetValue(validatedDefinition, out var existingPool))
             {
                 DebugUtility.LogVerbose(typeof(PoolService),
-                    $"Ensure no-op (already registered). asset='{validatedDefinition.name}' active={existingPool.ActiveCount} inactive={existingPool.InactiveCount} total={existingPool.TotalCount}.",
+                    $"Ensure no-op (already registered). asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' active={existingPool.ActiveCount} inactive={existingPool.InactiveCount} total={existingPool.TotalCount}.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -54,36 +54,41 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' lifetimeScope='{validatedDefinition.LifetimeScope}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
+                $"Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' lifetimeScope='{validatedDefinition.LifetimeScope}' registrationMode='{validatedDefinition.RegistrationMode}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
                 DebugUtility.Colors.Info);
         }
 
         public void Prewarm(PoolDefinitionAsset definition)
         {
-            var pool = GetOrCreatePool(definition);
+            var validatedDefinition = ValidateDefinition(definition);
+            EnsureRegistered(validatedDefinition);
+            var pool = GetRegisteredPoolOrFail(validatedDefinition);
             pool.Prewarm();
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"Prewarm asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                $"Prewarm asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
         }
 
         public GameObject Rent(PoolDefinitionAsset definition, Transform parent = null)
         {
-            var pool = GetOrCreatePool(definition);
+            var validatedDefinition = ValidateDefinition(definition);
+            var pool = TryGetRegisteredPool(validatedDefinition, out var registeredPool)
+                ? registeredPool
+                : TryAutoRegisterForRent(validatedDefinition);
             try
             {
                 var instance = pool.Rent(parent);
 
                 DebugUtility.LogVerbose(typeof(PoolService),
-                    $"Rent asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                    $"Rent asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                     DebugUtility.Colors.Info);
                 return instance;
             }
             catch (InvalidOperationException ex)
             {
                 DebugUtility.LogError(typeof(PoolService),
-                    $"Rent failed by limit. asset='{definition.name}' reason='{ex.Message}'.");
+                    $"Rent failed by limit. asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' reason='{ex.Message}'.");
                 throw;
             }
         }
@@ -96,11 +101,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                     "Pooling Return requires a non-null GameObject instance.");
             }
 
-            var pool = GetOrCreatePool(definition);
+            var pool = GetRegisteredPoolOrFail(ValidateDefinition(definition));
             pool.Return(instance);
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"Return asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                $"Return asset='{definition.name}' registrationMode='{definition.RegistrationMode}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -190,11 +195,32 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 DebugUtility.Colors.Info);
         }
 
-        private GameObjectPool GetOrCreatePool(PoolDefinitionAsset definition)
+        private bool TryGetRegisteredPool(PoolDefinitionAsset definition, out GameObjectPool pool)
         {
-            var validated = ValidateDefinition(definition);
-            EnsureRegistered(validated);
-            return _pools[validated];
+            return _pools.TryGetValue(definition, out pool);
+        }
+
+        private GameObjectPool GetRegisteredPoolOrFail(PoolDefinitionAsset definition)
+        {
+            if (TryGetRegisteredPool(definition, out var pool))
+            {
+                return pool;
+            }
+
+            throw new InvalidOperationException(
+                $"[Pooling] Pool must be registered before use. asset='{definition.name}' registrationMode='{definition.RegistrationMode}'.");
+        }
+
+        private GameObjectPool TryAutoRegisterForRent(PoolDefinitionAsset definition)
+        {
+            if (definition.RegistrationMode != PoolRegistrationMode.LazyOnFirstRent)
+            {
+                throw new InvalidOperationException(
+                    $"[Pooling] Pool requires explicit registration before rent. asset='{definition.name}' registrationMode='{definition.RegistrationMode}'.");
+            }
+
+            EnsureRegistered(definition);
+            return GetRegisteredPoolOrFail(definition);
         }
 
         private static PoolDefinitionAsset ValidateDefinition(PoolDefinitionAsset definition)
@@ -220,4 +246,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
         }
     }
 }
-

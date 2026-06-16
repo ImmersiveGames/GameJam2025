@@ -84,6 +84,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
             CallPoolRent(instance);
             instance.SetActive(true);
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolObjectRentPrepared' asset='{Definition.name}' instanceName='{instance.name}' poolLabel='{Sanitize(Definition.PoolLabel)}' lifetimeScope='{Definition.LifetimeScope}' active='{ActiveCount}' inactive='{InactiveCount}' total='{TotalCount}' reason='pool_object_rent_hook_completed'.",
+                DebugUtility.Colors.Info);
             return instance;
         }
 
@@ -185,7 +188,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             var runtimeInstance = new PoolRuntimeInstance(Definition, instance, this);
             _instancesByObject.Add(instance, runtimeInstance);
             _available.Enqueue(runtimeInstance);
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolObjectCreated' asset='{Definition.name}' instanceName='{instance.name}' poolLabel='{Sanitize(Definition.PoolLabel)}' lifetimeScope='{Definition.LifetimeScope}' isExpansion='{isExpansion}' total='{TotalCount}' inactive='{InactiveCount}' reason='pool_object_instantiated'.",
+                DebugUtility.Colors.Info);
             CallPoolCreated(instance);
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolObjectPrepared' asset='{Definition.name}' instanceName='{instance.name}' poolLabel='{Sanitize(Definition.PoolLabel)}' lifetimeScope='{Definition.LifetimeScope}' isExpansion='{isExpansion}' total='{TotalCount}' inactive='{InactiveCount}' reason='pool_object_created_hook_completed'.",
+                DebugUtility.Colors.Info);
 
             if (isExpansion)
             {
@@ -328,4 +337,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
         }
     }
 }
-

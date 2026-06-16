@@ -19,4 +19,5 @@ MonoBehaviour:
   lifetimeScope: 1
   autoReturnSeconds: 0
   poolLabel: pool.projectile.primary
+  registrationMode: 2
   prewarm: 1

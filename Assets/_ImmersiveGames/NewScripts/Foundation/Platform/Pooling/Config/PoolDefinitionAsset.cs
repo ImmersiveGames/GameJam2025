@@ -10,6 +10,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
         Activity = 1,
     }
 
+    public enum PoolRegistrationMode
+    {
+        LazyOnFirstRent = 0,
+        ExplicitPrepareOnly = 1,
+        ActivityEntry = 2,
+        RouteEntry = 3,
+        GlobalBoot = 4
+    }
+
     [CreateAssetMenu(
         fileName = "PoolDefinitionAsset",
         menuName = "ImmersiveGames/Infrastructure/Pooling/PoolDefinitionAsset",
@@ -37,8 +46,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
         [Header("Debug / bootstrap")]
         [SerializeField, InspectorName("Nome amigável do pool"), Tooltip("Label observacional do pool no Inspector/log. Não substitui referência tipada ao PoolDefinitionAsset.")]
         private string poolLabel = "pool";
+        [SerializeField, InspectorName("Quando registrar"), Tooltip("Define quando o pool deve ser registrado pelo owner canônico. LazyOnFirstRent mantém o registro no primeiro Rent; os modos explícitos dependem de pipeline/composer dedicados.")]
+        private PoolRegistrationMode registrationMode = PoolRegistrationMode.LazyOnFirstRent;
         [FormerlySerializedAs("prewarmOnEnsure")]
-        [SerializeField, InspectorName("Criar instâncias ao registrar"), Tooltip("Se ativo, o pool é preaquecido quando garantido pelo serviço canônico.")]
+        [SerializeField, InspectorName("Criar instâncias ao registrar"), Tooltip("Se ativo, o pool cria initialSize no momento em que for registrado. Não decide quando o registro acontece.")]
         private bool prewarm;
 
         public GameObject Prefab => prefab;
@@ -48,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
         public PoolLifetimeScope LifetimeScope => lifetimeScope;
         public float AutoReturnSeconds => autoReturnSeconds;
         public string PoolLabel => poolLabel;
+        public PoolRegistrationMode RegistrationMode => registrationMode;
         public bool Prewarm => prewarm;
 
 #if UNITY_EDITOR
@@ -80,6 +92,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
                 FailFast("PoolDefinitionAsset invalid: 'maxSize' must be >= 'initialSize'.");
             }
 
+            if (!Enum.IsDefined(typeof(PoolRegistrationMode), registrationMode))
+            {
+                FailFast("PoolDefinitionAsset invalid: 'registrationMode' must be a defined value.");
+            }
         }
 #endif
 
@@ -90,4 +106,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
         }
     }
 }
-

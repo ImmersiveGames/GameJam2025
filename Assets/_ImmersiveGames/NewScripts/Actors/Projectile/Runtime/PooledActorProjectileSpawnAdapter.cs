@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     {
         private const float TransformPositionTolerance = 0.01f;
         private const float TransformRotationTolerance = 0.01f;
+        private const string VisualContractOptionalForRuntimeSpawn = "optional_for_runtime_spawn";
 
         private readonly string _adapterId;
         private readonly Transform _spawnParent;
@@ -231,6 +233,33 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
+            bool presentationEndpointPresent = false;
+            string presentationProfileId = "none";
+            bool presentationVisualRootPresent = false;
+
+            var capabilitySurface = runtimeSpawnedActor.CapabilitySurface;
+            var presentationEndpoint = capabilitySurface?.PresentationEndpoint;
+            if (presentationEndpoint != null)
+            {
+                presentationEndpointPresent = true;
+
+                string resolvedProfileId = Normalize(presentationEndpoint.Profile?.ProfileId);
+                if (!string.IsNullOrWhiteSpace(resolvedProfileId))
+                {
+                    presentationProfileId = resolvedProfileId;
+                }
+
+                if (presentationEndpoint.TryGetContainer(
+                        ActorPresentationSlotKind.VisualRoot,
+                        "visual.root",
+                        out var visualRootContainer) &&
+                    visualRootContainer != null &&
+                    visualRootContainer.HasContainerTransform)
+                {
+                    presentationVisualRootPresent = true;
+                }
+            }
+
             Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(includeInactive: true);
             int rendererCount = renderers?.Length ?? 0;
             int enabledRendererCount = 0;
@@ -289,33 +318,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(PooledActorProjectileSpawnAdapter),
-                $"event='ActorProjectileSpawnVisualObserved' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' rendererNames='{Normalize(rendererNames)}' materialNames='{Normalize(materialNames)}' position='{FormatVector(actualPosition)}' rotation='{FormatQuaternion(actualRotation)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_visual_observed'.",
+                $"event='ActorProjectileSpawnVisualObserved' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' presentationEndpointPresent='{presentationEndpointPresent}' presentationProfileId='{presentationProfileId}' presentationVisualRootPresent='{presentationVisualRootPresent}' visualContract='{VisualContractOptionalForRuntimeSpawn}' rendererNames='{Normalize(rendererNames)}' materialNames='{Normalize(materialNames)}' position='{FormatVector(actualPosition)}' rotation='{FormatQuaternion(actualRotation)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_visual_observed'.",
                 DebugUtility.Colors.Info);
-
-            if (rendererCount <= 0)
-            {
-                failureReason = "projectile_spawn_visual_renderer_missing";
-                failureMessage = "Projectile spawned instance has no Renderer components.";
-                return false;
-            }
-
-            if (enabledRendererCount <= 0)
-            {
-                failureReason = "projectile_spawn_visual_renderer_disabled";
-                failureMessage = "Projectile spawned instance has no enabled Renderer components.";
-                return false;
-            }
-
-            if (validMaterialCount <= 0)
-            {
-                failureReason = "projectile_spawn_visual_material_missing";
-                failureMessage = "Projectile spawned instance has no valid shared material.";
-                return false;
-            }
 
             DebugUtility.Log(
                 typeof(PooledActorProjectileSpawnAdapter),
-                $"event='ActorProjectileSpawnInstancePrepared' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' positionApplied='{positionApplied}' rotationApplied='{rotationApplied}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' validMaterialCount='{validMaterialCount}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_instance_prepared'.",
+                $"event='ActorProjectileSpawnInstancePrepared' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' positionApplied='{positionApplied}' rotationApplied='{rotationApplied}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' presentationEndpointPresent='{presentationEndpointPresent}' presentationProfileId='{presentationProfileId}' presentationVisualRootPresent='{presentationVisualRootPresent}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_instance_prepared'.",
                 DebugUtility.Colors.Success);
 
             return true;

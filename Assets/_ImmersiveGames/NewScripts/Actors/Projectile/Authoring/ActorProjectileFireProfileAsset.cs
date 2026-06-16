@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
@@ -169,6 +171,46 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
         public ActorProjectileFireModeId DefaultFireModeId => new(Normalize(defaultFireModeId));
         public int FireModeCount => fireModes == null ? 0 : fireModes.Length;
         public bool IsValid => TryValidate(out _);
+
+        public IReadOnlyList<PoolDefinitionAsset> GetRuntimePoolDefinitions()
+        {
+            if (fireModes == null || fireModes.Length == 0)
+            {
+                return Array.Empty<PoolDefinitionAsset>();
+            }
+
+            List<PoolDefinitionAsset> poolDefinitions = new();
+            HashSet<int> uniquePoolDefinitionIds = new();
+            for (int index = 0; index < fireModes.Length; index++)
+            {
+                var fireMode = fireModes[index];
+                if (fireMode == null)
+                {
+                    throw new InvalidOperationException($"ActorProjectileFireProfileAsset invalid fire mode at index='{index}'. asset='{name}'.");
+                }
+
+                if (!fireMode.TryBuild(out var builtFireMode, out string reason))
+                {
+                    throw new InvalidOperationException($"ActorProjectileFireProfileAsset invalid fire mode='{fireMode.FireModeId}' at index='{index}'. reason='{reason}' asset='{name}'.");
+                }
+
+                PoolDefinitionAsset poolDefinition = builtFireMode.PoolDefinition;
+                if (poolDefinition == null)
+                {
+                    continue;
+                }
+
+                int poolDefinitionId = poolDefinition.GetInstanceID();
+                if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
+                {
+                    continue;
+                }
+
+                poolDefinitions.Add(poolDefinition);
+            }
+
+            return poolDefinitions.Count == 0 ? Array.Empty<PoolDefinitionAsset>() : poolDefinitions;
+        }
 
         public bool TryGetDefaultFireMode(out ActorProjectileFireMode fireMode, out string reason)
         {

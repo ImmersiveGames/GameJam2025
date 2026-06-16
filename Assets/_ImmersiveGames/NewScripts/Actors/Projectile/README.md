@@ -14,6 +14,12 @@ PlayerActorCommandInputHub
 -> RuntimeSpawnedActor
 ```
 
+## Pool preparation
+
+`ActivityEntryPoolPreparationStage` consulta `IActorRuntimePoolDependencyProvider` nos actors descobertos na Activity Entry e chama `IPoolService.EnsureRegistered(...)` apenas para pools com `registrationMode == ActivityEntry` antes de `ActivityRunning`.
+
+`ActorProjectileFireEndpoint` declara suas dependências de pool a partir do `ActorProjectileFireProfileAsset` e do `ActorProjectileSpawnProfileAsset` dos fire modes. O pool primário do projectile fica em `registrationMode=ActivityEntry` com `prewarm=true`.
+
 ## Active authoring assets
 
 ```text
@@ -145,7 +151,25 @@ O projectile não possui componente próprio de lifetime/return.
 
 - Cooldown de disparo: `ActorProjectileFireEndpoint`, timer local por `fireModeId`.
 - Return ao pool: `PoolDefinitionAsset.autoReturnSeconds` + módulo canônico de pooling.
-- `PooledActorProjectileSpawnAdapter`: aluga, aplica metadata, valida materialização e retorna resultado.
+- `PooledActorProjectileSpawnAdapter`: aluga, aplica metadata, valida materialização lógica do actor runtime-spawned e observa visual/presentation como contrato opcional.
 - `RuntimeSpawnedActor`: guarda origem (`ownerActorId`, `ownerActorInstanceRuntimeId`, `spawnProfileId`, `originPoolDefinition`, `commandSequence`).
 
 Não criar `RuntimeSpawnedActorLifetime`, `RuntimeSpawnedActorPoolReturnAdapter` ou trilho paralelo de return-to-pool dentro de projectile.
+
+## ACT-PROJ-PRESENTATION-1A — Runtime-spawned projectile local presentation
+
+`ProjectileActor_Primary.prefab` declara `ActorPresentationEndpoint` no root do Actor e um `VisualRoot` local (`VisualRoot` / `visual.root`) como capability authoring do projectile.
+
+- O shot path continua sendo:
+
+```text
+PlayerActorCommandInputHub
+-> ActorProjectileFireEndpoint
+-> PooledActorProjectileSpawnAdapter
+-> IPoolService
+-> RuntimeSpawnedActor
+```
+
+- `ActivityEntryActorPresentationStage` não faz parte do fluxo de tiro.
+- `PooledActorProjectileSpawnAdapter` só observa a presença de presentation e visual.
+- `Renderer` / material continuam observáveis, não são hard-gate de spawn lógico.

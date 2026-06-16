@@ -1950,6 +1950,60 @@ PoolDefinitionAsset.prewarm=true
 - Consumers de gameplay devem chamar `EnsureRegistered`/`Rent`; nao devem decidir `Prewarm`.
 - `Prewarm(definition)` permanece no contrato como comando explicito de QA/manutencao.
 
+### POOL-CONFIG-1A — Pool preparation timing policy — APPLIED
+
+`PoolDefinitionAsset` agora declara quando um pool pode ser registrado:
+
+```csharp
+public enum PoolRegistrationMode
+{
+    LazyOnFirstRent = 0,
+    ExplicitPrepareOnly = 1,
+    ActivityEntry = 2,
+    RouteEntry = 3,
+    GlobalBoot = 4
+}
+```
+
+Ownership final:
+
+- `PoolDefinitionAsset` e authoring data e policy de timing.
+- `PoolService` executa registro/prewarm, mas nao decide lifecycle de Activity/Route/Global.
+- `ActivityEntryPoolPreparationStage` prepara apenas pools com `registrationMode == ActivityEntry`.
+- `PoolService.Rent` so auto-registra em `LazyOnFirstRent`.
+- `PoolService.Rent` falha explicitamente para outros modos quando o pool ainda nao foi preparado.
+
+`prewarm` continua significando apenas "criar `initialSize` quando o registro acontecer". Ele nao decide timing.
+
+Nao existe neste corte um owner/catálogo canônico para executar `GlobalBoot` em toda a aplicação sem inventar busca global por assets. Esse caminho fica pendente para um corte de AudioRuntime ou para um catalogador global dedicado.
+
+Config final relevante:
+
+- `PoolDefinition_PrimaryProjectile` -> `registrationMode=ActivityEntry`, `prewarm=true`
+- `PoolDefinition_AudioProjectileFireVoices` -> permanece pendente de owner de boot global
+
+### POOL-PREP-1A/1B â€” Activity entry preparation e hooks de objeto pooled
+
+`ActivityEntryPoolPreparationStage` passa a ser o owner da preparacao antecipada dos pools declarados pelos endpoints/capabilities descobertos na Activity Entry.
+
+Shape ativo:
+
+```text
+ActivityEntryPoolPreparationStage
+-> IActorRuntimePoolDependencyProvider
+-> IPoolService.EnsureRegistered(definition)
+-> PoolService
+-> GameObjectPool.Prewarm()
+```
+
+`GameObjectPool` ja executa `OnPoolCreated()` e `OnPoolRent()` nos componentes `IPoolableObject`; este corte apenas adiciona observabilidade minima:
+
+- `PoolObjectCreated`
+- `PoolObjectPrepared`
+- `PoolObjectRentPrepared`
+
+`OnPoolCreated()` continua sendo o hook canônico para preparacao local do objeto criado. O proximo corte pode materializar presentation ali sem pagar custo no primeiro tiro.
+
 ### Restricoes
 
 - Sem novo lifecycle de projectile.
@@ -2046,9 +2100,32 @@ Decisão normativa:
 - `IPoolService` ausente é erro de configuração.
 - `PooledActorProjectileSpawnAdapter` não pode criar fallback silencioso para pool.
 - `PooledActorProjectileSpawnAdapter` não pode consultar `DependencyManager.Provider`.
+- `PooledActorProjectileSpawnAdapter` materializa o actor lógico runtime-spawned; `Renderer`, `Renderer.enabled` e material válido são observação explícita, não requisito de sucesso do spawn técnico.
+- `visualContract='optional_for_runtime_spawn'` é o contrato canônico para registrar que o visual/presentation não é hard-gate do adapter.
 - O tracker de runtime spawned fica fora deste corte; ele pertence à frente de reset/release/lifecycle.
 
 Sem alteração de reset/release, permission/gate, pool definition, spawn profile ou `IPoolService`.
+
+## ACT-PROJ-PRESENTATION-1A — Runtime-spawned projectile local presentation
+
+`ProjectileActor_Primary.prefab` agora declara `ActorPresentationEndpoint` no root do Actor e um `VisualRoot` local (`VisualRoot` / `visual.root`) como capability authoring do projectile.
+
+Frente confirmada:
+
+```text
+RuntimeSpawnedActor = identidade/runtime metadata/lifecycle do projectile.
+ActorPresentationEndpoint = capability local de presentation do projectile.
+ActorPresentationContainer = container visual local, não spawn point.
+ActivityEntryActorPresentationStage = owner apenas de actors que entram pela Activity.
+PooledActorProjectileSpawnAdapter = spawn técnico + observação de presentation, não owner de visual.
+```
+
+Regra do corte:
+
+- o shot path não chama `ActivityEntryActorPresentationStage`;
+- `Renderer` e material não viram hard-gate de spawn lógico;
+- `presentationEndpointPresent`, `presentationProfileId` e `presentationVisualRootPresent` devem aparecer nos logs de observação do adapter quando a presentation existir;
+- o contrato `visualContract='optional_for_runtime_spawn'` permanece.
 
 
 ## ACT-PROJ-POOL-1B — Injected Pool Service for Projectile Spawn Runtime Tracker
