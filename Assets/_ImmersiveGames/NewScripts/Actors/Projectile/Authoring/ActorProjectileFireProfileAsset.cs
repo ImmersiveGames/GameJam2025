@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
@@ -36,6 +37,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             private ActorProjectileMuzzlePolicyKind muzzlePolicy = ActorProjectileMuzzlePolicyKind.Unknown;
             [SerializeField, Min(0f), InspectorName("Tempo entre disparos (s)"), Tooltip("Cooldown mínimo entre disparos deste modo, em segundos. 0 permite disparo sem cooldown local.")]
             private float cooldownSeconds;
+            [SerializeField, InspectorName("ID da origem de spawn"), Tooltip("ID da origem materializada na presentation usada para resolver o origin/direction do disparo. Deve corresponder a um PoolableSpawnOriginAnchor quando existir anchor typed.")]
+            private string spawnOriginId = "actor.player.primary.origin";
+            [SerializeField, InspectorName("Modo de resolução da origem"), Tooltip("Define se o disparo exige anchor typed ou se pode usar fallback explícito para o root/emitter materializado quando o anchor não existir.")]
+            private PoolableSpawnOriginResolutionMode spawnOriginResolutionMode = PoolableSpawnOriginResolutionMode.PreferTypedOriginUseEmitterRoot;
 
             [Header("Planejado / sem efeito runtime completo no MVP atual")]
             [SerializeField, InspectorName("Padrão do disparo"), Tooltip("Single é o caminho runtime validado. LinearBurst e RadialArc permanecem como authoring planejado, mas ainda não geram múltiplos spawns no MVP atual.")]
@@ -55,6 +60,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             public ActorProjectileMuzzlePolicyKind MuzzlePolicy => muzzlePolicy;
             public ActorProjectileSpreadPolicyKind SpreadPolicy => spreadPolicy;
             public float CooldownSeconds => cooldownSeconds < 0f ? 0f : cooldownSeconds;
+            public PoolableSpawnOriginId SpawnOriginId => new(spawnOriginId);
+            public PoolableSpawnOriginResolutionMode SpawnOriginResolutionMode => spawnOriginResolutionMode;
             public int ProjectileCount => projectileCount < 0 ? 0 : projectileCount;
             public float RadialArcDegrees => radialArcDegrees < 0f ? 0f : radialArcDegrees;
 
@@ -103,6 +110,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     return false;
                 }
 
+                if (!SpawnOriginId.IsValid)
+                {
+                    reason = "spawn_origin_id_missing";
+                    return false;
+                }
+
                 if (spreadPolicy == ActorProjectileSpreadPolicyKind.Unknown)
                 {
                     reason = "spread_policy_missing";
@@ -125,6 +138,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     pattern,
                     muzzlePolicy,
                     spreadPolicy,
+                    SpawnOriginId,
+                    SpawnOriginResolutionMode,
                     fireAudioCue,
                     FireAudioVolumeScale,
                     CooldownSeconds,
@@ -140,6 +155,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                 fireModeId = Normalize(fireModeId);
                 cooldownSeconds = CooldownSeconds;
                 fireAudioVolumeScale = FireAudioVolumeScale;
+                spawnOriginId = Normalize(spawnOriginId);
                 projectileCount = spawnPattern == ActorProjectileSpawnPatternKind.Single ? 1 : Math.Max(2, ProjectileCount);
                 radialArcDegrees = spawnPattern == ActorProjectileSpawnPatternKind.RadialArc ? Math.Max(0.01f, RadialArcDegrees) : RadialArcDegrees;
             }

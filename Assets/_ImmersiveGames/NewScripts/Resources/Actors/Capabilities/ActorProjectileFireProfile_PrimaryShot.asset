@@ -19,6 +19,8 @@ MonoBehaviour:
     projectileSpawnProfile: {fileID: 11400000, guid: 51c969da3d1e4e129635d668e1bb65ee, type: 2}
     fireAudioCue: {fileID: 11400000, guid: e727285f5bb24cb6a6946aa1d77950f8, type: 2}
     fireAudioVolumeScale: 2.5
+    spawnOriginId: actor.player.primary.origin
+    spawnOriginResolutionMode: 1
     spawnPattern: 1
     muzzlePolicy: 1
     spreadPolicy: 1

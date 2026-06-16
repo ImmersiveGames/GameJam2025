@@ -2122,6 +2122,8 @@ ActorPresentationEndpoint = capability local de presentation do projectile.
 ActorPresentationContainer = container visual local, não spawn point.
 ActivityEntryActorPresentationStage = owner apenas de actors que entram pela Activity.
 PooledActorProjectileSpawnAdapter = spawn técnico + observação de presentation, não owner de visual.
+ActorProjectileFireEndpoint = consumer da surface de origem materializada; o origin do tiro vem do `ActorPresentationEndpoint`, não do adapter.
+ActorProjectileFireProfileAsset = authoring source de `spawnOriginId` e `spawnOriginResolutionMode` para o fire mode.
 ```
 
 Regra do corte:
@@ -2160,6 +2162,8 @@ Regra do corte:
 - `Renderer` e material seguem como observação, não como hard-gate;
 - `visualContract='optional_for_runtime_spawn'` permanece como contrato de observabilidade;
 - o spawn lógico continua sendo validado por estado técnico/materialização lógica, não por visuais.
+- `ActorPresentationEndpoint` indexa anchors de origem materializados e expõe a surface runtime consumida pelo `ActorProjectileFireEndpoint`.
+- O mesmo rebuild da surface é acionado também pelo `ActivityEntryActorPresentationStage` para actors Activity-born; o endpoint segue como owner único do índice.
 
 
 ## ACT-PROJ-POOL-1B — Injected Pool Service for Projectile Spawn Runtime Tracker

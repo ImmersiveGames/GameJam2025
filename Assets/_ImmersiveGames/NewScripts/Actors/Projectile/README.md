@@ -14,6 +14,8 @@ PlayerActorCommandInputHub
 -> RuntimeSpawnedActor
 ```
 
+`ActorProjectileFireEndpoint` consome a surface de origem exposta por `ActorPresentationEndpoint` antes de montar o `ActorProjectileFireCommand`. O origin do tiro vem do `ActorProjectileFireProfileAsset` (`spawnOriginId` + `spawnOriginResolutionMode`) e a resolução acontece no endpoint, não no adapter técnico.
+
 ## Pool preparation
 
 `ActivityEntryPoolPreparationStage` consulta `IActorRuntimePoolDependencyProvider` nos actors descobertos na Activity Entry e chama `IPoolService.EnsureRegistered(...)` apenas para pools com `registrationMode == ActivityEntry` antes de `ActivityRunning`.
@@ -30,6 +32,9 @@ GameObjectPool.OnPoolCreated()
 ```
 
 Esse preparo materializa a presentation local antes do primeiro rent. O adapter de spawn continua responsável apenas pelo rent tecnicamente válido e pela observabilidade da presentation já preparada.
+Quando uma presentation materializada expõe anchors de origem, o owner local é `ActorPresentationEndpoint`; o adapter técnico de projectile não resolve anchor nem lê hierarquia de origem.
+O mesmo rebuild da surface também é acionado pelo `ActivityEntryActorPresentationStage` para actors materializados pela Activity Entry, mantendo um único owner/index no endpoint.
+O tiro consome essa surface de origem de forma explícita; ausência de renderer/material continua sendo observação, não hard-gate do spawn lógico.
 
 ## Active authoring assets
 
@@ -46,6 +51,7 @@ Owner: fire behavior.
 Use it for:
 
 - fire mode identity;
+- origin id and resolution mode for the runtime spawn origin surface;
 - spawn pattern;
 - muzzle policy;
 - spread policy;
@@ -182,6 +188,7 @@ Regra observada:
 - renderer/material não são hard-gate do spawn técnico;
 - a presentation preparada pode existir sem ser requisito do tiro;
 - o contrato `visualContract='optional_for_runtime_spawn'` continua sendo o marcador de observabilidade.
+- `ActorPresentationEndpoint` pode expor `IPoolableSpawnOriginSurface` para consumers futuros, sem ligar ainda esse surface ao tiro.
 
 ## ACT-PROJ-PRESENTATION-1A — Runtime-spawned projectile local presentation
 
@@ -197,6 +204,7 @@ PlayerActorCommandInputHub
 -> RuntimeSpawnedActor
 ```
 
-- `ActivityEntryActorPresentationStage` não faz parte do fluxo de tiro.
+- `ActivityEntryActorPresentationStage` também aciona o rebuild de origem para actors Activity-born, mas isso não vira consumo no tiro.
 - `PooledActorProjectileSpawnAdapter` só observa a presença de presentation e visual.
 - `Renderer` / material continuam observáveis, não são hard-gate de spawn lógico.
+- `ActorProjectileFireEndpoint` resolve origin via `ActorPresentationEndpoint` e constrói o comando já com posição/rotação resolvidas.

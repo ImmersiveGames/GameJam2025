@@ -61,6 +61,8 @@ Observabilidade canonica do `GameObjectPool`:
 - `PoolObjectRentPrepared` logo apos `OnPoolRent()` e ativacao da instancia.
 
 `OnPoolCreated()` continua sendo o ponto canônico para preparacao local do objeto criado. Este corte nao materializa presentation ali ainda; o proximo corte pode usar esse hook sem pagar o custo no primeiro tiro.
+Quando a instância pooled é presentation-backed, o mesmo hook pode também construir surfaces locais de origin/anchor no owner de presentation sem criar trilho paralelo no adapter de spawn.
+Presentation materializada pela Activity Entry usa o mesmo endpoint/index e chama o mesmo rebuild após `ActorPresentationMaterialized`, sem duplicar scan/index fora do `ActorPresentationEndpoint`.
 
 ### `PooledBehaviour`
 

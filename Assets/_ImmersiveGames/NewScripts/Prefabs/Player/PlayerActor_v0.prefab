@@ -21,7 +21,7 @@ GameObject:
   - component: {fileID: 2835148354476443585}
   - component: {fileID: 909090909090909091}
   - component: {fileID: 4452905082100865595}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: PlayerActor_v0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -277,7 +277,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 910000000000000002}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CameraFollowTarget
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -308,7 +308,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 920000000000000002}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CameraLookAtTarget
   m_TagString: Untagged
   m_Icon: {fileID: 0}

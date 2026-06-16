@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
@@ -136,33 +138,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedInactive("projectile_fire_endpoint_inactive");
             }
 
-            var direction = transform.forward;
-            if (direction.sqrMagnitude <= 0f)
+            if (fireProfile == null)
             {
-                direction = Vector3.forward;
-            }
+                const string missingProfileReason = "projectile_fire_profile_missing";
 
-            if (!TryBuildFireCommand(
-                command,
-                DefaultFireModeId,
-                transform.position,
-                direction,
-                out var fireCommand,
-                out var readiness))
-            {
-                string blockedReason = string.IsNullOrWhiteSpace(readiness.Reason)
-                    ? "projectile_fire_command_build_failed"
-                    : readiness.Reason;
-
-                DebugUtility.LogVerbose(
+                DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
-                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' readinessState='{readiness.Kind}' blockedReason='{readiness.BlockedReason}' dispatchStatus='RejectedUnsupportedCommand' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
-                    DebugUtility.Colors.Info);
+                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' dispatchStatus='RejectedUnsupportedCommand' reason='{missingProfileReason}' source='{nameof(ActorProjectileFireEndpoint)}'.");
 
-                return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
+                return ActorCommandDispatchResult.RejectedUnsupportedCommand(missingProfileReason);
             }
 
-            if (!fireProfile.TryGetFireMode(fireCommand.FireModeId, out var fireMode, out string fireModeReason))
+            if (!fireProfile.TryGetFireMode(DefaultFireModeId, out var fireMode, out string fireModeReason))
             {
                 string blockedReason = string.IsNullOrWhiteSpace(fireModeReason)
                     ? "projectile_fire_mode_missing"
@@ -170,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
                 DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' dispatchStatus='RejectedUnsupportedCommand' blockedReason='MissingFireMode' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' dispatchStatus='RejectedUnsupportedCommand' blockedReason='MissingFireMode' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
@@ -181,22 +168,58 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"event='ActorProjectileFireCooldownBlocked' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' remainingSeconds='{remainingSeconds:0.###}' nextAllowedTime='{nextAllowedTime:0.###}' dispatchStatus='RejectedUnsupportedCommand' reason='projectile_fire_cooldown_active' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    $"event='ActorProjectileFireCooldownBlocked' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' remainingSeconds='{remainingSeconds:0.###}' nextAllowedTime='{nextAllowedTime:0.###}' dispatchStatus='RejectedUnsupportedCommand' reason='projectile_fire_cooldown_active' source='{nameof(ActorProjectileFireEndpoint)}'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_fire_cooldown_active");
             }
 
+            if (!TryResolveFireOrigin(
+                    command,
+                    fireMode,
+                    out var resolvedOrigin,
+                    out string originSource,
+                    out string originFailureReason,
+                    out string originFailureMessage))
+            {
+                LogFireOriginCommandRejected(
+                    command,
+                    fireMode,
+                    originFailureReason,
+                    originFailureMessage);
+
+                return ActorCommandDispatchResult.RejectedUnsupportedCommand(originFailureReason);
+            }
+
+            if (!TryBuildFireCommand(
+                command,
+                fireMode.FireModeId,
+                resolvedOrigin.Position,
+                resolvedOrigin.Direction,
+                out var fireCommand,
+                out var readiness))
+            {
+                string blockedReason = string.IsNullOrWhiteSpace(readiness.Reason)
+                    ? "projectile_fire_command_build_failed"
+                    : readiness.Reason;
+
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' dispatchStatus='RejectedUnsupportedCommand' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.");
+
+                return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
+            }
+
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
+                $"event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
                 DebugUtility.Colors.Info);
 
             if (_spawnAdapter == null)
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),
-                    $"event='ActorProjectileSpawnAdapterMissing' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' spawnExecuted='False' poolCalled='False' dispatchStatus='RejectedUnsupportedCommand' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_adapter_missing'.",
+                    $"event='ActorProjectileSpawnAdapterMissing' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' spawnExecuted='False' poolCalled='False' dispatchStatus='RejectedUnsupportedCommand' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_spawn_adapter_missing'.",
                     DebugUtility.Colors.Info);
 
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_spawn_adapter_missing");
@@ -206,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireSpawnAdapterCompleted' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' adapter='{SpawnAdapterName}' adapterResult='{adapterResult.Kind}' spawnExecuted='{adapterResult.SpawnExecuted}' poolCalled='{adapterResult.PoolCalled}' source='{nameof(ActorProjectileFireEndpoint)}' reason='{adapterResult.Reason}'.",
+                $"event='ActorProjectileFireSpawnAdapterCompleted' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource}' adapter='{SpawnAdapterName}' adapterResult='{adapterResult.Kind}' spawnExecuted='{adapterResult.SpawnExecuted}' poolCalled='{adapterResult.PoolCalled}' source='{nameof(ActorProjectileFireEndpoint)}' reason='{adapterResult.Reason}'.",
                 adapterResult.IsFailed ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
             if (adapterResult.IsFailed || !adapterResult.IsAccepted)
@@ -501,6 +524,134 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             _actor = GetComponentInParent<Actor>(includeInactive: true);
             return _actor;
+        }
+
+        private bool TryResolveFireOrigin(
+            ActorCommandEnvelope command,
+            ActorProjectileFireMode fireMode,
+            out PoolableSpawnOriginResolved resolvedOrigin,
+            out string originSource,
+            out string failureReason,
+            out string failureMessage)
+        {
+            resolvedOrigin = default;
+            originSource = string.Empty;
+            failureReason = string.Empty;
+            failureMessage = string.Empty;
+
+            LogFireOriginResolutionStarted(command, fireMode);
+
+            var actor = ResolveActor();
+            var capabilitySurface = actor?.CapabilitySurface;
+            var presentationEndpoint = capabilitySurface?.PresentationEndpoint;
+            if (presentationEndpoint == null)
+            {
+                failureReason = "projectile_fire_presentation_endpoint_missing";
+                failureMessage = "ActorProjectileFireEndpoint requires ActorPresentationEndpoint on the owning Actor.";
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                return false;
+            }
+
+            if (!fireMode.SpawnOriginId.IsValid)
+            {
+                failureReason = "projectile_fire_spawn_origin_id_missing";
+                failureMessage = "ActorProjectileFireEndpoint requires a valid spawnOriginId on the fire mode.";
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                return false;
+            }
+
+            if (!presentationEndpoint.TryResolve(
+                    fireMode.SpawnOriginId,
+                    fireMode.SpawnOriginResolutionMode,
+                    out resolvedOrigin))
+            {
+                failureReason = "projectile_fire_origin_missing";
+                failureMessage = $"ActorPresentationEndpoint could not resolve originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}'.";
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                return false;
+            }
+
+            if (!resolvedOrigin.IsValid || resolvedOrigin.OriginTransform == null)
+            {
+                failureReason = "projectile_fire_origin_invalid";
+                failureMessage = $"Resolved projectile fire origin is invalid originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}'.";
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                return false;
+            }
+
+            if (resolvedOrigin.Direction.sqrMagnitude <= 0f)
+            {
+                failureReason = "projectile_fire_origin_direction_invalid";
+                failureMessage = $"Resolved projectile fire origin has invalid direction originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}'.";
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                return false;
+            }
+
+            originSource = resolvedOrigin.UsedFallback ? "EmitterRoot" : "PresentationAnchor";
+            if (resolvedOrigin.UsedFallback)
+            {
+                LogFireOriginFallbackApplied(command, fireMode, resolvedOrigin, originSource);
+            }
+
+            LogFireOriginResolved(command, fireMode, resolvedOrigin, originSource);
+            return true;
+        }
+
+        private void LogFireOriginResolutionStarted(
+            ActorCommandEnvelope command,
+            ActorProjectileFireMode fireMode)
+        {
+            DebugUtility.Log(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileFireOriginResolutionStarted' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_resolution_started'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void LogFireOriginResolved(
+            ActorCommandEnvelope command,
+            ActorProjectileFireMode fireMode,
+            PoolableSpawnOriginResolved resolvedOrigin,
+            string originSource)
+        {
+            DebugUtility.Log(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileFireOriginResolved' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{Normalize(originSource)}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' usedFallback='{resolvedOrigin.UsedFallback}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_resolved'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private void LogFireOriginFallbackApplied(
+            ActorCommandEnvelope command,
+            ActorProjectileFireMode fireMode,
+            PoolableSpawnOriginResolved resolvedOrigin,
+            string originSource)
+        {
+            DebugUtility.Log(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileFireOriginFallbackApplied' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{Normalize(originSource)}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' usedFallback='{resolvedOrigin.UsedFallback}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_fallback_applied'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void LogFireOriginMissing(
+            ActorCommandEnvelope command,
+            ActorProjectileFireMode fireMode,
+            string reason,
+            string message,
+            string originSource)
+        {
+            DebugUtility.LogWarning(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileFireOriginMissing' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{Normalize(originSource)}' position='{FormatVector(Vector3.zero)}' direction='{FormatVector(Vector3.zero)}' reason='{Normalize(reason)}' message='{Normalize(message)}' source='{nameof(ActorProjectileFireEndpoint)}'.");
+        }
+
+        private void LogFireOriginCommandRejected(
+            ActorCommandEnvelope command,
+            ActorProjectileFireMode fireMode,
+            string reason,
+            string message)
+        {
+            DebugUtility.LogWarning(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='none' position='{FormatVector(Vector3.zero)}' direction='{FormatVector(Vector3.zero)}' dispatchStatus='RejectedUnsupportedCommand' reason='{Normalize(reason)}' message='{Normalize(message)}' source='{nameof(ActorProjectileFireEndpoint)}'.");
         }
 
         private void TryPlayFireAudioCue(

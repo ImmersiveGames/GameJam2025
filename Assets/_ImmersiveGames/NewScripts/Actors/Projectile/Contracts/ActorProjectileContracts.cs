@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
@@ -159,6 +160,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorProjectileSpawnPattern spawnPattern,
             ActorProjectileMuzzlePolicyKind muzzlePolicy,
             ActorProjectileSpreadPolicyKind spreadPolicy,
+            PoolableSpawnOriginId spawnOriginId,
+            PoolableSpawnOriginResolutionMode spawnOriginResolutionMode,
             AudioSfxCueAsset fireAudioCue,
             float fireAudioVolumeScale,
             float cooldownSeconds,
@@ -172,6 +175,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnPattern = spawnPattern;
             MuzzlePolicy = muzzlePolicy;
             SpreadPolicy = spreadPolicy;
+            SpawnOriginId = spawnOriginId;
+            SpawnOriginResolutionMode = spawnOriginResolutionMode;
             FireAudioCue = fireAudioCue;
             FireAudioVolumeScale = fireAudioVolumeScale < 0f ? 0f : fireAudioVolumeScale;
             CooldownSeconds = cooldownSeconds < 0f ? 0f : cooldownSeconds;
@@ -186,6 +191,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorProjectileSpawnPattern SpawnPattern { get; }
         public ActorProjectileMuzzlePolicyKind MuzzlePolicy { get; }
         public ActorProjectileSpreadPolicyKind SpreadPolicy { get; }
+        public PoolableSpawnOriginId SpawnOriginId { get; }
+        public PoolableSpawnOriginResolutionMode SpawnOriginResolutionMode { get; }
         public AudioSfxCueAsset FireAudioCue { get; }
         public float FireAudioVolumeScale { get; }
         public float CooldownSeconds { get; }
@@ -199,7 +206,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             SpawnedActorScope != ActorScope.Unknown &&
             SpawnPattern.IsValid &&
             MuzzlePolicy != ActorProjectileMuzzlePolicyKind.Unknown &&
-            SpreadPolicy != ActorProjectileSpreadPolicyKind.Unknown;
+            SpreadPolicy != ActorProjectileSpreadPolicyKind.Unknown &&
+            SpawnOriginId.IsValid;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

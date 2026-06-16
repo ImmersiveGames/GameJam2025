@@ -96,6 +96,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
             var presentationInstance = _runtimeHandle.PresentationInstance;
             LogMaterialized(resolution.ResolvedPlan, presentationInstance, endpoint);
+            endpoint.RebuildPoolableSpawnOriginSurface(nameof(ActorPooledPresentationPreparer));
             LogPreparationCompleted("presentation_materialized_on_pool_created", profile, endpoint, presentationInstance);
         }
 
