@@ -132,6 +132,8 @@ Regra importante:
 
 `ActivityEntryPoolPreparationStage` e o owner da preparacao antecipada de pools declarados por capabilities/endpoints da Activity. Ele prepara apenas pools com `registrationMode == ActivityEntry` e deduplica por `PoolDefinitionAsset`.
 
+`AudioRuntimeComposer` e o owner da preparacao antecipada de pools de vozes SFX declarados em `AudioDefaultsAsset.GlobalSfxVoicePoolDefinitions`. Ele prepara apenas pools com `registrationMode == GlobalBoot` e deduplica por `PoolDefinitionAsset`.
+
 ### 3) Rent
 
 `Rent(definition, parent)` aluga instancia do pool.

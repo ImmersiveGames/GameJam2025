@@ -1975,12 +1975,16 @@ Ownership final:
 
 `prewarm` continua significando apenas "criar `initialSize` quando o registro acontecer". Ele nao decide timing.
 
-Nao existe neste corte um owner/catálogo canônico para executar `GlobalBoot` em toda a aplicação sem inventar busca global por assets. Esse caminho fica pendente para um corte de AudioRuntime ou para um catalogador global dedicado.
+Owner canonico do preload global de vozes SFX:
+
+- `AudioDefaultsAsset.GlobalSfxVoicePoolDefinitions` declara o catalogo explicito.
+- `AudioRuntimeComposer` chama `AudioSfxPoolPreparationStage`.
+- `AudioSfxPoolPreparationStage` prepara apenas pools com `registrationMode == GlobalBoot`.
 
 Config final relevante:
 
 - `PoolDefinition_PrimaryProjectile` -> `registrationMode=ActivityEntry`, `prewarm=true`
-- `PoolDefinition_AudioProjectileFireVoices` -> permanece pendente de owner de boot global
+- `PoolDefinition_AudioProjectileFireVoices` -> `registrationMode=GlobalBoot`, `prewarm=true`
 
 ### POOL-PREP-1A/1B â€” Activity entry preparation e hooks de objeto pooled
 
@@ -2126,6 +2130,36 @@ Regra do corte:
 - `Renderer` e material não viram hard-gate de spawn lógico;
 - `presentationEndpointPresent`, `presentationProfileId` e `presentationVisualRootPresent` devem aparecer nos logs de observação do adapter quando a presentation existir;
 - o contrato `visualContract='optional_for_runtime_spawn'` permanece.
+
+## ACT-PROJ-PRESENTATION-1B — pooled runtime-spawned actor presentation preparation
+
+O preparo da presentation local foi deslocado para o hook canônico do pool:
+
+```text
+GameObjectPool.OnPoolCreated()
+-> ActorPooledPresentationPreparer
+-> ActorPresentationPlanResolver
+-> UnityActorPresentationMaterializationAdapter
+```
+
+Frente confirmada:
+
+```text
+GameObjectPool = owner técnico do hook de criação do objeto pooled.
+ActorPooledPresentationPreparer = materializa a presentation local no pool.
+ActorPresentationEndpoint = source local do profile e dos containers.
+ActorPresentationPlanResolver = resolve o plano sem side-effects.
+UnityActorPresentationMaterializationAdapter = materializa o visual no container local.
+PooledActorProjectileSpawnAdapter = spawn técnico + observação, não owner de visual.
+```
+
+Regra do corte:
+
+- o preparo visual acontece antes do primeiro rent;
+- `ActivityEntryActorPresentationStage` continua fora do fluxo de tiro;
+- `Renderer` e material seguem como observação, não como hard-gate;
+- `visualContract='optional_for_runtime_spawn'` permanece como contrato de observabilidade;
+- o spawn lógico continua sendo validado por estado técnico/materialização lógica, não por visuais.
 
 
 ## ACT-PROJ-POOL-1B — Injected Pool Service for Projectile Spawn Runtime Tracker

@@ -19,5 +19,5 @@ MonoBehaviour:
   lifetimeScope: 0
   autoReturnSeconds: 0
   poolLabel: audio.projectile.fire.voices
-  registrationMode: 0
+  registrationMode: 4
   prewarm: 1

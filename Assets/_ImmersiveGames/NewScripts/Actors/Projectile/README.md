@@ -20,6 +20,17 @@ PlayerActorCommandInputHub
 
 `ActorProjectileFireEndpoint` declara suas dependências de pool a partir do `ActorProjectileFireProfileAsset` e do `ActorProjectileSpawnProfileAsset` dos fire modes. O pool primário do projectile fica em `registrationMode=ActivityEntry` com `prewarm=true`.
 
+O preparo visual local do projectile runtime-spawned acontece no hook canônico do pool:
+
+```text
+GameObjectPool.OnPoolCreated()
+-> ActorPooledPresentationPreparer
+-> ActorPresentationPlanResolver
+-> UnityActorPresentationMaterializationAdapter
+```
+
+Esse preparo materializa a presentation local antes do primeiro rent. O adapter de spawn continua responsável apenas pelo rent tecnicamente válido e pela observabilidade da presentation já preparada.
+
 ## Active authoring assets
 
 ```text
@@ -155,6 +166,22 @@ O projectile não possui componente próprio de lifetime/return.
 - `RuntimeSpawnedActor`: guarda origem (`ownerActorId`, `ownerActorInstanceRuntimeId`, `spawnProfileId`, `originPoolDefinition`, `commandSequence`).
 
 Não criar `RuntimeSpawnedActorLifetime`, `RuntimeSpawnedActorPoolReturnAdapter` ou trilho paralelo de return-to-pool dentro de projectile.
+
+## ACT-PROJ-PRESENTATION-1B — pooled runtime-spawned actor presentation preparation
+
+`ActorPooledPresentationPreparer` prepara a presentation local do projectile no `OnPoolCreated()` do `GameObjectPool`.
+
+- O preparo visual acontece antes do primeiro rent, no mesmo prefab do projectile.
+- `ActorPresentationEndpoint` continua sendo a fonte local do endpoint/profile da presentation.
+- `ActorPresentationPlanResolver` resolve o plano sem side-effects.
+- `UnityActorPresentationMaterializationAdapter` materializa o visual no container local.
+- `PooledActorProjectileSpawnAdapter` não passa a ser owner de materialização visual; ele permanece no trilho técnico de spawn.
+
+Regra observada:
+
+- renderer/material não são hard-gate do spawn técnico;
+- a presentation preparada pode existir sem ser requisito do tiro;
+- o contrato `visualContract='optional_for_runtime_spawn'` continua sendo o marcador de observabilidade.
 
 ## ACT-PROJ-PRESENTATION-1A — Runtime-spawned projectile local presentation
 

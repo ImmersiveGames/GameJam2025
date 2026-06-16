@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
 using UnityEngine.Audio;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
@@ -40,6 +42,13 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         [SerializeField] private string bgmVolumeParameter = "BGM_Volume";
         [SerializeField] private string sfxVolumeParameter = "SFX_Volume";
 
+        /// <summary>
+        /// Catálogo explícito de pools de vozes SFX que o AudioRuntime prepara no boot.
+        /// </summary>
+        [Header("SFX Voice Preload")]
+        [SerializeField, Tooltip("Lista explícita de PoolDefinitionAsset que o AudioRuntime prepara antes do primeiro playback pooled. Nao faz discovery automatico.")]
+        private List<PoolDefinitionAsset> globalSfxVoicePoolDefinitions = new();
+
         public float MasterVolume => masterVolume;
         public float BgmVolume => bgmVolume;
         public float SfxVolume => sfxVolume;
@@ -53,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         public string MasterVolumeParameter => masterVolumeParameter;
         public string BgmVolumeParameter => bgmVolumeParameter;
         public string SfxVolumeParameter => sfxVolumeParameter;
+        public IReadOnlyList<PoolDefinitionAsset> GlobalSfxVoicePoolDefinitions => globalSfxVoicePoolDefinitions;
     }
 }
 
