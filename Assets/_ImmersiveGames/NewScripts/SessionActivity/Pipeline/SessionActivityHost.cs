@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
@@ -203,6 +204,42 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             return SessionActivityHostQaCommandSurface.ApplyActorAttributeCommand(_pipeline, "QaRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
+        }
+
+        internal bool QaMutationSubtractActorAttribute(string actorId, string attributeId, float amount = 10f)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeMutationIntent(_pipeline, "QaMutationSubtractActorAttribute", actorId, attributeId, ActorAttributeOperation.Subtract, amount, 0f);
+        }
+
+        internal bool QaMutationAddActorAttribute(string actorId, string attributeId, float amount = 5f)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeMutationIntent(_pipeline, "QaMutationAddActorAttribute", actorId, attributeId, ActorAttributeOperation.Add, amount, 0f);
+        }
+
+        internal bool QaMutationSetActorAttribute(string actorId, string attributeId, float value)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeMutationIntent(_pipeline, "QaMutationSetActorAttribute", actorId, attributeId, ActorAttributeOperation.Set, 0f, value);
+        }
+
+        internal bool QaMutationResetActorAttributeToInitial(string actorId, string attributeId)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeMutationIntent(_pipeline, "QaMutationResetActorAttributeToInitial", actorId, attributeId, ActorAttributeOperation.ResetToInitial, 0f, 0f);
+        }
+
+        internal bool QaMutationRestoreActorAttributeToMax(string actorId, string attributeId)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorAttributeMutationIntent(_pipeline, "QaMutationRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
+        }
+
+        internal bool QaDamageActor(string actorId, float rawDamageAmount = 25f)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorDamageIntent(_pipeline, "QaDamageActor", actorId, rawDamageAmount);
         }
 
         internal bool QaResetCurrentPlayerActor()

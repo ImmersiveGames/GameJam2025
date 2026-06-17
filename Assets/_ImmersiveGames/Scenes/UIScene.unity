@@ -307,8 +307,7 @@ MonoBehaviour:
       <Value>k__BackingField: 
     explicitActorInstanceRuntimeId:
       <Value>k__BackingField: 
-    attributeId:
-      <Value>k__BackingField: actor.attribute.health
+    attributeDefinition: {fileID: 11400000, guid: 8f8c68d1bda378349b75d85c34ed5536, type: 2}
     imageFillSink: {fileID: 8025277232749806041}
 --- !u!1 &1778014023
 GameObject:

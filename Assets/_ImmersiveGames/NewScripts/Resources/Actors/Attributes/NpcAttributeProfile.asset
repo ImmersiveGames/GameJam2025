@@ -18,3 +18,24 @@ MonoBehaviour:
     initialValue: 100
     minValue: 0
     maxValue: 100
+    thresholds:
+    - thresholdId:
+        <Value>k__BackingField: npc.attribute.health.0.down
+      normalizedValue: 0
+      direction: 10
+      emitOnInitialState: 1
+    - thresholdId:
+        <Value>k__BackingField: npc.attribute.health.100.up
+      normalizedValue: 1
+      direction: 20
+      emitOnInitialState: 1
+    - thresholdId:
+        <Value>k__BackingField: npc.attribute.health.25.up
+      normalizedValue: 0.25
+      direction: 20
+      emitOnInitialState: 1
+    - thresholdId:
+        <Value>k__BackingField: npc.attribute.health.75.down
+      normalizedValue: 0.75
+      direction: 10
+      emitOnInitialState: 1

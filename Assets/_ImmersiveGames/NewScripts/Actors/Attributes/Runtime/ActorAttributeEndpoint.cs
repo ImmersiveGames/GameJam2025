@@ -180,7 +180,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 command.Source,
                 command.Reason);
 
-            result = ActorAttributeApplyResult.AppliedWithFact(fact);
+            var thresholdFacts = ActorAttributeThresholdEvaluator.EvaluateCrossedThresholds(
+                command.ActivityIdentity,
+                _currentActorInstanceRuntimeId,
+                state.AttributeId,
+                command.Operation,
+                previousValue,
+                state.CurrentValue,
+                state.MinValue,
+                state.MaxValue,
+                state.ThresholdDefinitions,
+                command.Source,
+                command.Reason);
+
+            result = ActorAttributeApplyResult.AppliedWithFact(fact, thresholdFacts);
             return true;
         }
 

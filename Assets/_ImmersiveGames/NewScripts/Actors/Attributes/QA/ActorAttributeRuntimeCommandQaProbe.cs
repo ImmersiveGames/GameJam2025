@@ -82,6 +82,61 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
             RequireHost().QaRestoreActorAttributeToMax(sceneActorId, attributeId);
         }
 
+        [ContextMenu("QA/Mutation Receiver/Subtract Attribute")]
+        public void QaMutationSubtractAttribute()
+        {
+            if (!TryResolveAttributeIdOrLog(out string attributeId))
+            {
+                return;
+            }
+
+            RequireHost().QaMutationSubtractActorAttribute(sceneActorId, attributeId, subtractAmount);
+        }
+
+        [ContextMenu("QA/Mutation Receiver/Add Attribute")]
+        public void QaMutationAddAttribute()
+        {
+            if (!TryResolveAttributeIdOrLog(out string attributeId))
+            {
+                return;
+            }
+
+            RequireHost().QaMutationAddActorAttribute(sceneActorId, attributeId, addAmount);
+        }
+
+        [ContextMenu("QA/Mutation Receiver/Set Attribute")]
+        public void QaMutationSetAttribute()
+        {
+            if (!TryResolveAttributeIdOrLog(out string attributeId))
+            {
+                return;
+            }
+
+            RequireHost().QaMutationSetActorAttribute(sceneActorId, attributeId, setValue);
+        }
+
+        [ContextMenu("QA/Mutation Receiver/Reset Attribute To Initial")]
+        public void QaMutationResetAttributeToInitial()
+        {
+            if (!TryResolveAttributeIdOrLog(out string attributeId))
+            {
+                return;
+            }
+
+            RequireHost().QaMutationResetActorAttributeToInitial(sceneActorId, attributeId);
+        }
+
+        [ContextMenu("QA/Mutation Receiver/Restore Attribute To Max")]
+        public void QaMutationRestoreAttributeToMax()
+        {
+            if (!TryResolveAttributeIdOrLog(out string attributeId))
+            {
+                return;
+            }
+
+            RequireHost().QaMutationRestoreActorAttributeToMax(sceneActorId, attributeId);
+        }
+
         private bool TryResolveAttributeIdOrLog(out string attributeId)
         {
             attributeId = string.Empty;

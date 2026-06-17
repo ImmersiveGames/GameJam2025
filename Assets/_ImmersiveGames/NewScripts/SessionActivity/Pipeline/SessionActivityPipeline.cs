@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
@@ -223,16 +224,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public ActorAttributeCapabilityState(
                 ActorInstanceRuntimeId actorInstanceRuntimeId,
                 string actorId,
-                ActorAttributeEndpoint endpoint)
+                ActorAttributeEndpoint endpoint,
+                ActorAttributeMutationReceiverEndpoint mutationReceiver = null,
+                ActorDamageableEndpoint damageableEndpoint = null)
             {
                 ActorInstanceRuntimeId = actorInstanceRuntimeId;
                 ActorId = Normalize(actorId);
                 Endpoint = endpoint;
+                MutationReceiver = mutationReceiver;
+                DamageableEndpoint = damageableEndpoint;
             }
 
             public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
             public string ActorId { get; }
             public ActorAttributeEndpoint Endpoint { get; }
+            public ActorAttributeMutationReceiverEndpoint MutationReceiver { get; }
+            public ActorDamageableEndpoint DamageableEndpoint { get; }
+            public bool HasMutationReceiver => MutationReceiver != null && MutationReceiver.IsConfigured;
+            public bool HasDamageableEndpoint => DamageableEndpoint != null && DamageableEndpoint.IsConfigured;
             public bool IsValid =>
                 ActorInstanceRuntimeId.IsValid &&
                 !string.IsNullOrWhiteSpace(ActorId) &&
@@ -3759,6 +3768,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 DebugUtility.Colors.Error);
         }
 
+        private void LogActorAttributeMutationIntentRejected(
+            ActorAttributeOperation operation,
+            string actorId,
+            ActorAttributeId attributeId,
+            string rejectionReason,
+            string source,
+            string reason)
+        {
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorAttributeMutationIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' attributeId='{attributeId}' operation='{operation}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Error);
+        }
+
+        private void LogActorDamageIntentRejected(
+            string actorId,
+            float rawDamageAmount,
+            string rejectionReason,
+            string source,
+            string reason)
+        {
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorDamageIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' rawDamageAmount='{rawDamageAmount:0.###}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Error);
+        }
+
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
         {
@@ -4430,9 +4464,277 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             ActorAttributeChangedFact fact = result.Fact;
+            var runtimeActorId = new ActorId(normalizedActorId);
+            PublishActorAttributeApplyResult(runtimeActorId, result);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorAttributeChanged' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
+        public bool TryApplyActorAttributeMutationIntent(
+            SessionActivityIdentity commandIdentity,
+            string actorId,
+            ActorAttributeOperation operation,
+            string attributeId,
+            float amount,
+            float setValue,
+            string source,
+            string reason,
+            out ActorAttributeMutationResult result)
+        {
+            result = default;
+            string normalizedActorId = Normalize(actorId);
+            ActorAttributeId runtimeAttributeId = new(Normalize(attributeId));
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+            int entrySequence = _state.CurrentEntrySequence;
+            string currentActivityId = _state.CurrentIdentity.IsValid
+                ? _state.CurrentIdentity.ActivityId
+                : Normalize(_state.CurrentDefinition.ActivityId);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorAttributeMutationIntentRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' attributeId='{runtimeAttributeId}' operation='{operation}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            if (!_state.CurrentIdentity.IsValid || !commandIdentity.IsValid || !IsSameActivityCycle(commandIdentity, _state.CurrentIdentity))
+            {
+                result = ActorAttributeMutationResult.Reject(
+                    new ActorId(normalizedActorId),
+                    default,
+                    runtimeAttributeId,
+                    operation,
+                    "stale_or_foreign_activity_identity");
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedActorId))
+            {
+                result = ActorAttributeMutationResult.Reject(
+                    default,
+                    default,
+                    runtimeAttributeId,
+                    operation,
+                    "actor_id_missing");
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorId runtimeActorId = new(normalizedActorId);
+            if (!runtimeActorId.IsValid)
+            {
+                result = ActorAttributeMutationResult.Reject(
+                    runtimeActorId,
+                    default,
+                    runtimeAttributeId,
+                    operation,
+                    "actor_id_invalid");
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(normalizedActorId, out ActorAttributeCapabilityState capabilityState))
+            {
+                result = ActorAttributeMutationResult.Reject(
+                    runtimeActorId,
+                    default,
+                    runtimeAttributeId,
+                    operation,
+                    "actor_attribute_capability_not_ready");
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!capabilityState.HasMutationReceiver)
+            {
+                result = ActorAttributeMutationResult.Reject(
+                    runtimeActorId,
+                    capabilityState.ActorInstanceRuntimeId,
+                    runtimeAttributeId,
+                    operation,
+                    "actor_attribute_mutation_receiver_not_ready");
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorAttributeMutationIntent intent = new(
+                commandIdentity,
+                runtimeActorId,
+                capabilityState.ActorInstanceRuntimeId,
+                runtimeAttributeId,
+                operation,
+                amount,
+                setValue,
+                normalizedSource,
+                normalizedReason);
+
+            if (!capabilityState.MutationReceiver.TryReceiveMutationIntent(intent, out result) || result.Rejected || result.Failed)
+            {
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!result.HasApplyResult || !result.ApplyResult.HasFact)
+            {
+                result = ActorAttributeMutationResult.Fail(
+                    runtimeActorId,
+                    capabilityState.ActorInstanceRuntimeId,
+                    runtimeAttributeId,
+                    operation,
+                    "mutation_apply_result_fact_missing");
+                LogActorAttributeMutationIntentRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorAttributeApplyResult applyResult = result.ApplyResult;
+            ActorAttributeChangedFact fact = applyResult.Fact;
+            PublishActorAttributeApplyResult(runtimeActorId, applyResult);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorAttributeMutationIntentPublished' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' thresholdFactCount='{applyResult.ThresholdFactCount}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
+        public bool TryApplyActorDamageIntent(
+            SessionActivityIdentity commandIdentity,
+            string actorId,
+            float rawDamageAmount,
+            string source,
+            string reason,
+            out ActorDamageResult result)
+        {
+            result = default;
+            string normalizedActorId = Normalize(actorId);
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+            int entrySequence = _state.CurrentEntrySequence;
+            string currentActivityId = _state.CurrentIdentity.IsValid
+                ? _state.CurrentIdentity.ActivityId
+                : Normalize(_state.CurrentDefinition.ActivityId);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorDamageIntentRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' rawDamageAmount='{rawDamageAmount:0.###}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            if (!_state.CurrentIdentity.IsValid || !commandIdentity.IsValid || !IsSameActivityCycle(commandIdentity, _state.CurrentIdentity))
+            {
+                result = ActorDamageResult.Reject(
+                    new ActorId(normalizedActorId),
+                    default,
+                    default,
+                    rawDamageAmount,
+                    0f,
+                    "stale_or_foreign_activity_identity");
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedActorId))
+            {
+                result = ActorDamageResult.Reject(
+                    default,
+                    default,
+                    default,
+                    rawDamageAmount,
+                    0f,
+                    "actor_id_missing");
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorId runtimeActorId = new(normalizedActorId);
+            if (!runtimeActorId.IsValid)
+            {
+                result = ActorDamageResult.Reject(
+                    runtimeActorId,
+                    default,
+                    default,
+                    rawDamageAmount,
+                    0f,
+                    "actor_id_invalid");
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(normalizedActorId, out ActorAttributeCapabilityState capabilityState))
+            {
+                result = ActorDamageResult.Reject(
+                    runtimeActorId,
+                    default,
+                    default,
+                    rawDamageAmount,
+                    0f,
+                    "actor_attribute_capability_not_ready");
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!capabilityState.HasDamageableEndpoint)
+            {
+                result = ActorDamageResult.Reject(
+                    runtimeActorId,
+                    capabilityState.ActorInstanceRuntimeId,
+                    default,
+                    rawDamageAmount,
+                    0f,
+                    "actor_damageable_endpoint_not_ready");
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorDamageIntent intent = ActorDamageIntent.Direct(
+                commandIdentity,
+                runtimeActorId,
+                capabilityState.ActorInstanceRuntimeId,
+                rawDamageAmount,
+                normalizedSource,
+                normalizedReason);
+
+            if (!capabilityState.DamageableEndpoint.TryApplyDamageIntent(intent, out result) || result.Rejected || result.Failed)
+            {
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!result.HasMutationResult || !result.MutationResult.HasApplyResult || !result.MutationResult.ApplyResult.HasFact)
+            {
+                result = ActorDamageResult.Fail(
+                    runtimeActorId,
+                    capabilityState.ActorInstanceRuntimeId,
+                    result.TargetAttributeId,
+                    rawDamageAmount,
+                    result.EffectiveDamageAmount,
+                    "damage_mutation_apply_result_fact_missing");
+                LogActorDamageIntentRejected(normalizedActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorAttributeApplyResult applyResult = result.MutationResult.ApplyResult;
+            ActorAttributeChangedFact fact = applyResult.Fact;
+            PublishActorAttributeApplyResult(runtimeActorId, applyResult);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorDamageIntentPublished' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{applyResult.ThresholdFactCount}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
+        private void PublishActorAttributeApplyResult(
+            ActorId actorId,
+            ActorAttributeApplyResult result)
+        {
+            if (!actorId.IsValid || !result.HasFact)
+            {
+                return;
+            }
+
+            ActorAttributeChangedFact fact = result.Fact;
             _actorAttributeEventStream.Publish(
                 new ActorAttributeChangedEvent(
-                    new ActorId(normalizedActorId),
+                    actorId,
                     fact.ActorInstanceRuntimeId,
                     fact.AttributeId,
                     fact.Operation,
@@ -4443,10 +4745,46 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     fact.Clamped,
                     fact.Source,
                     fact.Reason));
-            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorAttributeChanged' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Success);
-            return true;
+
+            PublishActorAttributeThresholdFacts(actorId, result.ThresholdFacts);
+        }
+
+        private void PublishActorAttributeThresholdFacts(
+            ActorId actorId,
+            IReadOnlyList<ActorAttributeThresholdCrossedFact> thresholdFacts)
+        {
+            if (!actorId.IsValid || thresholdFacts == null || thresholdFacts.Count == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < thresholdFacts.Count; i++)
+            {
+                var thresholdFact = thresholdFacts[i];
+                if (!thresholdFact.IsValid)
+                {
+                    continue;
+                }
+
+                _actorAttributeEventStream.Publish(
+                    new ActorAttributeThresholdCrossedEvent(
+                        actorId,
+                        thresholdFact.ActorInstanceRuntimeId,
+                        thresholdFact.AttributeId,
+                        thresholdFact.Operation,
+                        thresholdFact.ThresholdId,
+                        thresholdFact.PresetKind,
+                        thresholdFact.Direction,
+                        thresholdFact.ThresholdNormalizedValue,
+                        thresholdFact.PreviousValue,
+                        thresholdFact.CurrentValue,
+                        thresholdFact.MinValue,
+                        thresholdFact.MaxValue,
+                        thresholdFact.PreviousNormalizedValue,
+                        thresholdFact.CurrentNormalizedValue,
+                        thresholdFact.Source,
+                        thresholdFact.Reason));
+            }
         }
 
         public bool TryQaResetCurrentPlayerActor(

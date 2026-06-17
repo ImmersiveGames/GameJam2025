@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -137,11 +139,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         continue;
                     }
 
+                    ActorAttributeMutationReceiverEndpoint mutationReceiver = ConfigureOptionalMutationReceiver(
+                        attributeContribution,
+                        attributeEndpoint,
+                        startedIdentity,
+                        command.Source,
+                        command.Reason);
+
+                    ActorDamageableEndpoint damageableEndpoint = ConfigureOptionalDamageableEndpoint(
+                        attributeContribution,
+                        attributeEndpoint,
+                        mutationReceiver,
+                        startedIdentity,
+                        command.Source,
+                        command.Reason);
+
                     runtimeState.StoreActiveActorAttributeCapability(
                         new SessionActivityPipeline.ActorAttributeCapabilityState(
                             attributeContribution.ActorInstanceRuntimeId,
                             attributeContribution.ActorId.Value,
-                            attributeEndpoint),
+                            attributeEndpoint,
+                            mutationReceiver,
+                            damageableEndpoint),
                         startedIdentity.ActivityId,
                         entrySequence,
                         "ActivityEntryActorAttributeStage",
@@ -179,6 +198,99 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 skippedCount,
                 failedCount,
                 "actor_attribute_setup_completed");
+        }
+
+
+        private static ActorAttributeMutationReceiverEndpoint ConfigureOptionalMutationReceiver(
+            ActorAttributeSetupContribution attributeContribution,
+            ActorAttributeEndpoint attributeEndpoint,
+            SessionActivityIdentity startedIdentity,
+            string source,
+            string reason)
+        {
+            if (attributeEndpoint == null)
+            {
+                return null;
+            }
+
+            ActorAttributeMutationReceiverEndpoint mutationReceiver = ResolveMutationReceiver(attributeEndpoint);
+            if (mutationReceiver == null)
+            {
+                return null;
+            }
+
+            mutationReceiver.Configure(
+                attributeContribution.ActorId,
+                attributeContribution.ActorInstanceRuntimeId,
+                startedIdentity,
+                attributeEndpoint,
+                source,
+                reason);
+
+            return mutationReceiver;
+        }
+
+        private static ActorAttributeMutationReceiverEndpoint ResolveMutationReceiver(ActorAttributeEndpoint attributeEndpoint)
+        {
+            ActorAttributeMutationReceiverEndpoint mutationReceiver = attributeEndpoint.GetComponent<ActorAttributeMutationReceiverEndpoint>();
+            if (mutationReceiver != null)
+            {
+                return mutationReceiver;
+            }
+
+            Actor actorRoot = attributeEndpoint.GetComponentInParent<Actor>(true);
+            return actorRoot == null
+                ? null
+                : actorRoot.GetComponentInChildren<ActorAttributeMutationReceiverEndpoint>(true);
+        }
+
+        private static ActorDamageableEndpoint ConfigureOptionalDamageableEndpoint(
+            ActorAttributeSetupContribution attributeContribution,
+            ActorAttributeEndpoint attributeEndpoint,
+            ActorAttributeMutationReceiverEndpoint mutationReceiver,
+            SessionActivityIdentity startedIdentity,
+            string source,
+            string reason)
+        {
+            if (attributeEndpoint == null)
+            {
+                return null;
+            }
+
+            ActorDamageableEndpoint damageableEndpoint = ResolveDamageableEndpoint(attributeEndpoint);
+            if (damageableEndpoint == null)
+            {
+                return null;
+            }
+
+            if (mutationReceiver == null || !mutationReceiver.IsConfigured)
+            {
+                throw new InvalidOperationException($"[FATAL][ActivityEntryActorAttributeStage][ActorDamageableSetup] ActorDamageableEndpoint requires configured ActorAttributeMutationReceiverEndpoint actorId='{attributeContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{startedIdentity.EntrySequence}'.");
+            }
+
+            damageableEndpoint.Configure(
+                attributeContribution.ActorId,
+                attributeContribution.ActorInstanceRuntimeId,
+                startedIdentity,
+                mutationReceiver,
+                source,
+                reason);
+
+            return damageableEndpoint;
+        }
+
+        private static ActorDamageableEndpoint ResolveDamageableEndpoint(ActorAttributeEndpoint attributeEndpoint)
+        {
+            ActorDamageableEndpoint damageableEndpoint = attributeEndpoint.GetComponent<ActorDamageableEndpoint>();
+            if (damageableEndpoint != null)
+            {
+                return damageableEndpoint;
+            }
+
+            Actor actorRoot = attributeEndpoint.GetComponentInParent<Actor>(true);
+            return actorRoot == null
+                ? null
+                : actorRoot.GetComponentInChildren<ActorDamageableEndpoint>(true);
         }
 
         private static SessionActivityIdentity BuildIdentity(

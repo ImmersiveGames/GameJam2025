@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
@@ -174,6 +175,72 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActorAttributeChangedFact fact = result.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
                     $"operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+            }
+
+            return applied;
+        }
+
+        public static bool ApplyActorAttributeMutationIntent(
+            SessionActivityPipeline pipeline,
+            string action,
+            string actorId,
+            string attributeId,
+            ActorAttributeOperation operation,
+            float amount,
+            float setValue)
+        {
+            pipeline = RequirePipeline(pipeline);
+            SessionActivityRuntimeState state = pipeline.State;
+            bool applied = pipeline.TryApplyActorAttributeMutationIntent(
+                state.CurrentIdentity,
+                actorId,
+                operation,
+                attributeId,
+                amount,
+                setValue,
+                QaSource(action),
+                QaReason(action),
+                out ActorAttributeMutationResult result);
+
+            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
+                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorAttributeMutationReceiverEndpoint'");
+
+            if (applied && result.HasChangedFact)
+            {
+                ActorAttributeChangedFact fact = result.ApplyResult.Fact;
+                DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
+                    $"event='ActorAttributeMutationQaApplied' operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+            }
+
+            return applied;
+        }
+
+        public static bool ApplyActorDamageIntent(
+            SessionActivityPipeline pipeline,
+            string action,
+            string actorId,
+            float rawDamageAmount)
+        {
+            pipeline = RequirePipeline(pipeline);
+            SessionActivityRuntimeState state = pipeline.State;
+            bool applied = pipeline.TryApplyActorDamageIntent(
+                state.CurrentIdentity,
+                actorId,
+                rawDamageAmount,
+                QaSource(action),
+                QaReason(action),
+                out ActorDamageResult result);
+
+            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
+                $"action='{action}' outcomeKind='{outcome}' actorId='{Normalize(actorId)}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' targetAttributeId='{result.TargetAttributeId}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageableEndpoint'");
+
+            if (applied && result.HasChangedFact)
+            {
+                ActorAttributeChangedFact fact = result.MutationResult.ApplyResult.Fact;
+                DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
+                    $"event='ActorDamageQaApplied' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{result.RawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;

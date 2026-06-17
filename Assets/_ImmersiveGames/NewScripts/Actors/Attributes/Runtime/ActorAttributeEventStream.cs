@@ -24,6 +24,23 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 DebugUtility.Colors.Info);
         }
 
+        public void Publish(ActorAttributeThresholdCrossedEvent thresholdCrossedEvent)
+        {
+            if (!thresholdCrossedEvent.IsValid)
+            {
+                throw new InvalidOperationException("ActorAttributeThresholdCrossedEvent is invalid.");
+            }
+
+            FilteredEventBus<ActorInstanceRuntimeId, ActorAttributeThresholdCrossedEvent>.Raise(
+                thresholdCrossedEvent.ActorInstanceRuntimeId,
+                thresholdCrossedEvent);
+
+            DebugUtility.LogVerbose(
+                typeof(ActorAttributeEventStream),
+                $"event='ActorAttributeThresholdCrossedEventPublished' actorId='{thresholdCrossedEvent.ActorId}' actorInstanceRuntimeId='{thresholdCrossedEvent.ActorInstanceRuntimeId}' attributeId='{thresholdCrossedEvent.AttributeId}' operation='{thresholdCrossedEvent.Operation}' thresholdId='{thresholdCrossedEvent.ThresholdId}' presetKind='{thresholdCrossedEvent.PresetKind}' direction='{thresholdCrossedEvent.Direction}' thresholdNormalizedValue={thresholdCrossedEvent.ThresholdNormalizedValue} previousValue={thresholdCrossedEvent.PreviousValue} currentValue={thresholdCrossedEvent.CurrentValue} minValue={thresholdCrossedEvent.MinValue} maxValue={thresholdCrossedEvent.MaxValue} previousNormalizedValue={thresholdCrossedEvent.PreviousNormalizedValue} currentNormalizedValue={thresholdCrossedEvent.CurrentNormalizedValue} source='{thresholdCrossedEvent.Source}' reason='{thresholdCrossedEvent.Reason}'",
+                DebugUtility.Colors.Success);
+        }
+
         public IDisposable Subscribe(
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
@@ -60,16 +77,55 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 actorInstanceRuntimeId,
                 binding);
 
-            return new Subscription(actorInstanceRuntimeId, binding);
+            return new ChangedSubscription(actorInstanceRuntimeId, binding);
         }
 
-        private sealed class Subscription : IDisposable
+        public IDisposable SubscribeThreshold(
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            ActorAttributeId attributeId,
+            Action<ActorAttributeThresholdCrossedEvent> handler)
+        {
+            if (!actorInstanceRuntimeId.IsValid)
+            {
+                throw new ArgumentException("actorInstanceRuntimeId is required.", nameof(actorInstanceRuntimeId));
+            }
+
+            if (!attributeId.IsValid)
+            {
+                throw new ArgumentException("attributeId is required.", nameof(attributeId));
+            }
+
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            var binding = new EventBinding<ActorAttributeThresholdCrossedEvent>(evt =>
+            {
+                if (!evt.IsValid ||
+                    evt.ActorInstanceRuntimeId != actorInstanceRuntimeId ||
+                    evt.AttributeId != attributeId)
+                {
+                    return;
+                }
+
+                handler(evt);
+            });
+
+            FilteredEventBus<ActorInstanceRuntimeId, ActorAttributeThresholdCrossedEvent>.Register(
+                actorInstanceRuntimeId,
+                binding);
+
+            return new ThresholdSubscription(actorInstanceRuntimeId, binding);
+        }
+
+        private sealed class ChangedSubscription : IDisposable
         {
             private ActorInstanceRuntimeId _actorInstanceRuntimeId;
             private EventBinding<ActorAttributeChangedEvent> _binding;
             private bool _disposed;
 
-            public Subscription(
+            public ChangedSubscription(
                 ActorInstanceRuntimeId actorInstanceRuntimeId,
                 EventBinding<ActorAttributeChangedEvent> binding)
             {
@@ -86,6 +142,36 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
                 _disposed = true;
                 FilteredEventBus<ActorInstanceRuntimeId, ActorAttributeChangedEvent>.Unregister(
+                    _actorInstanceRuntimeId,
+                    _binding);
+                _binding = null;
+                _actorInstanceRuntimeId = default;
+            }
+        }
+
+        private sealed class ThresholdSubscription : IDisposable
+        {
+            private ActorInstanceRuntimeId _actorInstanceRuntimeId;
+            private EventBinding<ActorAttributeThresholdCrossedEvent> _binding;
+            private bool _disposed;
+
+            public ThresholdSubscription(
+                ActorInstanceRuntimeId actorInstanceRuntimeId,
+                EventBinding<ActorAttributeThresholdCrossedEvent> binding)
+            {
+                _actorInstanceRuntimeId = actorInstanceRuntimeId;
+                _binding = binding;
+            }
+
+            public void Dispose()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                FilteredEventBus<ActorInstanceRuntimeId, ActorAttributeThresholdCrossedEvent>.Unregister(
                     _actorInstanceRuntimeId,
                     _binding);
                 _binding = null;

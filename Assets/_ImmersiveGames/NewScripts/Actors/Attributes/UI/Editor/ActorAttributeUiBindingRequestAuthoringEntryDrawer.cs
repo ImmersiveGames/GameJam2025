@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using UnityEditor;
 using UnityEngine;
 
@@ -24,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 DrawChild(property.FindPropertyRelative("selectorKind"), position.x, ref y, position.width);
                 DrawChild(property.FindPropertyRelative("explicitActorId"), position.x, ref y, position.width);
                 DrawChild(property.FindPropertyRelative("explicitActorInstanceRuntimeId"), position.x, ref y, position.width);
-                DrawChild(property.FindPropertyRelative("attributeId"), position.x, ref y, position.width);
+                DrawChild(property.FindPropertyRelative("attributeDefinition"), position.x, ref y, position.width);
                 DrawChild(property.FindPropertyRelative("imageFillSink"), position.x, ref y, position.width);
 
                 EditorGUI.indentLevel -= 1;
@@ -47,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             height += GetChildHeight(property.FindPropertyRelative("selectorKind"));
             height += GetChildHeight(property.FindPropertyRelative("explicitActorId"));
             height += GetChildHeight(property.FindPropertyRelative("explicitActorInstanceRuntimeId"));
-            height += GetChildHeight(property.FindPropertyRelative("attributeId"));
+            height += GetChildHeight(property.FindPropertyRelative("attributeDefinition"));
             height += GetChildHeight(property.FindPropertyRelative("imageFillSink"));
             return height;
         }
@@ -78,19 +79,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         private static string BuildLabel(SerializedProperty property)
         {
             SerializedProperty selectorKindProperty = property.FindPropertyRelative("selectorKind");
-            SerializedProperty attributeIdProperty = property.FindPropertyRelative("attributeId");
+            SerializedProperty attributeDefinitionProperty = property.FindPropertyRelative("attributeDefinition");
             string selectorKind = selectorKindProperty != null && selectorKindProperty.propertyType == SerializedPropertyType.Enum
                 ? selectorKindProperty.enumDisplayNames[selectorKindProperty.enumValueIndex]
                 : "Attribute UI Binding Request";
 
             string attributeId = string.Empty;
-            if (attributeIdProperty != null)
+            if (attributeDefinitionProperty != null && attributeDefinitionProperty.objectReferenceValue is ActorAttributeDefinitionAsset definition)
             {
-                SerializedProperty valueProperty = attributeIdProperty.FindPropertyRelative("Value");
-                if (valueProperty != null && valueProperty.propertyType == SerializedPropertyType.String)
-                {
-                    attributeId = valueProperty.stringValue;
-                }
+                attributeId = definition.ToRuntimeId().ToString();
             }
 
             if (string.IsNullOrWhiteSpace(attributeId))

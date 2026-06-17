@@ -7,9 +7,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
     {
         void Publish(ActorAttributeChangedEvent changedEvent);
 
+        void Publish(ActorAttributeThresholdCrossedEvent thresholdCrossedEvent);
+
         IDisposable Subscribe(
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             Action<ActorAttributeChangedEvent> handler);
+
+        IDisposable SubscribeThreshold(
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
+            ActorAttributeId attributeId,
+            Action<ActorAttributeThresholdCrossedEvent> handler);
     }
 }

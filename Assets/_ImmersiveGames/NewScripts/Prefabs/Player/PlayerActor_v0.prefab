@@ -21,6 +21,7 @@ GameObject:
   - component: {fileID: 2835148354476443585}
   - component: {fileID: 909090909090909091}
   - component: {fileID: 4452905082100865595}
+  - component: {fileID: -4332865027245543985}
   m_Layer: 7
   m_Name: PlayerActor_v0
   m_TagString: Untagged
@@ -268,6 +269,19 @@ MonoBehaviour:
   fireProfile: {fileID: 11400000, guid: 6e7909166f3043ce8cdcf2de050620d4, type: 2}
   required: 1
   resetBoundaryEligibility: -1
+--- !u!114 &-4332865027245543985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55ea818df1a081e438d23a4b61bffeda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attributeEndpoint: {fileID: 2835148354476443585}
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0
