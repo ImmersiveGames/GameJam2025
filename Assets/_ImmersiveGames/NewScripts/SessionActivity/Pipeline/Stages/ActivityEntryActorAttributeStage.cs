@@ -154,13 +154,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         command.Source,
                         command.Reason);
 
+                    ActorDamageSourceEndpoint damageSourceEndpoint = ConfigureOptionalDamageSourceEndpoint(
+                        attributeContribution,
+                        attributeEndpoint,
+                        startedIdentity,
+                        command.Source,
+                        command.Reason);
+
                     runtimeState.StoreActiveActorAttributeCapability(
                         new SessionActivityPipeline.ActorAttributeCapabilityState(
                             attributeContribution.ActorInstanceRuntimeId,
                             attributeContribution.ActorId.Value,
                             attributeEndpoint,
                             mutationReceiver,
-                            damageableEndpoint),
+                            damageableEndpoint,
+                            damageSourceEndpoint),
                         startedIdentity.ActivityId,
                         entrySequence,
                         "ActivityEntryActorAttributeStage",
@@ -291,6 +299,48 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return actorRoot == null
                 ? null
                 : actorRoot.GetComponentInChildren<ActorDamageableEndpoint>(true);
+        }
+
+
+        private static ActorDamageSourceEndpoint ConfigureOptionalDamageSourceEndpoint(
+            ActorAttributeSetupContribution attributeContribution,
+            ActorAttributeEndpoint attributeEndpoint,
+            SessionActivityIdentity startedIdentity,
+            string source,
+            string reason)
+        {
+            if (attributeEndpoint == null)
+            {
+                return null;
+            }
+
+            ActorDamageSourceEndpoint damageSourceEndpoint = ResolveDamageSourceEndpoint(attributeEndpoint);
+            if (damageSourceEndpoint == null)
+            {
+                return null;
+            }
+
+            damageSourceEndpoint.Configure(
+                attributeContribution.ActorId,
+                attributeContribution.ActorInstanceRuntimeId,
+                startedIdentity,
+                source,
+                reason);
+            return damageSourceEndpoint;
+        }
+
+        private static ActorDamageSourceEndpoint ResolveDamageSourceEndpoint(ActorAttributeEndpoint attributeEndpoint)
+        {
+            ActorDamageSourceEndpoint damageSourceEndpoint = attributeEndpoint.GetComponent<ActorDamageSourceEndpoint>();
+            if (damageSourceEndpoint != null)
+            {
+                return damageSourceEndpoint;
+            }
+
+            Actor actorRoot = attributeEndpoint.GetComponentInParent<Actor>(true);
+            return actorRoot == null
+                ? null
+                : actorRoot.GetComponentInChildren<ActorDamageSourceEndpoint>(true);
         }
 
         private static SessionActivityIdentity BuildIdentity(

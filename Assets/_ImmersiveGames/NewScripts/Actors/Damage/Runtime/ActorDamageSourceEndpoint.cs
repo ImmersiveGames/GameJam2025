@@ -1,0 +1,199 @@
+using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using UnityEngine;
+
+namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
+{
+    [DisallowMultipleComponent]
+    [AddComponentMenu("ImmersiveGames/Actors/Damage/Actor Damage Source Endpoint")]
+    public sealed class ActorDamageSourceEndpoint : MonoBehaviour, IActorDamageSourceEndpoint
+    {
+        [Header("Damage Source")]
+        [Tooltip("Tipo semantico simples do dano emitido por esta fonte. Ex.: direct, projectile, hazard.")]
+        [SerializeField] private string damageKind = "direct";
+
+        private ActorId _sourceActorId;
+        private ActorInstanceRuntimeId _sourceActorInstanceRuntimeId;
+        private SessionActivityIdentity _activityIdentity;
+        private bool _isConfigured;
+
+        public ActorId SourceActorId => _sourceActorId;
+        public ActorInstanceRuntimeId SourceActorInstanceRuntimeId => _sourceActorInstanceRuntimeId;
+        public SessionActivityIdentity ActivityIdentity => _activityIdentity;
+        public bool IsConfigured => _isConfigured;
+
+        public void Configure(
+            ActorId sourceActorId,
+            ActorInstanceRuntimeId sourceActorInstanceRuntimeId,
+            SessionActivityIdentity activityIdentity,
+            string source,
+            string reason)
+        {
+            if (!sourceActorId.IsValid)
+            {
+                throw new InvalidOperationException("ActorDamageSourceEndpoint requires a valid source ActorId.");
+            }
+
+            if (!sourceActorInstanceRuntimeId.IsValid)
+            {
+                throw new InvalidOperationException("ActorDamageSourceEndpoint requires a valid source ActorInstanceRuntimeId.");
+            }
+
+            if (!activityIdentity.IsValid)
+            {
+                throw new InvalidOperationException("ActorDamageSourceEndpoint requires a valid SessionActivityIdentity.");
+            }
+
+            _sourceActorId = sourceActorId;
+            _sourceActorInstanceRuntimeId = sourceActorInstanceRuntimeId;
+            _activityIdentity = activityIdentity;
+            _isConfigured = true;
+
+            DebugUtility.LogVerbose(
+                typeof(ActorDamageSourceEndpoint),
+                $"event='ActorDamageSourceConfigured' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageKind='{Normalize(damageKind)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                DebugUtility.Colors.Info);
+        }
+
+        public bool TryEmitDamageIntent(
+            ActorDamageSourceIntent intent,
+            IActorDamageableEndpoint target,
+            out ActorDamageSourceResult result)
+        {
+            if (!_isConfigured)
+            {
+                result = ActorDamageSourceResult.Fail(
+                    intent.SourceActorId,
+                    intent.SourceActorInstanceRuntimeId,
+                    intent.TargetActorId,
+                    intent.TargetActorInstanceRuntimeId,
+                    intent.RawDamageAmount,
+                    "damage_source_not_configured");
+                return false;
+            }
+
+            if (!intent.IsValid)
+            {
+                result = ActorDamageSourceResult.Reject(intent, "damage_source_intent_invalid");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            if (target == null || !target.IsConfigured)
+            {
+                result = ActorDamageSourceResult.Reject(intent, "damage_target_not_configured");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            if (intent.SourceActorId != _sourceActorId)
+            {
+                result = ActorDamageSourceResult.Reject(intent, "foreign_source_actor_id");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            if (intent.SourceActorInstanceRuntimeId != _sourceActorInstanceRuntimeId)
+            {
+                result = ActorDamageSourceResult.Reject(intent, "foreign_source_actor_instance_id");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            if (intent.TargetActorId != target.ActorId)
+            {
+                result = ActorDamageSourceResult.Reject(intent, "foreign_target_actor_id");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            if (intent.TargetActorInstanceRuntimeId != target.ActorInstanceRuntimeId)
+            {
+                result = ActorDamageSourceResult.Reject(intent, "foreign_target_actor_instance_id");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            if (!MatchesRequiredActivityIdentity(intent.ActivityIdentity, _activityIdentity) ||
+                !MatchesRequiredActivityIdentity(intent.ActivityIdentity, target.ActivityIdentity))
+            {
+                result = ActorDamageSourceResult.Reject(intent, "foreign_or_stale_activity_identity");
+                LogRejected(intent, result.Reason);
+                return false;
+            }
+
+            ActorDamageIntent damageIntent = new(
+                intent.ActivityIdentity,
+                intent.TargetActorId,
+                intent.TargetActorInstanceRuntimeId,
+                intent.SourceActorId,
+                intent.RawDamageAmount,
+                string.IsNullOrWhiteSpace(intent.DamageKind) ? damageKind : intent.DamageKind,
+                intent.Source,
+                intent.Reason);
+
+            if (!target.TryApplyDamageIntent(damageIntent, out ActorDamageResult damageResult) ||
+                damageResult.Rejected ||
+                damageResult.Failed)
+            {
+                result = damageResult.Rejected
+                    ? ActorDamageSourceResult.Reject(intent, damageResult.Reason)
+                    : ActorDamageSourceResult.Fail(intent, damageResult.Reason);
+
+                if (result.Rejected)
+                {
+                    LogRejected(intent, result.Reason);
+                }
+                else
+                {
+                    LogFailed(intent, result.Reason);
+                }
+
+                return false;
+            }
+
+            result = ActorDamageSourceResult.EmittedResult(intent, damageResult);
+
+            DebugUtility.LogVerbose(
+                typeof(ActorDamageSourceEndpoint),
+                $"event='ActorDamageSourceIntentEmitted' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' damageKind='{Normalize(damageIntent.DamageKind)}' rawDamageAmount='{intent.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' changedFact='{damageResult.HasChangedFact}' thresholdFacts='{damageResult.HasThresholdFacts}' source='{intent.Source}' reason='{intent.Reason}'",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
+        private void LogRejected(ActorDamageSourceIntent intent, string reason)
+        {
+            DebugUtility.LogVerbose(
+                typeof(ActorDamageSourceEndpoint),
+                $"event='ActorDamageSourceIntentRejected' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{Normalize(reason)}' source='{intent.Source}' reason='{intent.Reason}'",
+                DebugUtility.Colors.Warning);
+        }
+
+        private void LogFailed(ActorDamageSourceIntent intent, string reason)
+        {
+            DebugUtility.LogWarning(
+                typeof(ActorDamageSourceEndpoint),
+                $"event='ActorDamageSourceIntentFailed' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{Normalize(reason)}' source='{intent.Source}' reason='{intent.Reason}'");
+        }
+
+        private static bool MatchesRequiredActivityIdentity(
+            SessionActivityIdentity candidateIdentity,
+            SessionActivityIdentity requiredIdentity)
+        {
+            if (!requiredIdentity.IsValid)
+            {
+                return true;
+            }
+
+            return candidateIdentity.IsValid &&
+                   candidateIdentity.CycleKey == requiredIdentity.CycleKey;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+}

@@ -226,13 +226,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 string actorId,
                 ActorAttributeEndpoint endpoint,
                 ActorAttributeMutationReceiverEndpoint mutationReceiver = null,
-                ActorDamageableEndpoint damageableEndpoint = null)
+                ActorDamageableEndpoint damageableEndpoint = null,
+                ActorDamageSourceEndpoint damageSourceEndpoint = null)
             {
                 ActorInstanceRuntimeId = actorInstanceRuntimeId;
                 ActorId = Normalize(actorId);
                 Endpoint = endpoint;
                 MutationReceiver = mutationReceiver;
                 DamageableEndpoint = damageableEndpoint;
+                DamageSourceEndpoint = damageSourceEndpoint;
             }
 
             public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
@@ -240,8 +242,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public ActorAttributeEndpoint Endpoint { get; }
             public ActorAttributeMutationReceiverEndpoint MutationReceiver { get; }
             public ActorDamageableEndpoint DamageableEndpoint { get; }
+            public ActorDamageSourceEndpoint DamageSourceEndpoint { get; }
             public bool HasMutationReceiver => MutationReceiver != null && MutationReceiver.IsConfigured;
             public bool HasDamageableEndpoint => DamageableEndpoint != null && DamageableEndpoint.IsConfigured;
+            public bool HasDamageSourceEndpoint => DamageSourceEndpoint != null && DamageSourceEndpoint.IsConfigured;
             public bool IsValid =>
                 ActorInstanceRuntimeId.IsValid &&
                 !string.IsNullOrWhiteSpace(ActorId) &&
@@ -3793,6 +3797,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 DebugUtility.Colors.Error);
         }
 
+        private void LogActorDamageSourceIntentRejected(
+            string sourceActorId,
+            string targetActorId,
+            float rawDamageAmount,
+            string rejectionReason,
+            string source,
+            string reason)
+        {
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorDamageSourceIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' sourceActorId='{sourceActorId}' targetActorId='{targetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Error);
+        }
+
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
         {
@@ -4718,6 +4735,189 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
                 $"event='ActorDamageIntentPublished' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{applyResult.ThresholdFactCount}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
+        public bool TryApplyActorDamageSourceIntent(
+            SessionActivityIdentity commandIdentity,
+            string sourceActorId,
+            string targetActorId,
+            float rawDamageAmount,
+            string source,
+            string reason,
+            out ActorDamageSourceResult result)
+        {
+            result = default;
+            string normalizedSourceActorId = Normalize(sourceActorId);
+            string normalizedTargetActorId = Normalize(targetActorId);
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+            int entrySequence = _state.CurrentEntrySequence;
+            string currentActivityId = _state.CurrentIdentity.IsValid
+                ? _state.CurrentIdentity.ActivityId
+                : Normalize(_state.CurrentDefinition.ActivityId);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorDamageSourceIntentRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' sourceActorId='{normalizedSourceActorId}' targetActorId='{normalizedTargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            if (!_state.CurrentIdentity.IsValid || !commandIdentity.IsValid || !IsSameActivityCycle(commandIdentity, _state.CurrentIdentity))
+            {
+                result = ActorDamageSourceResult.Reject(
+                    new ActorId(normalizedSourceActorId),
+                    default,
+                    new ActorId(normalizedTargetActorId),
+                    default,
+                    rawDamageAmount,
+                    "stale_or_foreign_activity_identity");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedSourceActorId))
+            {
+                result = ActorDamageSourceResult.Reject(
+                    default,
+                    default,
+                    new ActorId(normalizedTargetActorId),
+                    default,
+                    rawDamageAmount,
+                    "source_actor_id_missing");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedTargetActorId))
+            {
+                result = ActorDamageSourceResult.Reject(
+                    new ActorId(normalizedSourceActorId),
+                    default,
+                    default,
+                    default,
+                    rawDamageAmount,
+                    "target_actor_id_missing");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorId runtimeSourceActorId = new(normalizedSourceActorId);
+            if (!runtimeSourceActorId.IsValid)
+            {
+                result = ActorDamageSourceResult.Reject(
+                    runtimeSourceActorId,
+                    default,
+                    new ActorId(normalizedTargetActorId),
+                    default,
+                    rawDamageAmount,
+                    "source_actor_id_invalid");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorId runtimeTargetActorId = new(normalizedTargetActorId);
+            if (!runtimeTargetActorId.IsValid)
+            {
+                result = ActorDamageSourceResult.Reject(
+                    runtimeSourceActorId,
+                    default,
+                    runtimeTargetActorId,
+                    default,
+                    rawDamageAmount,
+                    "target_actor_id_invalid");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(normalizedSourceActorId, out ActorAttributeCapabilityState sourceCapabilityState))
+            {
+                result = ActorDamageSourceResult.Reject(
+                    runtimeSourceActorId,
+                    default,
+                    runtimeTargetActorId,
+                    default,
+                    rawDamageAmount,
+                    "source_actor_capability_not_ready");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!sourceCapabilityState.HasDamageSourceEndpoint)
+            {
+                result = ActorDamageSourceResult.Reject(
+                    runtimeSourceActorId,
+                    sourceCapabilityState.ActorInstanceRuntimeId,
+                    runtimeTargetActorId,
+                    default,
+                    rawDamageAmount,
+                    "actor_damage_source_endpoint_not_ready");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(normalizedTargetActorId, out ActorAttributeCapabilityState targetCapabilityState))
+            {
+                result = ActorDamageSourceResult.Reject(
+                    runtimeSourceActorId,
+                    sourceCapabilityState.ActorInstanceRuntimeId,
+                    runtimeTargetActorId,
+                    default,
+                    rawDamageAmount,
+                    "target_actor_capability_not_ready");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!targetCapabilityState.HasDamageableEndpoint)
+            {
+                result = ActorDamageSourceResult.Reject(
+                    runtimeSourceActorId,
+                    sourceCapabilityState.ActorInstanceRuntimeId,
+                    runtimeTargetActorId,
+                    targetCapabilityState.ActorInstanceRuntimeId,
+                    rawDamageAmount,
+                    "target_damageable_endpoint_not_ready");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorDamageSourceIntent intent = ActorDamageSourceIntent.Direct(
+                commandIdentity,
+                runtimeSourceActorId,
+                sourceCapabilityState.ActorInstanceRuntimeId,
+                runtimeTargetActorId,
+                targetCapabilityState.ActorInstanceRuntimeId,
+                rawDamageAmount,
+                normalizedSource,
+                normalizedReason);
+
+            if (!sourceCapabilityState.DamageSourceEndpoint.TryEmitDamageIntent(intent, targetCapabilityState.DamageableEndpoint, out result) ||
+                result.Rejected ||
+                result.Failed)
+            {
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            if (!result.HasDamageResult || !result.DamageResult.HasMutationResult || !result.DamageResult.MutationResult.HasApplyResult || !result.DamageResult.MutationResult.ApplyResult.HasFact)
+            {
+                result = ActorDamageSourceResult.Fail(
+                    runtimeSourceActorId,
+                    sourceCapabilityState.ActorInstanceRuntimeId,
+                    runtimeTargetActorId,
+                    targetCapabilityState.ActorInstanceRuntimeId,
+                    rawDamageAmount,
+                    "damage_source_result_fact_missing");
+                LogActorDamageSourceIntentRejected(normalizedSourceActorId, normalizedTargetActorId, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
+                return false;
+            }
+
+            ActorAttributeApplyResult applyResult = result.DamageResult.MutationResult.ApplyResult;
+            ActorAttributeChangedFact fact = applyResult.Fact;
+            PublishActorAttributeApplyResult(runtimeTargetActorId, applyResult);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
+                $"event='ActorDamageSourceIntentPublished' activityId='{currentActivityId}' entrySequence='{entrySequence}' sourceActorId='{normalizedSourceActorId}' sourceActorInstanceRuntimeId='{sourceCapabilityState.ActorInstanceRuntimeId}' targetActorId='{normalizedTargetActorId}' targetActorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.DamageResult.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{applyResult.ThresholdFactCount}' source='{normalizedSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
             return true;
         }

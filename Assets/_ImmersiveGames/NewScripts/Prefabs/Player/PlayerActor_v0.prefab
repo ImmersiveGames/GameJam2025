@@ -22,6 +22,8 @@ GameObject:
   - component: {fileID: 909090909090909091}
   - component: {fileID: 4452905082100865595}
   - component: {fileID: -4332865027245543985}
+  - component: {fileID: -8121217485538852801}
+  - component: {fileID: 9222412183150596113}
   m_Layer: 7
   m_Name: PlayerActor_v0
   m_TagString: Untagged
@@ -109,10 +111,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 100000}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -282,6 +284,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attributeEndpoint: {fileID: 2835148354476443585}
+--- !u!114 &-8121217485538852801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38300b3be8d6a3b4a8363fc178c0e07e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.Runtime.ActorDamageableEndpoint
+  targetAttributeDefinition: {fileID: 11400000, guid: 8f8c68d1bda378349b75d85c34ed5536, type: 2}
+--- !u!114 &9222412183150596113
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f886418908ae3744b3a139e5bdd5d82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.Runtime.ActorDamageSourceEndpoint
+  damageKind: direct
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0

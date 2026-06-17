@@ -162,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             base.OnValidate();
         }
 
-        private static string Normalize(string value)
+        private new static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }

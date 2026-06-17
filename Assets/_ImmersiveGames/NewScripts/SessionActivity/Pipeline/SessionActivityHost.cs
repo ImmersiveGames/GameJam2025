@@ -242,6 +242,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return SessionActivityHostQaCommandSurface.ApplyActorDamageIntent(_pipeline, "QaDamageActor", actorId, rawDamageAmount);
         }
 
+        internal bool QaDamageSourceActor(string sourceActorId, string targetActorId, float rawDamageAmount = 25f)
+        {
+            EnsurePipeline();
+            return SessionActivityHostQaCommandSurface.ApplyActorDamageSourceIntent(_pipeline, "QaDamageSourceActor", sourceActorId, targetActorId, rawDamageAmount);
+        }
+
         internal bool QaResetCurrentPlayerActor()
         {
             EnsurePipeline();

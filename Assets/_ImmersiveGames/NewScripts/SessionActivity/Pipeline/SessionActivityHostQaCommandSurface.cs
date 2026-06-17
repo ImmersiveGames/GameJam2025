@@ -246,6 +246,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return applied;
         }
 
+        public static bool ApplyActorDamageSourceIntent(
+            SessionActivityPipeline pipeline,
+            string action,
+            string sourceActorId,
+            string targetActorId,
+            float rawDamageAmount)
+        {
+            pipeline = RequirePipeline(pipeline);
+            SessionActivityRuntimeState state = pipeline.State;
+            bool applied = pipeline.TryApplyActorDamageSourceIntent(
+                state.CurrentIdentity,
+                sourceActorId,
+                targetActorId,
+                rawDamageAmount,
+                QaSource(action),
+                QaReason(action),
+                out ActorDamageSourceResult result);
+
+            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
+                $"action='{action}' outcomeKind='{outcome}' sourceActorId='{Normalize(sourceActorId)}' targetActorId='{Normalize(targetActorId)}' rawDamageAmount='{rawDamageAmount:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageSourceEndpoint'");
+
+            if (applied && result.HasChangedFact)
+            {
+                ActorDamageResult damageResult = result.DamageResult;
+                ActorAttributeChangedFact fact = damageResult.MutationResult.ApplyResult.Fact;
+                DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
+                    $"event='ActorDamageSourceQaApplied' sourceActorId='{Normalize(sourceActorId)}' sourceActorInstanceRuntimeId='{result.SourceActorInstanceRuntimeId}' targetActorId='{Normalize(targetActorId)}' targetActorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{damageResult.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{damageResult.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+            }
+
+            return applied;
+        }
+
         private static SessionActivityPipeline RequirePipeline(SessionActivityPipeline pipeline)
         {
             if (pipeline != null)

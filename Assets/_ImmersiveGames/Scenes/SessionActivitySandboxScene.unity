@@ -529,6 +529,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -550,9 +552,11 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!33 &1450952813
 MeshFilter:
@@ -603,6 +607,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1640082764}
   - component: {fileID: 1640082765}
+  - component: {fileID: 1640082766}
   m_Layer: 0
   m_Name: Teste Player Attributes QA
   m_TagString: Untagged
@@ -643,6 +648,21 @@ MonoBehaviour:
   addAmount: 25
   subtractAmount: 25
   setValue: 42
+--- !u!114 &1640082766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1640082763}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b31b6022545ace4cb91ead5e127f1e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.QA.ActorDamageRuntimeCommandQaProbe
+  host: {fileID: 300000}
+  targetActorId: actor.player.primary
+  damageAmount: 25
 --- !u!1 &1786871316
 GameObject:
   m_ObjectHideFlags: 0
@@ -746,6 +766,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 1
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
