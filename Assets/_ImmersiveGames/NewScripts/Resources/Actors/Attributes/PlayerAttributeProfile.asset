@@ -18,3 +18,24 @@ MonoBehaviour:
     initialValue: 100
     minValue: 0
     maxValue: 100
+    thresholds:
+    - thresholdId:
+        <Value>k__BackingField: player.attribute.0.dawn
+      normalizedValue: 0
+      direction: 10
+      emitOnInitialState: 1
+    - thresholdId:
+        <Value>k__BackingField: player.attribute.100.up
+      normalizedValue: 1
+      direction: 20
+      emitOnInitialState: 1
+    - thresholdId:
+        <Value>k__BackingField: player.attribute.75.up
+      normalizedValue: 0.75
+      direction: 20
+      emitOnInitialState: 1
+    - thresholdId:
+        <Value>k__BackingField: player.attribute.25.dawn
+      normalizedValue: 0.25
+      direction: 10
+      emitOnInitialState: 1

@@ -70,6 +70,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             string attributeId = bindingRequest.AttributeId.ToString();
             string sinkType = bindingRequest.ImageFillSink == null ? string.Empty : bindingRequest.ImageFillSink.GetType().Name;
 
+            if (bindingRequest.AttributeDefinition == null)
+            {
+                LogEntryRejected(index, selectorKind, attributeId, sinkType, "attribute_definition_missing");
+                return false;
+            }
+
+            if (!bindingRequest.AttributeId.IsValid)
+            {
+                LogEntryRejected(index, selectorKind, attributeId, sinkType, "attribute_definition_id_missing");
+                return false;
+            }
+
             if (bindingRequest.ImageFillSink == null)
             {
                 LogEntryRejected(index, selectorKind, attributeId, sinkType, "sink_reference_missing");
@@ -109,12 +121,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 default:
                     LogEntryRejected(index, selectorKind, attributeId, sinkType, "unsupported_selector_kind");
                     return false;
-            }
-
-            if (!bindingRequest.AttributeId.IsValid)
-            {
-                LogEntryRejected(index, selectorKind, attributeId, sinkType, "attribute_id_missing");
-                return false;
             }
 
             ActorAttributeUiBindingRequest runtimeRequest = new ActorAttributeUiBindingRequest(selector, bindingRequest.AttributeId);

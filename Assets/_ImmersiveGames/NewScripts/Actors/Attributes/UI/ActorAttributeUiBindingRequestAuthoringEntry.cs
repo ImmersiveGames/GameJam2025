@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using UnityEngine;
@@ -20,14 +21,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         [SerializeField] private ActorInstanceRuntimeId explicitActorInstanceRuntimeId;
 
         [Header("Binding")]
-        [SerializeField] private ActorAttributeId attributeId;
+        [Tooltip("Definition asset do atributo. O ID runtime e derivado do asset para evitar digitacao manual no binding.")]
+        [SerializeField] private ActorAttributeDefinitionAsset attributeDefinition;
         [SerializeField] private ActorAttributeImageFillSink imageFillSink;
 
         public bool RequestEnabled => requestEnabled;
         public ActorAttributeUiTargetSelectorKind SelectorKind => selectorKind;
         public ActorId ExplicitActorId => explicitActorId;
         public ActorInstanceRuntimeId ExplicitActorInstanceRuntimeId => explicitActorInstanceRuntimeId;
-        public ActorAttributeId AttributeId => attributeId;
+        public ActorAttributeDefinitionAsset AttributeDefinition => attributeDefinition;
+        public ActorAttributeId AttributeId => ActorAttributeId.FromDefinition(attributeDefinition);
         public ActorAttributeImageFillSink ImageFillSink => imageFillSink;
     }
 }
