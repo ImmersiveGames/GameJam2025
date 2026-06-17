@@ -22,25 +22,25 @@ MonoBehaviour:
     thresholds:
     - presetKind: 10
       thresholdId:
-        <Value>k__BackingField: player.attribute.0.dawn
+        <Value>k__BackingField: player.attribute.health.depleted
       normalizedValue: 0
       direction: 10
       emitOnInitialState: 1
     - presetKind: 20
       thresholdId:
-        <Value>k__BackingField: player.attribute.100.up
+        <Value>k__BackingField: player.attribute.health.full
       normalizedValue: 1
       direction: 20
       emitOnInitialState: 1
     - presetKind: 0
       thresholdId:
-        <Value>k__BackingField: player.attribute.75.up
+        <Value>k__BackingField: player.attribute.health.75.ascending
       normalizedValue: 0.75
       direction: 20
       emitOnInitialState: 1
     - presetKind: 0
       thresholdId:
-        <Value>k__BackingField: player.attribute.25.dawn
+        <Value>k__BackingField: player.attribute.health.25.descending
       normalizedValue: 0.25
       direction: 10
       emitOnInitialState: 1

@@ -67,7 +67,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             _actor = GetComponent<IActor>();
             _receiverId = _actor != null
                 ? _actor.ActorId
-                : $"DamageReceiver_{gameObject.GetInstanceID()}";
+                : $"DamageReceiver_{gameObject.GetEntityId()}";
             _component = GetComponent<RuntimeAttributeController>();
             _poolable = GetComponent<IPoolable>();
             _cooldowns = new DamageCooldownModule(damageCooldown);

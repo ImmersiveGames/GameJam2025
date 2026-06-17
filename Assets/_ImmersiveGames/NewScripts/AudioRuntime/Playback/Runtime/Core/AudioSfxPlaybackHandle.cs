@@ -11,10 +11,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
     {
         private AudioSource _source;
         private Transform _followTarget;
-        private Action<AudioSfxPlaybackHandle, int, string, string, string> _onCompleted;
+        private Action<AudioSfxPlaybackHandle, EntityId, string, string, string> _onCompleted;
         private Coroutine _stopRoutine;
 
-        private int _cueId;
+        private EntityId  _cueId;
         private string _cueName;
         private string _modeLabel;
         private string _reason;
@@ -26,14 +26,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         public bool IsPlaying => _isValid && _source != null && _source.isPlaying;
 
         public void Initialize(
-            int cueId,
+            EntityId cueId,
             string cueName,
             AudioSource source,
             Transform followTarget,
             string modeLabel,
             string reason,
             bool destroyOwnerOnComplete,
-            Action<AudioSfxPlaybackHandle, int, string, string, string> onCompleted)
+            Action<AudioSfxPlaybackHandle, EntityId, string, string, string> onCompleted)
         {
             _cueId = cueId;
             _cueName = string.IsNullOrWhiteSpace(cueName) ? "<unknown>" : cueName.Trim();

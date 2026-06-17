@@ -241,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             }
 
             List<PoolDefinitionAsset> poolDefinitions = new();
-            HashSet<int> uniquePoolDefinitionIds = new();
+            HashSet<EntityId> uniquePoolDefinitionIds = new();
             for (int index = 0; index < fireModes.Length; index++)
             {
                 var fireMode = fireModes[index];
@@ -261,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     continue;
                 }
 
-                int poolDefinitionId = poolDefinition.GetInstanceID();
+                EntityId poolDefinitionId = poolDefinition.GetEntityId();
                 if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
                 {
                     continue;

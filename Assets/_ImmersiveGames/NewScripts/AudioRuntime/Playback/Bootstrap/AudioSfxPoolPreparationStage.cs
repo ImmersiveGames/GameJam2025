@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 throw new InvalidOperationException("AudioSfxPoolPreparationStage requires a non-null global SFX voice pool catalog.");
             }
 
-            HashSet<int> uniquePoolDefinitionIds = new();
+            HashSet<EntityId> uniquePoolDefinitionIds = new();
             int catalogCount = poolDefinitions.Count;
             int resolvedCount = 0;
             int preparedCount = 0;
@@ -47,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                     throw new InvalidOperationException($"AudioSfxPoolPreparationStage catalog returned null pool definition at index='{index}'.");
                 }
 
-                int poolDefinitionId = poolDefinition.GetInstanceID();
+                EntityId poolDefinitionId = poolDefinition.GetEntityId();
                 if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
                 {
                     continue;

@@ -15,11 +15,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
     {
         private const string RuntimeObjectName = "NewScripts_AudioGlobalSfxRuntime";
 
-        private readonly Dictionary<int, int> _activeInstancesByCueId = new Dictionary<int, int>();
-        private readonly Dictionary<int, float> _lastPlayRealtimeByCueId = new Dictionary<int, float>();
-        private readonly Dictionary<int, List<AudioSfxPlaybackHandle>> _activeHandlesByCueId = new Dictionary<int, List<AudioSfxPlaybackHandle>>();
+        private readonly Dictionary<EntityId, int> _activeInstancesByCueId = new Dictionary<EntityId, int>();
+        private readonly Dictionary<EntityId, float> _lastPlayRealtimeByCueId = new Dictionary<EntityId, float>();
+        private readonly Dictionary<EntityId, List<AudioSfxPlaybackHandle>> _activeHandlesByCueId = new Dictionary<EntityId, List<AudioSfxPlaybackHandle>>();
         private readonly Dictionary<AudioSfxPlaybackHandle, PooledPlaybackState> _pooledPlaybackByHandle = new Dictionary<AudioSfxPlaybackHandle, PooledPlaybackState>();
-        private readonly Dictionary<int, int> _activePooledByProfileId = new Dictionary<int, int>();
+        private readonly Dictionary<EntityId, int> _activePooledByProfileId = new Dictionary<EntityId, int>();
         private IAudioSettingsService _settings;
         private IAudioRoutingResolver _routing;
         private IPoolService _poolService;
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return NullAudioPlaybackHandle.Instance;
             }
 
-            int cueId = cue.GetInstanceID();
+            EntityId cueId = cue.GetEntityId();
             var resolvedEmission = new ResolvedEmission(
                 useSpatial: AudioPlaybackResolutionHelper.ResolveUseSpatial(emissionProfile),
                 spatialBlend: emissionProfile.SpatialBlend,

@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             mode = source.spatialBlend > 0f ? "3D" : "2D";
             handle.Initialize(
-                cueId: cue.GetInstanceID(),
+                cueId: cue.GetEntityId(),
                 cueName: cue.name,
                 source: source,
                 followTarget: context.followTarget,
@@ -160,20 +160,20 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 destroyOwnerOnComplete: false,
                 onCompleted: OnPlaybackCompleted);
 
-            RegisterHandle(cue.GetInstanceID(), handle);
+            RegisterHandle(cue.GetEntityId(), handle);
             RegisterPooledHandle(handle, profile, poolDefinition, rentedInstance, profile.ReleaseGraceSeconds);
             int activeAfterProfile = GetActivePooledForProfile(profile);
 
             source.Play();
 
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                $"[Audio][SFX] Pool rent event='AudioSfxPooledVoiceRented' cue='{cue.name}' cueId='{cue.GetInstanceID()}' profile='{profile.name}' profileSource='{profileSource}' pool='{poolDefinition.name}' instance='{rentedInstance.name}' mode='{mode}' path='pooled' activeBefore='{activeForProfile}' activeAfter='{activeAfterProfile}' budget='{budget}' allowDirectFallback='{profile.AllowDirectFallback}' releaseGraceSeconds='{Mathf.Max(0f, profile.ReleaseGraceSeconds):0.###}' position='{rentedInstance.transform.position}' finalVolume='{source.volume:0.###}' volumeScale='{Mathf.Max(0f, context.volumeScale):0.###}' spatialBlend='{source.spatialBlend:0.###}' minDistance='{source.minDistance:0.###}' maxDistance='{source.maxDistance:0.###}' reason='{reason}'.",
+                $"[Audio][SFX] Pool rent event='AudioSfxPooledVoiceRented' cue='{cue.name}' cueId='{cue.GetEntityId()}' profile='{profile.name}' profileSource='{profileSource}' pool='{poolDefinition.name}' instance='{rentedInstance.name}' mode='{mode}' path='pooled' activeBefore='{activeForProfile}' activeAfter='{activeAfterProfile}' budget='{budget}' allowDirectFallback='{profile.AllowDirectFallback}' releaseGraceSeconds='{Mathf.Max(0f, profile.ReleaseGraceSeconds):0.###}' position='{rentedInstance.transform.position}' finalVolume='{source.volume:0.###}' volumeScale='{Mathf.Max(0f, context.volumeScale):0.###}' spatialBlend='{source.spatialBlend:0.###}' minDistance='{source.minDistance:0.###}' maxDistance='{source.maxDistance:0.###}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return true;
         }
 
-        private void OnPlaybackCompleted(AudioSfxPlaybackHandle handle, int cueId, string cueName, string modeLabel, string completionReason)
+        private void OnPlaybackCompleted(AudioSfxPlaybackHandle handle, EntityId cueId, string cueName, string modeLabel, string completionReason)
         {
             UnregisterHandle(cueId, handle);
 
@@ -270,7 +270,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 releaseGraceSeconds = Mathf.Max(0f, releaseGraceSeconds)
             };
 
-            int profileId = profile.GetInstanceID();
+            EntityId profileId = profile.GetEntityId();
             int current = 0;
             _activePooledByProfileId.TryGetValue(profileId, out current);
             _activePooledByProfileId[profileId] = current + 1;
@@ -283,7 +283,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return 0;
             }
 
-            int profileId = profile.GetInstanceID();
+            EntityId profileId = profile.GetEntityId();
             return _activePooledByProfileId.TryGetValue(profileId, out int active)
                 ? Mathf.Max(0, active)
                 : 0;
@@ -296,7 +296,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return;
             }
 
-            int profileId = profile.GetInstanceID();
+            EntityId profileId = profile.GetEntityId();
             if (!_activePooledByProfileId.TryGetValue(profileId, out int active))
             {
                 return;
@@ -313,7 +313,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             }
         }
 
-        private void RegisterHandle(int cueId, AudioSfxPlaybackHandle handle)
+        private void RegisterHandle(EntityId cueId, AudioSfxPlaybackHandle handle)
         {
             if (handle == null)
             {
@@ -329,7 +329,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             handles.Add(handle);
         }
 
-        private void UnregisterHandle(int cueId, AudioSfxPlaybackHandle handle)
+        private void UnregisterHandle(EntityId cueId, AudioSfxPlaybackHandle handle)
         {
             if (!_activeHandlesByCueId.TryGetValue(cueId, out var handles) || handles == null)
             {
@@ -351,7 +351,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             }
         }
 
-        private bool HasActive2DHandle(int cueId)
+        private bool HasActive2DHandle(EntityId cueId)
         {
             if (!_activeHandlesByCueId.TryGetValue(cueId, out var handles) || handles == null)
             {
@@ -381,7 +381,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             return false;
         }
 
-        private bool StopActive2DHandles(int cueId)
+        private bool StopActive2DHandles(EntityId cueId)
         {
             if (!_activeHandlesByCueId.TryGetValue(cueId, out var handles) || handles == null)
             {
@@ -425,7 +425,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             return source.spatialBlend <= 0f;
         }
 
-        private int GetActiveInstances(int cueId)
+        private int GetActiveInstances(EntityId  cueId)
         {
             return _activeInstancesByCueId.TryGetValue(cueId, out int active) ? Mathf.Max(0, active) : 0;
         }

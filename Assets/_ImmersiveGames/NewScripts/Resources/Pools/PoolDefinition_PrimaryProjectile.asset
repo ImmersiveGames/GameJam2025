@@ -17,7 +17,7 @@ MonoBehaviour:
   canExpand: 1
   maxSize: 32
   lifetimeScope: 1
-  autoReturnSeconds: 0
+  autoReturnSeconds: 5
   poolLabel: pool.projectile.primary
   registrationMode: 2
   prewarm: 1

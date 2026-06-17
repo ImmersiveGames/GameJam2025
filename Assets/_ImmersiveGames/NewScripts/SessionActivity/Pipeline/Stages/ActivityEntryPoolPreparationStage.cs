@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -84,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             List<ResolvedPoolDependency> dependencies = new();
-            HashSet<int> uniquePoolDefinitionIds = new();
+            HashSet<EntityId> uniquePoolDefinitionIds = new();
 
             for (int actorIndex = 0; actorIndex < actorInstances.Count; actorIndex++)
             {
@@ -127,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                                 $"ActivityEntryPoolPreparationStage provider returned null pool definition. providerType='{providerType}' actorId='{actorInstance.ActorId}' actorInstanceRuntimeId='{actorInstance.ActorInstanceRuntimeId}'.");
                         }
 
-                        int poolDefinitionId = poolDefinition.GetInstanceID();
+                        EntityId poolDefinitionId = poolDefinition.GetEntityId();
                         if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
                         {
                             continue;

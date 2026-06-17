@@ -726,7 +726,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             }
 
             string typeName = type?.Name ?? nameof(DebugUtility);
-            int contextId = context != null ? context.GetInstanceID() : 0;
+            EntityId contextId = context != null ? context.GetEntityId() : EntityId.None;
             string key = $"{typeName}:{message}:ctx={contextId}";
             var trackerKey = (key, frame);
 

@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         [SerializeField, HideInInspector] private int entrySequence;
         [SerializeField, HideInInspector] private string playerSlotId;
         [SerializeField, HideInInspector] private string playerActorId;
-        [SerializeField, HideInInspector] private int playerInputInstanceId;
+        [SerializeField, HideInInspector] private EntityId playerInputInstanceId;
         [SerializeField, HideInInspector] private int playerInputIndex;
         [SerializeField, HideInInspector] private string playerInputName;
 
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         public int EntrySequence => entrySequence;
         public PlayerSlotId PlayerSlotId => new(playerSlotId);
         public PlayerActorId PlayerActorId => new(playerActorId);
-        public int PlayerInputInstanceId => playerInputInstanceId;
+        public EntityId PlayerInputInstanceId => playerInputInstanceId;
         public int PlayerInputIndex => playerInputIndex;
         public string PlayerInputName => playerInputName;
 
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             SessionActivityIdentity identity,
             PlayerSlotId bindPlayerSlotId,
             PlayerActorId bindPlayerActorId,
-            int bindPlayerInputInstanceId,
+            EntityId bindPlayerInputInstanceId,
             int bindPlayerInputIndex,
             string bindPlayerInputName)
         {

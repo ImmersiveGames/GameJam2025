@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             handle = runtimeObject.AddComponent<AudioSfxPlaybackHandle>();
             handle.Initialize(
-                cueId: cue.GetInstanceID(),
+                cueId: cue.GetEntityId(),
                 cueName: cue.name,
                 source: source,
                 followTarget: context.followTarget,

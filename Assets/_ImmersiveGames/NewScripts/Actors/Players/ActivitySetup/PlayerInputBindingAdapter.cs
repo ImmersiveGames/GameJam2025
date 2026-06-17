@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity,
                     requirement.PlayerSlotId,
                     playerActorId,
-                    resolvedInput.GetInstanceID(),
+                    resolvedInput.GetEntityId(),
                     resolvedInput.playerIndex,
                     resolvedInput.name);
 
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     requirement,
                     actorHandle.ActorIdentity,
                     bound: true,
-                    observedInputId: $"{resolvedInput.name}|index={resolvedInput.playerIndex}|instance={resolvedInput.GetInstanceID()}|actionsRebound={resolution.ActionsReboundToCanonical}|currentActionMap={resolvedInput.currentActionMap?.name ?? "<none>"}"));
+                    observedInputId: $"{resolvedInput.name}|index={resolvedInput.playerIndex}|instance={resolvedInput.GetEntityId()}|actionsRebound={resolution.ActionsReboundToCanonical}|currentActionMap={resolvedInput.currentActionMap?.name ?? "<none>"}"));
             }
 
             return records;
