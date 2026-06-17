@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Attributes.UI;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
@@ -72,12 +74,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
         private readonly IActorCommandBindingAdapter _actorCommandBindingAdapter;
+        private readonly IActorAttributeEventStream _actorAttributeEventStream;
+        private readonly IActorAttributeUiBindingRequestProvider _actorAttributeUiBindingRequestProvider;
         private readonly IPoolService _poolService;
         private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivityEntryCapabilityInventoryBuildStage _activityEntryCapabilityInventoryBuildStage;
         private readonly ActivityEntryInventoryRuntimeState _activityInventoryRuntimeState = new();
         private readonly ActivityParticipationRuntimeState _activityParticipationRuntimeState = new();
+        private readonly ActivityActorAttributeUiBindingRuntimeState _activityActorAttributeUiBindingRuntimeState = new();
         private IReadOnlyList<SessionActivityActorMaterializationPlanEntry> _currentActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
         private PendingContentLoadContext _pendingContentLoadContext;
 
@@ -101,6 +106,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ISessionActivityPendingOperationCallback pendingOperationCallback,
             InputActionAsset canonicalPlayerInputActionsAsset,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
+            IActorAttributeEventStream actorAttributeEventStream,
+            IActorAttributeUiBindingRequestProvider actorAttributeUiBindingRequestProvider,
             IPoolService poolService,
             IGlobalAudioService globalAudioService)
         {
@@ -134,6 +141,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingOperationCallback = pendingOperationCallback ?? throw new ArgumentNullException(nameof(pendingOperationCallback));
             _canonicalPlayerInputActionsAsset = canonicalPlayerInputActionsAsset ?? throw new ArgumentNullException(nameof(canonicalPlayerInputActionsAsset));
             _activityActorExitRuntimeState = activityActorExitRuntimeState ?? throw new ArgumentNullException(nameof(activityActorExitRuntimeState));
+            _actorAttributeEventStream = actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream));
+            _actorAttributeUiBindingRequestProvider = actorAttributeUiBindingRequestProvider ?? throw new ArgumentNullException(nameof(actorAttributeUiBindingRequestProvider));
             _activityRetainedParticipantLookup = new ActivityRetainedParticipantLookup(_activityPlayerActorRegistry, _sessionActorRuntimeStore);
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
@@ -355,6 +364,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 {
                     throw new InvalidOperationException($"ActivityEntryPipeline actor attribute setup failed. reason='{actorAttributeSetupResult.Reason}' identity='{actorAttributeSetupResult.Identity}'.");
                 }
+
+                ExecuteActorAttributeUiBinding(command);
 
                 ActivityEntryActorParticipationEnterResult actorParticipationEnterResult = ExecuteActorParticipationEnter(
                     new ActivityEntryActorParticipationEnterCommand(
@@ -1242,6 +1253,38 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
+        private ActivityEntryActorAttributeUiBindingResult ExecuteActorAttributeUiBinding(ActivityEntryCommand command)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryCommand is invalid for actor attribute UI binding.");
+            }
+
+            try
+            {
+                return ActivityEntryActorAttributeUiBindingStage.Execute(
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    _actorAttributeEventStream,
+                    _activityPlayerActorRegistry,
+                    _activityParticipationRuntimeState.CurrentParticipationContext,
+                    _activityActorExitRuntimeState,
+                    _actorAttributeUiBindingRequestProvider,
+                    _activityActorAttributeUiBindingRuntimeState);
+            }
+            catch (Exception exception)
+            {
+                _logSink.LogEntryOwnerEvent(
+                    "ActivityEntryActorAttributeUiBindingFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_attribute_ui_binding' error='{exception.Message}'");
+                throw;
+            }
+        }
+
         public ActivityEntryActorParticipationEnterResult ExecuteActorParticipationEnter(
             ActivityEntryActorParticipationEnterCommand command,
             List<SessionActivityFact> facts,
@@ -1559,6 +1602,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void ResetState()
         {
             _pendingContentLoadContext = null;
+            _activityActorAttributeUiBindingRuntimeState.ClearAll();
             _activityInventoryRuntimeState.ClearCurrentActivityObjectContributorDiscoveryResult();
             _activityInventoryRuntimeState.ClearCurrentActorInventoryFeedResult();
             _activityInventoryRuntimeState.ClearCurrentActivitySetupInventory();
@@ -1662,6 +1706,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         internal void ClearCurrentActorMaterializationPlanEntries()
         {
             _currentActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
+        }
+
+        internal int ClearActorAttributeUiBindings(
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            int releasedCount = _activityActorAttributeUiBindingRuntimeState.ClearAll();
+            if (releasedCount > 0 && identity.IsValid)
+            {
+                _logSink.LogEntryOwnerEvent(
+                    "ActivityEntryActorAttributeUiBindingsReleased",
+                    identity,
+                    source,
+                    reason,
+                    $"owner='ActivityEntryPipeline' block='actor_attribute_ui_binding' releasedCount='{releasedCount}'");
+            }
+
+            return releasedCount;
         }
 
         private void ExecuteNextContentSceneLoad(

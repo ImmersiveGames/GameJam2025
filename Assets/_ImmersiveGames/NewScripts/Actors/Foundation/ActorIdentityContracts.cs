@@ -1,16 +1,18 @@
 using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
 {
-    public readonly struct ActorId : IEquatable<ActorId>
+    [Serializable]
+    public struct ActorId : IEquatable<ActorId>
     {
         public ActorId(string value)
         {
             Value = Normalize(value);
         }
 
-        public string Value { get; }
+        [field: SerializeField] public string Value { get; private set; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
         public bool Equals(ActorId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
@@ -24,7 +26,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
-    public readonly struct ActorInstanceRuntimeId : IEquatable<ActorInstanceRuntimeId>
+    [Serializable]
+    public struct ActorInstanceRuntimeId : IEquatable<ActorInstanceRuntimeId>
     {
         private const string RuntimeActorTypeDiscriminator = "Actor";
 
@@ -33,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             Value = Normalize(value);
         }
 
-        public string Value { get; }
+        [field: SerializeField] public string Value { get; private set; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
         public bool Equals(ActorInstanceRuntimeId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);

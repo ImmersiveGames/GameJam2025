@@ -69,7 +69,7 @@ MonoBehaviour:
   - ruleId: logger.actors.players.activitysetup.logs
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
-    level: 3
+    level: 4
   - ruleId: logger.actors.players.runtime.focus
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors.Players.Runtime
@@ -89,20 +89,20 @@ MonoBehaviour:
   - ruleId: logger.gameplay.actors.core.focus
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core
-    level: 3
+    level: 4
   - ruleId: logger.actors.attributes.focus
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors.Attributes
-    level: 3
+    level: 4
   - ruleId: logger.actors.capabilities.focus
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors.Capabilities
-    level: 3
+    level: 4
   - ruleId: logger.actors.runtime.focus
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors.Runtime
-    level: 3
+    level: 4
   - ruleId: logger.actors.foundation.focus
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors.Foundation
-    level: 3
+    level: 4

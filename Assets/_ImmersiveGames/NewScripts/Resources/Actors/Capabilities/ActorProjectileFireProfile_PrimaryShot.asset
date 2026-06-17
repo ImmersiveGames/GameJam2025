@@ -20,17 +20,17 @@ MonoBehaviour:
     spawnLayerMode: 1
     spawnLayerMask:
       serializedVersion: 2
-      m_Bits: 0
+      m_Bits: 256
     applyLayerToChildren: 1
     motionStrategy: 1
     linearSpeed: 18
     fireAudioCue: {fileID: 11400000, guid: e727285f5bb24cb6a6946aa1d77950f8, type: 2}
     fireAudioVolumeScale: 2.5
+    muzzlePolicy: 1
+    cooldownSeconds: 0.15
     spawnOriginId: actor.player.primary.origin
     spawnOriginResolutionMode: 1
     spawnPattern: 1
-    muzzlePolicy: 1
     spreadPolicy: 1
-    cooldownSeconds: 0.15
     projectileCount: 1
     radialArcDegrees: 0

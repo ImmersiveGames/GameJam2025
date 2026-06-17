@@ -1,13 +1,14 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     [Serializable]
-    public readonly struct ActorAttributeId : IEquatable<ActorAttributeId>
+    public struct ActorAttributeId : IEquatable<ActorAttributeId>
     {
         public static readonly ActorAttributeId Empty = new ActorAttributeId(string.Empty);
 
-        public string Value { get; }
+        [field: SerializeField] public string Value { get; private set; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 

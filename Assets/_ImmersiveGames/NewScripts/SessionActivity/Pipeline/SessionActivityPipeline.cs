@@ -54,6 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IMovementBindingAdapter _movementBindingAdapter;
         private readonly IPlayerMovementControlAdapter _playerMovementControlAdapter;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
+        private readonly IActorAttributeEventStream _actorAttributeEventStream;
         private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
         private readonly ActivitySceneActorRegistry _activitySceneActorRegistry;
         private readonly SessionActorRuntimeStore _sessionActorRuntimeStore;
@@ -401,7 +402,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ISessionActivityTransitionAdapter transitionAdapter,
             ISessionActivityTransitionLoadingAdapter transitionLoadingAdapter,
             ISessionActivityWindowSceneAdapter windowSceneAdapter,
-            ISessionActivityPendingOperationRunner pendingOperationRunner)
+            ISessionActivityPendingOperationRunner pendingOperationRunner,
+            IActorAttributeEventStream actorAttributeEventStream)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
@@ -412,6 +414,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _transitionLoadingAdapter = transitionLoadingAdapter ?? throw new ArgumentNullException(nameof(transitionLoadingAdapter));
             _windowSceneAdapter = windowSceneAdapter ?? throw new ArgumentNullException(nameof(windowSceneAdapter));
             _pendingOperationRunner = pendingOperationRunner ?? throw new ArgumentNullException(nameof(pendingOperationRunner));
+            _actorAttributeEventStream = actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream));
             _playerActorMaterializationAdapter = new PlayerActorMaterializationAdapter();
             _permissionRuntime = new ActivityCapabilityPermissionRuntime();
             _playerActorParticipationAdapter = new PlayerActorParticipationAdapter(_permissionRuntime);
@@ -2536,6 +2539,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     "route_exit_teardown_deferred_until_after_deactivation");
             }
 
+            _activityEntryPipeline.ClearActorAttributeUiBindings(command.Identity, command.Source, command.Reason);
+
             return ActivityExitActorTeardownStage.Execute(
                 new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, releaseRail),
                 definition,
@@ -4425,6 +4430,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             ActorAttributeChangedFact fact = result.Fact;
+            _actorAttributeEventStream.Publish(
+                new ActorAttributeChangedEvent(
+                    new ActorId(normalizedActorId),
+                    fact.ActorInstanceRuntimeId,
+                    fact.AttributeId,
+                    fact.Operation,
+                    fact.PreviousValue,
+                    fact.NewValue,
+                    fact.MinValue,
+                    fact.MaxValue,
+                    fact.Clamped,
+                    fact.Source,
+                    fact.Reason));
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
                 $"event='ActorAttributeChanged' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
@@ -5949,6 +5967,7 @@ private bool HasLoadedSetForCurrentEntry(
 
         private void ClearStateForRestartTransition()
         {
+            SessionActivityIdentity currentIdentity = _state.CurrentIdentity;
             _state.ClearPendingOperation();
             _state.ClearHandoff();
             _pendingTransitionCurtainReveal = false;
@@ -5961,6 +5980,7 @@ private bool HasLoadedSetForCurrentEntry(
             _pendingRestartCompletionEntrySequence = 0;
             _pendingContinuationExitTeardownCompleted = false;
             ClearPendingNavigationTransition();
+            _activityEntryPipeline.ClearActorAttributeUiBindings(currentIdentity, nameof(SessionActivityPipeline), "restart_transition_state_clear");
         }
 
         private SessionActivityCommandResult ExecuteSimulationCommand(SessionActivityCommandKind kind, string source, string reason)

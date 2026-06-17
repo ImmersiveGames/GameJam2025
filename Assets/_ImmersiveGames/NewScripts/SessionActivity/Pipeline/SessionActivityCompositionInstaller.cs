@@ -1,5 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Attributes.UI;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -60,6 +62,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 windowSceneAdapter,
                 activityContentSceneAdapter,
                 activityContentSceneReleaseAdapter);
+            ActorAttributeEventStream actorAttributeEventStream = new();
+            LoadedSceneActorAttributeUiBindingRequestProvider actorAttributeUiBindingRequestProvider = new();
 
             _host = host;
             _catalog = catalog;
@@ -71,7 +75,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new SessionActivityTransitionAdapter(),
                 new SessionActivityTransitionLoadingAdapter(),
                 windowSceneAdapter,
-                pendingOperationRunner);
+                pendingOperationRunner,
+                actorAttributeEventStream);
 
             var activityEntryPipeline = new ActivityEntryPipeline(
                 _pipeline.EntryRuntimeBridge,
@@ -93,6 +98,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline,
                 canonicalPlayerInputActionsAsset,
                 _pipeline.ActivityActorExitRuntimeState,
+                actorAttributeEventStream,
+                actorAttributeUiBindingRequestProvider,
                 poolService,
                 globalAudioService);
             // SA-19B1 — BindEntryPipeline seam removed (real removal step).

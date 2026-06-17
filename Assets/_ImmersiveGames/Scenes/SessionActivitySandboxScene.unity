@@ -216,7 +216,6 @@ MonoBehaviour:
   host: {fileID: 300000}
   showOnGUI: 1
   showForeignStaleQa: 0
-  qaAutoDumpOnObservedStateChange: 0
 --- !u!1001 &252896376
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -355,6 +354,56 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 286063456}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &624033209
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 624033211}
+  - component: {fileID: 624033210}
+  m_Layer: 0
+  m_Name: Teste Attributes QA (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &624033210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 624033209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4a5c6284f96d6b44890c5383a6e37c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  host: {fileID: 300000}
+  sceneActorId: npc.generic.01
+  attributeDefinition: {fileID: 11400000, guid: b101e7a7894cc9c4d8535ace53589d2b, type: 2}
+  addAmount: 5
+  subtractAmount: 10
+  setValue: 42
+--- !u!4 &624033211
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 624033209}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 960, y: 540, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &953251243
 GameObject:
@@ -555,7 +604,7 @@ GameObject:
   - component: {fileID: 1640082764}
   - component: {fileID: 1640082765}
   m_Layer: 0
-  m_Name: Teste QA
+  m_Name: Teste Attributes QA
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -589,8 +638,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   host: {fileID: 300000}
-  sceneActorId: npc.generic.01
-  attributeDefinition: {fileID: 11400000, guid: b101e7a7894cc9c4d8535ace53589d2b, type: 2}
+  sceneActorId: actor.player.primary
+  attributeDefinition: {fileID: 11400000, guid: 8f8c68d1bda378349b75d85c34ed5536, type: 2}
   addAmount: 5
   subtractAmount: 10
   setValue: 42
@@ -624,8 +673,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   placementId: player_start_01
-  playerId: 
-  slotId: 
 --- !u!4 &1786871318
 Transform:
   m_ObjectHideFlags: 0
@@ -988,3 +1035,4 @@ SceneRoots:
   - {fileID: 1786871318}
   - {fileID: 252896376}
   - {fileID: 1640082764}
+  - {fileID: 624033211}

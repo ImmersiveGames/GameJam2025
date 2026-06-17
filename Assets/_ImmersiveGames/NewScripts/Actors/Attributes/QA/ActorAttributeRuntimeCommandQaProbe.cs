@@ -18,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
         [Header("Command Target")]
         [FormerlySerializedAs("nonPlayerActorId")]
         [FormerlySerializedAs("actorId")]
+        [Tooltip("Use o ActorId ativo, por exemplo 'actor.player.primary' ou 'npc.generic.01'. Nao use PlayerSlotId, PlayerSelectionId, PlayerActorId ou ActorInstanceRuntimeId.")]
         [SerializeField] private string sceneActorId = "scene.actor.generic.01";
         [SerializeField] private ActorAttributeDefinitionAsset attributeDefinition;
 
