@@ -150,7 +150,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private bool IsTargetLayerValid(int layer)
         {
-            return (targetLayers.value & (1 << layer)) != 0;
+            return (targetLayers.value & 1 << layer) != 0;
         }
     }
 }

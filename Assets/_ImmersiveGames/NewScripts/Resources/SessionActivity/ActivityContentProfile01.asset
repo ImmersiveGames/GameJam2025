@@ -24,13 +24,19 @@ MonoBehaviour:
     - requirementId: participant.player.primary
       requiredness: 2
       participantKind: 1
-      participantId: player1
-      roleId: primary_player
+      participantId: participant.player.slot.1
+      expectedSessionRole: 1
       placementRequirementId: 
     objectEntryRequirements: []
     sceneContributorRequirements: []
     placementRequirements: []
-    cameraBindingRequirements: []
+    cameraBindingRequirements:
+    - requirementId: camera.activity.primary
+      requiredness: 2
+      cameraBindingKind: 1
+      bindingId: activity.camera.primary
+      targetId: actor.player.primary
+      profileId: activity.presentation.sandbox
     interactionBindingRequirements: []
     hudBindingRequirements: []
     warmupRequirements: []

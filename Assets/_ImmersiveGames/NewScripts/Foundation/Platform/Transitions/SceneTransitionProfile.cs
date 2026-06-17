@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Transitions
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneTransitionProfile",
-        menuName = "ImmersiveGames/NewScripts/Transitions/SceneTransitionProfile",
+        menuName = "ImmersiveGames/Transitions/SceneTransitionProfile",
         order = 30)]
     public sealed class SceneTransitionProfile : ScriptableObject
     {
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Transitions
 
         private static bool HasCurve(AnimationCurve curve)
         {
-            return curve != null && curve.keys != null && curve.keys.Length > 0;
+            return curve is { keys: { Length: > 0 } };
         }
     }
 }

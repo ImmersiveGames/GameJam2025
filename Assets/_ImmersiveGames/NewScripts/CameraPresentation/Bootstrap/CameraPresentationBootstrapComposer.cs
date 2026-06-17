@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -19,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
             }
 
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                "[OBS][CameraPresentation][Composer] installer concluded.",
+                "installer concluded.",
                 DebugUtility.Colors.Info);
         }
 
@@ -30,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
             if (_runtimeComposed)
             {
                 DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                    "[OBS][CameraPresentation][Composer] compose skipped reason='already_composed'.",
+                    "compose skipped reason='already_composed'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -40,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][CameraPresentation] RuntimeModeConfig obrigatorio ausente no bootstrap.");
             }
 
-            DependencyManager dependencyManager = DependencyManager.Instance;
+            var dependencyManager = DependencyManager.Instance;
             if (dependencyManager == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][CameraPresentation] DependencyManager.Instance obrigatorio ausente no bootstrap.");
@@ -51,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
 
             if (!composer.TryCompose(
                     registry,
-                    out CameraPresentationRuntimeCompositionResult result,
+                    out var result,
                     out string reason))
             {
                 throw new InvalidOperationException(
@@ -61,19 +60,19 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                $"[OBS][CameraPresentation][Composer] director registered type='{typeof(CinemachineActivityCameraDirector).Name}'.",
+                $"director registered type='{typeof(CinemachineActivityCameraDirector).Name}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                $"[OBS][CameraPresentation][Composer] preparation executor registered type='{typeof(ActivityCameraPreparationExecutor).Name}'.",
+                $"preparation executor registered type='{typeof(ActivityCameraPreparationExecutor).Name}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                $"[OBS][CameraPresentation][Composer] route director registered type='{typeof(CinemachineRouteCameraDirector).Name}'.",
+                $"route director registered type='{typeof(CinemachineRouteCameraDirector).Name}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                $"[OBS][CameraPresentation][Composer] route preparation executor registered type='{typeof(RouteCameraPreparationExecutor).Name}'.",
+                $"route preparation executor registered type='{typeof(RouteCameraPreparationExecutor).Name}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
-                $"[OBS][CameraPresentation][Composer] runtime composed reason='{result.Reason}'.",
+                $"runtime composed reason='{result.Reason}'.",
                 DebugUtility.Colors.Info);
         }
     }

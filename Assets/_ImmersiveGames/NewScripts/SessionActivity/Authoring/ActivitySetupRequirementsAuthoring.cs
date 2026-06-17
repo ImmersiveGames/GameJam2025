@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
@@ -168,12 +169,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     {
         [SerializeField] private ActivityParticipantRequirementKind participantKind = ActivityParticipantRequirementKind.ControllablePlayer;
         [SerializeField] private string participantId;
-        [SerializeField] private string roleId;
+        [SerializeField] private SessionParticipantRole expectedSessionRole = SessionParticipantRole.PrimaryPlayer;
         [SerializeField] private string placementRequirementId;
 
         public ActivityParticipantRequirementKind ParticipantKind => participantKind;
-        public string ParticipantId => Normalize(participantId);
-        public string RoleId => Normalize(roleId);
+        public SessionParticipantId SessionParticipantId => new(Normalize(participantId));
+        public string ParticipantId => SessionParticipantId.ToString();
+        public SessionParticipantRole ExpectedSessionRole => expectedSessionRole;
         public string PlacementRequirementId => Normalize(placementRequirementId);
 
         protected override void ValidateSpecificOrThrow(string validationSource)
@@ -186,6 +188,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             if (string.IsNullOrWhiteSpace(ParticipantId))
             {
                 throw new InvalidOperationException($"{validationSource} requires participantId.");
+            }
+
+            if (expectedSessionRole == SessionParticipantRole.Unknown)
+            {
+                throw new InvalidOperationException($"{validationSource} requires explicit expectedSessionRole.");
             }
         }
     }
@@ -379,29 +386,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     public sealed class ActivityStateResetRequirementAuthoring : ActivitySetupRequirementAuthoringBase
     {
         [SerializeField] private string targetId;
-        [SerializeField] private List<ActivityStateResetGroup> resetGroups = new();
 
         public string TargetId => Normalize(targetId);
-        public IReadOnlyList<ActivityStateResetGroup> ResetGroups => resetGroups;
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
             if (string.IsNullOrWhiteSpace(TargetId))
             {
                 throw new InvalidOperationException($"{validationSource} requires targetId.");
-            }
-
-            if (resetGroups == null || resetGroups.Count == 0)
-            {
-                throw new InvalidOperationException($"{validationSource} requires at least one reset group.");
-            }
-
-            for (int index = 0; index < resetGroups.Count; index++)
-            {
-                if (resetGroups[index] == ActivityStateResetGroup.Unknown)
-                {
-                    throw new InvalidOperationException($"{validationSource}.resetGroups[{index}] cannot be Unknown.");
-                }
             }
         }
     }

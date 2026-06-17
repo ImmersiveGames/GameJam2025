@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.AnimationSystems.Base;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
 using ImmersiveGames.GameJam2025.Core.Logging;
@@ -17,7 +16,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     /// </summary>
     public sealed partial class EaterBehavior : MonoBehaviour
     {
-        private EntityAudioEmitter _audioEmitter;
         private EaterDetectionController _detectionController;
         private EaterAnimationController _animationController;
 
@@ -82,7 +80,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         /// Tenta resolver via <see cref="DependencyManager"/> usando ActorId e, se n�o conseguir,
         /// procura via GetComponent.
         /// </summary>
-        internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)
+        /*internal bool TryGetAudioEmitter(out EntityAudioEmitter audioEmitter)
         {
             if (_audioEmitter == null)
             {
@@ -104,7 +102,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
             audioEmitter = _audioEmitter;
             return audioEmitter != null;
-        }
+        }*/
     }
 }
 

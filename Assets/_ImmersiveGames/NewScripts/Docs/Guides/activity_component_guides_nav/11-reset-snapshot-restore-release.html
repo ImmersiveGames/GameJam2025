@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>11 — Reset, Snapshot, Restore e Release</title><style>
+:root {
+  --bg:#f4f6fa; --panel:#ffffff; --text:#172033; --muted:#667085; --line:#d7deea;
+  --nav:#101828; --accent:#2563eb; --accentSoft:#eaf2ff; --ok:#087443; --okSoft:#ecfdf3;
+  --warn:#b54708; --warnSoft:#fff7ed; --bad:#b42318; --badSoft:#fff1f3;
+  --purple:#6941c6; --purpleSoft:#f4f3ff; --cyan:#0e7490; --cyanSoft:#ecfeff;
+  --code:#101828; --inspector:#2b2f38; --inspectorLine:#3e4451;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);line-height:1.58}
+a{color:var(--accent);text-decoration:none;font-weight:700} a:hover{text-decoration:underline}
+.topbar{position:sticky;top:0;z-index:50;background:var(--nav);color:white;border-bottom:1px solid rgba(255,255,255,.12)}
+.topbar-inner{max-width:1380px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.topbar .left,.topbar .right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.navbtn{display:inline-block;background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:7px 11px;font-size:13px;text-decoration:none}.navbtn:hover{background:rgba(255,255,255,.18);text-decoration:none}.navbtn.primary{background:#2563eb;border-color:#3b82f6}
+.hero{background:#111827;color:white;padding:34px 34px}.hero-inner{max-width:1380px;margin:0 auto}.hero h1{margin:0 0 8px;font-size:32px;letter-spacing:-.02em}.hero p{margin:0;max-width:1040px;color:#d0d5dd;font-size:16px}
+.layout{max-width:1380px;margin:0 auto;display:grid;grid-template-columns:300px 1fr;gap:22px;padding:24px}
+aside{position:sticky;top:58px;align-self:start;max-height:calc(100vh - 74px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}
+aside h2{font-size:15px;margin:0 0 10px}.side-link{display:block;padding:9px 10px;margin:3px 0;border-radius:10px;color:var(--text);text-decoration:none;font-size:13.5px;font-weight:700}.side-link:hover{background:#f2f4f7;text-decoration:none}.side-link.active{background:var(--accentSoft);color:var(--accent)}.page-no{display:inline-block;min-width:28px;color:var(--muted);font-weight:900}.side-link.active .page-no{color:var(--accent)}.small{display:block;color:var(--muted);font-size:12px;font-weight:500;margin-top:2px}
+main{min-width:0}.mobile-index{display:none;background:white;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px}.mobile-index select{width:100%;padding:9px;border:1px solid var(--line);border-radius:9px;margin-top:6px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin:0 0 18px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+h2{margin:0 0 12px;font-size:24px} h3{font-size:18px;margin:22px 0 8px} h4{font-size:15px;margin:15px 0 6px} p{margin:8px 0 12px}.lead{font-size:17px;color:#344054}.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px}.grid.two{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.tile{background:white;border:1px solid var(--line);border-radius:12px;padding:16px}.tile h3{margin-top:0}.badge{display:inline-block;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:900;background:var(--accentSoft);color:var(--accent);margin:0 0 8px}.badge.ok{background:var(--okSoft);color:var(--ok)}.badge.warn{background:var(--warnSoft);color:var(--warn)}.badge.bad{background:var(--badSoft);color:var(--bad)}.badge.purple{background:var(--purpleSoft);color:var(--purple)}.badge.cyan{background:var(--cyanSoft);color:var(--cyan)}
+.note,.good,.warnbox,.badbox,.recipe,.why{padding:12px 14px;border-radius:10px;margin:12px 0}.note{border-left:5px solid var(--accent);background:var(--accentSoft)}.good{border-left:5px solid var(--ok);background:var(--okSoft)}.warnbox{border-left:5px solid var(--warn);background:var(--warnSoft)}.badbox{border-left:5px solid var(--bad);background:var(--badSoft)}.recipe{border-left:5px solid var(--purple);background:var(--purpleSoft)}.why{border-left:5px solid var(--cyan);background:var(--cyanSoft)}
+.flow,pre{background:#f9fafb;border:1px dashed #cbd5e1;border-radius:12px;padding:14px;font-family:Consolas,Monaco,monospace;white-space:pre-wrap;overflow-x:auto}.flow.dark,pre.dark{background:var(--code);color:#e5e7eb;border:none}.path{display:block;background:#111827;color:#e5e7eb;border-radius:8px;padding:10px 12px;font-family:Consolas,Monaco,monospace;overflow-x:auto}.inline-flow{font-family:Consolas,Monaco,monospace;background:#eef2f7;border-radius:6px;padding:2px 5px}
+.steps{counter-reset:step;display:grid;gap:12px}.step{position:relative;padding:14px 14px 14px 56px;border:1px solid var(--line);border-radius:12px;background:white}.step:before{counter-increment:step;content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:999px;background:var(--accent);color:white;display:grid;place-items:center;font-weight:900}.step h3{margin:0 0 6px}
+.inspector{border:1px solid #cbd5e1;border-radius:12px;overflow:hidden;margin:12px 0;background:white}.inspector-title{background:#e5e7eb;padding:9px 12px;font-weight:900;border-bottom:1px solid #cbd5e1}.inspector-row{display:grid;grid-template-columns:245px 1fr;gap:10px;padding:9px 12px;border-bottom:1px solid #eef2f7}.inspector-row:last-child{border-bottom:none}.field{font-family:Consolas,Monaco,monospace;color:#111827;font-weight:900}.value{color:#344054}
+.print{background:var(--inspector);color:#e5e7eb;border-radius:14px;border:1px solid #1f2430;overflow:hidden;margin:14px 0;box-shadow:0 10px 28px rgba(16,24,40,.16)}.print-title{background:#1f2430;color:white;padding:10px 13px;font-weight:900;border-bottom:1px solid var(--inspectorLine)}.print-body{padding:12px 13px}.print-row{display:grid;grid-template-columns:230px 1fr;gap:12px;padding:7px 0;border-bottom:1px solid var(--inspectorLine)}.print-row:last-child{border-bottom:none}.print-field{font-family:Consolas,Monaco,monospace;color:#c7d7ff}.print-value{font-family:Consolas,Monaco,monospace;color:#f2f4f7}.print-note{color:#aab3c5;font-size:12px;margin-top:6px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}.tree{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.tree ul{list-style:none;padding-left:16px}.tree li{position:relative;margin:8px 0}.tree li:before{content:'→';position:absolute;left:-18px;color:var(--accent);font-weight:900}
+table{border-collapse:collapse;width:100%;margin:14px 0;background:white}th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}th{background:#f2f4f7}code{background:#eef2f7;padding:2px 5px;border-radius:6px;font-family:Consolas,Monaco,monospace}ul,ol{padding-left:22px}li{margin:6px 0}.checklist{columns:2;column-gap:26px}.checklist li{break-inside:avoid}.footer{color:var(--muted);font-size:13px;margin:24px 0;text-align:center}
+@media(max-width:940px){.layout{display:block;padding:14px}aside{display:none}.mobile-index{display:block}.hero{padding:24px 18px}.topbar-inner{align-items:flex-start}.inspector-row,.print-row,.split{grid-template-columns:1fr}.checklist{columns:1}}
+
+/* FIX-CODE-READABILITY: separa código inline de blocos de código.
+   Blocos de código usam fundo claro e texto escuro para máxima leitura. */
+pre,
+pre.dark,
+.flow.dark {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #94a3b8 !important;
+  box-shadow: none !important;
+}
+
+pre code,
+pre.dark code,
+.flow.dark code {
+  display: block !important;
+  background: transparent !important;
+  color: #111827 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+  font-size: 14px !important;
+  line-height: 1.75 !important;
+  font-weight: 500 !important;
+  text-shadow: none !important;
+  white-space: pre-wrap !important;
+}
+
+p code,
+li code,
+td code,
+th code,
+.note code,
+.good code,
+.warnbox code,
+.badbox code,
+.recipe code,
+.why code {
+  background: #e8eefc !important;
+  color: #0f172a !important;
+  padding: 2px 5px !important;
+  border-radius: 6px !important;
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+  font-weight: 700 !important;
+}
+
+.print {
+  background: #111827 !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+}
+
+.print-title {
+  background: #020617 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #475569 !important;
+}
+
+.print-field {
+  color: #bfdbfe !important;
+  font-weight: 800 !important;
+}
+
+.print-value {
+  color: #ffffff !important;
+}
+
+
+
+/* CODE THEME FINAL: leitura confortável sem conflito com code inline.
+   Regra principal: pre > code nunca recebe fundo próprio. */
+pre,
+pre.dark,
+.flow.dark {
+  background: #172033 !important;
+  color: #eef4ff !important;
+  border: 1px solid #344767 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 24px rgba(16,24,40,.16) !important;
+  padding: 18px 20px !important;
+  margin: 16px 0 !important;
+  overflow-x: auto !important;
+  white-space: pre !important;
+}
+
+pre code,
+pre.dark code,
+.flow.dark code {
+  display: block !important;
+  background: transparent !important;
+  color: #eef4ff !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+  font-size: 14px !important;
+  line-height: 1.72 !important;
+  font-weight: 500 !important;
+  letter-spacing: .01em !important;
+  text-shadow: none !important;
+  white-space: pre !important;
+}
+
+/* Código inline: visual diferente de bloco, sem afetar pre > code. */
+p code,
+li code,
+td code,
+th code,
+.note code,
+.good code,
+.warnbox code,
+.badbox code,
+.recipe code,
+.why code,
+.field code,
+.value code {
+  background: #e8eefc !important;
+  color: #172033 !important;
+  border: 1px solid #c7d2fe !important;
+  padding: 2px 6px !important;
+  border-radius: 6px !important;
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+  font-weight: 700 !important;
+}
+
+/* Inspector/prints: escuro, mas não usa o mesmo visual de código. */
+.print {
+  background: #1f2937 !important;
+  color: #f8fafc !important;
+  border: 1px solid #475569 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 24px rgba(16,24,40,.16) !important;
+}
+
+.print-title {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #475569 !important;
+}
+
+.print-row {
+  border-bottom: 1px solid #3f4f66 !important;
+}
+
+.print-field {
+  color: #93c5fd !important;
+  font-weight: 800 !important;
+}
+
+.print-value {
+  color: #f8fafc !important;
+}
+
+.print-note {
+  color: #cbd5e1 !important;
+}
+
+.path {
+  background: #172033 !important;
+  color: #eef4ff !important;
+  border: 1px solid #344767 !important;
+}
+
+</style></head>
+<body id="top"><div class="topbar"><div class="topbar-inner"><div class="left"><a class="navbtn primary" href="00-index.html">Índice</a><a class="navbtn" href="10-actors-caracteristicas.html">← Anterior</a></div><div class="right"><a class="navbtn" href="#top">Topo ↑</a><a class="navbtn" href="12-binding-permission-gate.html">Próximo →</a></div></div></div><section class="hero"><div class="hero-inner"><h1>11 — Reset, Snapshot, Restore e Release</h1><p>Ciclo de estado completo do objeto</p></div></section><div class="layout"><aside><h2>Navegação</h2><a class="side-link" href="00-index.html"><span class="page-no">00</span>Comece por aqui<span class="small">Mapa do guia, fluxo geral e leitura recomendada</span></a>
+<a class="side-link" href="01-o-que-e-activity.html"><span class="page-no">01</span>O que é uma Activity<span class="small">Definição simples, analogia e por que o sistema tem camadas</span></a>
+<a class="side-link" href="02-glossario.html"><span class="page-no">02</span>Glossário rápido<span class="small">Uma frase por termo antes de mexer nos assets</span></a>
+<a class="side-link" href="03-activity-minima-10-min.html"><span class="page-no">03</span>Activity mínima em 10 minutos<span class="small">Tutorial do zero com quadros estilo Inspector</span></a>
+<a class="side-link" href="04-arvores-decisao.html"><span class="page-no">04</span>Árvores de decisão<span class="small">Content Profile, Required/Optional, reset, endpoints e nova transversalidade</span></a>
+<a class="side-link" href="05-catalogo-e-activityasset.html"><span class="page-no">05</span>Catálogo e ActivityAsset<span class="small">Como criar e preencher os assets principais</span></a>
+<a class="side-link" href="06-content-profile-scenes.html"><span class="page-no">06</span>Content Profile e cenas<span class="small">Quando carregar cena própria e quando usar no-content</span></a>
+<a class="side-link" href="07-gameobject-e-componentes.html"><span class="page-no">07</span>GameObject e componentes<span class="small">Estrutura mínima lado a lado e função de cada componente</span></a>
+<a class="side-link" href="08-transversalidades-objetos.html"><span class="page-no">08</span>Transversalidades de objetos<span class="small">O que entra no inventory transversal e o que fica como comportamento local</span></a>
+<a class="side-link" href="09-criar-endpoint-objeto.html"><span class="page-no">09</span>Criar endpoint para novo objeto<span class="small">Exemplo completo de Reset, Snapshot, Restore e Release para um objeto novo</span></a>
+<a class="side-link" href="10-actors-caracteristicas.html"><span class="page-no">10</span>Actor e características<span class="small">Como adicionar atributos, comandos, movimento e câmera sem confundir lifecycle</span></a>
+<a class="side-link active" href="11-reset-snapshot-restore-release.html"><span class="page-no">11</span>Reset, Snapshot, Restore e Release<span class="small">Ciclo de estado completo do objeto</span></a>
+<a class="side-link" href="12-binding-permission-gate.html"><span class="page-no">12</span>Binding e Permission Gate<span class="small">Como input, movimento, câmera e comandos são conectados e liberados</span></a>
+<a class="side-link" href="13-exemplos-prontos.html"><span class="page-no">13</span>Exemplos prontos<span class="small">Receitas para activity_01, activity_02, objeto interativo e endpoint novo</span></a>
+<a class="side-link" href="14-smoke-erros-comuns.html"><span class="page-no">14</span>Smoke e erros comuns<span class="small">Como validar e diagnosticar sem aceitar falso PASS</span></a></aside><main><div class="mobile-index"><label for="pageSelect"><strong>Ir para:</strong></label><select id="pageSelect" onchange="window.location.href=this.value"><option value="00-index.html">00 — Comece por aqui — Mapa do guia, fluxo geral e leitura recomendada</option>
+<option value="01-o-que-e-activity.html">01 — O que é uma Activity — Definição simples, analogia e por que o sistema tem camadas</option>
+<option value="02-glossario.html">02 — Glossário rápido — Uma frase por termo antes de mexer nos assets</option>
+<option value="03-activity-minima-10-min.html">03 — Activity mínima em 10 minutos — Tutorial do zero com quadros estilo Inspector</option>
+<option value="04-arvores-decisao.html">04 — Árvores de decisão — Content Profile, Required/Optional, reset, endpoints e nova transversalidade</option>
+<option value="05-catalogo-e-activityasset.html">05 — Catálogo e ActivityAsset — Como criar e preencher os assets principais</option>
+<option value="06-content-profile-scenes.html">06 — Content Profile e cenas — Quando carregar cena própria e quando usar no-content</option>
+<option value="07-gameobject-e-componentes.html">07 — GameObject e componentes — Estrutura mínima lado a lado e função de cada componente</option>
+<option value="08-transversalidades-objetos.html">08 — Transversalidades de objetos — O que entra no inventory transversal e o que fica como comportamento local</option>
+<option value="09-criar-endpoint-objeto.html">09 — Criar endpoint para novo objeto — Exemplo completo de Reset, Snapshot, Restore e Release para um objeto novo</option>
+<option value="10-actors-caracteristicas.html">10 — Actor e características — Como adicionar atributos, comandos, movimento e câmera sem confundir lifecycle</option>
+<option value="11-reset-snapshot-restore-release.html" selected>11 — Reset, Snapshot, Restore e Release — Ciclo de estado completo do objeto</option>
+<option value="12-binding-permission-gate.html">12 — Binding e Permission Gate — Como input, movimento, câmera e comandos são conectados e liberados</option>
+<option value="13-exemplos-prontos.html">13 — Exemplos prontos — Receitas para activity_01, activity_02, objeto interativo e endpoint novo</option>
+<option value="14-smoke-erros-comuns.html">14 — Smoke e erros comuns — Como validar e diagnosticar sem aceitar falso PASS</option></select></div><section class="card"><h2>Diagrama do ciclo de estado</h2><div class="flow dark">EntryInitialize
+  ↓ Reset inicial dos endpoints válidos
+Running
+  ↓ Gameplay altera estado
+SnapshotCapture
+  ↓ Captura estado quando necessário
+SnapshotRestore
+  ↓ Restaura estado quando restart/continuidade exigir
+Release
+  ↓ Limpa vínculos, listeners e runtime objects
+Next Activity / RouteExit</div></section>
+<section class="card"><h2>Reset não é tudo igual</h2><table><tr><th>Intent</th><th>Use quando</th><th>Exemplo</th></tr><tr><td><code>EntryInitialize</code></td><td>Entrada inicial da Activity.</td><td>Colocar objeto no ponto inicial.</td></tr><tr><td><code>RuntimeLocalReset</code></td><td>Reset pontual em runtime/QA.</td><td>Resetar só o player atual.</td></tr><tr><td><code>RuntimeActivityReset</code></td><td>Restart da Activity atual.</td><td>Reiniciar uma sala.</td></tr><tr><td><code>RuntimeActivityTransitionReset</code></td><td>Troca entre Activities.</td><td>Limpar transientes sem reposicionar player.</td></tr><tr><td><code>RuntimeRouteTransitionReset</code></td><td>Reset de estado na troca de rota.</td><td>Não confundir com teardown.</td></tr></table></section>
+<section class="card"><h2>Print — endpoints de estado no objeto</h2><div class="print"><div class="print-title">Inspector — Key_A — State Endpoints</div><div class="print-body"><div class="print-row"><div class="print-field">Reset Endpoint</div><div class="print-value">Apply EntryInitialize + RuntimeActivityReset</div></div><div class="print-row"><div class="print-field">Snapshot Provider</div><div class="print-value">Capture Transform + Active</div></div><div class="print-row"><div class="print-field">Snapshot Restore Endpoint</div><div class="print-value">Restore Transform + Active</div></div><div class="print-row"><div class="print-field">Release Endpoint</div><div class="print-value">Clear runtime links</div></div></div></div><div class="warnbox"><strong>Não emita Applied falso:</strong> se um endpoint diz que aplicou reset, ele precisa realmente aplicar estado ou retornar skip/failure explícito.</div></section>
+<section class="card"><h2>Qual endpoint usar?</h2><ul><li>Use ResetEndpoint quando o objeto precisa voltar para uma receita de estado.</li><li>Use SnapshotProvider quando o estado muda durante gameplay e precisa ser capturado.</li><li>Use SnapshotRestoreEndpoint quando o snapshot precisa voltar para o objeto.</li><li>Use ReleaseEndpoint quando há algo para limpar no fim.</li></ul></section><div class="footer">Guia de uso de Activity — Base 2.0. Documentação operacional; não altera runtime.</div></main></div></body></html>

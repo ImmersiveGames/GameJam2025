@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
 {
     [CreateAssetMenu(
         fileName = "PlayerPrefsSaveBackend",
-        menuName = "ImmersiveGames/NewScripts/Save/PlayerPrefs Save Backend",
+        menuName = "ImmersiveGames/Save/PlayerPrefs Save Backend",
         order = 21)]
     public sealed class PlayerPrefsSaveBackendAsset : SaveBackendAsset
     {

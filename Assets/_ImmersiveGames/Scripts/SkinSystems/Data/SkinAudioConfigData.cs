@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
@@ -22,7 +21,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     public struct SkinAudioEntry
     {
         public SkinAudioKey key;
-        public SoundData sound;
+        //public SoundData sound;
     }
 
     /// <summary>
@@ -32,7 +31,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     {
         IReadOnlyList<SkinAudioEntry> AudioEntries { get; }
 
-        bool TryGetSound(SkinAudioKey key, out SoundData sound);
+        //bool TryGetSound(SkinAudioKey key, out SoundData sound);
     }
 
     /// <summary>
@@ -49,17 +48,17 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         [Header("Audio Entries (Key -> SoundData)")]
         [SerializeField] private List<SkinAudioEntry> audioEntries = new List<SkinAudioEntry>();
 
-        private Dictionary<SkinAudioKey, SoundData> _audioMap;
+        //private Dictionary<SkinAudioKey, SoundData> _audioMap;
 
         public IReadOnlyList<SkinAudioEntry> AudioEntries => audioEntries;
 
-        public bool TryGetSound(SkinAudioKey key, out SoundData sound)
+        /*public bool TryGetSound(SkinAudioKey key, out SoundData sound)
         {
             EnsureMap();
             return _audioMap.TryGetValue(key, out sound);
-        }
+        }*/
 
-        private void EnsureMap()
+        /*private void EnsureMap()
         {
             if (_audioMap != null)
             {
@@ -81,10 +80,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
 
                 _audioMap[entry.key] = entry.sound;
             }
-        }
+        }*/
 
 #if UNITY_EDITOR
-        private void OnValidate()
+        /*private void OnValidate()
         {
             // Rebuild map in editor para manter consistente
             _audioMap = null;
@@ -120,7 +119,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                     "na lista de Audio Entries. Verifique se isso é intencional.",
                     this);
             }
-        }
+        }*/
 #endif
     }
 }

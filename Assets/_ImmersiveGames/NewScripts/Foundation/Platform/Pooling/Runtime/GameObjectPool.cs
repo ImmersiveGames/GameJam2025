@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (created > 0)
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] Prewarm complete. asset='{Definition.name}' created={created} total={TotalCount} inactive={InactiveCount}.",
+                    $"Prewarm complete. asset='{Definition.name}' created={created} total={TotalCount} inactive={InactiveCount}.",
                     DebugUtility.Colors.Info);
             }
         }
@@ -74,8 +74,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                     $"[Pooling] Pool limit reached for asset='{Definition.name}'. active={ActiveCount} total={TotalCount} max={Definition.MaxSize}.");
             }
 
-            PoolRuntimeInstance runtimeInstance = _available.Dequeue();
-            GameObject instance = runtimeInstance.Instance;
+            var runtimeInstance = _available.Dequeue();
+            var instance = runtimeInstance.Instance;
 
             runtimeInstance.MarkRented();
             _rentedObjects.Add(instance);
@@ -84,6 +84,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
             CallPoolRent(instance);
             instance.SetActive(true);
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolObjectRentPrepared' asset='{Definition.name}' instanceName='{instance.name}' poolLabel='{Sanitize(Definition.PoolLabel)}' lifetimeScope='{Definition.LifetimeScope}' active='{ActiveCount}' inactive='{InactiveCount}' total='{TotalCount}' reason='pool_object_rent_hook_completed'.",
+                DebugUtility.Colors.Info);
             return instance;
         }
 
@@ -109,13 +112,46 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             ReturnInternal(runtimeInstance, PoolReturnReason.Manual);
         }
 
+        public int ReturnAllRentedObjects(string reason)
+        {
+            if (_rentedObjects.Count == 0)
+            {
+                return 0;
+            }
+
+            var rentedSnapshot = new List<GameObject>(_rentedObjects);
+            int returnedCount = 0;
+            for (int index = 0; index < rentedSnapshot.Count; index++)
+            {
+                GameObject instance = rentedSnapshot[index];
+                if (instance == null || !_instancesByObject.TryGetValue(instance, out PoolRuntimeInstance runtimeInstance))
+                {
+                    continue;
+                }
+
+                if (!_rentedObjects.Contains(instance))
+                {
+                    continue;
+                }
+
+                ReturnInternal(runtimeInstance, PoolReturnReason.Manual);
+                returnedCount++;
+            }
+
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolRentedObjectsDrained' asset='{Definition.name}' returnedCount='{returnedCount}' active='{ActiveCount}' inactive='{InactiveCount}' total='{TotalCount}' reason='{Sanitize(reason)}'.",
+                DebugUtility.Colors.Info);
+
+            return returnedCount;
+        }
+
         public void Cleanup()
         {
             _autoReturnTracker.Clear("pool-cleanup");
 
             foreach (KeyValuePair<GameObject, PoolRuntimeInstance> kv in _instancesByObject)
             {
-                GameObject instance = kv.Key;
+                var instance = kv.Key;
                 if (instance == null)
                 {
                     continue;
@@ -139,25 +175,31 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 if (isExpansion)
                 {
                     DebugUtility.LogWarning(typeof(GameObjectPool),
-                        $"[OBS][Pooling] Expand blocked by max size. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.");
+                        $"Expand blocked by max size. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.");
                 }
 
                 return false;
             }
 
-            GameObject instance = Object.Instantiate(Definition.Prefab, Host.AvailableRoot);
+            var instance = Object.Instantiate(Definition.Prefab, Host.AvailableRoot);
             instance.name = $"{Definition.Prefab.name}_Pooled_{TotalCount + 1}";
             instance.SetActive(false);
 
             var runtimeInstance = new PoolRuntimeInstance(Definition, instance, this);
             _instancesByObject.Add(instance, runtimeInstance);
             _available.Enqueue(runtimeInstance);
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolObjectCreated' asset='{Definition.name}' instanceName='{instance.name}' poolLabel='{Sanitize(Definition.PoolLabel)}' lifetimeScope='{Definition.LifetimeScope}' isExpansion='{isExpansion}' total='{TotalCount}' inactive='{InactiveCount}' reason='pool_object_instantiated'.",
+                DebugUtility.Colors.Info);
             CallPoolCreated(instance);
+            DebugUtility.LogVerbose(typeof(GameObjectPool),
+                $"event='PoolObjectPrepared' asset='{Definition.name}' instanceName='{instance.name}' poolLabel='{Sanitize(Definition.PoolLabel)}' lifetimeScope='{Definition.LifetimeScope}' isExpansion='{isExpansion}' total='{TotalCount}' inactive='{InactiveCount}' reason='pool_object_created_hook_completed'.",
+                DebugUtility.Colors.Info);
 
             if (isExpansion)
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] Expand success. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.",
+                    $"Expand success. asset='{Definition.name}' total={TotalCount} max={Definition.MaxSize}.",
                     DebugUtility.Colors.Info);
             }
 
@@ -201,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 throw new ArgumentNullException(nameof(runtimeInstance));
             }
 
-            GameObject instance = runtimeInstance.Instance;
+            var instance = runtimeInstance.Instance;
             if (instance == null)
             {
                 if (returnReason == PoolReturnReason.Manual)
@@ -211,7 +253,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 }
 
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnAuto skipped. asset='{Definition.name}' reason='instance-destroyed'.",
+                    $"ReturnAuto skipped. asset='{Definition.name}' reason='instance-destroyed'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -225,7 +267,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 }
 
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnAuto skipped. asset='{Definition.name}' go='{instance.name}' reason='already-returned'.",
+                    $"ReturnAuto skipped. asset='{Definition.name}' go='{instance.name}' reason='already-returned'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -246,15 +288,20 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (returnReason == PoolReturnReason.Auto)
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnAuto complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
+                    $"ReturnAuto complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
                     DebugUtility.Colors.Info);
             }
             else
             {
                 DebugUtility.LogVerbose(typeof(GameObjectPool),
-                    $"[OBS][Pooling] ReturnManual complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
+                    $"ReturnManual complete. asset='{Definition.name}' active={ActiveCount} inactive={InactiveCount} total={TotalCount}.",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private static string Sanitize(string text)
+        {
+            return string.IsNullOrWhiteSpace(text) ? string.Empty : text.Trim();
         }
 
         private static void CallPoolCreated(GameObject instance)
@@ -290,4 +337,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
         }
     }
 }
-

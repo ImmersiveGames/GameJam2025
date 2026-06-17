@@ -20,6 +20,7 @@ MonoBehaviour:
   activationWindowAdditiveSceneKey: {fileID: 11400000, guid: 768100d2c3662204c8dc1eacb7c7908e, type: 2}
   deactivationWindowMode: 1
   deactivationWindowAdditiveSceneKey: {fileID: 11400000, guid: 868162b99382cf542971b0e9451f4356, type: 2}
+  nextActivity: {fileID: 11400000, guid: 489ed87ad55c44a8b48f37f42f0ea03d, type: 2}
   nextActivityTransitionProfileSource: 1
   nextActivityTransitionContinuePolicy: 1
   nextActivityTransitionProfileOverride: {fileID: 11400000, guid: b41597450c1f98947b4f546e46f7cafd, type: 2}

@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 getAction: step => step.Installer);
 
             _installerPhaseCompleted = true;
-            DebugUtility.Log(typeof(CompositionPipelineExecutor),
+            DebugUtility.LogVerbose(typeof(CompositionPipelineExecutor),
                 $"[BOOT][Composition] Fase 1 concluida. executed={summary.ExecutedCount} skipped={summary.SkippedCount} order=[{JoinStepIds(plan.OrderedSteps)}].",
                 DebugUtility.Colors.Info);
         }
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 _bootstrapPhaseOpen = false;
             }
 
-            DebugUtility.Log(typeof(CompositionPipelineExecutor),
+            DebugUtility.LogVerbose(typeof(CompositionPipelineExecutor),
                 $"[BOOT][Composition] Fase 2 concluida. executed={summary.ExecutedCount} skipped={summary.SkippedCount} order=[{JoinStepIds(plan.OrderedSteps)}].",
                 DebugUtility.Colors.Info);
         }
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             int executedCount = 0;
             int skippedCount = plan.SkippedSteps.Count;
 
-            DebugUtility.Log(typeof(CompositionPipelineExecutor),
+            DebugUtility.LogVerbose(typeof(CompositionPipelineExecutor),
                 $"[BOOT][Composition] {phaseLabel} start order=[{JoinStepIds(plan.OrderedSteps)}] skipped=[{JoinSkipped(plan.SkippedSteps)}].",
                 DebugUtility.Colors.Info);
 
@@ -383,7 +383,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void LogPhasePlan(string phaseLabel, CompositionPipelinePhasePlan plan)
         {
-            DebugUtility.Log(typeof(CompositionPipelineExecutor),
+            DebugUtility.LogVerbose(typeof(CompositionPipelineExecutor),
                 $"[BOOT][Composition] {phaseLabel} order=[{JoinStepIds(plan.OrderedSteps)}] skipped=[{JoinSkipped(plan.SkippedSteps)}].",
                 DebugUtility.Colors.Info);
         }

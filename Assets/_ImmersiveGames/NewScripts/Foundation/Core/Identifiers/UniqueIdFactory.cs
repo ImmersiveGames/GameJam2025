@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Identifiers
     /// <summary>
     /// NewScripts generic unique ID generator.
     /// Goals:
-    /// - No gameplay semantics (no Player/NPC/Obj).
+    /// - No gameplay semantics (no Player/SceneActor/Object).
     /// - Strong uniqueness per runtime instance.
     /// - Optional suffix via prefix parameter (for sub-ids), without changing identity semantics.
     ///

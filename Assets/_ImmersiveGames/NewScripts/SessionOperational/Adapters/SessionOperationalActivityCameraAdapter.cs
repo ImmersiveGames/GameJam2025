@@ -1,32 +1,27 @@
-using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
     public sealed class SessionOperationalActivityCameraAdapter : ISessionOperationalActivityCameraAdapter
     {
-        private readonly IActivityCameraPreparationExecutor activityCameraExecutor;
-        private readonly ActivityCameraPresentationRequirementResolver requirementResolver;
-        private readonly IDependencyProvider dependencyProvider;
+        private readonly IActivityCameraPreparationExecutor _activityCameraExecutor;
+        private readonly ActivityCameraPresentationRequirementResolver _requirementResolver;
+        private readonly IActivityCameraAnchorHostResolver _anchorHostResolver;
 
-        private ActivityCameraReadyFact activeReadyFact;
+        private ActivityCameraReadyFact _activeReadyFact;
 
         public SessionOperationalActivityCameraAdapter(
             IActivityCameraPreparationExecutor activityCameraExecutor,
             ActivityCameraPresentationRequirementResolver requirementResolver,
-            IDependencyProvider dependencyProvider)
+            IActivityCameraAnchorHostResolver anchorHostResolver)
         {
-            this.activityCameraExecutor = activityCameraExecutor;
-            this.requirementResolver = requirementResolver;
-            this.dependencyProvider = dependencyProvider;
+            this._activityCameraExecutor = activityCameraExecutor;
+            this._requirementResolver = requirementResolver;
+            this._anchorHostResolver = anchorHostResolver;
         }
 
         public bool TryPrepareActivityCamera(
@@ -41,26 +36,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (command.CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
-            {
-                reason = "not_session_activity_entry_handoff";
-                result = SessionOperationalActivityCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
+            var profile = command.ActivityPresentationProfile;
 
-            OperationalRouteAsset route = command.Route;
-            ActivityPresentationProfileAsset profile = route.ActivityPresentationProfile;
-
-            if (profile == null)
-            {
-                reason = "activity_presentation_profile_missing";
-                result = SessionOperationalActivityCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
-
-            if (activityCameraExecutor == null)
+            if (_activityCameraExecutor == null)
             {
                 reason = "activity_camera_preparation_executor_missing";
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
@@ -68,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (requirementResolver == null)
+            if (_requirementResolver == null)
             {
                 reason = "activity_camera_requirement_resolver_missing";
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
@@ -76,32 +54,25 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (!TryResolveAnchorHost(command, out ActivityCameraAnchorHost anchorHost, out reason))
+            if (!TryResolveAnchorHost(command, out var anchorHost, out reason))
             {
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
                 return false;
             }
 
-            if (!requirementResolver.TryResolve(
+            if (!_requirementResolver.TryResolve(
                     profile,
                     anchorHost,
-                    out ActivityCameraRequirement requirement,
+                    out var requirement,
                     out reason))
             {
-                if (reason == "activity_presentation_camera_disabled")
-                {
-                    result = SessionOperationalActivityCameraPrepareResult.Skipped(reason);
-                    LogSkipped(command, reason);
-                    return true;
-                }
-
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
                 return false;
             }
 
-            ActivityCameraBindingCommand bindingCommand = new ActivityCameraBindingCommand(
+            var bindingCommand = new ActivityCameraBindingCommand(
                 command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
@@ -111,28 +82,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 command.Source,
                 command.Reason);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationPrepareStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity}' profileId='{profile.ProfileId}' requirementId='{requirement.RequirementId}' source='{command.Source}' reason='{command.Reason}'.",
+                $"ActivityCameraPresentationPrepareStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity}' profileId='{profile.ProfileId}' requirementId='{requirement.RequirementId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            if (!activityCameraExecutor.TryPrepare(
+            if (!_activityCameraExecutor.TryPrepare(
                     bindingCommand,
-                    out ActivityCameraPreparationResult preparationResult,
+                    out var preparationResult,
                     out reason))
             {
-                ActivityCameraFailureFact failureFact = preparationResult != null
-                    ? preparationResult.FailureFact
-                    : null;
+                var failureFact = preparationResult?.FailureFact;
 
                 result = SessionOperationalActivityCameraPrepareResult.Failed(failureFact, reason);
                 LogFailed(command, failureFact, reason);
                 return false;
             }
 
-            ActivityCameraReadyFact readyFact = preparationResult != null
-                ? preparationResult.ReadyFact
-                : null;
+            var readyFact = preparationResult?.ReadyFact;
 
             if (readyFact == null)
             {
@@ -142,12 +109,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            activeReadyFact = readyFact;
+            _activeReadyFact = readyFact;
             result = SessionOperationalActivityCameraPrepareResult.Prepared(readyFact, reason);
 
             DebugUtility.Log(
                 typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationPrepared routeIdentity='{readyFact.RouteIdentity}' routeOperationId='{readyFact.RouteOperationId}' transitionId='{readyFact.TransitionId}' routeSequence='{readyFact.RouteSequence}' activityIdentity='{readyFact.ActivityIdentity}' requirementId='{readyFact.RequirementId}' outputCamera='{readyFact.Handle?.UnityCamera?.name}' presentationRig='{readyFact.Handle?.CameraRigInstance?.name}' source='{readyFact.Source}' reason='{readyFact.Reason}'.",
+                $"ActivityCameraPresentationPrepared routeIdentity='{readyFact.RouteIdentity}' routeOperationId='{readyFact.RouteOperationId}' transitionId='{readyFact.TransitionId}' routeSequence='{readyFact.RouteSequence}' activityIdentity='{readyFact.ActivityIdentity}' requirementId='{readyFact.RequirementId}' outputCamera='{readyFact.Handle?.UnityCamera?.name}' presentationRig='{readyFact.Handle?.CameraRigInstance?.name}' source='{readyFact.Source}' reason='{readyFact.Reason}'.",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -165,69 +132,65 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (activityCameraExecutor == null)
+            if (_activityCameraExecutor == null)
             {
                 reason = "activity_camera_preparation_executor_missing";
                 result = SessionOperationalActivityCameraReleaseResult.Failed(null, reason);
                 return false;
             }
 
-            if (activeReadyFact == null)
+            if (_activeReadyFact == null)
             {
                 reason = "no_active_activity_camera_binding";
                 result = SessionOperationalActivityCameraReleaseResult.Skipped(reason);
 
-                DebugUtility.Log(
+                DebugUtility.LogVerbose(
                     typeof(SessionOperationalActivityCameraAdapter),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationReleaseSkipped currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' source='{command.Source}' reason='{command.Reason}' skipReason='{reason}'.",
+                    $"ActivityCameraPresentationReleaseSkipped currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' source='{command.Source}' reason='{command.Reason}' skipReason='{reason}'.",
                     DebugUtility.Colors.Info);
 
                 return true;
             }
 
-            ActivityCameraReleaseCommand releaseCommand = new ActivityCameraReleaseCommand(
-                activeReadyFact.RouteIdentity,
-                activeReadyFact.RouteOperationId,
-                activeReadyFact.TransitionId,
-                activeReadyFact.RouteSequence,
-                activeReadyFact.ActivityIdentity,
+            var releaseCommand = new ActivityCameraReleaseCommand(
+                _activeReadyFact.RouteIdentity,
+                _activeReadyFact.RouteOperationId,
+                _activeReadyFact.TransitionId,
+                _activeReadyFact.RouteSequence,
+                _activeReadyFact.ActivityIdentity,
                 command.Source,
                 command.Reason);
 
-            DebugUtility.Log(
+            DebugUtility.LogVerbose(
                 typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationReleaseStarted currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' releaseRouteIdentity='{releaseCommand.RouteIdentity}' routeOperationId='{releaseCommand.RouteOperationId}' transitionId='{releaseCommand.TransitionId}' routeSequence='{releaseCommand.RouteSequence}' activityIdentity='{releaseCommand.ActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
+                $"ActivityCameraPresentationReleaseStarted currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' releaseRouteIdentity='{releaseCommand.RouteIdentity}' routeOperationId='{releaseCommand.RouteOperationId}' transitionId='{releaseCommand.TransitionId}' routeSequence='{releaseCommand.RouteSequence}' activityIdentity='{releaseCommand.ActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            if (!activityCameraExecutor.TryRelease(
+            if (!_activityCameraExecutor.TryRelease(
                     releaseCommand,
-                    out ActivityCameraReleaseResult releaseResult,
+                    out var releaseResult,
                     out reason))
             {
-                ActivityCameraReleaseFailureFact failureFact = releaseResult != null
-                    ? releaseResult.FailureFact
-                    : null;
+                var failureFact = releaseResult?.FailureFact;
 
                 result = SessionOperationalActivityCameraReleaseResult.Failed(failureFact, reason);
 
                 DebugUtility.Log(
                     typeof(SessionOperationalActivityCameraAdapter),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationReleaseFailed currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' releaseRouteIdentity='{releaseCommand.RouteIdentity}' routeOperationId='{releaseCommand.RouteOperationId}' transitionId='{releaseCommand.TransitionId}' routeSequence='{releaseCommand.RouteSequence}' activityIdentity='{releaseCommand.ActivityIdentity}' source='{command.Source}' reason='{command.Reason}' failureReason='{reason}' factFailureReason='{failureFact?.FailureReason}'.",
+                    $"ActivityCameraPresentationReleaseFailed currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' releaseRouteIdentity='{releaseCommand.RouteIdentity}' routeOperationId='{releaseCommand.RouteOperationId}' transitionId='{releaseCommand.TransitionId}' routeSequence='{releaseCommand.RouteSequence}' activityIdentity='{releaseCommand.ActivityIdentity}' source='{command.Source}' reason='{command.Reason}' failureReason='{reason}' factFailureReason='{failureFact?.FailureReason}'.",
                     DebugUtility.Colors.Error);
 
                 return false;
             }
 
-            ActivityCameraReleasedFact releasedFact = releaseResult != null
-                ? releaseResult.ReleasedFact
-                : null;
+            var releasedFact = releaseResult?.ReleasedFact;
 
-            activeReadyFact = null;
+            _activeReadyFact = null;
             result = SessionOperationalActivityCameraReleaseResult.Released(releasedFact, reason);
 
             DebugUtility.Log(
                 typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationReleased routeIdentity='{releasedFact?.RouteIdentity}' routeOperationId='{releasedFact?.RouteOperationId}' transitionId='{releasedFact?.TransitionId}' routeSequence='{releasedFact?.RouteSequence}' activityIdentity='{releasedFact?.ActivityIdentity}' source='{releasedFact?.Source}' reason='{releasedFact?.Reason}'.",
+                $"ActivityCameraPresentationReleased routeIdentity='{releasedFact?.RouteIdentity}' routeOperationId='{releasedFact?.RouteOperationId}' transitionId='{releasedFact?.TransitionId}' routeSequence='{releasedFact?.RouteSequence}' activityIdentity='{releasedFact?.ActivityIdentity}' source='{releasedFact?.Source}' reason='{releasedFact?.Reason}'.",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -239,107 +202,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             out string reason)
         {
             anchorHost = null;
-
-            string sceneName = ResolveSceneName(command);
-            if (string.IsNullOrWhiteSpace(sceneName))
+            if (_anchorHostResolver == null)
             {
-                reason = "activity_camera_scene_name_missing";
+                reason = "activity_camera_anchor_host_resolver_missing";
                 return false;
             }
 
-            if (dependencyProvider != null &&
-                dependencyProvider.TryGetForScene<ActivityCameraAnchorHost>(
-                    sceneName,
-                    out ActivityCameraAnchorHost registeredHost) &&
-                registeredHost != null)
-            {
-                anchorHost = registeredHost;
-                reason = "activity_camera_anchor_host_resolved_from_scene_scope";
-                return true;
-            }
+            string sceneName = string.IsNullOrWhiteSpace(command.ActiveSceneName)
+                ? string.Empty
+                : command.ActiveSceneName;
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                reason = "activity_camera_scene_not_loaded";
-                return false;
-            }
-
-            List<ActivityCameraAnchorHost> hosts = new List<ActivityCameraAnchorHost>(4);
-            GameObject[] roots = scene.GetRootGameObjects();
-            for (int i = 0; i < roots.Length; i++)
-            {
-                GameObject root = roots[i];
-                if (root == null)
-                {
-                    continue;
-                }
-
-                ActivityCameraAnchorHost[] rootHosts =
-                    root.GetComponentsInChildren<ActivityCameraAnchorHost>(true);
-
-                if (rootHosts == null || rootHosts.Length == 0)
-                {
-                    continue;
-                }
-
-                for (int j = 0; j < rootHosts.Length; j++)
-                {
-                    if (rootHosts[j] != null)
-                    {
-                        hosts.Add(rootHosts[j]);
-                    }
-                }
-            }
-
-            if (hosts.Count == 0)
-            {
-                reason = "activity_camera_anchor_host_not_found";
-                return false;
-            }
-
-            if (hosts.Count > 1)
-            {
-                reason = "activity_camera_anchor_host_multiple_found";
-                return false;
-            }
-
-            anchorHost = hosts[0];
-            if (!anchorHost.TryValidate(out reason))
+            if (!_anchorHostResolver.TryResolve(sceneName, out anchorHost, out reason))
             {
                 return false;
             }
 
-            reason = "activity_camera_anchor_host_resolved_from_scene";
             return true;
-        }
-
-        private static string ResolveSceneName(
-            SessionOperationalActivityCameraPrepareCommand command)
-        {
-            if (!string.IsNullOrWhiteSpace(command.ActiveSceneName))
-            {
-                return command.ActiveSceneName;
-            }
-
-            if (command.Route != null &&
-                command.Route.ActiveSceneKey != null &&
-                !string.IsNullOrWhiteSpace(command.Route.ActiveSceneKey.SceneName))
-            {
-                return command.Route.ActiveSceneKey.SceneName.Trim();
-            }
-
-            return string.Empty;
-        }
-
-        private static void LogSkipped(
-            SessionOperationalActivityCameraPrepareCommand command,
-            string skipReason)
-        {
-            DebugUtility.Log(
-                typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity}' completionHandoff='{command.CompletionHandoff}' reason='{skipReason}' source='{command.Source}'.",
-                DebugUtility.Colors.Info);
         }
 
         private static void LogFailed(
@@ -349,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             DebugUtility.Log(
                 typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity}' failureReason='{reason}' factFailureReason='{failureFact?.FailureReason}' source='{command.Source}' reasonDetail='{command.Reason}'.",
+                $"ActivityCameraPresentationFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity}' failureReason='{reason}' factFailureReason='{failureFact?.FailureReason}' source='{command.Source}' reasonDetail='{command.Reason}'.",
                 DebugUtility.Colors.Error);
         }
     }

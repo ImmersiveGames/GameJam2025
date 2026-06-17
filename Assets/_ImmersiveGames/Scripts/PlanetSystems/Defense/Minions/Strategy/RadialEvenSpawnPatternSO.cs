@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
                 return Vector3.zero;
             }
 
-            float angle = (Mathf.PI * 2f) * (index / (float)total);
+            float angle = Mathf.PI * 2f * (index / (float)total);
             float x = Mathf.Cos(angle) * radius;
             float z = Mathf.Sin(angle) * radius;
             return new Vector3(x, heightOffset, z);

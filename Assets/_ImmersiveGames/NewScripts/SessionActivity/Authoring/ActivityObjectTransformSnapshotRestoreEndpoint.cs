@@ -1,15 +1,32 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    public sealed class ActivityObjectTransformSnapshotRestoreEndpoint : MonoBehaviour, IActivityObjectSnapshotRestoreEndpoint, IActivityObjectSnapshotRestoreEndpointContractView
+    public sealed class ActivityObjectTransformSnapshotRestoreEndpoint : MonoBehaviour, IActivityObjectSnapshotRestoreEndpoint, IActivityObjectLifecycleContributionProvider
     {
         [SerializeField] private string targetId;
         [SerializeField] private Transform targetTransform;
         [SerializeField] private float verificationTolerance = 0.001f;
+
+
+        public void CollectActivityObjectLifecycleContributions(
+            ActivityObjectLifecycleContributionContext context,
+            IList<IActivityObjectLifecycleContribution> contributions)
+        {
+            if (contributions == null || !context.IsValid || !Supports(context.TargetId))
+            {
+                return;
+            }
+
+            contributions.Add(new ActivityObjectSnapshotRestoreContribution(
+                $"activity_object.snapshot_restore:{context.TargetId}:{nameof(ActivityObjectTransformSnapshotRestoreEndpoint)}",
+                300,
+                this));
+        }
 
         public bool Supports(string requestedTargetId)
         {
@@ -29,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             if (!Supports(command.TargetId))
             {
-                Vector3 selfPosition = transform.position;
+                var selfPosition = transform.position;
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
                     command,
@@ -47,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             if (targetTransform == null)
             {
-                Vector3 selfPosition = transform.position;
+                var selfPosition = transform.position;
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.Failed,
                     command,
@@ -63,10 +80,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     $"target_transform_missing targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' restoreEndpointPath='{BuildTransformPath(transform)}' targetTransformPath='<null>'");
             }
 
-            Transform localTransform = targetTransform;
-            Vector3 beforePosition = localTransform.position;
-            Quaternion beforeRotation = localTransform.rotation;
-            Vector3 beforeScale = localTransform.localScale;
+            var localTransform = targetTransform;
+            var beforePosition = localTransform.position;
+            var beforeRotation = localTransform.rotation;
+            var beforeScale = localTransform.localScale;
 
             Vector3 payloadPosition = new(command.PositionX, command.PositionY, command.PositionZ);
             Quaternion payloadRotation = new(command.RotationX, command.RotationY, command.RotationZ, command.RotationW);
@@ -101,9 +118,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     $"unsupported_coordinate_space coordinateSpace='{command.CoordinateSpace}'");
             }
 
-            Vector3 afterPosition = localTransform.position;
-            Quaternion afterRotation = localTransform.rotation;
-            Vector3 afterScale = localTransform.localScale;
+            var afterPosition = localTransform.position;
+            var afterRotation = localTransform.rotation;
+            var afterScale = localTransform.localScale;
             bool verified =
                 IsNearlyEqual(afterPosition, payloadPosition, verificationTolerance) &&
                 IsNearlyEqual(afterRotation, payloadRotation, verificationTolerance) &&
@@ -127,31 +144,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 command.Source,
                 command.Reason,
                 $"restore_transform targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' restoreEndpointPath='{BuildTransformPath(transform)}' targetTransformPath='{BuildTransformPath(targetTransform)}' objectName='{gameObject.name}' coordinateSpace='{coordinateSpace}' hasRigidbody='{hasRigidbody.ToString().ToLowerInvariant()}' hasRigidbody2D='{hasRigidbody2D.ToString().ToLowerInvariant()}' beforePosition='{beforePosition}' beforeRotation='{beforeRotation}' beforeScale='{beforeScale}' payloadPosition='{payloadPosition}' payloadRotation='{payloadRotation}' payloadScale='{payloadScale}' afterPosition='{afterPosition}' afterRotation='{afterRotation}' afterScale='{afterScale}' restoreVerified='{verified.ToString().ToLowerInvariant()}'");
-        }
-
-        public bool TryDescribeContract(
-            string requestedTargetId,
-            out string endpointPath,
-            out string targetTransformPath,
-            out string failureReason)
-        {
-            endpointPath = BuildTransformPath(transform);
-            targetTransformPath = BuildTransformPath(targetTransform);
-
-            if (!Supports(requestedTargetId))
-            {
-                failureReason = "target_not_supported";
-                return false;
-            }
-
-            if (targetTransform == null)
-            {
-                failureReason = "target_transform_missing";
-                return false;
-            }
-
-            failureReason = "resolved";
-            return true;
         }
 
         private void OnValidate()
@@ -187,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             }
 
             string path = target.name;
-            Transform current = target.parent;
+            var current = target.parent;
             while (current != null)
             {
                 path = $"{current.name}/{path}";

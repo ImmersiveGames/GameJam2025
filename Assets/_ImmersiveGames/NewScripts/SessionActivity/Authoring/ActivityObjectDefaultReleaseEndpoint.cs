@@ -1,12 +1,28 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    public sealed class ActivityObjectDefaultReleaseEndpoint : MonoBehaviour, IActivityObjectReleaseEndpoint
+    public sealed class ActivityObjectDefaultReleaseEndpoint : MonoBehaviour, IActivityObjectReleaseEndpoint, IActivityObjectLifecycleContributionProvider
     {
+        public void CollectActivityObjectLifecycleContributions(
+            ActivityObjectLifecycleContributionContext context,
+            IList<IActivityObjectLifecycleContribution> contributions)
+        {
+            if (contributions == null || !context.IsValid)
+            {
+                return;
+            }
+
+            contributions.Add(new ActivityObjectReleaseContribution(
+                $"activity_object.release:{context.TargetId}:{nameof(ActivityObjectDefaultReleaseEndpoint)}",
+                400,
+                this));
+        }
+
         public bool Supports(ActivityReleaseRequirementKind releaseKind)
         {
             return releaseKind != ActivityReleaseRequirementKind.Unknown;
@@ -19,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException("ActivityObjectReleaseCommand is invalid.");
             }
 
-            // F6D: endpoint minimo observacional sem regra de gameplay.
+            // Endpoint mínimo observacional. A decisão de quando liberar permanece no stage/pipeline.
             return new ActivityObjectReleaseResult(
                 ActivityObjectReleaseResultKind.Applied,
                 command,

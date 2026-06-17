@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
 {
     [CreateAssetMenu(
         fileName = "SaveConfig",
-        menuName = "ImmersiveGames/NewScripts/Save/Save Config",
+        menuName = "ImmersiveGames/Save/Save Config",
         order = 10)]
     public sealed class SaveConfigAsset : ScriptableObject
     {

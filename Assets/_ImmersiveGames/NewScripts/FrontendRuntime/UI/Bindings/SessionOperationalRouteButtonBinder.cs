@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 
         protected override bool OnClickCore(string actionReason)
         {
-            if (!TryResolveRouteDefinition(out OperationalRouteAsset resolvedRouteDefinition))
+            if (!TryResolveRouteDefinition(out var resolvedRouteDefinition))
             {
                 return false;
             }
@@ -30,16 +30,16 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             if (!DependencyManager.Provider.TryGetGlobal<SessionOperationalPipeline>(out var operationalPipeline) || operationalPipeline == null)
             {
                 DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
-                    "[OBS][FrontendUI][RouteButton] routeDefinition accepted but SessionOperationalPipeline is unavailable.");
+                    "routeDefinition accepted but SessionOperationalPipeline is unavailable.");
                 return false;
             }
 
-            DebugUtility.Log(typeof(SessionOperationalRouteButtonBinder),
-                $"[OBS][SessionOperationalPipeline][RouteButton] routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalRouteButtonBinder),
+                $"routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             EnsurePipelineSubscription(operationalPipeline);
-            RouteRequestSubmissionResult submission = operationalPipeline.SubmitRouteRequest(
+            var submission = operationalPipeline.SubmitRouteRequest(
                 resolvedRouteDefinition,
                 RouteButtonSource,
                 normalizedReason);
@@ -52,8 +52,8 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 
             if (submission.Kind == RouteRequestSubmissionKind.RejectedByPolicy)
             {
-                DebugUtility.Log(typeof(SessionOperationalRouteButtonBinder),
-                    $"[OBS][FrontendUI][RouteButton] RouteRequestRejectedByPolicy routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' blockedReason='{submission.Reason}' detail='{submission.Detail}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalRouteButtonBinder),
+                    $"RouteRequestRejectedByPolicy routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' blockedReason='{submission.Reason}' detail='{submission.Detail}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -61,12 +61,12 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             if (submission.Kind == RouteRequestSubmissionKind.IgnoredAlreadyInFlight)
             {
                 DebugUtility.LogWarning<SessionOperationalRouteButtonBinder>(
-                    $"[OBS][FrontendUI][RouteButton] RouteRequestIgnoredAlreadyInFlight routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' detail='{submission.Detail}'.");
+                    $"RouteRequestIgnoredAlreadyInFlight routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' detail='{submission.Detail}'.");
                 return false;
             }
 
             DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
-                $"[OBS][FrontendUI][RouteButton] RouteRequestFailedInvalidConfig routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' detail='{submission.Detail}'.");
+                $"RouteRequestFailedInvalidConfig routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' detail='{submission.Detail}'.");
             return false;
         }
 
@@ -139,14 +139,14 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             if (routeDefinition == null)
             {
                 DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
-                    "[OBS][FrontendUI][RouteButton] routeDefinition is missing.");
+                    "routeDefinition is missing.");
                 return false;
             }
 
             if (!routeDefinition.IsValid)
             {
                 DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
-                    $"[OBS][FrontendUI][RouteButton] routeDefinition is invalid. routeIdentity='{routeDefinition.RouteIdentity}'.");
+                    $"routeDefinition is invalid. routeIdentity='{routeDefinition.RouteIdentity}'.");
                 return false;
             }
 

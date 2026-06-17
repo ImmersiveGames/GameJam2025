@@ -66,7 +66,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            if (!TryResolvePlanetMaster(detectable, out var planetMaster))
             {
                 _activeDefenseDetections.Remove(detectable);
                 DebugUtility.LogWarning<EaterDetectionController>(
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Detections
                 return;
             }
 
-            if (!TryResolvePlanetMaster(detectable, out PlanetsMaster planetMaster))
+            if (!TryResolvePlanetMaster(detectable, out var planetMaster))
             {
                 return;
             }

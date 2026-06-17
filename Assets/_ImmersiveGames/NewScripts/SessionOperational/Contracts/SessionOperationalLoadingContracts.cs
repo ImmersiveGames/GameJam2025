@@ -17,11 +17,25 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         FadeInCompleted = 3,
         TransitionSkipped = 4,
         SceneCompositionCompleted = 5,
-        MaterializationCompleted = 6,
+        ConsumerEntryPreparationCompleted = 6,
         FadeOutCompleted = 7,
         OperationalRouteCompleted = 8,
         LoadingCompleted = 9,
         LoadingHidden = 10,
+    }
+
+    public enum SessionOperationalLoadingOutcomeKind
+    {
+        Unknown = 0,
+        Started = 1,
+        ProgressApplied = 2,
+        VisualSettled = 3,
+        FinalHoldStarted = 4,
+        FinalHoldCompleted = 5,
+        Completed = 6,
+        Hidden = 7,
+        Skipped = 8,
+        Failed = 9,
     }
 
     public readonly struct SessionOperationalLoadingCommand
@@ -125,12 +139,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public SessionOperationalLoadingFact(
             SessionOperationalLoadingCommand command,
             SessionOperationalLoadingStage stage,
+            SessionOperationalLoadingOutcomeKind outcomeKind,
             float normalizedProgress,
             string stepLabel,
             string message)
         {
             Command = command;
             Stage = stage;
+            OutcomeKind = outcomeKind;
             NormalizedProgress = Mathf.Clamp01(normalizedProgress);
             StepLabel = Normalize(stepLabel);
             Message = Normalize(message);
@@ -138,6 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         public SessionOperationalLoadingCommand Command { get; }
         public SessionOperationalLoadingStage Stage { get; }
+        public SessionOperationalLoadingOutcomeKind OutcomeKind { get; }
         public float NormalizedProgress { get; }
         public string StepLabel { get; }
         public string Message { get; }
@@ -151,7 +168,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Reason => Command.Reason;
         public bool IsValid =>
             Command.IsValid &&
-            Stage != SessionOperationalLoadingStage.Unknown;
+            Stage != SessionOperationalLoadingStage.Unknown &&
+            OutcomeKind != SessionOperationalLoadingOutcomeKind.Unknown;
 
         public override string ToString()
         {

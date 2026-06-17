@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
@@ -9,12 +9,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
     public sealed class CinemachineRouteCameraDirector : IRouteCameraDirector
     {
-        private readonly IOperationalCameraProvider operationalCameraProvider;
+        private readonly IOperationalCameraProvider _operationalCameraProvider;
 
         public CinemachineRouteCameraDirector(
             IOperationalCameraProvider operationalCameraProvider)
         {
-            this.operationalCameraProvider = operationalCameraProvider;
+            this._operationalCameraProvider = operationalCameraProvider;
         }
 
         public bool TryPrepareRouteCamera(
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            RouteCameraPresentationRequirement requirement = command.Requirement;
+            var requirement = command.Requirement;
 
             if (requirement == null)
             {
@@ -39,15 +39,15 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (operationalCameraProvider == null)
+            if (_operationalCameraProvider == null)
             {
                 reason = "operational_camera_provider_missing";
                 result = RouteCameraBindingResult.Failed(command, reason);
                 return false;
             }
 
-            if (!operationalCameraProvider.TryGetCurrent(
-                    out OperationalCameraHandle operationalCamera,
+            if (!_operationalCameraProvider.TryGetCurrent(
+                    out var operationalCamera,
                     out string providerReason))
             {
                 reason = providerReason;
@@ -83,12 +83,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            GameObject rigInstance = Object.Instantiate(requirement.PresentationRigPrefab);
+            var rigInstance = Object.Instantiate(requirement.PresentationRigPrefab);
             rigInstance.name = BuildRigInstanceName(command);
 
             if (!ValidatePresentationRig(
                     rigInstance,
-                    out CinemachineCamera cinemachineCamera,
+                    out var cinemachineCamera,
                     out reason))
             {
                 SafeDestroy(rigInstance);
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             cinemachineCamera.Priority = requirement.Priority;
 
-            RouteCameraBindingHandle handle = new RouteCameraBindingHandle(
+            var handle = new RouteCameraBindingHandle(
                 command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 reason);
 
             DebugUtility.Log(typeof(CinemachineRouteCameraDirector),
-                $"[OBS][CameraPresentation][RouteDirector] RouteCameraPrepared " +
+                $"RouteCameraPrepared " +
                 $"outputCamera='{operationalCamera.UnityCamera.name}' " +
                 $"hasOperationalBrain='{operationalCamera.HasCinemachineBrain}' " +
                 $"presentationRig='{rigInstance.name}' " +
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            RouteCameraBindingHandle handle = activeBinding.Handle;
+            var handle = activeBinding.Handle;
 
             if (handle == null)
             {
@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             reason = "route_camera_released";
 
             DebugUtility.Log(typeof(CinemachineRouteCameraDirector),
-                $"[OBS][CameraPresentation][RouteDirector] RouteCameraReleased " +
+                $"RouteCameraReleased " +
                 $"outputCamera='{outputCameraName}' " +
                 $"presentationRig='{presentationRigName}' " +
                 $"surfaceKind='{handle.SurfaceKind}' " +
@@ -202,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             Camera[] unityCameras = rigInstance.GetComponentsInChildren<Camera>(
                 includeInactive: true);
 
-            if (unityCameras != null && unityCameras.Length > 0)
+            if (unityCameras is { Length: > 0 })
             {
                 reason = "route_presentation_rig_must_not_contain_unity_camera";
                 return false;
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             CinemachineBrain[] brains = rigInstance.GetComponentsInChildren<CinemachineBrain>(
                 includeInactive: true);
 
-            if (brains != null && brains.Length > 0)
+            if (brains is { Length: > 0 })
             {
                 reason = "route_presentation_rig_must_not_contain_cinemachine_brain";
                 return false;

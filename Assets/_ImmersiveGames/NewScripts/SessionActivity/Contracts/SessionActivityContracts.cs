@@ -102,9 +102,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityContentLoadFailed = 42,
         ActivitySetupInventoryBuildStarted = 43,
         ActivitySetupInventoryBuilt = 44,
-        ActivitySetupInventoryValidated = 45,
         ActivitySetupInventorySkippedNoRequirements = 46,
-        ActivitySetupInventoryValidationFailed = 47,
+        ActivitySetupInventoryBuildFailed = 47,
         ActivityParticipantBindingStarted = 48,
         ActivityParticipantBindingSkippedNoRequirements = 49,
         ActivityParticipantBindingCompleted = 50,
@@ -116,6 +115,86 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityContentReleaseSkippedNoContent = 56,
         ActivityContentReleaseCompleted = 57,
         ActivityContentReleaseFailed = 58,
+        ActivityParticipantReadinessStarted = 59,
+        ActivityParticipantReadinessSkippedNoRequiredParticipant = 60,
+        ActivityParticipantReadinessValidatedMaterializedActors = 61,
+        ActivityParticipantReadinessFailed = 62,
+        ActivityParticipantReadinessCompleted = 63,
+        PlayerInputBindingStarted = 64,
+        PlayerInputBindingSkippedNoRequiredInput = 65,
+        PlayerInputBindingFailed = 66,
+        PlayerInputBindingCompleted = 67,
+        MovementBindingStarted = 68,
+        MovementBindingSkippedNoRequiredMovement = 69,
+        MovementBindingFailed = 70,
+        MovementBindingCompleted = 71,
+        CameraBindingStarted = 72,
+        CameraBindingFailed = 73,
+        CameraBindingSkippedNoRequiredCamera = 74,
+        CameraBindingCompleted = 75,
+        ActorPresentationSetupStarted = 76,
+        ActorPresentationPlanResolved = 77,
+        ActorPresentationMaterialized = 78,
+        ActorPresentationReady = 79,
+        ActorPresentationSetupSkippedOptional = 80,
+        ActorPresentationSetupFailed = 81,
+        ActorPresentationSetupCompleted = 82,
+        ActorPresentationReleaseStarted = 83,
+        ActorPresentationReleased = 84,
+        ActorPresentationReleaseSkipped = 85,
+        ActorPresentationReleaseFailed = 86,
+        ActorPresentationReleaseCompleted = 87,
+        ActorPresentationRetained = 88,
+        ActorPresentationRetentionSkipped = 89,
+        ActorPresentationRetentionFailed = 90,
+        ActorPresentationResetSkipped = 91,
+        ActorSceneDiscoveryStarted = 92,
+        ActorSceneDiscovered = 93,
+        ActorSceneDiscoveryCompleted = 94,
+        ActorSceneDiscoverySkipped = 95,
+        ActorSceneDiscoveryFailed = 96,
+        ActorParticipationEnterStarted = 110,
+        ActorParticipationEntered = 111,
+        ActorReady = 112,
+        ActorParticipationExitStarted = 113,
+        ActorParticipationExited = 114,
+        ActorParticipationEnterSkipped = 115,
+        ActorParticipationEnterFailed = 116,
+        ActorAttributeSetupStarted = 117,
+        ActorAttributeProfileResolved = 118,
+        ActorAttributeReady = 119,
+        ActorAttributeSetupSkipped = 120,
+        ActorAttributeSetupFailed = 121,
+        ActorAttributeReleaseStarted = 122,
+        ActorAttributeReleased = 123,
+        ActorAttributeReleaseSkipped = 124,
+        ActorAttributeReleaseFailed = 125,
+        ActorAttributeSetupCompleted = 126,
+        ActorAttributeReleaseCompleted = 127,
+        ActorParticipationEnterCompleted = 128,
+        ActorParticipationExitCompleted = 129,
+        ActorParticipationExitSkipped = 130,
+        ActorParticipationExitFailed = 131,
+        ObjectReleaseStarted = 132,
+        ObjectReleaseCommandIssued = 133,
+        ObjectReleaseApplied = 134,
+        ObjectReleaseSkippedOptional = 135,
+        ObjectReleaseFailed = 136,
+        ObjectReleaseCompleted = 137,
+        ObjectReleaseRejectedForeignOrStale = 138,
+        ActivityObjectContributorUnregisterStarted = 139,
+        ActivityObjectContributorUnregistered = 140,
+        ActivityObjectContributorUnregisterSkippedNoContributors = 141,
+        ActivityObjectContributorUnregisterCompleted = 142,
+        ActivityObjectContributorUnregisterFailed = 143,
+        ActivityObjectSnapshotCaptureStarted = 144,
+        ActivityObjectSnapshotCaptured = 145,
+        ActivityObjectSnapshotCaptureSkippedNoProviders = 146,
+        ActivityObjectSnapshotCaptureFailed = 147,
+        ActivityObjectSnapshotCaptureCompleted = 148,
+        ActorCommandBindingStarted = 149,
+        ActorCommandBindingSkippedNoRequiredCapability = 150,
+        ActorCommandBindingCompleted = 151,
     }
 
     public enum ActivityExecutionState
@@ -124,6 +203,105 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Stopped = 1,
         Running = 2,
         Paused = 3,
+    }
+
+    public readonly struct SessionActivityCycleKey : IEquatable<SessionActivityCycleKey>
+    {
+        public SessionActivityCycleKey(
+            string pipelineId,
+            string sessionStateId,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence)
+        {
+            PipelineId = Normalize(pipelineId);
+            SessionStateId = Normalize(sessionStateId);
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
+        }
+
+        public string PipelineId { get; }
+        public string SessionStateId { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public int EntrySequence { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            EntrySequence > 0;
+
+        public bool Equals(SessionActivityCycleKey other)
+        {
+            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                   ActivityOrdinal == other.ActivityOrdinal &&
+                   EntrySequence == other.EntrySequence;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityCycleKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ ActivityOrdinal;
+                hashCode = (hashCode * 397) ^ EntrySequence;
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(SessionActivityCycleKey left, SessionActivityCycleKey right) => left.Equals(right);
+        public static bool operator !=(SessionActivityCycleKey left, SessionActivityCycleKey right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionActivityStageKey : IEquatable<SessionActivityStageKey>
+    {
+        public SessionActivityStageKey(SessionActivityCycleKey cycleKey, SessionActivityStage stage)
+        {
+            CycleKey = cycleKey;
+            Stage = stage;
+        }
+
+        public SessionActivityCycleKey CycleKey { get; }
+        public SessionActivityStage Stage { get; }
+        public bool IsValid => CycleKey.IsValid && Stage != SessionActivityStage.Unknown;
+
+        public bool Equals(SessionActivityStageKey other)
+        {
+            return CycleKey.Equals(other.CycleKey) && Stage == other.Stage;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityStageKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (CycleKey.GetHashCode() * 397) ^ (int)Stage;
+            }
+        }
+
+        public static bool operator ==(SessionActivityStageKey left, SessionActivityStageKey right) => left.Equals(right);
+        public static bool operator !=(SessionActivityStageKey left, SessionActivityStageKey right) => !left.Equals(right);
     }
 
     public readonly struct SessionActivityIdentity : IEquatable<SessionActivityIdentity>
@@ -144,6 +322,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             Stage = stage;
             Source = Normalize(source);
+            CycleKey = new SessionActivityCycleKey(PipelineId, SessionId, ActivityId, ActivityOrdinal, EntrySequence);
+            StageKey = new SessionActivityStageKey(CycleKey, Stage);
             CycleSignature = BuildCycleSignature(PipelineId, SessionId, ActivityId, ActivityOrdinal, EntrySequence, Stage);
         }
 
@@ -154,22 +334,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int EntrySequence { get; }
         public SessionActivityStage Stage { get; }
         public string Source { get; }
+        public SessionActivityCycleKey CycleKey { get; }
+        public SessionActivityStageKey StageKey { get; }
         public string CycleSignature { get; }
 
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
-            Stage != SessionActivityStage.Unknown &&
+            CycleKey.IsValid &&
+            StageKey.IsValid &&
             !string.IsNullOrWhiteSpace(CycleSignature);
 
         public static SessionActivityIdentity Empty => default;
 
         public bool Equals(SessionActivityIdentity other)
         {
-            return string.Equals(CycleSignature, other.CycleSignature, StringComparison.Ordinal);
+            return StageKey.Equals(other.StageKey);
         }
 
         public override bool Equals(object obj)
@@ -179,7 +357,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override int GetHashCode()
         {
-            return StringComparer.Ordinal.GetHashCode(CycleSignature ?? string.Empty);
+            return StageKey.GetHashCode();
         }
 
         public override string ToString()
@@ -300,15 +478,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PauseSimulation = 12,
         ResumeSimulation = 13,
         CloseForRouteExit = 14,
+        ResetSession = 15,
     }
 
     public enum SessionActivityPendingOperationKind
     {
         Unknown = 0,
-        CompleteActivationWindow = 1,
-        CompleteCurrentActivity = 2,
-        CompleteDeactivationWindow = 3,
-        ContinueToNextActivity = 4,
         ActivationWindowSceneLoad = 10,
         ActivationWindowSceneUnload = 11,
         DeactivationWindowSceneLoad = 12,
@@ -516,18 +691,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityRestartRejected = 65,
         PlayerActorMaterializationCommandIssued = 71,
         PlayerActorMaterialized = 72,
-        PlayerActorReadyMaterializedOnly = 73,
+        ActivityParticipantReadyMaterializedActors = 73,
         PlayerActorParticipationExitStageStarted = 75,
         PlayerActorParticipationExitCommandIssued = 76,
         PlayerActorParticipationExited = 77,
-        PlayerActorRetainedForRoute = 78,
         PlayerActorParticipationExitStageCompleted = 79,
-        PlayerActorRetainedForRouteFound = 80,
         PlayerActorParticipationEnterCommandIssued = 81,
         PlayerActorParticipationEntered = 82,
         PlayerActorReadyRetainedForActivity = 83,
-        PlayerActorResetCommandIssued = 84,
-        PlayerActorResetApplied = 85,
+        ActorResetCommandIssued = 84,
+        ActorResetApplied = 85,
         ActivityContentProfileResolved = 86,
         ActivityContentLoadStarted = 87,
         ActivityContentSceneLoadCommandIssued = 88,
@@ -579,31 +752,110 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotRestoreSkippedNoEndpointOptional = 156,
         ActivityObjectSnapshotRestoreFailed = 157,
         ActivityObjectSnapshotRestoreCompleted = 158,
-        ActivityObjectSnapshotContractValidationStarted = 159,
-        ActivityObjectSnapshotContractValidated = 160,
-        ActivityObjectSnapshotContractSkippedOptional = 161,
-        ActivityObjectSnapshotContractFailed = 162,
-        ActivityObjectSnapshotContractValidationCompleted = 163,
+        ActivityParticipantReadinessStarted = 164,
+        ActivityParticipantReadinessSkippedNoRequiredParticipant = 165,
+        ActivityParticipantReadinessFailed = 166,
+        ActivityParticipantReadinessCompleted = 167,
+        PlayerInputBindingStarted = 168,
+        PlayerInputBindingCommandIssued = 169,
+        PlayerInputBound = 170,
+        PlayerInputBindingSkippedNoRequiredInput = 171,
+        PlayerInputBindingFailed = 172,
+        PlayerInputBindingCompleted = 173,
+        MovementBindingStarted = 174,
+        MovementBindingCommandIssued = 175,
+        PlayerMovementBound = 176,
+        MovementBindingSkippedNoRequiredMovement = 177,
+        MovementBindingFailed = 178,
+        MovementBindingCompleted = 179,
+        MovementControlEnabled = 180,
+        MovementControlDisabled = 181,
+        MovementBindingRetained = 182,
+        MovementControlEnableSkippedNoTarget = 183,
+        MovementControlDisableSkippedNoTarget = 184,
+        CameraBindingStarted = 185,
+        PlayerCameraEndpointResolved = 186,
+        ActivityCameraTargetBound = 187,
+        CameraBindingSkippedNoRequiredCamera = 188,
+        CameraBindingFailed = 189,
+        CameraBindingCompleted = 190,
+        ActorPresentationSetupStarted = 191,
+        ActorPresentationPlanResolved = 192,
+        ActorPresentationMaterialized = 193,
+        ActorPresentationReady = 194,
+        ActorPresentationSetupSkippedOptional = 195,
+        ActorPresentationSetupFailed = 196,
+        ActorPresentationSetupCompleted = 197,
+        ActorPresentationReleaseStarted = 198,
+        ActorPresentationReleased = 199,
+        ActorPresentationReleaseSkipped = 200,
+        ActorPresentationReleaseFailed = 201,
+        ActorPresentationReleaseCompleted = 202,
+        ActorPresentationRetained = 203,
+        ActorPresentationRetentionSkipped = 204,
+        ActorPresentationRetentionFailed = 205,
+        ActorPresentationResetSkipped = 206,
+        ActorSceneDiscoveryStarted = 207,
+        ActorSceneDiscovered = 208,
+        ActorSceneDiscoveryCompleted = 209,
+        ActorSceneDiscoverySkipped = 210,
+        ActorSceneDiscoveryFailed = 211,
+        ActorParticipationEnterStarted = 225,
+        ActorParticipationEntered = 226,
+        ActorReady = 227,
+        ActorParticipationExitStarted = 228,
+        ActorParticipationExited = 229,
+        ActorParticipationEnterSkipped = 230,
+        ActorParticipationEnterFailed = 231,
+        ActorAttributeSetupStarted = 232,
+        ActorAttributeProfileResolved = 233,
+        ActorAttributeReady = 234,
+        ActorAttributeSetupSkipped = 235,
+        ActorAttributeSetupFailed = 236,
+        ActorAttributeReleaseStarted = 237,
+        ActorAttributeReleased = 238,
+        ActorAttributeReleaseSkipped = 239,
+        ActorAttributeReleaseFailed = 240,
+        ActorAttributeSetupCompleted = 241,
+        ActorAttributeReleaseCompleted = 242,
+        ActorParticipationEnterCompleted = 243,
+        ActorParticipationExitCompleted = 244,
+        ActorParticipationExitSkipped = 254,
+        ActorParticipationExitFailed = 255,
+        ActorLifetimeDecisionResolved = 256,
+        ActorLifetimeRetained = 257,
+        ActorLifetimeReleased = 258,
+        ActivityCapabilityInventoryPreviewStarted = 245,
+        ActivityCapabilityInventoryPreviewSkippedNoDiscovery = 246,
+        ActivityCapabilityInventoryPreviewObserved = 247,
+        PredefinedVisualSetupReady = 253,
+        PermissionTargetPreparationStarted = 256,
+        PermissionTargetReceiverResolved = 257,
+        PermissionTargetPreparationSkippedNoReceivers = 258,
+        PermissionTargetPreparationFailed = 259,
+        PermissionTargetPreparationCompleted = 260,
         ActivitySetupInventoryBuildStarted = 94,
         ActivitySetupInventoryBuilt = 95,
         ActivitySetupInventorySkippedNoRequirements = 96,
-        ActivitySetupInventoryValidated = 97,
-        ActivitySetupInventoryValidationFailed = 98,
+        ActivitySetupInventoryBuildFailed = 98,
         ActivityParticipantBindingStarted = 99,
         ActivityParticipantBindingSkippedNoRequirements = 100,
         ActivityParticipantRequirementDeclared = 101,
         ActivityParticipantBindingCompleted = 102,
         ActivityParticipantBindingFailed = 103,
+        ActivityRetainedParticipantLookupStarted = 116,
+        ActivityRetainedParticipantLookupResolved = 117,
+        ActivityRetainedParticipantLookupMissed = 118,
+        ActivityRetainedParticipantLookupRejectedStale = 119,
+        ActivityRetainedParticipantLookupRejectedForeign = 120,
         ActivityParticipantBindingResolutionStarted = 104,
         ActivityParticipantBindingResolved = 105,
         ActivityParticipantCommandPlanReady = 106,
         ActivityParticipantBindCommandIssued = 107,
         ActivityParticipantMaterializationCommandIssued = 108,
-        ActivityParticipantPlacementCommandIssued = 109,
         ActivityParticipantResetCommandIssued = 110,
         ActivityParticipantBindApplied = 111,
         ActivityParticipantMaterialized = 112,
-        ActivityParticipantPlacementApplied = 113,
         ActivityParticipantResetApplied = 114,
         ActivityParticipantSetupFailed = 115,
     }
@@ -744,13 +996,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity toIdentity,
             string nextActivityId,
             string source,
-            string reason)
+            string reason,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext = default)
         {
             FromIdentity = fromIdentity;
             ToIdentity = toIdentity;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
             Reason = Normalize(reason);
+            LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
         }
 
         public SessionActivityIdentity FromIdentity { get; }
@@ -758,6 +1012,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string NextActivityId { get; }
         public string Source { get; }
         public string Reason { get; }
+        public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
+        public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
 
         public bool IsValid =>
             FromIdentity.IsValid &&
@@ -767,7 +1023,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"from='{FromIdentity}', to='{ToIdentity}', nextActivityId='{NextActivityId}', source='{Source}', reason='{Reason}'";
+            return $"from='{FromIdentity}', to='{ToIdentity}', nextActivityId='{NextActivityId}', source='{Source}', reason='{Reason}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
 
         private static string Normalize(string value)

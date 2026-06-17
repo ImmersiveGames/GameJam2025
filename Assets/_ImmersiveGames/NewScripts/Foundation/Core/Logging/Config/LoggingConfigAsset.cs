@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config
 {
     [CreateAssetMenu(
         fileName = "LoggingConfig",
-        menuName = "ImmersiveGames/NewScripts/Core/Logging/LoggingConfigAsset",
+        menuName = "ImmersiveGames/Core/Logging/LoggingConfigAsset",
         order = 30)]
     public sealed class LoggingConfigAsset : ScriptableObject
     {

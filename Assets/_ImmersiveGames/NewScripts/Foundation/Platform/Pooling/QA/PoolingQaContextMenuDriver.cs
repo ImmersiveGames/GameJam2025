@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 {
     /// <summary>
     /// Reusable consumer base for explicit pool dependencies.
-    /// It ensures all configured pools and prewarms only the definitions marked with prewarm=true.
+    /// It ensures all configured pools. Prewarm is applied by PoolService.EnsureRegistered when the definition requests it.
     /// </summary>
     public abstract class PoolConsumerBehaviourBase : MonoBehaviour
     {
@@ -58,11 +58,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             }
 
             int ensured = 0;
-            int prewarmed = 0;
+            int prewarmRequested = 0;
 
             for (int i = 0; i < poolDefinitions.Count; i++)
             {
-                PoolDefinitionAsset definition = poolDefinitions[i];
+                var definition = poolDefinitions[i];
                 if (definition == null)
                 {
                     LogDependencyInfo($"skip index={i} reason='null-definition'");
@@ -77,19 +77,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
                 poolService.EnsureRegistered(definition);
                 ensured++;
-                LogDependencyInfo($"ensured index={i} asset='{definition.name}' prewarm={definition.Prewarm}");
-
-                if (!definition.Prewarm)
+                if (definition.Prewarm)
                 {
-                    continue;
+                    prewarmRequested++;
                 }
 
-                poolService.Prewarm(definition);
-                prewarmed++;
-                LogDependencyInfo($"prewarmed index={i} asset='{definition.name}' initialSize={definition.InitialSize}");
+                LogDependencyInfo($"ensured index={i} asset='{definition.name}' prewarmRequested={definition.Prewarm}");
             }
 
-            LogDependencyInfo($"done ensured={ensured} prewarmed={prewarmed}");
+            LogDependencyInfo($"done ensured={ensured} prewarmRequested={prewarmRequested}");
         }
 
         protected PoolDefinitionAsset GetPrimaryPoolDefinition()
@@ -134,21 +130,21 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 return;
             }
 
-            DebugUtility.Log(GetType(),
-                $"[OBS][Pooling][ConsumerBase] label='{dependencyLabel}' {message}.",
+            DebugUtility.LogVerbose(GetType(),
+                $"label='{dependencyLabel}' {message}.",
                 DebugUtility.Colors.Info);
         }
 
         protected void LogDependencyWarning(string message)
         {
             DebugUtility.LogWarning(GetType(),
-                $"[OBS][Pooling][ConsumerBase] label='{dependencyLabel}' {message}.");
+                $"label='{dependencyLabel}' {message}.");
         }
 
         protected void LogDependencyError(string message)
         {
             DebugUtility.LogError(GetType(),
-                $"[OBS][Pooling][ConsumerBase] label='{dependencyLabel}' {message}.");
+                $"label='{dependencyLabel}' {message}.");
         }
     }
 
@@ -585,7 +581,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             int removedCount = 0;
             for (int i = _rented.Count - 1; i >= 0; i--)
             {
-                GameObject instance = _rented[i];
+                var instance = _rented[i];
                 if (instance == null || !instance.activeSelf)
                 {
                     _rented.RemoveAt(i);
@@ -618,7 +614,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             }
 
             service.EnsureRegistered(definition);
-            service.Prewarm(definition);
 
             bool hasBefore = TryGetServicePoolSnapshot(service, out int totalBefore, out int activeBefore, out int inactiveBefore);
             LogInfo("RunAutoReturnScenario",
@@ -677,7 +672,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             try
             {
                 const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-                FieldInfo poolsField = typeof(PoolService).GetField("_pools", flags);
+                var poolsField = typeof(PoolService).GetField("_pools", flags);
                 if (poolsField == null)
                 {
                     return false;
@@ -720,7 +715,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             }
 
             SyncLocalCounters();
-            DebugUtility.Log(typeof(PoolingQaContextMenuDriver),
+            DebugUtility.LogVerbose(typeof(PoolingQaContextMenuDriver),
                 $"[QA][Pooling] action='{action}' result='{result}' label='{scenarioLabel}' localRented={localRentedCount} rents={totalRentOperations} returns={totalReturnOperations}.",
                 DebugUtility.Colors.Info);
         }

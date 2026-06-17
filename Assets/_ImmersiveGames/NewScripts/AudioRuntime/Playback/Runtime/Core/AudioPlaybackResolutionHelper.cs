@@ -15,9 +15,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             out AudioSfxEmissionProfileAsset profile,
             out string source)
         {
-            if (context.EmissionProfile != null)
+            if (context.emissionProfile != null)
             {
-                profile = context.EmissionProfile;
+                profile = context.emissionProfile;
                 source = "context";
                 return true;
             }
@@ -40,9 +40,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             out AudioSfxExecutionProfileAsset profile,
             out string source)
         {
-            if (context.ExecutionProfile != null)
+            if (context.executionProfile != null)
             {
-                profile = context.ExecutionProfile;
+                profile = context.executionProfile;
                 source = "context";
                 return true;
             }

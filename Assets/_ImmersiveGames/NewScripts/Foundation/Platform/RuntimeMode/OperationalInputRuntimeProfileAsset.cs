@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     [CreateAssetMenu(
         fileName = "OperationalInputRuntimeProfile",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/OperationalInputRuntimeProfileAsset",
+        menuName = "ImmersiveGames/Infrastructure/RuntimeMode/OperationalInputRuntimeProfileAsset",
         order = 24)]
     public sealed class OperationalInputRuntimeProfileAsset : ScriptableObject
     {
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 return false;
             }
 
-            InputActionAsset actionAsset = reference.action.actionMap?.asset;
+            var actionAsset = reference.action.actionMap?.asset;
             if (!ReferenceEquals(actionAsset, expectedAsset))
             {
                 errorMessage = $"operationalInputRuntimeProfile.{fieldName} must belong to operationalInputRuntimeProfile.uiActionsAsset.";

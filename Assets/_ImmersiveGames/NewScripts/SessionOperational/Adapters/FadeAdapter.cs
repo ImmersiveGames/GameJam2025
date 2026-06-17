@@ -1,32 +1,41 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Bindings;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Runtime;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class FadeAdapter : IFadeAdapter
+    public sealed class FadeAdapter : IOperationalFadePort
     {
         private readonly object _sync = new();
         private FadeController _cachedController;
         private string _cachedSceneName = string.Empty;
         private bool _policySourceLogged;
 
-        public async Task FadeInAsync(SessionOperationalRouteCommand command)
+        public async Task<OperationalFadeResult> ExecuteAsync(OperationalFadeRequest request)
         {
-            await ExecuteFadeAsync(command, isFadeIn: true);
-        }
+            ValidateRequestOrFail(request);
 
-        public async Task FadeOutAsync(SessionOperationalRouteCommand command)
-        {
-            await ExecuteFadeAsync(command, isFadeIn: false);
+            bool isFadeIn = request.Direction == OperationalFadeDirection.CloseCurtain;
+            await ExecuteFadeAsync(request.RouteCommand, isFadeIn);
+
+            string phase = isFadeIn ? "fade_in_completed" : "fade_out_completed";
+            string detail = isFadeIn
+                ? "Operational curtain close completed."
+                : "Operational curtain open completed.";
+
+            return OperationalFadeResult.Completed(
+                request.RouteCommand,
+                request.Direction,
+                phase,
+                detail);
         }
 
         private async Task ExecuteFadeAsync(SessionOperationalRouteCommand command, bool isFadeIn)
@@ -34,8 +43,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             ValidateCommandOrFail(command);
 
             string sceneName = ResolveFadeSceneNameOrFail();
-            FadeController controller = ResolveControllerOrFail(sceneName);
-            SceneTransitionProfile transitionProfile = command.TransitionProfile;
+            var controller = ResolveControllerOrFail(sceneName);
+            var transitionProfile = command.TransitionProfile;
             transitionProfile.ValidateOrFail(
                 nameof(FadeAdapter),
                 $"{(isFadeIn ? "fadeIn" : "fadeOut")} routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeIdentity='{command.RouteIdentity}' routeSequence='{command.RouteSequence}'.");
@@ -52,8 +61,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             controller.SetContextSignature(signature);
             controller.Configure(fadeConfig);
 
-            DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][SessionOperationalFade][Adapter] {phase}Started routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
+            DebugUtility.LogVerbose(typeof(FadeAdapter),
+                $"{phase}Started routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
             try
@@ -75,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][SessionOperationalFade][Adapter] {phase}Completed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
+                $"{phase}Completed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{command.Source}' reason='{command.Reason}' fadeScene='{sceneName}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -89,19 +98,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
 
             string sceneName = persistentScenesPolicy.ResolveSceneNameByRoleOrFail(
                 RuntimePersistentSceneRole.Fade,
                 nameof(FadeAdapter));
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] FadeScene obrigatoria nao esta carregada. scene='{sceneName}'.");
             }
 
-            FadeController controller = FindControllerInSceneOrFail(scene, sceneName);
+            var controller = FindControllerInSceneOrFail(scene, sceneName);
 
             lock (_sync)
             {
@@ -122,13 +131,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] FadeScene obrigatoria nao esta carregada. scene='{sceneName}'.");
             }
 
-            FadeController controller = FindControllerInSceneOrFail(scene, sceneName);
+            var controller = FindControllerInSceneOrFail(scene, sceneName);
 
             lock (_sync)
             {
@@ -142,9 +151,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         private static FadeController FindControllerInSceneOrFail(Scene scene, string sceneName)
         {
             GameObject[] roots = scene.GetRootGameObjects();
-            for (int i = 0; i < roots.Length; i++)
+            foreach (var t in roots)
             {
-                FadeController controller = roots[i].GetComponentInChildren<FadeController>(true);
+                var controller = t.GetComponentInChildren<FadeController>(true);
                 if (controller != null)
                 {
                     return controller;
@@ -152,6 +161,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] FadeController ausente na FadeScene obrigatoria. scene='{sceneName}'.");
+        }
+
+        private static void ValidateRequestOrFail(OperationalFadeRequest request)
+        {
+            if (!request.IsValid)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] OperationalFadeRequest invalido.");
+            }
         }
 
         private static void ValidateCommandOrFail(SessionOperationalRouteCommand command)
@@ -177,32 +194,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
         }
 
-        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] RuntimeModeConfig obrigatorio ausente para resolver a FadeScene persistente.");
-            }
-
-            if (runtimeModeConfig.compositionProfile != CompositionProfileKind.Base11Sandbox)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] compositionProfile invalido para o adapter de fade. compositionProfile='{runtimeModeConfig.compositionProfile}'.");
-            }
-
-            return runtimeModeConfig;
-        }
-
         private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail()
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                var registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string policyValidationError = string.Empty;
                 bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
                 if (!registryPolicyValid)
@@ -227,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][RuntimePolicy][Config] FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -237,5 +239,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         }
     }
 }
-
-

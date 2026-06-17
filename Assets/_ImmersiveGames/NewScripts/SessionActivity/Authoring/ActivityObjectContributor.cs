@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string roleId;
         [SerializeField] private ActivityObjectContributorKind contributorKind = ActivityObjectContributorKind.SceneObject;
         [SerializeField] private ActivitySetupRequirementRequiredness defaultRequiredness = ActivitySetupRequirementRequiredness.Required;
-        [SerializeField] private List<ActivityStateResetGroup> supportedResetGroups = new();
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
         [SerializeField] private List<ActivityReleaseRequirementKind> supportedReleaseKinds = new();
         [SerializeField] private bool includeChildrenForEndpointDiscovery = true;
         [SerializeField] private string debugLabel;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public string RoleId => Normalize(roleId);
         public ActivityObjectContributorKind ContributorKind => contributorKind;
         public ActivitySetupRequirementRequiredness DefaultRequiredness => defaultRequiredness;
-        public IReadOnlyList<ActivityStateResetGroup> SupportedResetGroups => supportedResetGroups;
+        public ActivityResetBoundaryEligibility ResetBoundaryEligibility => resetBoundaryEligibility;
         public IReadOnlyList<ActivityReleaseRequirementKind> SupportedReleaseKinds => supportedReleaseKinds;
         public bool IncludeChildrenForEndpointDiscovery => includeChildrenForEndpointDiscovery;
         public string DebugLabel => Normalize(debugLabel);
@@ -30,7 +30,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             !string.IsNullOrWhiteSpace(TargetId) &&
             contributorKind != ActivityObjectContributorKind.Unknown &&
             defaultRequiredness != ActivitySetupRequirementRequiredness.Unknown &&
-            supportedResetGroups != null &&
             supportedReleaseKinds != null;
 
         public void ValidateOrThrow(string source)
@@ -54,24 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException($"{validationSource} requires explicit defaultRequiredness.");
             }
 
-            ValidateResetGroupsOrThrow(validationSource);
             ValidateReleaseKindsOrThrow(validationSource);
-        }
-
-        private void ValidateResetGroupsOrThrow(string source)
-        {
-            if (supportedResetGroups == null)
-            {
-                throw new InvalidOperationException($"{source} supportedResetGroups cannot be null.");
-            }
-
-            for (int index = 0; index < supportedResetGroups.Count; index++)
-            {
-                if (supportedResetGroups[index] == ActivityStateResetGroup.Unknown)
-                {
-                    throw new InvalidOperationException($"{source}.supportedResetGroups[{index}] cannot be Unknown.");
-                }
-            }
         }
 
         private void ValidateReleaseKindsOrThrow(string source)
@@ -95,11 +77,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             targetId = Normalize(targetId);
             roleId = Normalize(roleId);
             debugLabel = Normalize(debugLabel);
-
-            if (supportedResetGroups == null)
-            {
-                supportedResetGroups = new List<ActivityStateResetGroup>();
-            }
 
             if (supportedReleaseKinds == null)
             {

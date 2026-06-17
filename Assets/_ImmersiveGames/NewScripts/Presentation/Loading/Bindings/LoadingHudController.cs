@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Presentation.Loading.Runtime;
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
             ApplyProgress(_currentProgress);
 
             DebugUtility.LogVerbose<LoadingHudController>(
-                $"[OBS][Loading] LoadingHudRoot ready root='{name}' canvas='{canvas.name}' hasText={(loadingText != null)} hasSpinner={(spinnerVisual != null)}.",
+                $"LoadingHudRoot ready root='{name}' canvas='{canvas.name}' hasText={(loadingText != null)} hasSpinner={(spinnerVisual != null)}.",
                 DebugUtility.Colors.Success);
         }
 

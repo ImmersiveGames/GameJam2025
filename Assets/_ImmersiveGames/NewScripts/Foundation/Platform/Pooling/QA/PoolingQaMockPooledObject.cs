@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
         protected override void OnAfterPoolRent()
         {
             RentedCount++;
-            DebugUtility.Log(typeof(PoolingQaMockPooledObject),
+            DebugUtility.LogVerbose(typeof(PoolingQaMockPooledObject),
                 $"[QA][Pooling] MockRent label='{qaLabel}' go='{name}' rented={RentedCount} totalRentCount={RentCount}.",
                 DebugUtility.Colors.Info);
         }
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
         protected override void OnAfterPoolReturn()
         {
             ReturnedCount++;
-            DebugUtility.Log(typeof(PoolingQaMockPooledObject),
+            DebugUtility.LogVerbose(typeof(PoolingQaMockPooledObject),
                 $"[QA][Pooling] MockReturn label='{qaLabel}' go='{name}' returned={ReturnedCount}.",
                 DebugUtility.Colors.Info);
         }

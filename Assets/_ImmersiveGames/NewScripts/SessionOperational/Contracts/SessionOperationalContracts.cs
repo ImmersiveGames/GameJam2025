@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
     public enum SessionOperationalStage
@@ -16,19 +15,178 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        PlayerPreparationObserved = 11,
+        PlayerParticipationSeedObserved = 11,
         InputCapabilityPrepared = 12,
         InitialInputModePrepared = 13,
         PauseCapabilityPrepared = 14,
         ReadyToOpenCurtain = 15,
         TransitionCompletedObserved = 16,
         Completed = 17,
+        // Etapa 3: granular stages for per-operation fact canonization via OperationalFactRecorder
+        Fade = 18,
+        SceneComposition = 19,
+        HandoffExit = 20,
+        RouteAudio = 21,
+        RouteCameraPresentation = 22,
+        ActivityCameraPresentation = 23,
+        ConsumerEntryAndReadiness = 24,
+        PlayerParticipation = 25,
+        Loading = 26,
+        TransitionBlackout = 27,
+        RouteReveal = 28,
+        RouteSetup = 29,
+    }
+
+    public readonly struct SessionOperationalRouteKey : IEquatable<SessionOperationalRouteKey>
+    {
+        public SessionOperationalRouteKey(
+            string pipelineId,
+            string routeIdentity,
+            string routeOperationId,
+            string routeId,
+            string routeProfileId,
+            int routeSequence)
+        {
+            PipelineId = Normalize(pipelineId);
+            RouteIdentity = Normalize(routeIdentity);
+            RouteOperationId = Normalize(routeOperationId);
+            RouteId = Normalize(routeId);
+            RouteProfileId = Normalize(routeProfileId);
+            RouteSequence = routeSequence < 0 ? 0 : routeSequence;
+        }
+
+        public string PipelineId { get; }
+        public string RouteIdentity { get; }
+        public string RouteOperationId { get; }
+        public string RouteId { get; }
+        public string RouteProfileId { get; }
+        public int RouteSequence { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(RouteIdentity) &&
+            !string.IsNullOrWhiteSpace(RouteOperationId) &&
+            !string.IsNullOrWhiteSpace(RouteId) &&
+            !string.IsNullOrWhiteSpace(RouteProfileId) &&
+            RouteSequence > 0;
+
+        public bool Equals(SessionOperationalRouteKey other)
+        {
+            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(RouteIdentity, other.RouteIdentity, StringComparison.Ordinal) &&
+                   string.Equals(RouteOperationId, other.RouteOperationId, StringComparison.Ordinal) &&
+                   string.Equals(RouteId, other.RouteId, StringComparison.Ordinal) &&
+                   string.Equals(RouteProfileId, other.RouteProfileId, StringComparison.Ordinal) &&
+                   RouteSequence == other.RouteSequence;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionOperationalRouteKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteIdentity ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteOperationId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteProfileId ?? string.Empty);
+                hashCode = hashCode * 397 ^ RouteSequence;
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => left.Equals(right);
+        public static bool operator !=(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionOperationalTransitionKey : IEquatable<SessionOperationalTransitionKey>
+    {
+        public SessionOperationalTransitionKey(SessionOperationalRouteKey routeKey, string transitionId)
+        {
+            RouteKey = routeKey;
+            TransitionId = Normalize(transitionId);
+        }
+
+        public SessionOperationalRouteKey RouteKey { get; }
+        public string TransitionId { get; }
+        public bool IsValid => RouteKey.IsValid && !string.IsNullOrWhiteSpace(TransitionId);
+
+        public bool Equals(SessionOperationalTransitionKey other)
+        {
+            return RouteKey.Equals(other.RouteKey) &&
+                   string.Equals(TransitionId, other.TransitionId, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionOperationalTransitionKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return RouteKey.GetHashCode() * 397 ^ StringComparer.Ordinal.GetHashCode(TransitionId ?? string.Empty);
+            }
+        }
+
+        public static bool operator ==(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => left.Equals(right);
+        public static bool operator !=(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionOperationalStageKey : IEquatable<SessionOperationalStageKey>
+    {
+        public SessionOperationalStageKey(SessionOperationalTransitionKey transitionKey, SessionOperationalStage stage)
+        {
+            TransitionKey = transitionKey;
+            Stage = stage;
+        }
+
+        public SessionOperationalTransitionKey TransitionKey { get; }
+        public SessionOperationalStage Stage { get; }
+        public bool IsValid => TransitionKey.IsValid && Stage != SessionOperationalStage.Unknown;
+
+        public bool Equals(SessionOperationalStageKey other)
+        {
+            return TransitionKey.Equals(other.TransitionKey) && Stage == other.Stage;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionOperationalStageKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return TransitionKey.GetHashCode() * 397 ^ (int)Stage;
+            }
+        }
+
+        public static bool operator ==(SessionOperationalStageKey left, SessionOperationalStageKey right) => left.Equals(right);
+        public static bool operator !=(SessionOperationalStageKey left, SessionOperationalStageKey right) => !left.Equals(right);
     }
 
     public readonly struct SessionOperationalIdentity : IEquatable<SessionOperationalIdentity>
     {
         public SessionOperationalIdentity(
             string sessionOperationalPipelineId,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -39,6 +197,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             SessionOperationalStage stage)
         {
             SessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
+            RouteIdentity = Normalize(routeIdentity);
             RouteOperationId = Normalize(routeOperationId);
             TransitionId = Normalize(transitionId);
             TransitionSequence = transitionSequence < 0 ? 0 : transitionSequence;
@@ -47,8 +206,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Source = Normalize(source);
             Reason = Normalize(reason);
             Stage = stage;
+            RouteKey = new SessionOperationalRouteKey(
+                SessionOperationalPipelineId,
+                RouteIdentity,
+                RouteOperationId,
+                RouteId,
+                RouteProfileId,
+                TransitionSequence);
+            TransitionKey = new SessionOperationalTransitionKey(RouteKey, TransitionId);
+            StageKey = new SessionOperationalStageKey(TransitionKey, Stage);
             CycleSignature = BuildCycleSignature(
                 SessionOperationalPipelineId,
+                RouteIdentity,
                 RouteOperationId,
                 TransitionId,
                 TransitionSequence,
@@ -60,6 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         }
 
         public string SessionOperationalPipelineId { get; }
+        public string RouteIdentity { get; }
         public string RouteOperationId { get; }
         public string TransitionId { get; }
         public int TransitionSequence { get; }
@@ -68,23 +238,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Source { get; }
         public string Reason { get; }
         public SessionOperationalStage Stage { get; }
+        public SessionOperationalRouteKey RouteKey { get; }
+        public SessionOperationalTransitionKey TransitionKey { get; }
+        public SessionOperationalStageKey StageKey { get; }
         public string CycleSignature { get; }
 
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(SessionOperationalPipelineId) &&
-            !string.IsNullOrWhiteSpace(RouteOperationId) &&
-            !string.IsNullOrWhiteSpace(TransitionId) &&
-            TransitionSequence > 0 &&
-            !string.IsNullOrWhiteSpace(RouteId) &&
-            !string.IsNullOrWhiteSpace(RouteProfileId) &&
+            RouteKey.IsValid &&
+            TransitionKey.IsValid &&
+            StageKey.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason) &&
-            Stage != SessionOperationalStage.Unknown &&
             !string.IsNullOrWhiteSpace(CycleSignature);
 
         public bool Equals(SessionOperationalIdentity other)
         {
-            return string.Equals(CycleSignature, other.CycleSignature, StringComparison.Ordinal);
+            return StageKey.Equals(other.StageKey);
         }
 
         public override bool Equals(object obj)
@@ -94,13 +263,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         public override int GetHashCode()
         {
-            return StringComparer.Ordinal.GetHashCode(CycleSignature ?? string.Empty);
+            return StageKey.GetHashCode();
         }
 
         public override string ToString()
         {
             return IsValid
-                ? $"sessionOperationalPipelineId='{SessionOperationalPipelineId}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', transitionSequence='{TransitionSequence}', routeId='{RouteId}', routeProfileId='{RouteProfileId}', source='{Source}', reason='{Reason}', stage='{Stage}'"
+                ? $"sessionOperationalPipelineId='{SessionOperationalPipelineId}', routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', transitionSequence='{TransitionSequence}', routeId='{RouteId}', routeProfileId='{RouteProfileId}', source='{Source}', reason='{Reason}', stage='{Stage}'"
                 : "<none>";
         }
 
@@ -109,6 +278,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         private static string BuildCycleSignature(
             string sessionOperationalPipelineId,
+            string routeIdentity,
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -118,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string reason,
             SessionOperationalStage stage)
         {
-            return $"{sessionOperationalPipelineId}|{routeOperationId}|{transitionId}|{transitionSequence}|{routeId}|{routeProfileId}|{source}|{reason}|{stage}";
+            return $"{sessionOperationalPipelineId}|{routeIdentity}|{routeOperationId}|{transitionId}|{transitionSequence}|{routeId}|{routeProfileId}|{source}|{reason}|{stage}";
         }
 
         private static string Normalize(string value)
@@ -140,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        PlayerPreparationObserved = 11,
+        PlayerParticipationSeedObserved = 11,
         InputCapabilityPrepared = 12,
         InitialInputModePrepared = 13,
         PauseCapabilityPrepared = 14,
@@ -148,6 +318,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         TransitionCompletedObserved = 16,
         Completed = 17,
         IgnoredForeignOrStale = 18,
+        // Etapa 3: granular fact kinds matching the new SessionOperationalStage values for recorder canonization
+        Fade = 19,
+        SceneComposition = 20,
+        HandoffExit = 21,
+        RouteAudio = 22,
+        RouteCameraPresentation = 23,
+        ActivityCameraPresentation = 24,
+        ConsumerEntryAndReadiness = 25,
+        PlayerParticipation = 26,
+        Loading = 27,
+        TransitionBlackout = 28,
+        RouteReveal = 29,
+        RouteSetup = 30,
     }
 
     public enum SessionOperationalInputModeKind
@@ -166,31 +349,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         ActivityGameplay = 2,
         OverlayNavigation = 3,
         InputLocked = 4,
-    }
-
-    public readonly struct SessionOperationalInputModeCommand : IEvent
-    {
-        public SessionOperationalInputModeCommand(
-            SessionOperationalIdentity identity,
-            SessionOperationalInputModeKind initialInputMode,
-            string routeClass)
-        {
-            Identity = identity;
-            InitialInputMode = initialInputMode;
-            RouteClass = string.IsNullOrWhiteSpace(routeClass) ? string.Empty : routeClass.Trim();
-        }
-
-        public SessionOperationalIdentity Identity { get; }
-        public SessionOperationalInputModeKind InitialInputMode { get; }
-        public string RouteClass { get; }
-        public string Source => Identity.Source;
-        public string Reason => Identity.Reason;
-        public string ContextSignature => Identity.CycleSignature;
-
-        public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionOperationalStage.InitialInputModePrepared &&
-            InitialInputMode != SessionOperationalInputModeKind.Unknown;
     }
 
     public readonly struct SessionOperationalFact
@@ -277,4 +435,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         }
     }
 }
-

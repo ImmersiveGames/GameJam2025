@@ -284,7 +284,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 }
             }
 
-            if (excludedTypeNames != null && excludedTypeNames.Count > 0)
+            if (excludedTypeNames is { Count: > 0 })
             {
                 string typeName = t.Name;
                 string fullName = t.FullName ?? string.Empty;

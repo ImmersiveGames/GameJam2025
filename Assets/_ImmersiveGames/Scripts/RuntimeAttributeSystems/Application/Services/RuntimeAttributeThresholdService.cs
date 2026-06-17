@@ -47,8 +47,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             foreach (float thr in _thresholds[evt.RuntimeAttributeType])
             {
                 bool asc = newPct > oldPct;
-                if ((asc && oldPct < thr && newPct >= thr) ||
-                    (!asc && oldPct > thr && newPct <= thr))
+                if (asc && oldPct < thr && newPct >= thr ||
+                    !asc && oldPct > thr && newPct <= thr)
                 {
                     var e = new RuntimeAttributeThresholdEvent(evt.ActorId, evt.RuntimeAttributeType, thr, asc, newPct);
                     //FilteredEventBus<RuntimeAttributeThresholdEvent>.RaiseFiltered(e, evt.ActorId);

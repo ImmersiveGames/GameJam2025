@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
         public static void InitializeOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            RuntimeConfigSetAsset configSet = ResolveConfigSetOrFail(runtimeModeConfig);
+            var configSet = ResolveConfigSetOrFail(runtimeModeConfig);
             _snapshot = new RuntimeConfigSnapshot(configSet);
 
             DebugUtility.LogVerbose(typeof(RuntimeConfigRegistry),
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][RuntimeConfigRegistry] RuntimeModeConfig obrigatorio ausente.");
             }
 
-            RuntimeConfigSetAsset configSet = runtimeModeConfig.RuntimeConfigSet;
+            var configSet = runtimeModeConfig.RuntimeConfigSet;
             if (configSet == null)
             {
                 string message =

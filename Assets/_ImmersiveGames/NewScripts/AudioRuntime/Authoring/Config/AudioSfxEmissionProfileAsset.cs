@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
     /// </summary>
     [CreateAssetMenu(
         fileName = "AudioSfxEmissionProfile",
-        menuName = "ImmersiveGames/NewScripts/Audio/Audio SFX Emission Profile",
+        menuName = "ImmersiveGames/Audio/Audio SFX Emission Profile",
         order = 3)]
     public sealed class AudioSfxEmissionProfileAsset : ScriptableObject
     {

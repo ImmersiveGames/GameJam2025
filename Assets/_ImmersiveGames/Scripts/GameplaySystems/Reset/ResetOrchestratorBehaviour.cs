@@ -278,7 +278,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                     break;
 
                 case ResetScope.ActorIdSet:
-                    if (request.actorIds != null && request.actorIds.Count > 0 && _actorRegistry != null)
+                    if (request.actorIds is { Count: > 0 } && _actorRegistry != null)
                     {
                         for (int i = 0; i < request.actorIds.Count; i++)
                         {
@@ -399,7 +399,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             _sceneRoots.Clear();
             _monoBuffer.Clear();
 
-            Scene scene = SceneManager.GetSceneByName(_sceneName);
+            var scene = SceneManager.GetSceneByName(_sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 return;

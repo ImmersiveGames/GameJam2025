@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 return true;
             }
 
-            HashSet<Type> distinctTypes = services.Keys.ToHashSet();
+            var distinctTypes = services.Keys.ToHashSet();
             if (distinctTypes.Contains(type) && !allowOverride)
             {
                 DebugUtility.LogWarning(typeof(SceneServiceRegistry), $"Serviço {type.Name} já registrado para a cena {key}. Registro ignorado.");

@@ -5,12 +5,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
     public sealed class ActivityCameraPreparationExecutor : IActivityCameraPreparationExecutor
     {
-        private readonly IActivityCameraDirector director;
-        private ActivityCameraBindingResult activeBinding;
+        private readonly IActivityCameraDirector _director;
+        private ActivityCameraBindingResult _activeBinding;
 
         public ActivityCameraPreparationExecutor(IActivityCameraDirector director)
         {
-            this.director = director;
+            this._director = director;
         }
 
         public bool TryPrepare(
@@ -18,12 +18,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraPreparationResult result,
             out string reason)
         {
-            if (director == null)
+            if (_director == null)
             {
                 reason = "activity_camera_director_missing";
 
-                ActivityCameraBindingResult failedBinding = ActivityCameraBindingResult.Failed(command, reason);
-                ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
+                var failedBinding = ActivityCameraBindingResult.Failed(command, reason);
+                var failureFact = ActivityCameraFailureFact.FromResult(
                     failedBinding,
                     nameof(ActivityCameraPreparationExecutor),
                     "activity_camera_prepare_failed");
@@ -32,12 +32,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (activeBinding != null)
+            if (_activeBinding != null)
             {
                 reason = "active_camera_binding_already_exists";
 
-                ActivityCameraBindingResult failedBinding = ActivityCameraBindingResult.Failed(command, reason);
-                ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
+                var failedBinding = ActivityCameraBindingResult.Failed(command, reason);
+                var failureFact = ActivityCameraFailureFact.FromResult(
                     failedBinding,
                     nameof(ActivityCameraPreparationExecutor),
                     "activity_camera_prepare_failed");
@@ -46,9 +46,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!director.TryPrepareActivityCamera(command, out ActivityCameraBindingResult bindingResult, out reason))
+            if (!_director.TryPrepareActivityCamera(command, out var bindingResult, out reason))
             {
-                ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
+                var failureFact = ActivityCameraFailureFact.FromResult(
                     bindingResult,
                     nameof(ActivityCameraPreparationExecutor),
                     "activity_camera_prepare_failed");
@@ -57,9 +57,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            activeBinding = bindingResult;
+            _activeBinding = bindingResult;
 
-            ActivityCameraReadyFact readyFact = ActivityCameraReadyFact.FromResult(
+            var readyFact = ActivityCameraReadyFact.FromResult(
                 bindingResult,
                 nameof(ActivityCameraPreparationExecutor),
                 "activity_camera_prepare_ready");
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraReleaseResult result,
             out string reason)
         {
-            if (director == null)
+            if (_director == null)
             {
                 reason = "activity_camera_director_missing";
                 result = BuildReleaseFailure(command, reason);
@@ -86,36 +86,36 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (activeBinding == null)
+            if (_activeBinding == null)
             {
                 reason = "active_camera_binding_missing";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            if (activeBinding.Handle == null)
+            if (_activeBinding.Handle == null)
             {
                 reason = "active_camera_binding_handle_missing";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            if (!MatchesActiveBinding(command, activeBinding.Handle))
+            if (!MatchesActiveBinding(command, _activeBinding.Handle))
             {
                 reason = "foreign_or_stale_camera_release_command";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            if (!director.TryReleaseActivityCamera(activeBinding, out reason))
+            if (!_director.TryReleaseActivityCamera(_activeBinding, out reason))
             {
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            activeBinding = null;
+            _activeBinding = null;
 
-            ActivityCameraReleasedFact releasedFact = ActivityCameraReleasedFact.FromCommand(
+            var releasedFact = ActivityCameraReleasedFact.FromCommand(
                 command,
                 nameof(ActivityCameraPreparationExecutor),
                 "activity_camera_release_completed");
@@ -124,11 +124,68 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             return true;
         }
 
+        public bool TryRebindTargets(
+            ActivityCameraRebindTargetsCommand command,
+            out ActivityCameraRebindTargetsResult result,
+            out string reason)
+        {
+            if (_director == null)
+            {
+                reason = "activity_camera_director_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command?.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (command == null)
+            {
+                reason = "rebind_command_null";
+                result = ActivityCameraRebindTargetsResult.Failed(string.Empty, reason);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(command.ActivityIdentity))
+            {
+                reason = "activity_identity_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (command.TrackingTarget == null)
+            {
+                reason = "tracking_target_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (_activeBinding == null || _activeBinding.Handle == null)
+            {
+                reason = "active_camera_binding_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (!string.Equals(_activeBinding.Handle.ActivityIdentity, command.ActivityIdentity, System.StringComparison.Ordinal))
+            {
+                reason = "foreign_or_stale_activity_identity";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (!_director.TryRebindActivityCameraTargets(_activeBinding.Handle, command, out reason))
+            {
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            result = ActivityCameraRebindTargetsResult.Bound(command.ActivityIdentity, reason);
+            return true;
+        }
+
         private static ActivityCameraReleaseResult BuildReleaseFailure(
             ActivityCameraReleaseCommand command,
             string failureReason)
         {
-            ActivityCameraReleaseFailureFact failureFact = ActivityCameraReleaseFailureFact.FromCommand(
+            var failureFact = ActivityCameraReleaseFailureFact.FromCommand(
                 command,
                 failureReason,
                 nameof(ActivityCameraPreparationExecutor),

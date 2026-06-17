@@ -13,8 +13,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
     public sealed class AudioSfxDirectQaSceneHarness : MonoBehaviour
     {
         [Header("Direct Cues")]
-        [SerializeField] private AudioSfxCueAsset direct2dCue;
-        [SerializeField] private AudioSfxCueAsset direct3dCue;
+        [SerializeField] private AudioSfxCueAsset direct2DCue;
+        [SerializeField] private AudioSfxCueAsset direct3DCue;
 
         [Header("3D QA")]
         [SerializeField] private Transform spatialFollowTarget;
@@ -40,33 +40,33 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             LogInfo("ValidateSetup",
-                $"ok direct2d='{SafeName(direct2dCue)}' direct2dEmission='{SafeName(direct2dCue != null ? direct2dCue.EmissionProfile : null)}' direct2dExecution='{SafeName(direct2dCue != null ? direct2dCue.ExecutionProfile : null)}' direct3d='{SafeName(direct3dCue)}' direct3dEmission='{SafeName(direct3dCue != null ? direct3dCue.EmissionProfile : null)}' direct3dExecution='{SafeName(direct3dCue != null ? direct3dCue.ExecutionProfile : null)}' followTarget='{SafeName(spatialFollowTarget)}'");
+                $"ok direct2d='{SafeName(direct2DCue)}' direct2dEmission='{SafeName(direct2DCue != null ? direct2DCue.EmissionProfile : null)}' direct2dExecution='{SafeName(direct2DCue != null ? direct2DCue.ExecutionProfile : null)}' direct3d='{SafeName(direct3DCue)}' direct3dEmission='{SafeName(direct3DCue != null ? direct3DCue.EmissionProfile : null)}' direct3dExecution='{SafeName(direct3DCue != null ? direct3DCue.ExecutionProfile : null)}' followTarget='{SafeName(spatialFollowTarget)}'");
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Play 2D")]
-        private void PlayDirect2d()
+        private void PlayDirect2D()
         {
-            if (!TryEnsureService() || !TryValidateCue(direct2dCue, "PlayDirect2d"))
+            if (!TryEnsureService() || !TryValidateCue(direct2DCue, "PlayDirect2d"))
             {
                 return;
             }
 
             PlayAndLog(
-                cue: direct2dCue,
+                cue: direct2DCue,
                 context: AudioPlaybackContext.Global(reason: "qa_direct_play_2d"),
                 action: "PlayDirect2d");
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Play 3D Position")]
-        private void PlayDirect3dPosition()
+        private void PlayDirect3DPosition()
         {
-            if (!TryEnsureService() || !TryValidateCue(direct3dCue, "PlayDirect3dPosition"))
+            if (!TryEnsureService() || !TryValidateCue(direct3DCue, "PlayDirect3dPosition"))
             {
                 return;
             }
 
             PlayAndLog(
-                cue: direct3dCue,
+                cue: direct3DCue,
                 context: AudioPlaybackContext.Spatial(
                     worldPosition: spatialProbePosition,
                     reason: "qa_direct_play_3d_position"),
@@ -74,9 +74,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Play 3D Follow")]
-        private void PlayDirect3dFollow()
+        private void PlayDirect3DFollow()
         {
-            if (!TryEnsureService() || !TryValidateCue(direct3dCue, "PlayDirect3dFollow"))
+            if (!TryEnsureService() || !TryValidateCue(direct3DCue, "PlayDirect3dFollow"))
             {
                 return;
             }
@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             PlayAndLog(
-                cue: direct3dCue,
+                cue: direct3DCue,
                 context: AudioPlaybackContext.Spatial(
                     worldPosition: spatialFollowTarget.position,
                     followTarget: spatialFollowTarget,
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         [ContextMenu("QA/Audio/SFX/Direct/Burst Simultaneous")]
         private void BurstSimultaneous()
         {
-            if (!TryEnsureService() || !TryValidateCue(direct2dCue, "BurstSimultaneous"))
+            if (!TryEnsureService() || !TryValidateCue(direct2DCue, "BurstSimultaneous"))
             {
                 return;
             }
@@ -130,11 +130,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         private void LogHarnessState()
         {
             bool serviceResolved = TryEnsureService();
-            bool lastValid = _lastHandle != null && _lastHandle.IsValid;
-            bool lastPlaying = _lastHandle != null && _lastHandle.IsPlaying;
+            bool lastValid = _lastHandle is { IsValid: true };
+            bool lastPlaying = _lastHandle is { IsPlaying: true };
 
-            DebugUtility.Log(typeof(AudioSfxDirectQaSceneHarness),
-                $"[QA][Audio][SFX][Direct] action='LogHarnessState' serviceResolved={serviceResolved} direct2d='{SafeName(direct2dCue)}' direct3d='{SafeName(direct3dCue)}' lastHandleValid={lastValid} lastHandlePlaying={lastPlaying}.",
+            DebugUtility.LogVerbose(typeof(AudioSfxDirectQaSceneHarness),
+                $"[QA][Audio][SFX][Direct] action='LogHarnessState' serviceResolved={serviceResolved} direct2d='{SafeName(direct2DCue)}' direct3d='{SafeName(direct3DCue)}' lastHandleValid={lastValid} lastHandlePlaying={lastPlaying}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -150,10 +150,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             for (int i = 0; i < attempts; i++)
             {
                 var handle = _globalAudioService.Play(
-                    direct2dCue,
+                    direct2DCue,
                     AudioPlaybackContext.Global(reason: $"qa_direct_burst_{i + 1}"));
 
-                if (handle != null && handle.IsValid)
+                if (handle is { IsValid: true })
                 {
                     validCount++;
                     _lastHandle = handle;
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 }
             }
 
-            LogInfo("BurstSimultaneous", $"complete valid={validCount} blocked={blockedCount} cue='{direct2dCue.name}'");
+            LogInfo("BurstSimultaneous", $"complete valid={validCount} blocked={blockedCount} cue='{direct2DCue.name}'");
             _burstRoutine = null;
         }
 
@@ -178,10 +178,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var handle = _globalAudioService.Play(cue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
-            bool valid = handle != null && handle.IsValid;
-            bool playing = handle != null && handle.IsPlaying;
+            bool valid = handle is { IsValid: true };
+            bool playing = handle is { IsPlaying: true };
             LogInfo(action,
-                $"cue='{cue.name}' handleValid={valid} isPlaying={playing} reason='{(string.IsNullOrWhiteSpace(context.Reason) ? "unspecified" : context.Reason)}'");
+                $"cue='{cue.name}' handleValid={valid} isPlaying={playing} reason='{(string.IsNullOrWhiteSpace(context.reason) ? "unspecified" : context.reason)}'");
         }
 
         private bool TryEnsureService()
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            DebugUtility.Log(typeof(AudioSfxDirectQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioSfxDirectQaSceneHarness),
                 $"[QA][Audio][SFX][Direct] action='{action}' detail='{detail}'.",
                 DebugUtility.Colors.Info);
         }

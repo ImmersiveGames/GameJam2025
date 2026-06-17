@@ -5,12 +5,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
     public sealed class DependencyManagerCameraPresentationRuntimeRegistry : ICameraPresentationRuntimeRegistry
     {
-        private readonly DependencyManager dependencyManager;
+        private readonly DependencyManager _dependencyManager;
 
         public DependencyManagerCameraPresentationRuntimeRegistry(
             DependencyManager dependencyManager)
         {
-            this.dependencyManager = dependencyManager;
+            this._dependencyManager = dependencyManager;
         }
 
         public bool TryRegister<TContract>(
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out string reason)
             where TContract : class
         {
-            if (dependencyManager == null)
+            if (_dependencyManager == null)
             {
                 reason = "dependency_manager_missing";
                 return false;
@@ -30,13 +30,13 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (dependencyManager.TryGetGlobal<TContract>(out _))
+            if (_dependencyManager.TryGetGlobal<TContract>(out _))
             {
                 reason = $"contract_already_registered:{typeof(TContract).Name}";
                 return false;
             }
 
-            dependencyManager.RegisterGlobal<TContract>(
+            _dependencyManager.RegisterGlobal<TContract>(
                 instance,
                 allowOverride: false);
 

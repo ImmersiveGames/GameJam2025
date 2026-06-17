@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         public Task StartAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
         {
             ValidateInputOrFail(identity, resolution);
-            LoadingHudController controller = ResolveLoadingControllerOrFail();
+            var controller = ResolveLoadingControllerOrFail();
             controller.Show("ActivityTransitionLoading", "Loading...");
             controller.ApplyProgress(new LoadingProgressSnapshot(0f, "Loading..."));
 
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             string reason)
         {
             ValidateInputOrFail(identity, resolution);
-            LoadingHudController controller = ResolveLoadingControllerOrFail();
+            var controller = ResolveLoadingControllerOrFail();
             LoadingProgressSnapshot snapshot = new(normalizedProgress, stepLabel, message);
             controller.ApplyProgress(snapshot);
 
@@ -75,8 +75,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         public async Task HideAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
         {
             ValidateInputOrFail(identity, resolution);
-            LoadingHudController controller = ResolveLoadingControllerOrFail();
-            RuntimeLoadingProfileAsset profile = resolution.LoadingProfile;
+            var controller = ResolveLoadingControllerOrFail();
+            var profile = resolution.LoadingProfile;
 
             await WaitMinimumVisibleAsync(profile);
             controller.Hide("ActivityTransitionLoading");
@@ -116,15 +116,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 }
             }
 
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
             string sceneName = persistentScenesPolicy.ResolveSceneNameByRoleOrFail(RuntimePersistentSceneRole.Loading, nameof(SessionActivityTransitionLoadingAdapter));
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionActivityTransitionLoading] LoadingScene obrigatoria nao esta carregada. scene='{sceneName}'.");
             }
 
-            LoadingHudController controller = FindControllerInSceneOrFail(scene, sceneName);
+            var controller = FindControllerInSceneOrFail(scene, sceneName);
             lock (_sync)
             {
                 _cachedSceneName = sceneName;
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 
             for (int i = 0; i < roots.Length; i++)
             {
-                LoadingHudController candidate = roots[i].GetComponentInChildren<LoadingHudController>(true);
+                var candidate = roots[i].GetComponentInChildren<LoadingHudController>(true);
                 if (candidate == null)
                 {
                     continue;
@@ -166,12 +166,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 
         private static RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail()
         {
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityTransitionLoading] RuntimeConfigRegistry snapshot obrigatorio ausente.");
             }
 
-            IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+            var runtimePolicy = snapshot.RuntimePolicy;
             if (runtimePolicy == null || runtimePolicy.RuntimePersistentScenesPolicy == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityTransitionLoading] RuntimePersistentScenesPolicy obrigatoria ausente.");
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 await Task.Yield();
             }
 
-            CanvasGroup rootGroup = controller.RootGroup;
+            var rootGroup = controller.RootGroup;
             if (rootGroup == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionActivityTransitionLoading] LoadingHudController rootGroup ausente after hide. contextSignature='{signature}'.");

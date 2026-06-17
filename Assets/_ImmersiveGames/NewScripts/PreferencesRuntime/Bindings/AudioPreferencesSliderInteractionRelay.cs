@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 return;
             }
 
-            DebugUtility.Log(typeof(AudioPreferencesSliderInteractionRelay),
+            DebugUtility.LogVerbose(typeof(AudioPreferencesSliderInteractionRelay),
                 $"[Preferences] preview play dispatch slider='Sfx' cue='{_sfxPreviewCue.name}'.",
                 DebugUtility.Colors.Info);
 

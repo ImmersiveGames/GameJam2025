@@ -19,8 +19,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public ActivityContentPreparationPolicy PreparationPolicy => preparationPolicy;
         public IReadOnlyList<ActivityContentSceneEntry> ContentScenes => contentScenes;
         public ActivitySetupRequirementsAuthoring SetupRequirements => setupRequirements;
-        public bool HasContentScenes => contentScenes != null && contentScenes.Count > 0;
-        public bool HasSetupRequirements => setupRequirements != null && setupRequirements.HasRequirements;
+        public bool HasContentScenes => contentScenes is { Count: > 0 };
+        public bool HasSetupRequirements => setupRequirements is { HasRequirements: true };
 
         public void ValidateOrThrow(string source = null)
         {
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < contentScenes.Count; index++)
             {
-                ActivityContentSceneEntry entry = contentScenes[index];
+                var entry = contentScenes[index];
                 if (entry == null)
                 {
                     throw new InvalidOperationException($"{validationSource} has null content scene entry at index {index}.");

@@ -55,6 +55,15 @@ Hooks canonicos opcionais em objetos pooled:
 - `OnPoolReturn()`
 - `OnPoolDestroyed()`
 
+Observabilidade canonica do `GameObjectPool`:
+- `PoolObjectCreated` quando a instancia e criada.
+- `PoolObjectPrepared` logo apos `OnPoolCreated()`.
+- `PoolObjectRentPrepared` logo apos `OnPoolRent()` e ativacao da instancia.
+
+`OnPoolCreated()` continua sendo o ponto canônico para preparacao local do objeto criado. Este corte nao materializa presentation ali ainda; o proximo corte pode usar esse hook sem pagar o custo no primeiro tiro.
+Quando a instância pooled é presentation-backed, o mesmo hook pode também construir surfaces locais de origin/anchor no owner de presentation sem criar trilho paralelo no adapter de spawn.
+Presentation materializada pela Activity Entry usa o mesmo endpoint/index e chama o mesmo rebuild após `ActorPresentationMaterialized`, sem duplicar scan/index fora do `ActorPresentationEndpoint`.
+
 ### `PooledBehaviour`
 
 Base opcional com no-op para facilitar implementacao de lifecycle.
@@ -70,10 +79,13 @@ Campos principais:
 - `maxSize`
 - `autoReturnSeconds`
 - `poolLabel`
+- `registrationMode`
 - `prewarm`
 
 Regra importante:
+- `registrationMode` declara quando o pool deve ser registrado.
 - `prewarm` declara intencao de prewarm, mas o asset nao executa nada sozinho.
+- `prewarm=true` significa apenas que `EnsureRegistered(definition)` cria `initialSize` quando o registro acontecer.
 
 ## Runtime principal
 
@@ -83,6 +95,8 @@ Regra importante:
 - cache interno por referencia de asset
 - `EnsureRegistered` e idempotente e faz apenas ensure/register
 - `Prewarm` e explicito
+- `Rent` ainda pode registrar no primeiro uso somente quando `registrationMode == LazyOnFirstRent`
+- `Rent` falha explicitamente se o pool exigir preparacao previa e nao estiver registrado
 
 ### `GameObjectPool`
 
@@ -116,7 +130,11 @@ Regra importante:
 
 ### 2) Prewarm
 
-`Prewarm(definition)` preenche capacidade inicial conforme configuracao.
+`registrationMode` decide quando o pool e registrado. `prewarm=true` so decide o que acontece *depois* do registro: criar `initialSize` no momento em que o registro ocorrer. `Prewarm(definition)` permanece como comando explicito de QA/manutencao, nao como responsabilidade de consumers de gameplay.
+
+`ActivityEntryPoolPreparationStage` e o owner da preparacao antecipada de pools declarados por capabilities/endpoints da Activity. Ele prepara apenas pools com `registrationMode == ActivityEntry` e deduplica por `PoolDefinitionAsset`.
+
+`AudioRuntimeComposer` e o owner da preparacao antecipada de pools de vozes SFX declarados em `AudioDefaultsAsset.GlobalSfxVoicePoolDefinitions`. Ele prepara apenas pools com `registrationMode == GlobalBoot` e deduplica por `PoolDefinitionAsset`.
 
 ### 3) Rent
 
@@ -141,19 +159,20 @@ Se `autoReturnSeconds > 0`, instancia rented recebe retorno automatico canonicam
 3. Definir `initialSize`, `canExpand` e `maxSize`.
 4. Definir `autoReturnSeconds` (0 para desativado).
 5. Definir `poolLabel` para observabilidade.
-6. Marcar `prewarm=true` quando quiser aquecimento automatico no consumer.
+6. Definir `registrationMode` para controlar quando o pool pode ser registrado.
+7. Marcar `prewarm=true` quando quiser aquecimento automatico no momento do registro.
 
 ## Como um consumer usa pools
 
 Shape final aprovado:
-- o consumer usa base reutilizavel (`PoolConsumerBehaviourBase`, namespace `Infrastructure.Pooling.Interop`)
+- o consumer usa base reutilizavel (`PoolConsumerBehaviourBase`)
 - o consumer declara lista explicita de `PoolDefinitionAsset`
 - a base resolve `IPoolService`
-- para cada definicao:
-  - sempre executa `EnsureRegistered`
-  - executa `Prewarm` somente quando `definition.prewarm == true`
+- para cada definicao, executa somente `EnsureRegistered`
+- `PoolService.EnsureRegistered` aplica o prewarm uma vez quando `definition.prewarm == true`
+- `PoolService.Rent` so auto-registra em `LazyOnFirstRent`; outros modos exigem preparacao previa pelo owner correto
 
-Sem script manual por feature para chamar ensure/prewarm.
+Sem script manual por feature para chamar prewarm.
 
 ## Como o QA usa pools hoje
 

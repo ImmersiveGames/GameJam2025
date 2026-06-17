@@ -173,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         {
             if (config == null)
             {
-                LogRuntimeModeObs("[OBS][BOOT] LoggingPolicyApplySkipped reason='null_logging_config_asset'");
+                LogRuntimeModeObs("LoggingPolicyApplySkipped reason='null_logging_config_asset'");
                 return;
             }
 
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         {
             if (!_hasAppliedPolicy)
             {
-                LogRuntimeModeObs("[OBS][RuntimeMode] LoggingPolicyEvidenceSkipped reason='no_last_policy'");
+                LogRuntimeModeObs("LoggingPolicyEvidenceSkipped reason='no_last_policy'");
                 return;
             }
 
@@ -376,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 return (int)cachedEffectiveLevel >= (int)messageLevel;
             }
 
-            DebugLevel effectiveLevel = ResolveEffectiveLevel(type);
+            var effectiveLevel = ResolveEffectiveLevel(type);
             _effectiveLevels[type] = effectiveLevel;
             return (int)effectiveLevel >= (int)messageLevel;
         }
@@ -420,7 +420,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             for (int i = 0; i < _activeNamespaceRules.Count; i++)
             {
-                NamespaceRuleEntry entry = _activeNamespaceRules[i];
+                var entry = _activeNamespaceRules[i];
                 if (typeNamespace.StartsWith(entry.NamespacePrefix, StringComparison.Ordinal))
                 {
                     match = new NamespaceRuleMatch(true, entry.RuleId, entry.NamespacePrefix, entry.Level);
@@ -444,7 +444,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             for (int i = 0; i < rules.Count; i++)
             {
-                LoggingConfigAsset.NamespaceRule rule = rules[i];
+                var rule = rules[i];
                 if (rule == null || !rule.enabled)
                 {
                     continue;
@@ -484,7 +484,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             var builder = new StringBuilder(128);
             for (int i = 0; i < rules.Count; i++)
             {
-                NamespaceRuleEntry rule = rules[i];
+                var rule = rules[i];
                 if (i > 0)
                 {
                     builder.Append(',');
@@ -526,13 +526,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             if (policyFrame == _lastPolicyFrame && string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
             {
-                LogRuntimeModeObs($"[OBS][BOOT] LoggingPolicyApplySkipped reason='dedupe_same_frame' key='{policyKey}'");
+                LogRuntimeModeObs($"LoggingPolicyApplySkipped reason='dedupe_same_frame' key='{policyKey}'");
                 return;
             }
 
             if (string.Equals(policyKey, _lastPolicyKey, StringComparison.Ordinal))
             {
-                LogRuntimeModeObs($"[OBS][BOOT] LoggingPolicyApplySkipped reason='dedupe_same_key' key='{policyKey}'");
+                LogRuntimeModeObs($"LoggingPolicyApplySkipped reason='dedupe_same_key' key='{policyKey}'");
                 return;
             }
 
@@ -567,7 +567,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             string phase = isEarlyDefault ? "BOOT" : "STARTUP";
             string policyFlavor = isEarlyDefault ? "EarlyDefault" : "RuntimeConfigRegistry";
             LogRuntimeModeObs(
-                $"[OBS][{phase}] LoggingPolicyApplied source='{source}' policy='{policyFlavor}' " +
+                $"LoggingPolicyApplied source='{source}' policy='{policyFlavor}' " +
                 $"defaultLevel='{defaultLevel}' activeRuleCount={_activeNamespaceRules.Count} " +
                 $"global={globalDebugEnabled} verbose={verboseEnabled} taggedVerbose={fallbacksEnabled} repeatedVerbose={repeatedVerboseEnabled}");
         }
@@ -583,7 +583,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             _attributeLevels.Clear();
 
             LogRuntimeModeObs(
-                $"[OBS][BOOT] LoggingPolicyCacheInvalidated reason='{reason}' " +
+                $"LoggingPolicyCacheInvalidated reason='{reason}' " +
                 $"effectiveTypeCount={effectiveCount} matchedRuleCount={ruleMatchCount} attributeCount={attributeCount}");
         }
 
@@ -792,8 +792,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             }
 
             // Suprime apenas spam de observabilidade idempotente do catalogo de navegacao.
-            return message.Contains("[OBS][SceneRouting] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
-                message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal);
+            return message.Contains("RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
+                message.Contains("RouteResolvedVia=AssetRef", StringComparison.Ordinal);
         }
         #endregion
     }

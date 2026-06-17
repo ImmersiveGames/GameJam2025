@@ -10,11 +10,11 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
     public sealed class CinemachineActivityCameraDirector : IActivityCameraDirector
     {
         private const int ActivityCameraPriority = 100;
-        private readonly IOperationalCameraProvider operationalCameraProvider;
+        private readonly IOperationalCameraProvider _operationalCameraProvider;
 
         public CinemachineActivityCameraDirector(IOperationalCameraProvider operationalCameraProvider)
         {
-            this.operationalCameraProvider = operationalCameraProvider;
+            this._operationalCameraProvider = operationalCameraProvider;
         }
 
         public bool TryPrepareActivityCamera(
@@ -22,20 +22,49 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraBindingResult result,
             out string reason)
         {
-            if (!ActivityCameraBindingCommandValidator.TryValidate(command, out reason))
+            if (command == null)
             {
+                reason = "command_null";
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
             }
 
-            if (operationalCameraProvider == null)
+            if (command.Requirement == null)
+            {
+                reason = "requirement_null";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.CameraRigPrefab == null)
+            {
+                reason = "camera_rig_prefab_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.TrackingTarget == null)
+            {
+                reason = "tracking_target_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (command.Requirement.ActivationTiming != ActivityCameraActivationTiming.BeforeReveal)
+            {
+                reason = "activation_timing_unsupported";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (_operationalCameraProvider == null)
             {
                 reason = "operational_camera_provider_missing";
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
             }
 
-            if (!operationalCameraProvider.TryGetCurrent(out OperationalCameraHandle operationalHandle, out reason))
+            if (!_operationalCameraProvider.TryGetCurrent(out var operationalHandle, out reason))
             {
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
@@ -62,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            GameObject rigInstance = Object.Instantiate(command.Requirement.CameraRigPrefab);
+            var rigInstance = Object.Instantiate(command.Requirement.CameraRigPrefab);
             rigInstance.name = BuildRigInstanceName(command);
 
             if (!EnsurePresentationRigHasNoUnityCamera(rigInstance, out reason))
@@ -79,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!TryGetSingleCinemachineCamera(rigInstance, out CinemachineCamera cinemachineCamera, out reason))
+            if (!TryGetSingleCinemachineCamera(rigInstance, out var cinemachineCamera, out reason))
             {
                 Object.Destroy(rigInstance);
                 result = ActivityCameraBindingResult.Failed(command, reason);
@@ -91,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             cinemachineCamera.Priority = ActivityCameraPriority;
 
             DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
-                $"[OBS][CameraPresentation][Director] ActivityCameraPrepared outputCamera='{operationalHandle.UnityCamera.name}' hasOperationalBrain='{operationalHandle.HasCinemachineBrain}' presentationRig='{rigInstance.name}' activityIdentity='{command.ActivityIdentity}' requirementId='{command.Requirement.RequirementId}'.",
+                $"ActivityCameraPrepared outputCamera='{operationalHandle.UnityCamera.name}' hasOperationalBrain='{operationalHandle.HasCinemachineBrain}' presentationRig='{rigInstance.name}' activityIdentity='{command.ActivityIdentity}' requirementId='{command.Requirement.RequirementId}'.",
                 DebugUtility.Colors.Info);
 
             reason = "activity_camera_ready";
@@ -130,10 +159,55 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             Object.Destroy(binding.Handle.CameraRigInstance);
 
             DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
-                $"[OBS][CameraPresentation][Director] ActivityCameraReleased outputCamera='{binding.Handle.UnityCamera?.name}' presentationRig='{binding.Handle.CameraRigInstance.name}' activityIdentity='{binding.Handle.ActivityIdentity}'.",
+                $"ActivityCameraReleased outputCamera='{binding.Handle.UnityCamera?.name}' presentationRig='{binding.Handle.CameraRigInstance.name}' activityIdentity='{binding.Handle.ActivityIdentity}'.",
                 DebugUtility.Colors.Info);
 
             reason = "activity_camera_released";
+            return true;
+        }
+
+        public bool TryRebindActivityCameraTargets(
+            ActivityCameraBindingHandle bindingHandle,
+            ActivityCameraRebindTargetsCommand command,
+            out string reason)
+        {
+            if (bindingHandle == null)
+            {
+                reason = "binding_handle_missing";
+                return false;
+            }
+
+            if (command == null)
+            {
+                reason = "rebind_command_null";
+                return false;
+            }
+
+            if (bindingHandle.CameraRigInstance == null)
+            {
+                reason = "camera_rig_instance_missing";
+                return false;
+            }
+
+            if (command.TrackingTarget == null)
+            {
+                reason = "tracking_target_missing";
+                return false;
+            }
+
+            if (!TryGetSingleCinemachineCamera(bindingHandle.CameraRigInstance, out var cinemachineCamera, out reason))
+            {
+                return false;
+            }
+
+            cinemachineCamera.Target.TrackingTarget = command.TrackingTarget;
+            cinemachineCamera.Target.LookAtTarget = command.LookAtTarget;
+
+            DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
+                $"ActivityCameraTargetsRebound activityIdentity='{command.ActivityIdentity}' presentationRig='{bindingHandle.CameraRigInstance.name}' trackingTarget='{command.TrackingTarget.name}' lookAtTarget='{command.LookAtTarget?.name ?? "<none>"}'.",
+                DebugUtility.Colors.Info);
+
+            reason = "activity_camera_targets_rebound";
             return true;
         }
 

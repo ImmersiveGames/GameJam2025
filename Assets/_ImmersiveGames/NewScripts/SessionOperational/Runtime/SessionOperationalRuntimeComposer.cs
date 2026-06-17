@@ -1,10 +1,14 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -15,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static bool _runtimeComposed;
         private static StartupRouteEmitter _startupRouteEmitter;
         private static SessionOperationalPipeline _sessionOperationalPipeline;
-        private static SceneCompositionAdapter _routeTransitionAdapter;
+        private static SceneCompositionAdapter _sceneCompositionAdapter;
         private static FadeAdapter _fadeAdapter;
         private static LoadingAdapter _loadingAdapter;
         private static AudioAdapter _audioAdapter;
@@ -23,6 +27,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
         private static SessionOperationalRouteCameraAdapter _routeCameraAdapter;
         private static SessionOperationalActivityCameraAdapter _activityCameraAdapter;
+        private static RoutePlayerParticipationEndpoint _routePlayerParticipationEndpoint;
+        private static PlayerParticipationRuntime _playerParticipationRuntime;
+        private static SessionActivityOperationalRouteHandoffExitAdapter _routeHandoffExitAdapter;
+        private static SessionActivityOperationalRouteConsumerEntryAdapter _routeConsumerEntryAdapter;
+        private static SessionActivityOperationalRouteConsumerReadinessAdapter _routeConsumerReadinessAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -31,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureStartupRouteEmitter();
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] SessionOperationalRuntime installer concluded.",
+                "SessionOperationalRuntime installer concluded.",
                 DebugUtility.Colors.Info);
         }
 
@@ -48,7 +57,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureStartupRequestEmitter();
             EnsureStartupRouteEmitter();
 
-            EnsureSessionOperationalPipeline();
             EnsureSessionOperationalAudioAdapter();
             EnsureSessionOperationalFadeAdapter();
             EnsureSessionOperationalLoadingAdapter();
@@ -57,11 +65,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalSceneCompositionAdapter();
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
+            EnsurePlayerParticipationRuntime();
+            EnsureRoutePlayerParticipationEndpoint();
+            EnsureSessionOperationalRouteHandoffExitAdapter();
+            EnsureSessionOperationalRouteConsumerEntryAdapter();
+            EnsureSessionOperationalRouteConsumerReadinessAdapter();
+            EnsureSessionOperationalPipeline(runtimeModeConfig);
 
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] runtime composed for SessionOperational runtime routing.",
+                "runtime composed for SessionOperational runtime routing.",
                 DebugUtility.Colors.Info);
         }
 
@@ -88,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             }
         }
 
-        private static void EnsureSessionOperationalPipeline()
+        private static void EnsureSessionOperationalPipeline(RuntimeModeConfig runtimeModeConfig)
         {
             if (_sessionOperationalPipeline != null)
             {
@@ -102,35 +116,206 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 return;
             }
 
-            _sessionOperationalPipeline = new SessionOperationalPipeline();
+            var dependencies = CreatePipelineDependencies(runtimeModeConfig);
+            _sessionOperationalPipeline = new SessionOperationalPipeline(dependencies);
             DependencyManager.Provider.RegisterGlobal(_sessionOperationalPipeline);
             DependencyManager.Provider.RegisterGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(_sessionOperationalPipeline);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] SessionOperationalPipeline registered for canonical operational runtime.",
+                "SessionOperationalPipeline registered for canonical operational runtime.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static SessionOperationalPipelineDependencies CreatePipelineDependencies(RuntimeModeConfig runtimeModeConfig)
+        {
+            var persistentScenesPolicy =
+                RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+
+            return new SessionOperationalPipelineDependencies(
+                runtimeModeConfig,
+                persistentScenesPolicy,
+                ResolveRequiredDependency<IOperationalSceneCompositionPort>,
+                ResolveRequiredDependency<IOperationalRouteAudioPort>,
+                ResolveRequiredDependency<IOperationalFadePort>,
+                _loadingAdapter,
+                _routeCameraAdapter,
+                _activitySaveAdapter,
+                _progressionSlotContextResolver,
+                ResolveRequiredDependency<IOperationalInputModeRequestPort>,
+                ResolveOptionalDependency<IOperationalRouteConsumerEntryPort>,
+                ResolveOptionalDependency<IOperationalRouteConsumerReadinessPort>,
+                _activityCameraAdapter,
+                ResolveOptionalDependency<IOperationalRouteHandoffExitPort>,
+                ResolveOptionalDependency<ISessionActivityRouteExitTeardownBoundary>,
+                ResolveRequiredDependency<IRoutePlayerParticipationEndpoint>,
+                ResolveRequiredDependency<IPlayerParticipationRuntime>,
+                ResolveOptionalDependency<ISessionActivitySnapshotPayloadProvider>,
+                ResolveOptionalDependency<ISaveStateService>,
+                ResolveRequiredDependency<IPoolService>);
+        }
+
+
+        private static void EnsurePlayerParticipationRuntime()
+        {
+            if (_playerParticipationRuntime != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<PlayerParticipationRuntime>(out var existingRuntime) &&
+                existingRuntime != null)
+            {
+                _playerParticipationRuntime = existingRuntime;
+                DependencyManager.Provider.RegisterGlobal<IPlayerParticipationRuntime>(_playerParticipationRuntime);
+                return;
+            }
+
+            _playerParticipationRuntime = new PlayerParticipationRuntime();
+            DependencyManager.Provider.RegisterGlobal(_playerParticipationRuntime);
+            DependencyManager.Provider.RegisterGlobal<IPlayerParticipationRuntime>(_playerParticipationRuntime);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "runtime='PlayerParticipationRuntime' registered for session-scoped player participation.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureRoutePlayerParticipationEndpoint()
+        {
+            if (_routePlayerParticipationEndpoint != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<RoutePlayerParticipationEndpoint>(out var existingEndpoint) &&
+                existingEndpoint != null)
+            {
+                _routePlayerParticipationEndpoint = existingEndpoint;
+                DependencyManager.Provider.RegisterGlobal<IRoutePlayerParticipationEndpoint>(_routePlayerParticipationEndpoint);
+                return;
+            }
+
+            _routePlayerParticipationEndpoint = new RoutePlayerParticipationEndpoint();
+            DependencyManager.Provider.RegisterGlobal(_routePlayerParticipationEndpoint);
+            DependencyManager.Provider.RegisterGlobal<IRoutePlayerParticipationEndpoint>(_routePlayerParticipationEndpoint);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "endpoint='RoutePlayerParticipationEndpoint' registered for operational route player participation.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalRouteConsumerEntryAdapter()
+        {
+            if (_routeConsumerEntryAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteConsumerEntryAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeConsumerEntryAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerEntryPort>(_routeConsumerEntryAdapter);
+                return;
+            }
+
+            _routeConsumerEntryAdapter = new SessionActivityOperationalRouteConsumerEntryAdapter(ResolveOptionalDependency<ISessionActivityEntryHandoffReceiver>);
+            DependencyManager.Provider.RegisterGlobal(_routeConsumerEntryAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerEntryPort>(_routeConsumerEntryAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "adapter='SessionActivityOperationalRouteConsumerEntryAdapter' registered for operational route consumer entry.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalRouteConsumerReadinessAdapter()
+        {
+            if (_routeConsumerReadinessAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteConsumerReadinessAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeConsumerReadinessAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerReadinessPort>(_routeConsumerReadinessAdapter);
+                return;
+            }
+
+            _routeConsumerReadinessAdapter = new SessionActivityOperationalRouteConsumerReadinessAdapter(ResolveOptionalDependency<ISessionActivityVisualReadinessBoundary>);
+            DependencyManager.Provider.RegisterGlobal(_routeConsumerReadinessAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerReadinessPort>(_routeConsumerReadinessAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "adapter='SessionActivityOperationalRouteConsumerReadinessAdapter' registered for operational route consumer readiness.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static T ResolveRequiredDependency<T>() where T : class
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<T>(out var dependency) &&
+                dependency != null)
+            {
+                return dependency;
+            }
+
+            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline] Required dependency missing type='{typeof(T).Name}'.");
+        }
+
+        private static T ResolveOptionalDependency<T>() where T : class
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<T>(out var dependency) &&
+                dependency != null)
+            {
+                return dependency;
+            }
+
+            return null;
+        }
+
+        private static void EnsureSessionOperationalRouteHandoffExitAdapter()
+        {
+            if (_routeHandoffExitAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteHandoffExitAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeHandoffExitAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteHandoffExitPort>(_routeHandoffExitAdapter);
+                return;
+            }
+
+            _routeHandoffExitAdapter = new SessionActivityOperationalRouteHandoffExitAdapter(ResolveOptionalDependency<ISessionActivityRouteExitTeardownBoundary>);
+            DependencyManager.Provider.RegisterGlobal(_routeHandoffExitAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteHandoffExitPort>(_routeHandoffExitAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "adapter='SessionActivityOperationalRouteHandoffExitAdapter' registered for operational route handoff exit.",
                 DebugUtility.Colors.Info);
         }
 
         private static void EnsureSessionOperationalSceneCompositionAdapter()
         {
-            if (_routeTransitionAdapter != null)
+            if (_sceneCompositionAdapter != null)
             {
                 return;
             }
 
             if (DependencyManager.Provider.TryGetGlobal<SceneCompositionAdapter>(out var existingAdapter) && existingAdapter != null)
             {
-                _routeTransitionAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<ISceneCompositionAdapter>(_routeTransitionAdapter);
+                _sceneCompositionAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalSceneCompositionPort>(_sceneCompositionAdapter);
                 return;
             }
 
-            _routeTransitionAdapter = new SceneCompositionAdapter();
-            DependencyManager.Provider.RegisterGlobal(_routeTransitionAdapter);
-            DependencyManager.Provider.RegisterGlobal<ISceneCompositionAdapter>(_routeTransitionAdapter);
+            _sceneCompositionAdapter = new SceneCompositionAdapter();
+            DependencyManager.Provider.RegisterGlobal(_sceneCompositionAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalSceneCompositionPort>(_sceneCompositionAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='SceneCompositionAdapter' registered for canonical operational runtime.",
+                "adapter='SceneCompositionAdapter' registered as operational scene composition port.",
                 DebugUtility.Colors.Info);
         }
 
@@ -144,16 +329,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             if (DependencyManager.Provider.TryGetGlobal<AudioAdapter>(out var existingAdapter) && existingAdapter != null)
             {
                 _audioAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<IAudioAdapter>(_audioAdapter);
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteAudioPort>(_audioAdapter);
                 return;
             }
 
             _audioAdapter = new AudioAdapter();
             DependencyManager.Provider.RegisterGlobal(_audioAdapter);
-            DependencyManager.Provider.RegisterGlobal<IAudioAdapter>(_audioAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteAudioPort>(_audioAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='AudioAdapter' registered for canonical operational runtime.",
+                "adapter='AudioAdapter' registered as operational route audio port.",
                 DebugUtility.Colors.Info);
         }
 
@@ -167,16 +352,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             if (DependencyManager.Provider.TryGetGlobal<FadeAdapter>(out var existingAdapter) && existingAdapter != null)
             {
                 _fadeAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<IFadeAdapter>(_fadeAdapter);
+                DependencyManager.Provider.RegisterGlobal<IOperationalFadePort>(_fadeAdapter);
                 return;
             }
 
             _fadeAdapter = new FadeAdapter();
             DependencyManager.Provider.RegisterGlobal(_fadeAdapter);
-            DependencyManager.Provider.RegisterGlobal<IFadeAdapter>(_fadeAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalFadePort>(_fadeAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='FadeAdapter' registered for canonical operational runtime.",
+                "adapter='FadeAdapter' registered as operational fade port.",
                 DebugUtility.Colors.Info);
         }
 
@@ -199,7 +384,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             DependencyManager.Provider.RegisterGlobal<ILoadingAdapter>(_loadingAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='LoadingAdapter' registered for canonical operational runtime.",
+                "adapter='LoadingAdapter' registered for canonical operational runtime.",
                 DebugUtility.Colors.Info);
         }
 
@@ -227,7 +412,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             DependencyManager.Provider.RegisterGlobal<ISessionOperationalActivitySaveAdapter>(_activitySaveAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionOperationalActivitySaveAdapter' registered for RouteActivitySave load-on-enter/save-on-exit.",
+                "adapter='SessionOperationalActivitySaveAdapter' registered for RouteActivitySave load-on-enter/save-on-exit.",
                 DebugUtility.Colors.Info);
         }
 
@@ -250,7 +435,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             DependencyManager.Provider.RegisterGlobal<IProgressionSlotContextResolver>(_progressionSlotContextResolver);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] resolver='DefaultProgressionSlotContextResolver' registered for RouteActivitySave ProgressionSlotContext.",
+                "resolver='DefaultProgressionSlotContextResolver' registered for RouteActivitySave ProgressionSlotContext.",
                 DebugUtility.Colors.Info);
         }
 
@@ -279,7 +464,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             DependencyManager.Provider.RegisterGlobal<ISessionOperationalRouteCameraAdapter>(_routeCameraAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionOperationalRouteCameraAdapter' registered for Route/Surface camera presentation.",
+                "adapter='SessionOperationalRouteCameraAdapter' registered for Route/Surface camera presentation.",
                 DebugUtility.Colors.Info);
         }
 
@@ -297,23 +482,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IActivityCameraPreparationExecutor>(out var activityCameraExecutor) || activityCameraExecutor == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][ActivityCamera] IActivityCameraPreparationExecutor obrigatorio ausente para compor activity camera adapter.");
-            }
-
             if (DependencyManager.Provider == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][ActivityCamera] IDependencyProvider obrigatorio ausente para compor activity camera adapter.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IActivityCameraPreparationExecutor>(out var activityCameraExecutor) || activityCameraExecutor == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][ActivityCamera] IActivityCameraPreparationExecutor obrigatorio ausente para compor activity camera adapter.");
+            }
+
             var requirementResolver = new ActivityCameraPresentationRequirementResolver();
-            _activityCameraAdapter = new SessionOperationalActivityCameraAdapter(activityCameraExecutor, requirementResolver, DependencyManager.Provider);
+            IActivityCameraAnchorHostResolver anchorHostResolver = new SceneScopedActivityCameraAnchorHostResolver(DependencyManager.Provider);
+            _activityCameraAdapter = new SessionOperationalActivityCameraAdapter(activityCameraExecutor, requirementResolver, anchorHostResolver);
             DependencyManager.Provider.RegisterGlobal(_activityCameraAdapter);
             DependencyManager.Provider.RegisterGlobal<ISessionOperationalActivityCameraAdapter>(_activityCameraAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionOperationalActivityCameraAdapter' registered for Activity camera presentation.",
+                "adapter='SessionOperationalActivityCameraAdapter' registered for Activity camera presentation.",
                 DebugUtility.Colors.Info);
         }
     }

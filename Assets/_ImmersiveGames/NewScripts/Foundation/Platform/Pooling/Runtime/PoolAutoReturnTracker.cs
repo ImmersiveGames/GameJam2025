@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             _activeTimers[runtimeInstance] = timer;
 
             DebugUtility.LogVerbose(typeof(PoolAutoReturnTracker),
-                $"[OBS][Pooling] AutoReturn scheduled. asset='{definition.name}' go='{SafeName(runtimeInstance.Instance)}' seconds={definition.AutoReturnSeconds:0.###}.",
+                $"AutoReturn scheduled. asset='{definition.name}' go='{SafeName(runtimeInstance.Instance)}' seconds={definition.AutoReturnSeconds:0.###}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
             _activeTimers.Remove(runtimeInstance);
             DebugUtility.LogVerbose(typeof(PoolAutoReturnTracker),
-                $"[OBS][Pooling] AutoReturn canceled. asset='{runtimeInstance.Definition.name}' go='{SafeName(runtimeInstance.Instance)}' reason='{reason}'.",
+                $"AutoReturn canceled. asset='{runtimeInstance.Definition.name}' go='{SafeName(runtimeInstance.Instance)}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             int canceledCount = _activeTimers.Count;
             _activeTimers.Clear();
             DebugUtility.LogVerbose(typeof(PoolAutoReturnTracker),
-                $"[OBS][Pooling] AutoReturn cleared. canceled={canceledCount} reason='{reason}'.",
+                $"AutoReturn cleared. canceled={canceledCount} reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -127,13 +127,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (!runtimeInstance.IsRented)
             {
                 DebugUtility.LogVerbose(typeof(PoolAutoReturnTracker),
-                    $"[OBS][Pooling] AutoReturn skip. asset='{runtimeInstance.Definition.name}' go='{SafeName(runtimeInstance.Instance)}' reason='instance-already-returned'.",
+                    $"AutoReturn skip. asset='{runtimeInstance.Definition.name}' go='{SafeName(runtimeInstance.Instance)}' reason='instance-already-returned'.",
                     DebugUtility.Colors.Info);
                 yield break;
             }
 
             DebugUtility.LogVerbose(typeof(PoolAutoReturnTracker),
-                $"[OBS][Pooling] AutoReturn execute. asset='{runtimeInstance.Definition.name}' go='{SafeName(runtimeInstance.Instance)}'.",
+                $"AutoReturn execute. asset='{runtimeInstance.Definition.name}' go='{SafeName(runtimeInstance.Instance)}'.",
                 DebugUtility.Colors.Info);
             _onAutoReturn(runtimeInstance);
         }

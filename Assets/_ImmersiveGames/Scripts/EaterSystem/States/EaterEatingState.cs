@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
@@ -472,7 +471,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             if (Behavior != null && Behavior.ShouldLogStateTransitions && !_hasLoggedRecoveryCompatibility)
             {
                 string status = hasCompatibility
-                    ? (isCompatible ? "compatível" : "incompatível")
+                    ? isCompatible ? "compatível" : "incompatível"
                     : "sem avaliação de compatibilidade";
 
                 DebugUtility.LogVerbose(
@@ -569,18 +568,18 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void TryPlayBiteSound()
         {
-            var biteSound = Config != null ? Config.EatingBiteSound : null;
+            /*var biteSound = Config != null ? Config.EatingBiteSound : null;
             if (biteSound == null || biteSound.clip == null)
             {
                 return;
-            }
+            }*/
 
             if (Behavior == null)
             {
                 return;
             }
 
-            if (!Behavior.TryGetAudioEmitter(out var emitter))
+            /*if (!Behavior.TryGetAudioEmitter(out var emitter))
             {
                 if (!_missingAudioEmitterLogged && Behavior.ShouldLogStateTransitions)
                 {
@@ -592,13 +591,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 }
 
                 return;
-            }
+            }*/
 
             _missingAudioEmitterLogged = false;
 
             var position = _currentTarget != null ? _currentTarget.position : Transform.position;
-            var context = AudioContext.Default(position, emitter.UsesSpatialBlend);
-            emitter.Play(biteSound, context);
+            /*var context = AudioContext.Default(position, emitter.UsesSpatialBlend);
+            emitter.Play(biteSound, context);*/
         }
 
         private bool TryEvaluateCompatibility(out bool isCompatible)

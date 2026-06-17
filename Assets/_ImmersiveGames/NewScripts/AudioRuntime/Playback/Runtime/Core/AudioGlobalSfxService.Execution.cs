@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             var runtimeObject = new GameObject($"{cue.name}_AudioSfxDirect");
             runtimeObject.transform.SetParent(transform, false);
-            runtimeObject.transform.position = context.FollowTarget != null ? context.FollowTarget.position : context.WorldPosition;
+            runtimeObject.transform.position = context.followTarget != null ? context.followTarget.position : context.worldPosition;
 
             var source = runtimeObject.AddComponent<AudioSource>();
             ConfigureSource(source, cue, clip, context, resolvedEmission, reason);
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 cueId: cue.GetInstanceID(),
                 cueName: cue.name,
                 source: source,
-                followTarget: context.FollowTarget,
+                followTarget: context.followTarget,
                 modeLabel: mode,
                 reason: reason,
                 destroyOwnerOnComplete: true,
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             source.Play();
 
             DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                $"[Audio][SFX] Direct play cue='{cue.name}' mode='{mode}' path='{path}' reason='{reason}'.",
+                $"[Audio][SFX] Direct play cue='{cue.name}' mode='{mode}' path='{path}' position='{runtimeObject.transform.position}' finalVolume='{source.volume:0.###}' volumeScale='{Mathf.Max(0f, context.volumeScale):0.###}' spatialBlend='{source.spatialBlend:0.###}' minDistance='{source.minDistance:0.###}' maxDistance='{source.maxDistance:0.###}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return true;
@@ -58,8 +58,6 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             ResolvedEmission resolvedEmission,
             string reason)
         {
-            _ = reason;
-
             if (source == null)
             {
                 throw new InvalidOperationException("[FATAL][Audio] AudioSource obrigatorio ausente para configuracao SFX.");
@@ -75,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 throw new InvalidOperationException("[FATAL][Audio] AudioClip obrigatorio ausente para configuracao SFX.");
             }
 
-            float volumeScale = Mathf.Max(0f, context.VolumeScale);
+            float volumeScale = Mathf.Max(0f, context.volumeScale);
             float masterVolume = _settings != null ? Mathf.Clamp01(_settings.MasterVolume) : 1f;
             float sfxVolume = _settings != null ? Mathf.Clamp01(_settings.SfxVolume) : 1f;
             float categoryMultiplier = _settings != null ? Mathf.Max(0f, _settings.SfxCategoryMultiplier) : 1f;
@@ -90,8 +88,15 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             source.minDistance = Mathf.Max(0f, resolvedEmission.MinDistance);
             source.maxDistance = Mathf.Max(source.minDistance, resolvedEmission.MaxDistance);
             source.pitch = Mathf.Clamp(Random.Range(Mathf.Min(cue.PitchMin, cue.PitchMax), Mathf.Max(cue.PitchMin, cue.PitchMax)), 0.01f, 3f);
-            source.volume = Mathf.Clamp01(baseVolume * volumeScale * masterVolume * sfxVolume * categoryMultiplier * volumeJitter);
+            source.volume = Mathf.Max(0f, baseVolume * volumeScale * masterVolume * sfxVolume * categoryMultiplier * volumeJitter);
             source.playOnAwake = false;
+
+            string outputMixerGroupName = source.outputAudioMixerGroup != null
+                ? source.outputAudioMixerGroup.name
+                : "<none>";
+            DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
+                $"[Audio][SFX] Source configured cue='{cue.name}' clip='{clip.name}' spatial='{resolvedEmission.UseSpatial}' spatialBlend='{source.spatialBlend:0.###}' minDistance='{source.minDistance:0.###}' maxDistance='{source.maxDistance:0.###}' volumeScale='{volumeScale:0.###}' baseVolume='{baseVolume:0.###}' finalVolume='{source.volume:0.###}' masterVolume='{masterVolume:0.###}' sfxVolume='{sfxVolume:0.###}' categoryMultiplier='{categoryMultiplier:0.###}' volumeJitter='{volumeJitter:0.###}' pitch='{source.pitch:0.###}' outputMixerGroup='{outputMixerGroupName}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private bool ResolveVoiceProfile(
@@ -100,9 +105,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             out AudioSfxVoiceProfileAsset profile,
             out string source)
         {
-            if (context.VoiceProfile != null)
+            if (context.voiceProfile != null)
             {
-                profile = context.VoiceProfile;
+                profile = context.voiceProfile;
                 source = "context";
                 return true;
             }

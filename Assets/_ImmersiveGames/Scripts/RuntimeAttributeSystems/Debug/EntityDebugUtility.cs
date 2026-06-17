@@ -232,7 +232,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                 {
                     float value = pair.Value.GetCurrentValue();
                     float max = pair.Value.GetMaxValue();
-                    sb.AppendLine($"  {pair.Key}: {value:F1}/{max:F1} ({(value / (max > 0 ? max : 1)):P1})");
+                    sb.AppendLine($"  {pair.Key}: {value:F1}/{max:F1} ({value / (max > 0 ? max : 1):P1})");
                 }
             }
             else
@@ -640,7 +640,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             }
 
             IReadOnlyDictionary<RuntimeAttributeType, IRuntimeAttributeValue> all = _runtimeAttributeContext.GetAll();
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine($"📊 RESOURCES FOR ACTOR: {_actor?.ActorId}");
             sb.AppendLine($"Total Resources: {all.Count}");
             sb.AppendLine("────────────────────────");
@@ -663,7 +663,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
                 sb.AppendLine($"🔹 {kv.Key}:");
                 sb.AppendLine($"   Value: {resource.GetCurrentValue():F1}/{resource.GetMaxValue():F1}");
-                sb.AppendLine($"   Percentage: {(resource.GetCurrentValue() / resource.GetMaxValue()):P1}");
+                sb.AppendLine($"   Percentage: {resource.GetCurrentValue() / resource.GetMaxValue():P1}");
                 sb.AppendLine($"   Canvas Target: {canvasTarget}");
 
                 if (instanceConfig?.hasAutoFlow ?? false)

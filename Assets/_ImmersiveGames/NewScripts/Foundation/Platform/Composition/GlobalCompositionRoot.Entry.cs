@@ -48,13 +48,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             InitializeLogging();
             EnsureDependencyProvider();
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Config] Plan=StringsToDirectRefs v1",
+                "Plan=StringsToDirectRefs v1",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Config] Plan=DataCleanup v1 (post StringsToDirectRefs v1)",
+                "Plan=DataCleanup v1 (post StringsToDirectRefs v1)",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Config] DataCleanupV1Anchor snapshot='DataCleanup-v1.md'",
+                "DataCleanupV1Anchor snapshot='DataCleanup-v1.md'",
                 DebugUtility.Colors.Info);
             RegisterEssentialServicesOnly();
 

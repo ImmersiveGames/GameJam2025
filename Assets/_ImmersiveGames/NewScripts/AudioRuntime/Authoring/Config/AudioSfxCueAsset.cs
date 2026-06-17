@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
     /// </summary>
     [CreateAssetMenu(
         fileName = "AudioSfxCue",
-        menuName = "ImmersiveGames/NewScripts/Audio/Audio SFX Cue",
+        menuName = "ImmersiveGames/Audio/Audio SFX Cue",
         order = 1)]
     public sealed class AudioSfxCueAsset : AudioCueAsset
     {

@@ -42,7 +42,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy
                 up = Vector3.right;
             }
 
-            float step = (count > 1) ? arcAngle / (arcAngle >= 360f ? count : count - 1) : 0f;
+            float step = count > 1 ? arcAngle / (arcAngle >= 360f ? count : count - 1) : 0f;
             float startAngle = -arcAngle / 2f;
 
             for (int i = 0; i < Mathf.Max(1, count); i++)

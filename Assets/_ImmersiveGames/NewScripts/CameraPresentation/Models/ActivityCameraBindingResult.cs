@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Models
             GameObject cameraRigInstance,
             string reason)
         {
-            ActivityCameraBindingHandle handle = new ActivityCameraBindingHandle(
+            var handle = new ActivityCameraBindingHandle(
                 command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,

@@ -24,3 +24,5 @@ MonoBehaviour:
   masterVolumeParameter: MasterVolume
   bgmVolumeParameter: BGM_Volume
   sfxVolumeParameter: SFX_Volume
+  globalSfxVoicePoolDefinitions:
+  - {fileID: 11400000, guid: b8dd214c700f4ea3b18a204ec9782933, type: 2}

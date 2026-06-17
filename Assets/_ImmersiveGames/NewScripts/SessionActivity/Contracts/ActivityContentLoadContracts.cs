@@ -26,6 +26,46 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Failed = 5,
     }
 
+    public readonly struct ActivityContentSceneRuntimeReference
+    {
+        public ActivityContentSceneRuntimeReference(
+            string sceneKey,
+            string sceneName)
+        {
+            SceneKey = Normalize(sceneKey);
+            SceneName = Normalize(sceneName);
+        }
+
+        public string SceneKey { get; }
+        public string SceneName { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(SceneKey) &&
+            !string.IsNullOrWhiteSpace(SceneName);
+
+        public override string ToString()
+        {
+            return $"sceneKey='{(string.IsNullOrWhiteSpace(SceneKey) ? "<none>" : SceneKey)}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}'";
+        }
+
+        public static ActivityContentSceneRuntimeReference FromSceneKeyAsset(SceneKeyAsset sceneKey)
+        {
+            if (sceneKey == null)
+            {
+                return default;
+            }
+
+            return new ActivityContentSceneRuntimeReference(
+                sceneKey.name,
+                sceneKey.SceneName);
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public readonly struct ActivityContentSceneLoadCommand
     {
         public ActivityContentSceneLoadCommand(
@@ -33,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             string contentProfileId,
             int sceneOrdinal,
-            SceneKeyAsset sceneKey,
+            ActivityContentSceneRuntimeReference sceneReference,
             ActivityContentRequiredness requiredness,
             string source,
             string reason)
@@ -42,8 +82,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity = identity;
             ContentProfileId = Normalize(contentProfileId);
             SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
-            SceneKey = sceneKey;
-            SceneName = sceneKey == null ? string.Empty : Normalize(sceneKey.SceneName);
+            SceneReference = sceneReference;
             Requiredness = requiredness;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -53,27 +92,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public string ContentProfileId { get; }
         public int SceneOrdinal { get; }
-        public SceneKeyAsset SceneKey { get; }
-        public string SceneName { get; }
+        public ActivityContentSceneRuntimeReference SceneReference { get; }
+        public string SceneKey => SceneReference.SceneKey;
+        public string SceneName => SceneReference.SceneName;
         public ActivityContentRequiredness Requiredness { get; }
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasSceneKey => SceneKey != null;
+        public bool HasSceneReference => SceneReference.IsValid;
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(OperationId) &&
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(ContentProfileId) &&
             SceneOrdinal > 0 &&
-            HasSceneKey &&
-            !string.IsNullOrWhiteSpace(SceneName) &&
+            HasSceneReference &&
             Requiredness != ActivityContentRequiredness.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
+            return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
@@ -132,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             string contentProfileId,
             int sceneOrdinal,
-            SceneKeyAsset sceneKey,
+            ActivityContentSceneRuntimeReference sceneReference,
             ActivityContentRequiredness requiredness,
             string releaseSource,
             string releaseReason,
@@ -141,15 +180,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             OperationId = Normalize(operationId);
             Identity = identity;
-            PipelineId = Normalize(identity.PipelineId);
-            SessionStateId = Normalize(identity.SessionId);
-            ActivityId = Normalize(identity.ActivityId);
-            ActivityOrdinal = identity.ActivityOrdinal < 0 ? 0 : identity.ActivityOrdinal;
-            EntrySequence = identity.EntrySequence < 0 ? 0 : identity.EntrySequence;
             ContentProfileId = Normalize(contentProfileId);
             SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
-            SceneKey = sceneKey;
-            SceneName = sceneKey == null ? string.Empty : Normalize(sceneKey.SceneName);
+            SceneReference = sceneReference;
             Requiredness = requiredness;
             ReleaseSource = Normalize(releaseSource);
             ReleaseReason = Normalize(releaseReason);
@@ -159,41 +192,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public string OperationId { get; }
         public SessionActivityIdentity Identity { get; }
-        public string PipelineId { get; }
-        public string SessionStateId { get; }
-        public string ActivityId { get; }
-        public int ActivityOrdinal { get; }
-        public int EntrySequence { get; }
         public string ContentProfileId { get; }
         public int SceneOrdinal { get; }
-        public SceneKeyAsset SceneKey { get; }
-        public string SceneName { get; }
+        public ActivityContentSceneRuntimeReference SceneReference { get; }
+        public string SceneKey => SceneReference.SceneKey;
+        public string SceneName => SceneReference.SceneName;
         public ActivityContentRequiredness Requiredness { get; }
         public string ReleaseSource { get; }
         public string ReleaseReason { get; }
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasSceneKey => SceneKey != null;
+        public bool HasSceneReference => SceneReference.IsValid;
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(OperationId) &&
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionStateId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(ContentProfileId) &&
             SceneOrdinal > 0 &&
-            HasSceneKey &&
-            !string.IsNullOrWhiteSpace(SceneName) &&
+            HasSceneReference &&
             Requiredness != ActivityContentRequiredness.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"operationId='{OperationId}', identity='{Identity}', pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', requiredness='{Requiredness}', releaseSource='{ReleaseSource}', releaseReason='{ReleaseReason}', source='{Source}', reason='{Reason}'";
+            return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}', releaseSource='{ReleaseSource}', releaseReason='{ReleaseReason}', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
@@ -246,13 +269,136 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
+    public readonly struct ActivityContentLoadPlanScene
+    {
+        public ActivityContentLoadPlanScene(
+            int sceneOrdinal,
+            ActivityContentSceneRuntimeReference sceneReference,
+            ActivityContentRequiredness requiredness)
+        {
+            SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
+            SceneReference = sceneReference;
+            Requiredness = requiredness;
+        }
+
+        public int SceneOrdinal { get; }
+        public ActivityContentSceneRuntimeReference SceneReference { get; }
+        public string SceneKey => SceneReference.SceneKey;
+        public string SceneName => SceneReference.SceneName;
+        public ActivityContentRequiredness Requiredness { get; }
+
+        public bool HasSceneReference => SceneReference.IsValid;
+
+        public bool IsValid =>
+            SceneOrdinal > 0 &&
+            Requiredness != ActivityContentRequiredness.Unknown &&
+            (HasSceneReference || Requiredness != ActivityContentRequiredness.Required);
+
+        public override string ToString()
+        {
+            return $"sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}'";
+        }
+    }
+
+    public readonly struct ActivityContentLoadPlan
+    {
+        public ActivityContentLoadPlan(
+            SessionActivityIdentity identity,
+            string activityId,
+            int activityOrdinal,
+            ActivityContentMode activityContentMode,
+            string activityContentProfileId,
+            IReadOnlyList<ActivityContentLoadPlanScene> scenes,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            ActivityContentMode = activityContentMode;
+            ActivityContentProfileId = Normalize(activityContentProfileId);
+            Scenes = scenes ?? Array.Empty<ActivityContentLoadPlanScene>();
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public ActivityContentMode ActivityContentMode { get; }
+        public string ActivityContentProfileId { get; }
+        public IReadOnlyList<ActivityContentLoadPlanScene> Scenes { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool HasScenes => Scenes is { Count: > 0 };
+        public bool IsExplicitNoContent => ActivityContentMode == ActivityContentMode.None;
+
+        public bool IsValid
+        {
+            get
+            {
+                if (!Identity.IsValid ||
+                    string.IsNullOrWhiteSpace(ActivityId) ||
+                    ActivityOrdinal <= 0 ||
+                    string.IsNullOrWhiteSpace(Source) ||
+                    Scenes == null)
+                {
+                    return false;
+                }
+
+                if (!string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) ||
+                    Identity.ActivityOrdinal != ActivityOrdinal)
+                {
+                    return false;
+                }
+
+                if (ActivityContentMode == ActivityContentMode.None)
+                {
+                    return string.IsNullOrWhiteSpace(ActivityContentProfileId) && !HasScenes;
+                }
+
+                if (ActivityContentMode != ActivityContentMode.Profile)
+                {
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(ActivityContentProfileId) || !HasScenes)
+                {
+                    return false;
+                }
+
+                for (int index = 0; index < Scenes.Count; index++)
+                {
+                    if (!Scenes[index].IsValid)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        public override string ToString()
+        {
+            int sceneCount = Scenes?.Count ?? 0;
+            return $"identity='{Identity}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfileId='{(string.IsNullOrWhiteSpace(ActivityContentProfileId) ? "<none>" : ActivityContentProfileId)}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public readonly struct ActivityContentLoadedSceneRecord
     {
         public ActivityContentLoadedSceneRecord(
             SessionActivityIdentity identity,
             string contentProfileId,
             int sceneOrdinal,
-            SceneKeyAsset sceneKey,
+            ActivityContentSceneRuntimeReference sceneReference,
             string operationId,
             ActivityContentRequiredness requiredness,
             string source,
@@ -261,8 +407,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity = identity;
             ContentProfileId = Normalize(contentProfileId);
             SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
-            SceneKey = sceneKey;
-            SceneName = sceneKey == null ? string.Empty : Normalize(sceneKey.SceneName);
+            SceneReference = sceneReference;
+            SceneKey = Normalize(sceneReference.SceneKey);
+            SceneName = Normalize(sceneReference.SceneName);
             OperationId = Normalize(operationId);
             Requiredness = requiredness;
             Source = Normalize(source);
@@ -272,20 +419,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public string ContentProfileId { get; }
         public int SceneOrdinal { get; }
-        public SceneKeyAsset SceneKey { get; }
+        public ActivityContentSceneRuntimeReference SceneReference { get; }
+        public string SceneKey { get; }
         public string SceneName { get; }
         public string OperationId { get; }
         public ActivityContentRequiredness Requiredness { get; }
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasSceneKey => SceneKey != null;
+        public bool HasSceneReference => SceneReference.IsValid;
 
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(ContentProfileId) &&
             SceneOrdinal > 0 &&
-            HasSceneKey &&
+            HasSceneReference &&
             !string.IsNullOrWhiteSpace(SceneName) &&
             !string.IsNullOrWhiteSpace(OperationId) &&
             Requiredness != ActivityContentRequiredness.Unknown &&
@@ -293,7 +441,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', operationId='{OperationId}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', operationId='{OperationId}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
@@ -324,7 +472,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasScenes => Scenes != null && Scenes.Count > 0;
+        public bool HasScenes => Scenes is { Count: > 0 };
 
         public bool IsValid
         {
@@ -342,7 +490,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
                 for (int index = 0; index < Scenes.Count; index++)
                 {
-                    ActivityContentLoadedSceneRecord scene = Scenes[index];
+                    var scene = Scenes[index];
                     if (!scene.IsValid ||
                         scene.Identity.Stage != SessionActivityStage.ActivityContentSceneLoaded ||
                         !string.Equals(scene.Identity.PipelineId, Identity.PipelineId, StringComparison.Ordinal) ||
@@ -362,7 +510,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            int sceneCount = Scenes == null ? 0 : Scenes.Count;
+            int sceneCount = Scenes?.Count ?? 0;
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
         }
 

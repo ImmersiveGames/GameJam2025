@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 {
     public static class InputModesRuntimeComposer
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(InputModesRuntimeComposer),
-                $"[OBS][InputModes][Pipeline] status='ready' canonicalTrail='{CanonicalTrail}'.",
+                $"status='ready' canonicalTrail='{CanonicalTrail}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -45,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             if (DependencyManager.Provider.TryGetGlobal<InputModeCoordinator>(out var existingCoordinator) && existingCoordinator != null)
             {
                 DebugUtility.LogVerbose(typeof(InputModesRuntimeComposer),
-                    "[OBS][InputModes][Pipeline] coordinator='already_registered'.",
+                    "coordinator='already_registered'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             DependencyManager.Provider.RegisterGlobal(coordinator);
 
             DebugUtility.Log(typeof(InputModesRuntimeComposer),
-                "[OBS][InputModes][Pipeline] coordinator='registered'.",
+                "coordinator='registered'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -67,20 +68,23 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
             if (_sessionOperationalInputModeAdapter != null)
             {
+                DependencyManager.Provider.RegisterGlobal<IOperationalInputModeRequestPort>(_sessionOperationalInputModeAdapter);
                 return;
             }
 
             if (DependencyManager.Provider.TryGetGlobal<SessionOperationalInputModeAdapter>(out var existingAdapter) && existingAdapter != null)
             {
                 _sessionOperationalInputModeAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalInputModeRequestPort>(_sessionOperationalInputModeAdapter);
                 return;
             }
 
             _sessionOperationalInputModeAdapter = new SessionOperationalInputModeAdapter();
             DependencyManager.Provider.RegisterGlobal(_sessionOperationalInputModeAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalInputModeRequestPort>(_sessionOperationalInputModeAdapter);
 
             DebugUtility.Log(typeof(InputModesRuntimeComposer),
-                "[OBS][InputModes][Pipeline] adapter='SessionOperationalInputModeAdapter' registered for canonical input modes.",
+                "adapter='SessionOperationalInputModeAdapter' registered for canonical input modes.",
                 DebugUtility.Colors.Info);
         }
 

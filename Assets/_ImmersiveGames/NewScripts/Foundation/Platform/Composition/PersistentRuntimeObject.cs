@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 throw new InvalidOperationException(message);
             }
 
-            if (Registry.TryGetValue(key, out PersistentRuntimeObject existing) &&
+            if (Registry.TryGetValue(key, out var existing) &&
                 existing != null &&
                 !ReferenceEquals(existing, this))
             {
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             string key = Normalize(identityKey);
-            if (Registry.TryGetValue(key, out PersistentRuntimeObject existing) && ReferenceEquals(existing, this))
+            if (Registry.TryGetValue(key, out var existing) && ReferenceEquals(existing, this))
             {
                 Registry.Remove(key);
             }

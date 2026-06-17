@@ -1,5 +1,4 @@
 #if UNITY_EDITOR
-using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using UnityEditor;
@@ -198,7 +197,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         {
             position = default;
 
-            IActor owner = detectable.Owner;
+            var owner = detectable.Owner;
             if (owner?.Transform != null)
             {
                 position = owner.Transform.position;

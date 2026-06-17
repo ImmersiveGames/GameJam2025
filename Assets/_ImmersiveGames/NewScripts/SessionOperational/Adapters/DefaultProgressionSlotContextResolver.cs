@@ -33,21 +33,25 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            SaveCurrentState currentState = saveStateService.CurrentState;
+            var currentState = saveStateService.CurrentState;
             if (currentState == null || !currentState.IsValid)
             {
                 failureReason = "current_state_invalid";
                 return false;
             }
 
+            string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
+            string snapshotPointerSource = string.IsNullOrWhiteSpace(currentSnapshotId)
+                ? "revision_fallback"
+                : "current_snapshot_id";
+
             try
             {
-                SaveSlotId slotId = new SaveSlotId(currentState.SlotId);
-                string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
+                var slotId = new SaveSlotId(currentState.SlotId);
                 string snapshotPointer = string.IsNullOrWhiteSpace(currentSnapshotId)
                     ? $"snapshot-rev-{currentState.Revision}"
                     : currentSnapshotId;
-                SaveSnapshotId snapshotId = new SaveSnapshotId(snapshotPointer);
+                var snapshotId = new SaveSnapshotId(snapshotPointer);
                 slotContext = new ProgressionSlotContext(
                     currentState.ProfileId,
                     slotId,
@@ -67,8 +71,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            DebugUtility.Log(typeof(DefaultProgressionSlotContextResolver),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(DefaultProgressionSlotContextResolver),
+                $"ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' snapshotPointerSource='{snapshotPointerSource}' currentSnapshotIdRaw='{Normalize(currentSnapshotId)}' currentRevision='{currentState.Revision}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             failureReason = "resolved";

@@ -242,7 +242,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
 
             if (FillImage != null && _currentStyle != null && _currentStyle.HasFillGradient())
             {
-                Color targetColor = _currentStyle.EvaluateFillColor(Mathf.Clamp01(targetFill));
+                var targetColor = _currentStyle.EvaluateFillColor(Mathf.Clamp01(targetFill));
                 float transitionDuration = _isFirstConfigure ? 0f : GetColorTransitionDuration();
 
                 if (transitionDuration <= 0f)

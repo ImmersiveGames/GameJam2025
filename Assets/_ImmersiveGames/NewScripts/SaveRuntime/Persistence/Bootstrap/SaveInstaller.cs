@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SaveRuntime.Core;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
-using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
 {
     public static class SaveInstaller
@@ -24,11 +23,11 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 throw new InvalidOperationException("[FATAL][Save] RuntimeModeConfig obrigatorio ausente antes de instalar Save.");
             }
 
-            SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
+            var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
 
-            SaveBackendAsset backendAsset = saveConfig.Backend
+            var backendAsset = saveConfig.Backend
                 ?? throw new InvalidOperationException($"[FATAL][Save] SaveConfigAsset '{saveConfig.name}' sem backend.");
-            ISaveBackend backend = backendAsset.CreateBackend()
+            var backend = backendAsset.CreateBackend()
                 ?? throw new InvalidOperationException($"[FATAL][Save] backend asset '{backendAsset.name}' retornou backend nulo.");
 
             RegisterIfMissing<ISaveBackend>(
@@ -36,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 alreadyRegisteredMessage: "[Save][BOOT] ISaveBackend already registered.",
                 registeredMessage: $"[Save][BOOT] ISaveBackend registered ({backend.BackendId}).");
 
-            SaveCoreService coreService = ResolveOrCreateSaveCoreService(backend);
+            var coreService = ResolveOrCreateSaveCoreService(backend);
             EnsureCurrentStateInitializedOrFail(coreService, saveConfig);
 
             RegisterIfMissing<ISaveService>(
@@ -98,11 +97,11 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 return;
             }
 
-            DebugUtility.Log(typeof(SaveInstaller),
-                $"[OBS][Save][BootstrapStateInit] Initializing CurrentState from SaveConfigAsset defaults profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'.",
+            DebugUtility.LogVerbose(typeof(SaveInstaller),
+                $"Initializing CurrentState from SaveConfigAsset defaults profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'.",
                 DebugUtility.Colors.Info);
 
-            SaveCurrentState currentState = saveConfig.BuildDefaultCurrentStateOrFail();
+            var currentState = saveConfig.BuildDefaultCurrentStateOrFail();
 
             if (!coreService.TrySetCurrent(currentState, "Save/BootstrapStateInit", out string error))
             {

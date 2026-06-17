@@ -163,24 +163,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotCaptureResult CaptureSnapshot(ActivityObjectSnapshotCaptureCommand command);
     }
 
-    public interface IActivityObjectSnapshotProviderContractView
-    {
-        bool TryDescribeContract(
-            string targetId,
-            out string providerPath,
-            out string targetTransformPath,
-            out string failureReason);
-    }
 
     public readonly struct ActivityObjectSnapshotRestoreCommand
     {
         public ActivityObjectSnapshotRestoreCommand(
             SessionActivityIdentity identity,
-            string pipelineId,
-            string sessionStateId,
-            string activityId,
-            int activityOrdinal,
-            int entrySequence,
             string targetId,
             ActivityObjectSnapshotCoordinateSpace coordinateSpace,
             float positionX,
@@ -197,11 +184,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
-            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
-            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             TargetId = Normalize(targetId);
             CoordinateSpace = coordinateSpace;
             PositionX = positionX;
@@ -219,11 +201,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
 
         public SessionActivityIdentity Identity { get; }
-        public string PipelineId { get; }
-        public string SessionStateId { get; }
-        public string ActivityId { get; }
-        public int ActivityOrdinal { get; }
-        public int EntrySequence { get; }
         public string TargetId { get; }
         public ActivityObjectSnapshotCoordinateSpace CoordinateSpace { get; }
         public float PositionX { get; }
@@ -241,11 +218,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool IsValid =>
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionStateId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(TargetId) &&
             CoordinateSpace != ActivityObjectSnapshotCoordinateSpace.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
@@ -327,12 +299,4 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotRestoreResult ApplyRestore(ActivityObjectSnapshotRestoreCommand command);
     }
 
-    public interface IActivityObjectSnapshotRestoreEndpointContractView
-    {
-        bool TryDescribeContract(
-            string targetId,
-            out string endpointPath,
-            out string targetTransformPath,
-            out string failureReason);
-    }
 }

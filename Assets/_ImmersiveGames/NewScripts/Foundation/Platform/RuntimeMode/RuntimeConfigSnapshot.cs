@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 RuntimePersistentScenesPolicy = source.RuntimePersistentScenesPolicy;
                 LoggingConfig = source.LoggingConfig;
 
-                RuntimeModeConfig.DegradedReporterSettings reporter = source.Reporter ?? new RuntimeModeConfig.DegradedReporterSettings();
+                var reporter = source.Reporter ?? new RuntimeModeConfig.DegradedReporterSettings();
                 ReporterDedupStrategy = reporter.dedupStrategy;
                 ReporterCooldownSeconds = reporter.cooldownSeconds;
                 ReporterEmitSummaryEverySeconds = reporter.emitSummaryEverySeconds;
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 ReporterLogFirstOccurrence = reporter.logFirstOccurrence;
                 ReporterIncludeCountInLog = reporter.includeCountInLog;
 
-                RuntimeModeConfig.StrictnessSettings strictness = source.Strictness ?? new RuntimeModeConfig.StrictnessSettings();
+                var strictness = source.Strictness ?? new RuntimeModeConfig.StrictnessSettings();
                 StrictnessDegradedAsError = strictness.degradedAsError;
                 StrictnessDegradedAsException = strictness.degradedAsException;
             }

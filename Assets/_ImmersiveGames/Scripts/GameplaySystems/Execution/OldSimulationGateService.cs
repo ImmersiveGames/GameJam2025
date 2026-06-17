@@ -47,7 +47,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 bool wasOpen = _tokens.Count == 0;
                 _tokens.Add(token);
                 bool isOpenNow = _tokens.Count == 0;
-                changed = (wasOpen != isOpenNow);
+                changed = wasOpen != isOpenNow;
             }
 
             if (changed)
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 bool wasOpen = _tokens.Count == 0;
                 removed = _tokens.Remove(token);
                 bool isOpenNow = _tokens.Count == 0;
-                changed = (wasOpen != isOpenNow);
+                changed = wasOpen != isOpenNow;
             }
 
             if (!removed)

@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     [CreateAssetMenu(
         fileName = "RuntimeConfigSet",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/RuntimeConfigSetAsset",
+        menuName = "ImmersiveGames/Infrastructure/RuntimeMode/RuntimeConfigSetAsset",
         order = 23)]
     public sealed class RuntimeConfigSetAsset : ScriptableObject
     {

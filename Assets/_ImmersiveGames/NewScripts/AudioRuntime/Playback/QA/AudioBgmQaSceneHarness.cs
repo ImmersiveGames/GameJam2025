@@ -171,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             string alternate = alternateCue != null ? alternateCue.name : "null";
             bool scenarioRunning = _scenarioRoutine != null;
 
-            DebugUtility.Log(typeof(AudioBgmQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioBgmQaSceneHarness),
                 $"[QA][Audio][BGM] action='LogHarnessState' serviceResolved={serviceResolved} activeCue='{activeCue}' primaryCue='{primary}' alternateCue='{alternate}' scenarioRunning={scenarioRunning}.",
                 DebugUtility.Colors.Info);
         }
@@ -264,7 +264,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            DebugUtility.Log(typeof(AudioBgmQaSceneHarness),
+            DebugUtility.LogVerbose(typeof(AudioBgmQaSceneHarness),
                 $"[QA][Audio][BGM] action='{action}' detail='{detail}'.",
                 DebugUtility.Colors.Info);
         }

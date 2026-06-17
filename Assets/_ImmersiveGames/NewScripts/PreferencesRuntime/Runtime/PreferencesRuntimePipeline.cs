@@ -32,14 +32,14 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestBootstrapLoadAudio(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioLoadRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioLoadRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             bool loaded = _saveAdapter.TryLoadAudio(
                 AudioPreferencesSnapshot.BootstrapProfileId,
                 AudioPreferencesSnapshot.BootstrapSlotId,
-                out AudioPreferencesSnapshot loadedSnapshot,
+                out var loadedSnapshot,
                 out string loadReason);
 
             if (!loaded || loadedSnapshot == null)
@@ -57,14 +57,14 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestBootstrapLoadVideo(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoLoadRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoLoadRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             bool loaded = _saveAdapter.TryLoadVideo(
                 VideoPreferencesSnapshot.BootstrapProfileId,
                 VideoPreferencesSnapshot.BootstrapSlotId,
-                out VideoPreferencesSnapshot loadedSnapshot,
+                out var loadedSnapshot,
                 out string loadReason);
 
             if (!loaded || loadedSnapshot == null)
@@ -82,8 +82,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestAudioPreview(float masterVolume, float bgmVolume, float sfxVolume, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioPreviewRequested reason='{Normalize(reason)}' master={masterVolume:0.###} bgm={bgmVolume:0.###} sfx={sfxVolume:0.###}.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioPreviewRequested reason='{Normalize(reason)}' master={masterVolume:0.###} bgm={bgmVolume:0.###} sfx={sfxVolume:0.###}.",
                 DebugUtility.Colors.Info);
 
             return _stateService.TryPreviewAudioVolumes(masterVolume, bgmVolume, sfxVolume, reason, out bool _);
@@ -91,8 +91,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestAudioCommit(string fieldHint, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasSnapshot)
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Audio commit requested before snapshot seed.");
             }
 
-            AudioPreferencesSnapshot current = _stateService.CurrentSnapshot;
+            var current = _stateService.CurrentSnapshot;
             if (HasSameAudioValues(current, _lastCommittedAudioSnapshot))
             {
                 return true;
@@ -119,8 +119,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestAudioRestoreDefaults(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesAudioRestoreDefaultsRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesAudioRestoreDefaultsRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasSnapshot)
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Audio restore defaults requested before snapshot seed.");
             }
 
-            AudioPreferencesSnapshot current = _stateService.CurrentSnapshot;
+            var current = _stateService.CurrentSnapshot;
             var restored = new AudioPreferencesSnapshot(
                 current.ProfileId,
                 current.SlotId,
@@ -162,8 +162,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestVideoPreview(int width, int height, bool fullscreen, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoPreviewRequested reason='{Normalize(reason)}' resolution={width}x{height} fullscreen={fullscreen}.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoPreviewRequested reason='{Normalize(reason)}' resolution={width}x{height} fullscreen={fullscreen}.",
                 DebugUtility.Colors.Info);
 
             return _stateService.TryPreviewVideoResolution(width, height, fullscreen, reason, out bool _);
@@ -171,8 +171,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestVideoCommit(string fieldHint, string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasVideoSnapshot)
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Video commit requested before snapshot seed.");
             }
 
-            VideoPreferencesSnapshot current = _stateService.CurrentVideoSnapshot;
+            var current = _stateService.CurrentVideoSnapshot;
             if (HasSameVideoValues(current, _lastCommittedVideoSnapshot))
             {
                 return true;
@@ -199,8 +199,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
         public bool RequestVideoRestoreDefaults(string reason)
         {
-            DebugUtility.Log(typeof(PreferencesRuntimePipeline),
-                $"[OBS][Preferences][Pipeline] PreferencesVideoRestoreDefaultsRequested reason='{Normalize(reason)}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
+                $"PreferencesVideoRestoreDefaultsRequested reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasVideoSnapshot)
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 throw new InvalidOperationException("[FATAL][Preferences] Video restore defaults requested before snapshot seed.");
             }
 
-            VideoPreferencesSnapshot current = _stateService.CurrentVideoSnapshot;
+            var current = _stateService.CurrentVideoSnapshot;
             var restored = new VideoPreferencesSnapshot(
                 current.ProfileId,
                 current.SlotId,

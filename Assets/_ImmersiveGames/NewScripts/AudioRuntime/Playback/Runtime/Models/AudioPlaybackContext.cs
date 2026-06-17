@@ -7,27 +7,27 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models
     /// </summary>
     public struct AudioPlaybackContext
     {
-        public bool UseSpatial;
-        public Vector3 WorldPosition;
-        public Transform FollowTarget;
-        public float VolumeScale;
-        public string Reason;
-        public AudioSfxVoiceProfileAsset VoiceProfile;
-        public AudioSfxEmissionProfileAsset EmissionProfile;
-        public AudioSfxExecutionProfileAsset ExecutionProfile;
+        public bool useSpatial;
+        public Vector3 worldPosition;
+        public Transform followTarget;
+        public float volumeScale;
+        public string reason;
+        public AudioSfxVoiceProfileAsset voiceProfile;
+        public AudioSfxEmissionProfileAsset emissionProfile;
+        public AudioSfxExecutionProfileAsset executionProfile;
 
         public static AudioPlaybackContext Global(string reason = null, float volumeScale = 1f)
         {
             return new AudioPlaybackContext
             {
-                UseSpatial = false,
-                WorldPosition = Vector3.zero,
-                FollowTarget = null,
-                VolumeScale = Mathf.Max(0f, volumeScale),
-                Reason = reason,
-                VoiceProfile = null,
-                EmissionProfile = null,
-                ExecutionProfile = null
+                useSpatial = false,
+                worldPosition = Vector3.zero,
+                followTarget = null,
+                volumeScale = Mathf.Max(0f, volumeScale),
+                reason = reason,
+                voiceProfile = null,
+                emissionProfile = null,
+                executionProfile = null
             };
         }
 
@@ -40,14 +40,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models
         {
             return new AudioPlaybackContext
             {
-                UseSpatial = true,
-                WorldPosition = worldPosition,
-                FollowTarget = followTarget,
-                VolumeScale = Mathf.Max(0f, volumeScale),
-                Reason = reason,
-                VoiceProfile = voiceProfile,
-                EmissionProfile = null,
-                ExecutionProfile = null
+                useSpatial = true,
+                worldPosition = worldPosition,
+                followTarget = followTarget,
+                volumeScale = Mathf.Max(0f, volumeScale),
+                reason = reason,
+                voiceProfile = voiceProfile,
+                emissionProfile = null,
+                executionProfile = null
             };
         }
     }

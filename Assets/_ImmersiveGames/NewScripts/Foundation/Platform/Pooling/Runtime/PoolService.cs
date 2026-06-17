@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             if (_pools.TryGetValue(validatedDefinition, out var existingPool))
             {
                 DebugUtility.LogVerbose(typeof(PoolService),
-                    $"[OBS][Pooling] Ensure no-op (already registered). asset='{validatedDefinition.name}' active={existingPool.ActiveCount} inactive={existingPool.InactiveCount} total={existingPool.TotalCount}.",
+                    $"Ensure no-op (already registered). asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' active={existingPool.ActiveCount} inactive={existingPool.InactiveCount} total={existingPool.TotalCount}.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -47,37 +47,48 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             var pool = new GameObjectPool(validatedDefinition, host);
             _pools.Add(validatedDefinition, pool);
 
+            bool prewarmRequested = validatedDefinition.Prewarm;
+            if (prewarmRequested)
+            {
+                pool.Prewarm();
+            }
+
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' total={pool.TotalCount} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
+                $"Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' lifetimeScope='{validatedDefinition.LifetimeScope}' registrationMode='{validatedDefinition.RegistrationMode}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
                 DebugUtility.Colors.Info);
         }
 
         public void Prewarm(PoolDefinitionAsset definition)
         {
-            var pool = GetOrCreatePool(definition);
+            var validatedDefinition = ValidateDefinition(definition);
+            EnsureRegistered(validatedDefinition);
+            var pool = GetRegisteredPoolOrFail(validatedDefinition);
             pool.Prewarm();
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Prewarm asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                $"Prewarm asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
         }
 
         public GameObject Rent(PoolDefinitionAsset definition, Transform parent = null)
         {
-            var pool = GetOrCreatePool(definition);
+            var validatedDefinition = ValidateDefinition(definition);
+            var pool = TryGetRegisteredPool(validatedDefinition, out var registeredPool)
+                ? registeredPool
+                : TryAutoRegisterForRent(validatedDefinition);
             try
             {
-                GameObject instance = pool.Rent(parent);
+                var instance = pool.Rent(parent);
 
                 DebugUtility.LogVerbose(typeof(PoolService),
-                    $"[OBS][Pooling] Rent asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                    $"Rent asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                     DebugUtility.Colors.Info);
                 return instance;
             }
             catch (InvalidOperationException ex)
             {
                 DebugUtility.LogError(typeof(PoolService),
-                    $"[OBS][Pooling] Rent failed by limit. asset='{definition.name}' reason='{ex.Message}'.");
+                    $"Rent failed by limit. asset='{validatedDefinition.name}' registrationMode='{validatedDefinition.RegistrationMode}' reason='{ex.Message}'.");
                 throw;
             }
         }
@@ -90,12 +101,80 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                     "Pooling Return requires a non-null GameObject instance.");
             }
 
-            var pool = GetOrCreatePool(definition);
+            var pool = GetRegisteredPoolOrFail(ValidateDefinition(definition));
             pool.Return(instance);
 
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Return asset='{definition.name}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
+                $"Return asset='{definition.name}' registrationMode='{definition.RegistrationMode}' active={pool.ActiveCount} inactive={pool.InactiveCount} total={pool.TotalCount}.",
                 DebugUtility.Colors.Info);
+        }
+
+
+        public PoolScopeReleaseResult ReleasePoolsForScope(PoolLifetimeScope scope)
+        {
+            if (scope == PoolLifetimeScope.Global)
+            {
+                throw new InvalidOperationException("[FATAL][Pooling] ReleasePoolsForScope(Global) is not allowed. Global pools use Shutdown only.");
+            }
+
+            int releasedPoolCount = 0;
+            int activeObjectCountBeforeRelease = 0;
+            int inactiveObjectCountBeforeRelease = 0;
+            List<PoolDefinitionAsset> definitionsToRelease = null;
+
+            foreach (KeyValuePair<PoolDefinitionAsset, GameObjectPool> kv in _pools)
+            {
+                PoolDefinitionAsset definition = kv.Key;
+                GameObjectPool pool = kv.Value;
+                if (definition == null || pool == null || definition.LifetimeScope != scope)
+                {
+                    continue;
+                }
+
+                if (definitionsToRelease == null)
+                {
+                    definitionsToRelease = new List<PoolDefinitionAsset>();
+                }
+
+                definitionsToRelease.Add(definition);
+                activeObjectCountBeforeRelease += pool.ActiveCount;
+                inactiveObjectCountBeforeRelease += pool.InactiveCount;
+            }
+
+            if (definitionsToRelease == null || definitionsToRelease.Count == 0)
+            {
+                DebugUtility.LogVerbose(typeof(PoolService),
+                    $"event='PoolScopeReleaseSkipped' scope='{scope}' reason='no_registered_pools_for_scope'.",
+                    DebugUtility.Colors.Info);
+
+                return new PoolScopeReleaseResult(
+                    scope,
+                    0,
+                    0,
+                    0,
+                    "no_registered_pools_for_scope");
+            }
+
+            int returnedObjectCountBeforeRelease = 0;
+            foreach (PoolDefinitionAsset definition in definitionsToRelease)
+            {
+                GameObjectPool pool = _pools[definition];
+                returnedObjectCountBeforeRelease += pool.ReturnAllRentedObjects("scope_release_before_pool_cleanup");
+                pool.Cleanup();
+                _pools.Remove(definition);
+                releasedPoolCount += 1;
+            }
+
+            DebugUtility.Log(typeof(PoolService),
+                $"event='PoolScopeReleased' scope='{scope}' releasedPoolCount='{releasedPoolCount}' activeObjectCountBeforeRelease='{activeObjectCountBeforeRelease}' inactiveObjectCountBeforeRelease='{inactiveObjectCountBeforeRelease}' returnedObjectCountBeforeRelease='{returnedObjectCountBeforeRelease}' reason='scope_release_completed'.",
+                DebugUtility.Colors.Success);
+
+            return new PoolScopeReleaseResult(
+                scope,
+                releasedPoolCount,
+                activeObjectCountBeforeRelease,
+                inactiveObjectCountBeforeRelease,
+                "scope_release_completed");
         }
 
         public void Shutdown()
@@ -112,15 +191,36 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             DebugUtility.Log(typeof(PoolService),
-                "[OBS][Pooling] Cleanup complete (PoolService shutdown).",
+                "Cleanup complete (PoolService shutdown).",
                 DebugUtility.Colors.Info);
         }
 
-        private GameObjectPool GetOrCreatePool(PoolDefinitionAsset definition)
+        private bool TryGetRegisteredPool(PoolDefinitionAsset definition, out GameObjectPool pool)
         {
-            var validated = ValidateDefinition(definition);
-            EnsureRegistered(validated);
-            return _pools[validated];
+            return _pools.TryGetValue(definition, out pool);
+        }
+
+        private GameObjectPool GetRegisteredPoolOrFail(PoolDefinitionAsset definition)
+        {
+            if (TryGetRegisteredPool(definition, out var pool))
+            {
+                return pool;
+            }
+
+            throw new InvalidOperationException(
+                $"[Pooling] Pool must be registered before use. asset='{definition.name}' registrationMode='{definition.RegistrationMode}'.");
+        }
+
+        private GameObjectPool TryAutoRegisterForRent(PoolDefinitionAsset definition)
+        {
+            if (definition.RegistrationMode != PoolRegistrationMode.LazyOnFirstRent)
+            {
+                throw new InvalidOperationException(
+                    $"[Pooling] Pool requires explicit registration before rent. asset='{definition.name}' registrationMode='{definition.RegistrationMode}'.");
+            }
+
+            EnsureRegistered(definition);
+            return GetRegisteredPoolOrFail(definition);
         }
 
         private static PoolDefinitionAsset ValidateDefinition(PoolDefinitionAsset definition)
@@ -146,4 +246,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
         }
     }
 }
-

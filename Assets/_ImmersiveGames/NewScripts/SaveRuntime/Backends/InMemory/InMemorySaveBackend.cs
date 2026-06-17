@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.InMemory
                 return false;
             }
 
-            if (_savedRecords.TryGetValue(ToKey(identity), out SaveRecord stored) && stored != null)
+            if (_savedRecords.TryGetValue(ToKey(identity), out var stored) && stored != null)
             {
                 record = CloneRecord(stored);
                 reason = "loaded_from_in_memory_backend";

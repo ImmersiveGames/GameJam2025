@@ -1,85 +1,33 @@
-using System;
-using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
-    public readonly struct LoadedSessionActivitySnapshotPayloadObject
+    public readonly struct LoadedRouteActivitySnapshotPayload
     {
-        public LoadedSessionActivitySnapshotPayloadObject(
-            string targetId,
-            float positionX,
-            float positionY,
-            float positionZ,
-            float rotationX,
-            float rotationY,
-            float rotationZ,
-            float rotationW,
-            float scaleX,
-            float scaleY,
-            float scaleZ)
-        {
-            TargetId = Normalize(targetId);
-            PositionX = positionX;
-            PositionY = positionY;
-            PositionZ = positionZ;
-            RotationX = rotationX;
-            RotationY = rotationY;
-            RotationZ = rotationZ;
-            RotationW = rotationW;
-            ScaleX = scaleX;
-            ScaleY = scaleY;
-            ScaleZ = scaleZ;
-        }
-
-        public string TargetId { get; }
-        public float PositionX { get; }
-        public float PositionY { get; }
-        public float PositionZ { get; }
-        public float RotationX { get; }
-        public float RotationY { get; }
-        public float RotationZ { get; }
-        public float RotationW { get; }
-        public float ScaleX { get; }
-        public float ScaleY { get; }
-        public float ScaleZ { get; }
-
-        public bool IsValid => !string.IsNullOrWhiteSpace(TargetId);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
-
-    public readonly struct LoadedSessionActivitySnapshotPayload
-    {
-        public LoadedSessionActivitySnapshotPayload(
+        public LoadedRouteActivitySnapshotPayload(
             string schemaId,
-            string sessionStateId,
-            string activityId,
-            int sourceEntrySequence,
-            IReadOnlyList<LoadedSessionActivitySnapshotPayloadObject> objects)
+            ActivityCapabilitySnapshotEnvelope capabilitySnapshotEnvelope)
         {
             SchemaId = Normalize(schemaId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
-            SourceEntrySequence = sourceEntrySequence < 0 ? 0 : sourceEntrySequence;
-            Objects = objects ?? Array.Empty<LoadedSessionActivitySnapshotPayloadObject>();
+            CapabilitySnapshotEnvelope = capabilitySnapshotEnvelope;
         }
 
         public string SchemaId { get; }
-        public string SessionStateId { get; }
-        public string ActivityId { get; }
-        public int SourceEntrySequence { get; }
-        public IReadOnlyList<LoadedSessionActivitySnapshotPayloadObject> Objects { get; }
+        public ActivityCapabilitySnapshotEnvelope CapabilitySnapshotEnvelope { get; }
+        public string PipelineId => CapabilitySnapshotEnvelope.PipelineId;
+        public string SessionStateId => CapabilitySnapshotEnvelope.SessionStateId;
+        public string ActivityId => CapabilitySnapshotEnvelope.ActivityId;
+        public int ActivityOrdinal => CapabilitySnapshotEnvelope.ActivityOrdinal;
+        public int SourceEntrySequence => CapabilitySnapshotEnvelope.EntrySequence;
+        public int RecordCount => CapabilitySnapshotEnvelope.Records?.Count ?? 0;
+        public string PayloadKind => "CapabilitySnapshotEnvelope";
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(SchemaId) &&
-            !string.IsNullOrWhiteSpace(SessionStateId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            SourceEntrySequence > 0 &&
-            Objects != null &&
-            Objects.Count > 0;
+            CapabilitySnapshotEnvelope.IsValid &&
+            string.Equals(SessionStateId, CapabilitySnapshotEnvelope.SessionStateId, System.StringComparison.Ordinal) &&
+            string.Equals(ActivityId, CapabilitySnapshotEnvelope.ActivityId, System.StringComparison.Ordinal) &&
+            SourceEntrySequence > 0;
 
         private static string Normalize(string value)
         {
@@ -91,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
     {
         bool TryGetPendingLoadedSnapshotPayload(
             string activityIdentity,
-            out LoadedSessionActivitySnapshotPayload payload,
+            out LoadedRouteActivitySnapshotPayload payload,
             out string failureReason);
     }
 }

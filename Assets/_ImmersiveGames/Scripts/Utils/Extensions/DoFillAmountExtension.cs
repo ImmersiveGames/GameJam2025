@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
                 throw new ArgumentNullException(nameof(target));
             }
 
-            Color startValue = target.color;
+            var startValue = target.color;
             Tweener tween = DOTween.To(() => startValue, x =>
             {
                 startValue = x;

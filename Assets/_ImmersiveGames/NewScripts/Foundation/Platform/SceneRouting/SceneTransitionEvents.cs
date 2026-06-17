@@ -20,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
         public string ResetDecisionReason { get; }
         public SceneTransitionPayload Payload { get; }
         public SceneTransitionGameplayEntryKind GameplayEntryKind => Payload?.GameplayEntryKind ?? SceneTransitionGameplayEntryKind.None;
-        public bool IsGameplayInitialEntry => Payload != null && Payload.IsGameplayInitialEntry;
-        public bool IsGameplayReentry => Payload != null && Payload.IsGameplayReentry;
+        public bool IsGameplayInitialEntry => Payload is { IsGameplayInitialEntry: true };
+        public bool IsGameplayReentry => Payload is { IsGameplayReentry: true };
         public string ContextSignature { get; }
 
         public SceneTransitionContext(
@@ -134,13 +134,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
             unchecked
             {
                 int hashCode = ScenesToLoad != null ? ScenesToLoad.GetHashCode() : 0;
-                hashCode = (hashCode * 397) ^ (ScenesToUnload != null ? ScenesToUnload.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ UseFade.GetHashCode();
-                hashCode = (hashCode * 397) ^ RouteId.GetHashCode();
-                hashCode = (hashCode * 397) ^ (Reason != null ? Reason.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (TransitionProfile != null ? TransitionProfile.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ GameplayEntryKind.GetHashCode();
+                hashCode = hashCode * 397 ^ (ScenesToUnload != null ? ScenesToUnload.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (TargetActiveScene != null ? TargetActiveScene.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ UseFade.GetHashCode();
+                hashCode = hashCode * 397 ^ RouteId.GetHashCode();
+                hashCode = hashCode * 397 ^ (Reason != null ? Reason.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (TransitionProfile != null ? TransitionProfile.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ GameplayEntryKind.GetHashCode();
                 return hashCode;
             }
         }

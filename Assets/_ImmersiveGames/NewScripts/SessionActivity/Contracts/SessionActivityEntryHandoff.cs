@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
-    public readonly struct SessionActivityPlayerTechnicalPlanEntry : IEquatable<SessionActivityPlayerTechnicalPlanEntry>
+    public readonly struct SessionActivityActorMaterializationPlanEntry : IEquatable<SessionActivityActorMaterializationPlanEntry>
     {
-        public SessionActivityPlayerTechnicalPlanEntry(
-            string participantId,
+        public SessionActivityActorMaterializationPlanEntry(
+            SessionParticipantId participantId,
             bool required,
             GameObject prefab,
             ActorPlacementMode placementMode,
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Vector3 localPosition,
             Vector3 localEulerAngles)
         {
-            ParticipantId = Normalize(participantId);
+            ParticipantId = participantId;
             Required = required;
             Prefab = prefab;
             PlacementMode = placementMode;
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             LocalEulerAngles = localEulerAngles;
         }
 
-        public string ParticipantId { get; }
+        public SessionParticipantId ParticipantId { get; }
         public bool Required { get; }
         public GameObject Prefab { get; }
         public ActorPlacementMode PlacementMode { get; }
@@ -34,15 +35,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public Vector3 LocalPosition { get; }
         public Vector3 LocalEulerAngles { get; }
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(ParticipantId) &&
+            ParticipantId.IsValid &&
             (PlacementMode == ActorPlacementMode.None ||
              PlacementMode == ActorPlacementMode.SceneMarker ||
              PlacementMode == ActorPlacementMode.FixedTransform);
         public bool HasPrefab => Prefab != null;
 
-        public bool Equals(SessionActivityPlayerTechnicalPlanEntry other)
+        public bool Equals(SessionActivityActorMaterializationPlanEntry other)
         {
-            return string.Equals(ParticipantId, other.ParticipantId, StringComparison.Ordinal) &&
+            return ParticipantId.Equals(other.ParticipantId) &&
                    Required == other.Required &&
                    Equals(Prefab, other.Prefab) &&
                    PlacementMode == other.PlacementMode &&
@@ -51,18 +52,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                    LocalEulerAngles.Equals(other.LocalEulerAngles);
         }
 
-        public override bool Equals(object obj) => obj is SessionActivityPlayerTechnicalPlanEntry other && Equals(other);
+        public override bool Equals(object obj) => obj is SessionActivityActorMaterializationPlanEntry other && Equals(other);
         public override int GetHashCode()
         {
             unchecked
             {
-                int hashCode = StringComparer.Ordinal.GetHashCode(ParticipantId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ (Required ? 1 : 0);
-                hashCode = (hashCode * 397) ^ (Prefab != null ? Prefab.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (int)PlacementMode;
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(PlacementId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ LocalPosition.GetHashCode();
-                hashCode = (hashCode * 397) ^ LocalEulerAngles.GetHashCode();
+                int hashCode = ParticipantId.GetHashCode();
+                hashCode = hashCode * 397 ^ (Required ? 1 : 0);
+                hashCode = hashCode * 397 ^ (Prefab != null ? Prefab.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (int)PlacementMode;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(PlacementId ?? string.Empty);
+                hashCode = hashCode * 397 ^ LocalPosition.GetHashCode();
+                hashCode = hashCode * 397 ^ LocalEulerAngles.GetHashCode();
                 return hashCode;
             }
         }
@@ -107,9 +108,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = HasRouteFadeProfile ? 1 : 0;
-                hashCode = (hashCode * 397) ^ (RouteFadeProfile != null ? RouteFadeProfile.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (HasRouteLoadingProfile ? 1 : 0);
-                hashCode = (hashCode * 397) ^ (RouteLoadingProfile != null ? RouteLoadingProfile.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (RouteFadeProfile != null ? RouteFadeProfile.GetHashCode() : 0);
+                hashCode = hashCode * 397 ^ (HasRouteLoadingProfile ? 1 : 0);
+                hashCode = hashCode * 397 ^ (RouteLoadingProfile != null ? RouteLoadingProfile.GetHashCode() : 0);
                 return hashCode;
             }
         }
@@ -119,122 +120,125 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             return $"hasRouteFadeProfile='{HasRouteFadeProfile}' routeFadeProfile='{(RouteFadeProfile != null ? RouteFadeProfile.name : "<none>")}' hasRouteLoadingProfile='{HasRouteLoadingProfile}' routeLoadingProfile='{(RouteLoadingProfile != null ? RouteLoadingProfile.name : "<none>")}'";
         }
     }
-    public readonly struct SessionActivityPlayerPreparationHandoff : IEquatable<SessionActivityPlayerPreparationHandoff>
+    public readonly struct SessionActivityEntryHandoff : IEquatable<SessionActivityEntryHandoff>
     {
-        public SessionActivityPlayerPreparationHandoff(
-            string pipelineId,
-            string sessionId,
-            string routeIdentity,
-            string routeOperationId,
-            string transitionId,
-            int routeSequence,
-            string outcome,
-            string participationKind,
-            int plannedPlayers,
-            int requiredPlayers,
-            int optionalPlayers,
-            int materializedPlayers,
-            int skippedPlayers,
-            int pendingRequiredPlayers,
-            string playerIds,
-            IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> technicalPlanEntries)
+        public SessionActivityEntryHandoff(
+            string activityId,
+            int activityOrdinal,
+            int entrySequence,
+            string sessionStateId,
+            SessionParticipationContext sessionParticipationContext,
+            IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
+            SessionActivityRouteTransitionContext routeTransitionContext,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
+            string source,
+            string reason)
         {
-            PipelineId = Normalize(pipelineId);
-            SessionId = Normalize(sessionId);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
-            RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            Outcome = Normalize(outcome);
-            ParticipationKind = Normalize(participationKind);
-            PlannedPlayers = plannedPlayers < 0 ? 0 : plannedPlayers;
-            RequiredPlayers = requiredPlayers < 0 ? 0 : requiredPlayers;
-            OptionalPlayers = optionalPlayers < 0 ? 0 : optionalPlayers;
-            MaterializedPlayers = materializedPlayers < 0 ? 0 : materializedPlayers;
-            SkippedPlayers = skippedPlayers < 0 ? 0 : skippedPlayers;
-            PendingRequiredPlayers = pendingRequiredPlayers < 0 ? 0 : pendingRequiredPlayers;
-            PlayerIds = Normalize(playerIds);
-            TechnicalPlanEntries = technicalPlanEntries ?? Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            SessionStateId = Normalize(sessionStateId);
+            SessionParticipationContext = sessionParticipationContext;
+            ActorMaterializationPlanEntries = actorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
+            RouteTransitionContext = routeTransitionContext;
+            LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
         }
 
-        public string PipelineId { get; }
-        public string SessionId { get; }
-        public string RouteIdentity { get; }
-        public string RouteOperationId { get; }
-        public string TransitionId { get; }
-        public int RouteSequence { get; }
-        public string Outcome { get; }
-        public string ParticipationKind { get; }
-        public int PlannedPlayers { get; }
-        public int RequiredPlayers { get; }
-        public int OptionalPlayers { get; }
-        public int MaterializedPlayers { get; }
-        public int SkippedPlayers { get; }
-        public int PendingRequiredPlayers { get; }
-        public string PlayerIds { get; }
-        public IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> TechnicalPlanEntries { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public int EntrySequence { get; }
+        public string SessionStateId { get; }
+        public SessionParticipationContext SessionParticipationContext { get; }
+        public IReadOnlyList<SessionActivityActorMaterializationPlanEntry> ActorMaterializationPlanEntries { get; }
+        public SessionActivityRouteTransitionContext RouteTransitionContext { get; }
+        public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool HasSessionParticipationContext => SessionParticipationContext is { IsValid: true };
+        public int SessionParticipationRevision => SessionParticipationContext?.Revision ?? 0;
+        public int SessionParticipationSlotReservationCount => SessionParticipationContext?.SlotReservationCount ?? 0;
+        public int SessionParticipationSelectionCount => SessionParticipationContext?.SelectionCount ?? 0;
+        public int SessionParticipationParticipantCount => SessionParticipationContext?.ParticipantCount ?? 0;
+        public int ActorMaterializationPlanEntryCount => CountMaterializationPlanEntries(ActorMaterializationPlanEntries);
+        public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
+
+        public bool HasResolvedActivity =>
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0;
+
+        public bool IsEntryOnly =>
+            string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal == 0;
 
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionId) &&
-            !string.IsNullOrWhiteSpace(RouteIdentity) &&
-            !string.IsNullOrWhiteSpace(RouteOperationId) &&
-            !string.IsNullOrWhiteSpace(TransitionId) &&
-            RouteSequence > 0 &&
-            !string.IsNullOrWhiteSpace(Outcome) &&
-            !string.IsNullOrWhiteSpace(ParticipationKind) &&
-            TechnicalPlanEntries != null;
+            EntrySequence >= 0 &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            HasSessionParticipationContext &&
+            !string.IsNullOrWhiteSpace(Source) &&
+            (HasResolvedActivity || IsEntryOnly);
 
-        public bool Equals(SessionActivityPlayerPreparationHandoff other)
+        public bool Equals(SessionActivityEntryHandoff other)
         {
-            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(SessionId, other.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(RouteIdentity, other.RouteIdentity, StringComparison.Ordinal) &&
-                   string.Equals(RouteOperationId, other.RouteOperationId, StringComparison.Ordinal) &&
-                   string.Equals(TransitionId, other.TransitionId, StringComparison.Ordinal) &&
-                   RouteSequence == other.RouteSequence &&
-                   string.Equals(Outcome, other.Outcome, StringComparison.Ordinal) &&
-                   string.Equals(ParticipationKind, other.ParticipationKind, StringComparison.Ordinal) &&
-                   PlannedPlayers == other.PlannedPlayers &&
-                   RequiredPlayers == other.RequiredPlayers &&
-                   OptionalPlayers == other.OptionalPlayers &&
-                   MaterializedPlayers == other.MaterializedPlayers &&
-                   SkippedPlayers == other.SkippedPlayers &&
-                   PendingRequiredPlayers == other.PendingRequiredPlayers &&
-                   string.Equals(PlayerIds, other.PlayerIds, StringComparison.Ordinal) &&
-                   CountTechnicalEntries(TechnicalPlanEntries) == CountTechnicalEntries(other.TechnicalPlanEntries);
+            return string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                   ActivityOrdinal == other.ActivityOrdinal &&
+                   EntrySequence == other.EntrySequence &&
+                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                   string.Equals(SessionParticipationContext?.RouteOperationId, other.SessionParticipationContext?.RouteOperationId, StringComparison.Ordinal) &&
+                   SessionParticipationRevision == other.SessionParticipationRevision &&
+                   ActorMaterializationPlanEntryCount == other.ActorMaterializationPlanEntryCount &&
+                   RouteTransitionContext.Equals(other.RouteTransitionContext) &&
+                   LoadedSnapshotPayloadContext.HasPayload == other.LoadedSnapshotPayloadContext.HasPayload &&
+                   string.Equals(Source, other.Source, StringComparison.Ordinal) &&
+                   string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
         {
-            return obj is SessionActivityPlayerPreparationHandoff other && Equals(other);
+            return obj is SessionActivityEntryHandoff other && Equals(other);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteIdentity ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteOperationId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(TransitionId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ RouteSequence;
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Outcome ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ParticipationKind ?? string.Empty);
-                hashCode = (hashCode * 397) ^ PlannedPlayers;
-                hashCode = (hashCode * 397) ^ RequiredPlayers;
-                hashCode = (hashCode * 397) ^ OptionalPlayers;
-                hashCode = (hashCode * 397) ^ MaterializedPlayers;
-                hashCode = (hashCode * 397) ^ SkippedPlayers;
-                hashCode = (hashCode * 397) ^ PendingRequiredPlayers;
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(PlayerIds ?? string.Empty);
-                hashCode = (hashCode * 397) ^ CountTechnicalEntries(TechnicalPlanEntries);
+                int hashCode = StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
+                hashCode = hashCode * 397 ^ ActivityOrdinal;
+                hashCode = hashCode * 397 ^ EntrySequence;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionParticipationContext?.RouteOperationId ?? string.Empty);
+                hashCode = hashCode * 397 ^ SessionParticipationRevision;
+                hashCode = hashCode * 397 ^ ActorMaterializationPlanEntryCount;
+                hashCode = hashCode * 397 ^ RouteTransitionContext.GetHashCode();
+                hashCode = hashCode * 397 ^ (LoadedSnapshotPayloadContext.HasPayload ? 1 : 0);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hashCode;
             }
         }
 
-        private static int CountTechnicalEntries(IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> entries)
+        public override string ToString()
+        {
+            if (!IsValid)
+            {
+                return "<none>";
+            }
+
+            string activity = HasResolvedActivity
+                ? $"activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}'"
+                : EntrySequence > 0
+                    ? $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='{EntrySequence}'"
+                    : "activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>'";
+
+            return $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
+        }
+
+        public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => left.Equals(right);
+        public static bool operator !=(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => !left.Equals(right);
+
+        private static int CountMaterializationPlanEntries(IReadOnlyList<SessionActivityActorMaterializationPlanEntry> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -258,107 +262,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
-
-    public readonly struct SessionActivityEntryHandoff : IEquatable<SessionActivityEntryHandoff>
-    {
-        public SessionActivityEntryHandoff(
-            string activityId,
-            int activityOrdinal,
-            int entrySequence,
-            string sessionStateId,
-            SessionActivityPlayerPreparationHandoff playerPreparation,
-            SessionActivityRouteTransitionContext routeTransitionContext,
-            string source,
-            string reason)
-        {
-            ActivityId = Normalize(activityId);
-            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
-            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            SessionStateId = Normalize(sessionStateId);
-            PlayerPreparation = playerPreparation;
-            RouteTransitionContext = routeTransitionContext;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-        }
-
-        public string ActivityId { get; }
-        public int ActivityOrdinal { get; }
-        public int EntrySequence { get; }
-        public string SessionStateId { get; }
-        public SessionActivityPlayerPreparationHandoff PlayerPreparation { get; }
-        public SessionActivityRouteTransitionContext RouteTransitionContext { get; }
-        public string Source { get; }
-        public string Reason { get; }
-
-        public bool HasResolvedActivity =>
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0;
-
-        public bool IsEntryOnly =>
-            string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal == 0;
-
-        public bool IsValid =>
-            EntrySequence >= 0 &&
-            !string.IsNullOrWhiteSpace(SessionStateId) &&
-            PlayerPreparation.IsValid &&
-            !string.IsNullOrWhiteSpace(Source) &&
-            (HasResolvedActivity || IsEntryOnly);
-
-        public bool Equals(SessionActivityEntryHandoff other)
-        {
-            return string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                   ActivityOrdinal == other.ActivityOrdinal &&
-                   EntrySequence == other.EntrySequence &&
-                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
-                   PlayerPreparation.Equals(other.PlayerPreparation) &&
-                   RouteTransitionContext.Equals(other.RouteTransitionContext) &&
-                   string.Equals(Source, other.Source, StringComparison.Ordinal) &&
-                   string.Equals(Reason, other.Reason, StringComparison.Ordinal);
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is SessionActivityEntryHandoff other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hashCode = StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ ActivityOrdinal;
-                hashCode = (hashCode * 397) ^ EntrySequence;
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ PlayerPreparation.GetHashCode();
-                hashCode = (hashCode * 397) ^ RouteTransitionContext.GetHashCode();
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
-                return hashCode;
-            }
-        }
-
-        public override string ToString()
-        {
-            return IsValid
-                ? HasResolvedActivity
-                    ? $"activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', sessionStateId='{SessionStateId}', routeOperationId='{PlayerPreparation.RouteOperationId}', playerPreparationOutcome='{PlayerPreparation.Outcome}', plannedPlayers='{PlayerPreparation.PlannedPlayers}', materializedPlayers='{PlayerPreparation.MaterializedPlayers}', pendingRequiredPlayers='{PlayerPreparation.PendingRequiredPlayers}'"
-                    : EntrySequence > 0
-                        ? $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='{EntrySequence}', sessionStateId='{SessionStateId}', routeOperationId='{PlayerPreparation.RouteOperationId}', playerPreparationOutcome='{PlayerPreparation.Outcome}', plannedPlayers='{PlayerPreparation.PlannedPlayers}', materializedPlayers='{PlayerPreparation.MaterializedPlayers}', pendingRequiredPlayers='{PlayerPreparation.PendingRequiredPlayers}'"
-                        : $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>', sessionStateId='{SessionStateId}', routeOperationId='{PlayerPreparation.RouteOperationId}', playerPreparationOutcome='{PlayerPreparation.Outcome}', plannedPlayers='{PlayerPreparation.PlannedPlayers}', materializedPlayers='{PlayerPreparation.MaterializedPlayers}', pendingRequiredPlayers='{PlayerPreparation.PendingRequiredPlayers}'"
-                : "<none>";
-        }
-
-        public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => left.Equals(right);
-        public static bool operator !=(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => !left.Equals(right);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
 }
-
 
 
 

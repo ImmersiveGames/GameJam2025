@@ -16,16 +16,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeModeConfig obrigatorio ausente para resolver loading defaults.");
             }
 
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                ISessionOperationalRuntimeConfigGroupReadOnly group = snapshot.SessionOperationalRuntime;
+                var group = snapshot.SessionOperationalRuntime;
                 if (group == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: snapshot.SessionOperationalRuntime obrigatorio ausente.");
                 }
 
-                SessionOperationalRouteLoadingMode mode = group.DefaultLoadingMode;
-                RuntimeLoadingProfileAsset profile = group.DefaultLoadingProfile;
+                var mode = group.DefaultLoadingMode;
+                var profile = group.DefaultLoadingProfile;
                 if (!TryValidate(mode, profile, out string validationError))
                 {
                     throw new InvalidOperationException($"[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: loading config invalida no snapshot. detail='{validationError}'.");
@@ -45,15 +45,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeModeConfig obrigatorio ausente para resolver StartupRouteDefinition.");
             }
 
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                ISessionOperationalRuntimeConfigGroupReadOnly group = snapshot.SessionOperationalRuntime;
+                var group = snapshot.SessionOperationalRuntime;
                 if (group == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: snapshot.SessionOperationalRuntime obrigatorio ausente.");
                 }
 
-                OperationalRouteAsset startupRoute = group.StartupRouteDefinition;
+                var startupRoute = group.StartupRouteDefinition;
                 if (startupRoute == null || !startupRoute.IsValid)
                 {
                     throw new InvalidOperationException("[FATAL][Config][SessionOperationalRuntime] RuntimeConfigRegistry invariant breach: StartupRouteDefinition ausente/invalida no snapshot.");
@@ -108,8 +108,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             _loadingConfigSourceLogged = true;
             string profileName = profile != null ? profile.name : "<none>";
 
-            DebugUtility.Log(typeof(SessionOperationalRuntimeConfigResolver),
-                $"[OBS][SessionOperationalRuntime][Config] loading defaults resolved via RuntimeConfigRegistry. defaultLoadingMode='{mode}' defaultLoadingProfile='{profileName}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalRuntimeConfigResolver),
+                $"loading defaults resolved via RuntimeConfigRegistry. defaultLoadingMode='{mode}' defaultLoadingProfile='{profileName}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -123,8 +123,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             _startupRouteSourceLogged = true;
             string routeIdentity = startupRoute != null ? startupRoute.RouteIdentity : "<none>";
 
-            DebugUtility.Log(typeof(SessionOperationalRuntimeConfigResolver),
-                $"[OBS][SessionOperationalRuntime][Config] startupRouteDefinition resolved via RuntimeConfigRegistry. routeIdentity='{routeIdentity}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalRuntimeConfigResolver),
+                $"startupRouteDefinition resolved via RuntimeConfigRegistry. routeIdentity='{routeIdentity}'.",
                 DebugUtility.Colors.Info);
         }
     }

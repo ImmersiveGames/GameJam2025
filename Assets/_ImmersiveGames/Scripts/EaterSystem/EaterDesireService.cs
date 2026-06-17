@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
@@ -20,7 +18,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         private readonly EaterMaster _master;
         private readonly EaterConfigSo _config;
-        private readonly EntityAudioEmitter _audioEmitter;
+        //private readonly EntityAudioEmitter _audioEmitter;
         private readonly string _actorLabel;
         private readonly Queue<PlanetResources> _recentDesires = new();
         private readonly PlanetResources[] _resourcePool;
@@ -44,17 +42,17 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         private bool _missingEmitterLogged;
         private bool _missingSoundLogged;
 
-        public EaterDesireService(EaterMaster master, EaterConfigSo config, EntityAudioEmitter audioEmitter)
+        public EaterDesireService(EaterMaster master, EaterConfigSo config, object audioEmitter)
         {
             _master = master;
             _config = config;
-            _audioEmitter = audioEmitter;
+            //_audioEmitter = audioEmitter;
             _actorLabel = ResolveActorLabel(master);
             _resourcePool = (PlanetResources[])Enum.GetValues(typeof(PlanetResources));
         }
 
         private bool IsActive => _step != DesireCycleStep.Inactive;
-        private bool HasActiveDesire => (_step != DesireCycleStep.Inactive && _currentDesire.HasValue) || HasLockedDesire;
+        private bool HasActiveDesire => _step != DesireCycleStep.Inactive && _currentDesire.HasValue || HasLockedDesire;
         private bool HasLockedDesire => _lockedSnapshot.HasValue;
 
         public void Update()
@@ -602,7 +600,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return;
             }
 
-            var sound = _config.DesireSelectedSound;
+            /*var sound = _config.DesireSelectedSound;
             if (sound == null || sound.clip == null)
             {
                 if (!_missingSoundLogged)
@@ -615,9 +613,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
 
                 return;
-            }
+            }*/
 
-            if (_audioEmitter == null)
+            /*if (_audioEmitter == null)
             {
                 if (!_missingEmitterLogged)
                 {
@@ -629,11 +627,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 }
 
                 return;
-            }
+            }*/
 
             var position = _master != null ? _master.transform.position : Vector3.zero;
-            var context = AudioContext.Default(position, _audioEmitter.UsesSpatialBlend);
-            _audioEmitter.Play(sound, context);
+            /*var context = AudioContext.Default(position, _audioEmitter.UsesSpatialBlend);
+            _audioEmitter.Play(sound, context);*/
         }
 
         private EaterDesireInfo BuildDesireInfo()

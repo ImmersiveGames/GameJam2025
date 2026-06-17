@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             for (int i = 0; i < anchors.Length; i++)
             {
-                SurfaceCameraAnchorBinding binding = anchors[i];
+                var binding = anchors[i];
 
                 if (binding == null)
                 {
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             for (int i = 0; i < anchors.Length; i++)
             {
-                SurfaceCameraAnchorBinding binding = anchors[i];
+                var binding = anchors[i];
 
                 if (binding == null)
                 {
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
                 for (int j = i + 1; j < anchors.Length; j++)
                 {
-                    SurfaceCameraAnchorBinding other = anchors[j];
+                    var other = anchors[j];
 
                     if (other == null)
                     {
@@ -115,9 +115,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
             {
                 DebugUtility.Log(
                     typeof(SurfaceCameraAnchorHost),
-                    $"[OBS][CameraPresentation][SurfaceAnchorHost] ValidateSucceeded " +
+                    $"ValidateSucceeded " +
                     $"host='{name}' " +
-                    $"anchorCount='{(anchors != null ? anchors.Length : 0)}' " +
+                    $"anchorCount='{anchors?.Length ?? 0}' " +
                     $"reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
 
             DebugUtility.LogError(
                 typeof(SurfaceCameraAnchorHost),
-                $"[OBS][CameraPresentation][SurfaceAnchorHost] ValidateFailed " +
+                $"ValidateFailed " +
                 $"host='{name}' " +
                 $"reason='{reason}'.");
         }

@@ -18,13 +18,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         {
             string sceneName = ResolveSceneNameOrFail(sceneKey, activityId, windowKind, source, reason, "load");
 
-            Scene loadedScene = SceneManager.GetSceneByName(sceneName);
+            var loadedScene = SceneManager.GetSceneByName(sceneName);
             if (loadedScene.IsValid() && loadedScene.isLoaded)
             {
                 return;
             }
 
-            AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+            var operation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             if (operation == null)
             {
                 throw new InvalidOperationException($"Activity '{activityId}' {windowKind} additive scene '{sceneName}' returned null LoadSceneAsync operation.");
@@ -51,13 +51,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         {
             string sceneName = ResolveSceneNameOrFail(sceneKey, activityId, windowKind, source, reason, "unload");
 
-            Scene loadedScene = SceneManager.GetSceneByName(sceneName);
+            var loadedScene = SceneManager.GetSceneByName(sceneName);
             if (!loadedScene.IsValid() || !loadedScene.isLoaded)
             {
                 throw new InvalidOperationException($"Activity '{activityId}' expected {windowKind} additive scene '{sceneName}' to be loaded before unload, but it is not loaded.");
             }
 
-            AsyncOperation operation = SceneManager.UnloadSceneAsync(loadedScene);
+            var operation = SceneManager.UnloadSceneAsync(loadedScene);
             if (operation == null)
             {
                 throw new InvalidOperationException($"Activity '{activityId}' failed to unload {windowKind} additive scene '{sceneName}' because UnloadSceneAsync returned null.");
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 await Task.Yield();
             }
 
-            Scene unloadedScene = SceneManager.GetSceneByName(sceneName);
+            var unloadedScene = SceneManager.GetSceneByName(sceneName);
             if (unloadedScene.IsValid() && unloadedScene.isLoaded)
             {
                 throw new InvalidOperationException($"Activity '{activityId}' {windowKind} additive scene '{sceneName}' remained loaded after unload.");

@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         public long Revision { get; }
         public string SavedAtUtc { get; }
 
-        public bool HasEntries => Entries != null && Entries.Count > 0;
+        public bool HasEntries => Entries is { Count: > 0 };
 
         public bool IsSuccess =>
             Kind == SaveResultKind.Saved ||

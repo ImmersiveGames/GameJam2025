@@ -29,8 +29,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string requestKey = BuildRequestKey(evt);
             string contextSignature = string.IsNullOrWhiteSpace(evt.ContextSignature) ? "<none>" : evt.ContextSignature;
 
-            DebugUtility.Log(typeof(InputModeCoordinator),
-                $"[OBS][InputModes] InputModeRequested routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
+            DebugUtility.LogVerbose(typeof(InputModeCoordinator),
+                $"InputModeRequested routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
                 DebugUtility.Colors.Info);
 
             if (!DependencyManager.HasInstance || DependencyManager.Provider == null ||
@@ -51,25 +51,25 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 case InputModeRequestKind.FrontendMenu:
                     service.SetFrontendMenu(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        $"InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.Gameplay:
                     service.SetGameplay(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        $"InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.PauseOverlay:
                     service.SetPauseOverlay(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        $"InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.InputLocked:
                     service.SetInputLocked(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        $"InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.Unspecified:

@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Config
 {
     [CreateAssetMenu(
         fileName = "VideoDefaults",
-        menuName = "ImmersiveGames/NewScripts/Preferences/Video Defaults",
+        menuName = "ImmersiveGames/Preferences/Video Defaults",
         order = 4)]
     public sealed class VideoDefaultsAsset : ScriptableObject
     {
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Config
             var seen = new HashSet<Vector2Int>();
             for (int i = 0; i < resolutionPresets.Count; i++)
             {
-                Vector2Int preset = resolutionPresets[i];
+                var preset = resolutionPresets[i];
                 if (preset.x <= 0 || preset.y <= 0)
                 {
                     throw new InvalidOperationException($"[FATAL][Config][Video] resolutionPresets[{i}] must be positive.");

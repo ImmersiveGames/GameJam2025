@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int index = 0; index < _definitions.Count; index++)
             {
-                SessionActivityDefinition candidate = _definitions[index];
+                var candidate = _definitions[index];
                 if (string.Equals(candidate.ActivityId, current.NextActivityId, StringComparison.OrdinalIgnoreCase))
                 {
                     next = candidate;
@@ -122,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             for (int index = 0; index < _definitions.Count; index++)
             {
-                SessionActivityDefinition candidate = _definitions[index];
+                var candidate = _definitions[index];
                 if (candidate.ActivityOrdinal == ordinal)
                 {
                     definition = candidate;

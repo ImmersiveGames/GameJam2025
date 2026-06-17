@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap;
@@ -37,12 +37,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrap: null,
                 bootstrapDependencies: Array.Empty<string>()));
 
-            CompositionProfileKind compositionProfile = runtimeModeConfig.compositionProfile;
+            var compositionProfile = runtimeModeConfig.compositionProfile;
 
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
             {
                 DebugUtility.Log(typeof(GlobalCompositionRoot),
-                    "[OBS][Composition][Profile] Base11Sandbox SessionOperational profile active.",
+                    "Base11Sandbox SessionOperational profile active.",
                     DebugUtility.Colors.Info);
                 steps.AddRange(GetSessionOperationalCompositionSteps(runtimeModeConfig));
             }
@@ -65,36 +65,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(
             RuntimeModeConfig runtimeModeConfig)
         {
-            return new List<CompositionPipelineStep>(7)
+            return new List<CompositionPipelineStep>(8)
             {
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
-                new CompositionPipelineStep(
-                    id: "InputModes",
-                    installer: config => InputModesInstaller.Install(config),
-                    installerDependencies: new[] { "RuntimePolicy" },
-                    bootstrap: config => InputModesRuntimeComposer.ComposeRuntime(config),
-                    bootstrapDependencies: Array.Empty<string>()),
-                new CompositionPipelineStep(
-                    id: "OperationalCameraRuntime",
-                    installer: _ => OperationalCameraRuntimeComposition.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy" },
-                    bootstrap: _ => OperationalCameraRuntimeComposition.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: Array.Empty<string>()),
+                CompositionPipelineStep.FromDescriptor(InputModesCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(OperationalCameraRuntimeCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(CameraPresentationCompositionDescriptor.Descriptor),
-                new CompositionPipelineStep(
-                    id: "RuntimePersistentScenes",
-                    installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy", "OperationalCameraRuntime" },
-                    bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes", "OperationalCameraRuntime", "CameraPresentation" }),
-                new CompositionPipelineStep(
-                    id: "SessionOperationalRuntime",
-                    installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes", "Save", "CameraPresentation" },
-                    bootstrap: _ => SessionOperationalRuntimeComposer.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes", "CameraPresentation" }),
+                CompositionPipelineStep.FromDescriptor(RuntimePersistentScenesCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SessionOperationalRuntimeCompositionDescriptor.Descriptor),
             };
         }
 

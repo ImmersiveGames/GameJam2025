@@ -1,4 +1,4 @@
-﻿using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -7,8 +7,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             RegisterIfMissing<ISceneCompositionExecutor>(
                 () => new SceneCompositionExecutor(),
-                alreadyRegisteredMessage: "[OBS][SceneComposition] ISceneCompositionExecutor ja registrado no DI global.",
-                registeredMessage: "[OBS][SceneComposition] ISceneCompositionExecutor registrado (SceneCompositionExecutor).");
+                alreadyRegisteredMessage: "ISceneCompositionExecutor ja registrado no DI global.",
+                registeredMessage: "ISceneCompositionExecutor registrado (SceneCompositionExecutor).");
         }
     }
 }

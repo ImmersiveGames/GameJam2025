@@ -71,7 +71,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
             TryGetDetectionController(out _);
             TryGetAnimationController(out _);
-            TryGetAudioEmitter(out _);
+            //TryGetAudioEmitter(out _);
             TryEnsureAutoFlowBridge();
 
             // A state machine só é construída quando inexistente; o método é idempotente e evita duplicar transições/bindings internos.
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _selfDamageReceiver = null;
             _missingSelfDamageReceiverLogged = false;
 
-            _audioEmitter = null;
+            //_audioEmitter = null;
             _detectionController = null;
             _animationController = null;
         }

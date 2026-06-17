@@ -42,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
             ApplyPreferencesToAudioSettings();
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
+            PrepareAudioSfxVoicePools();
 
             EnsureGlobalAudioService();
 
@@ -125,6 +126,25 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IGlobalAudioService already registered.",
                 registeredMessage: "[Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime).");
+        }
+
+        private static void PrepareAudioSfxVoicePools()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults) || defaults == null)
+            {
+                throw new InvalidOperationException("[FATAL][Audio] AudioDefaultsAsset obrigatorio ausente antes do preload de pools SFX.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPoolService>(out var poolService) || poolService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Pooling] IPoolService obrigatorio ausente antes do preload de pools SFX.");
+            }
+
+            AudioSfxPoolPreparationStage.Execute(
+                defaults,
+                poolService,
+                source: nameof(AudioRuntimeComposer),
+                reason: "global_sfx_voice_pool_preload");
         }
 
         private static void RegisterIfMissing<T>(

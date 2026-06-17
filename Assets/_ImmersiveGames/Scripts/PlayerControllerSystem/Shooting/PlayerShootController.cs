@@ -3,10 +3,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.Skins;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
@@ -67,7 +63,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         private float _lastShotTime = -Mathf.Infinity;
 
         private IActor _actor;
-        private EntityAudioEmitter _audioEmitter;
+        //private EntityAudioEmitter _audioEmitter;
         private bool _isInitialized;
 
 
@@ -75,7 +71,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         /// Provedor de �udio baseado na skin atual (SkinAudioConfigurable).
         /// Obrigat�rio para tocar som de tiro.
         /// </summary>
-        private IActorSkinAudioProvider _skinAudioProvider;
+        //private IActorSkinAudioProvider _skinAudioProvider;
 
         #endregion
 
@@ -146,14 +142,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             {
                 _actor = GetComponent<IActor>();
             }
-            if (_audioEmitter == null)
+            /*if (_audioEmitter == null)
             {
                 _audioEmitter = GetComponent<EntityAudioEmitter>();
             }
             if (_skinAudioProvider == null)
             {
                 _skinAudioProvider = GetComponentInParent<IActorSkinAudioProvider>();
-            }
+            }*/
 
             // Rebind input action
             RebindInputAction();
@@ -161,7 +157,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             if (logResetVerbose)
             {
                 DebugUtility.LogVerbose<PlayerShootController>(
-                    $"[Reset][PlayerShootController] Rebind | Action='{actionName}' bound={( _spawnAction != null)} | Actor='{_actor?.ActorName ?? name}' | {ctx}");
+                    $"[Reset][PlayerShootController] Rebind | Action='{actionName}' bound={_spawnAction != null} | Actor='{_actor?.ActorName ?? name}' | {ctx}");
             }
 
             return Task.CompletedTask;
@@ -175,9 +171,9 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         {
             _playerInput = GetComponent<PlayerInput>();
             _actor = GetComponent<IActor>();
-            _audioEmitter = GetComponent<EntityAudioEmitter>();
+            /*_audioEmitter = GetComponent<EntityAudioEmitter>();
 
-            _skinAudioProvider = GetComponentInParent<IActorSkinAudioProvider>();
+            _skinAudioProvider = GetComponentInParent<IActorSkinAudioProvider>();*/
 
             DependencyManager.Provider.InjectDependencies(this);
         }
@@ -261,7 +257,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
                 return false;
             }
 
-            if (_audioEmitter == null)
+            /*if (_audioEmitter == null)
             {
                 DebugUtility.LogError<PlayerShootController>(
                     $"EntityAudioEmitter n�o encontrado em '{name}'. " +
@@ -277,7 +273,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
                     "Adicione um SkinAudioConfigurable ao ator para fornecer �udio via skin.",
                     this);
                 return false;
-            }
+            }*/
 
             return true;
         }
@@ -448,7 +444,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         /// </summary>
         private void PlayShootAudio()
         {
-            if (_audioEmitter == null)
+            /*if (_audioEmitter == null)
             {
                 return;
             }
@@ -479,7 +475,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
             _audioEmitter.Play(soundToPlay, audioContext);
 
             DebugUtility.LogVerbose<PlayerShootController>(
-                $"Som de tiro via skin (Key={key}, Strategy={strategyType}).");
+                $"Som de tiro via skin (Key={key}, Strategy={strategyType}).");*/
         }
 
         #endregion

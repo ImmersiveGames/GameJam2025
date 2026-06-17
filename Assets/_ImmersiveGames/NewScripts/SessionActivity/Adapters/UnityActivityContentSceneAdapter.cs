@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                     $"Activity content scene '{command.SceneName}' cannot be loaded.");
             }
 
-            Scene loadedScene = SceneManager.GetSceneByName(command.SceneName);
+            var loadedScene = SceneManager.GetSceneByName(command.SceneName);
             if (loadedScene.IsValid() && loadedScene.isLoaded)
             {
                 return new ActivityContentSceneLoadResult(
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                     $"Activity content scene '{command.SceneName}' already loaded.");
             }
 
-            AsyncOperation operation = SceneManager.LoadSceneAsync(command.SceneName, LoadSceneMode.Additive);
+            var operation = SceneManager.LoadSceneAsync(command.SceneName, LoadSceneMode.Additive);
             if (operation == null)
             {
                 return new ActivityContentSceneLoadResult(

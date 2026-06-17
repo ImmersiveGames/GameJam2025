@@ -1,14 +1,31 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    public sealed class ActivityObjectTransformSnapshotProvider : MonoBehaviour, IActivityObjectSnapshotProvider, IActivityObjectSnapshotProviderContractView
+    public sealed class ActivityObjectTransformSnapshotProvider : MonoBehaviour, IActivityObjectSnapshotProvider, IActivityObjectLifecycleContributionProvider
     {
         [SerializeField] private string targetId;
         [SerializeField] private Transform targetTransform;
+
+
+        public void CollectActivityObjectLifecycleContributions(
+            ActivityObjectLifecycleContributionContext context,
+            IList<IActivityObjectLifecycleContribution> contributions)
+        {
+            if (contributions == null || !context.IsValid || !Supports(context.TargetId))
+            {
+                return;
+            }
+
+            contributions.Add(new ActivityObjectSnapshotContribution(
+                $"activity_object.snapshot:{context.TargetId}:{nameof(ActivityObjectTransformSnapshotProvider)}",
+                200,
+                this));
+        }
 
         public bool Supports(string requestedTargetId)
         {
@@ -50,10 +67,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     $"target_transform_missing targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' providerPath='{BuildTransformPath(transform)}' targetTransformPath='<null>'");
             }
 
-            Transform localTransform = targetTransform;
-            Vector3 position = localTransform.position;
-            Quaternion rotation = localTransform.rotation;
-            Vector3 scale = localTransform.localScale;
+            var localTransform = targetTransform;
+            var position = localTransform.position;
+            var rotation = localTransform.rotation;
+            var scale = localTransform.localScale;
             ActivityObjectSnapshot snapshot = new(
                 command.Identity,
                 command.ContentProfileId,
@@ -82,31 +99,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 $"captured_transform targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' providerPath='{BuildTransformPath(transform)}' targetTransformPath='{BuildTransformPath(targetTransform)}' coordinateSpace='world_transform' capturedPosition='({position.x:0.###},{position.y:0.###},{position.z:0.###})' position='{position}' rotation='{rotation}' scale='{scale}'");
         }
 
-        public bool TryDescribeContract(
-            string requestedTargetId,
-            out string providerPath,
-            out string targetTransformPath,
-            out string failureReason)
-        {
-            providerPath = BuildTransformPath(transform);
-            targetTransformPath = BuildTransformPath(targetTransform);
-
-            if (!Supports(requestedTargetId))
-            {
-                failureReason = "target_not_supported";
-                return false;
-            }
-
-            if (targetTransform == null)
-            {
-                failureReason = "target_transform_missing";
-                return false;
-            }
-
-            failureReason = "resolved";
-            return true;
-        }
-
         private void OnValidate()
         {
             targetId = Normalize(targetId);
@@ -125,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             }
 
             string path = current.name;
-            Transform node = current.parent;
+            var node = current.parent;
             while (node != null)
             {
                 path = $"{node.name}/{path}";

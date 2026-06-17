@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -99,30 +100,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unbind = 4,
     }
 
-    public enum ActivityStateResetGroup
-    {
-        Unknown = 0,
-        Placement = 1,
-        ActivityParticipation = 2,
-        TransformState = 3,
-        RuntimeTransient = 4,
-        InteractionState = 5,
-        ObjectiveState = 6,
-    }
-
     public enum ActivitySetupInventoryBuildResultKind
     {
         Unknown = 0,
         Built = 1,
         SkippedNoRequirements = 2,
-        Failed = 3,
-    }
-
-    public enum ActivitySetupInventoryValidationResultKind
-    {
-        Unknown = 0,
-        Valid = 1,
-        ValidWithSkips = 2,
         Failed = 3,
     }
 
@@ -180,32 +162,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ParticipantRequirement(
             ActivitySetupRequirement requirement,
             ActivityParticipantRequirementKind participantKind,
-            string participantId,
-            string roleId,
+            SessionParticipantId sessionParticipantId,
+            SessionParticipantRole expectedSessionRole,
             string placementRequirementId)
         {
             Requirement = requirement;
             ParticipantKind = participantKind;
-            ParticipantId = Normalize(participantId);
-            RoleId = Normalize(roleId);
+            SessionParticipantId = sessionParticipantId;
+            ExpectedSessionRole = expectedSessionRole;
             PlacementRequirementId = Normalize(placementRequirementId);
         }
 
         public ActivitySetupRequirement Requirement { get; }
         public ActivityParticipantRequirementKind ParticipantKind { get; }
-        public string ParticipantId { get; }
-        public string RoleId { get; }
+        public SessionParticipantId SessionParticipantId { get; }
+        public string ParticipantId => SessionParticipantId.ToString();
+        public SessionParticipantRole ExpectedSessionRole { get; }
         public string PlacementRequirementId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.Participant &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.Participant } &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
-            !string.IsNullOrWhiteSpace(ParticipantId);
+            SessionParticipantId.IsValid &&
+            ExpectedSessionRole != SessionParticipantRole.Unknown;
 
         public override string ToString()
         {
-            return $"requirement='{Requirement}', participantKind='{ParticipantKind}', participantId='{ParticipantId}', roleId='{RoleId}', placementRequirementId='{PlacementRequirementId}'";
+            return $"requirement='{Requirement}', participantKind='{ParticipantKind}', participantId='{ParticipantId}', expectedSessionRole='{ExpectedSessionRole}', placementRequirementId='{PlacementRequirementId}'";
         }
 
         private static string Normalize(string value)
@@ -237,8 +220,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string PlacementRequirementId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.ObjectEntry &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.ObjectEntry } &&
             ObjectEntryKind != ActivityObjectEntryRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(ObjectId);
 
@@ -273,8 +255,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string SceneName { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.SceneContributor &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.SceneContributor } &&
             !string.IsNullOrWhiteSpace(ContributorId);
 
         public override string ToString()
@@ -311,8 +292,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string SceneName { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.Placement &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.Placement } &&
             PlacementKind != ActivityPlacementRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(TargetId);
 
@@ -350,8 +330,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string ProfileId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.CameraBinding &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.CameraBinding } &&
             CameraBindingKind != ActivityCameraBindingRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(BindingId);
 
@@ -389,8 +368,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string ProfileId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.InteractionBinding &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.InteractionBinding } &&
             InteractionBindingKind != ActivityInteractionBindingRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(BindingId);
 
@@ -428,8 +406,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string ProfileId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.HudBinding &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.HudBinding } &&
             HudBindingKind != ActivityHudBindingRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(BindingId);
 
@@ -464,8 +441,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string ProfileId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.Warmup &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.Warmup } &&
             WarmupKind != ActivityWarmupRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(TargetId);
 
@@ -484,44 +460,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public StateResetRequirement(
             ActivitySetupRequirement requirement,
-            string targetId,
-            IReadOnlyList<ActivityStateResetGroup> resetGroups)
+            string targetId)
         {
             Requirement = requirement;
             TargetId = Normalize(targetId);
-            ResetGroups = resetGroups ?? Array.Empty<ActivityStateResetGroup>();
         }
 
         public ActivitySetupRequirement Requirement { get; }
         public string TargetId { get; }
-        public IReadOnlyList<ActivityStateResetGroup> ResetGroups { get; }
 
-        public bool HasResetGroups => ResetGroups != null && ResetGroups.Count > 0;
-
-        public bool IsValid
-        {
-            get
-            {
-                if (!Requirement.IsValid || Requirement.SubplanKind != ActivitySetupSubplanKind.StateReset || string.IsNullOrWhiteSpace(TargetId) || ResetGroups == null || ResetGroups.Count == 0)
-                {
-                    return false;
-                }
-
-                for (int index = 0; index < ResetGroups.Count; index++)
-                {
-                    if (ResetGroups[index] == ActivityStateResetGroup.Unknown)
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-        }
+        public bool IsValid =>
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.StateReset } &&
+            !string.IsNullOrWhiteSpace(TargetId);
 
         public override string ToString()
         {
-            return $"requirement='{Requirement}', targetId='{TargetId}', resetGroups='{ResetGroups.Count}'";
+            return $"requirement='{Requirement}', targetId='{TargetId}', resetDescriptor='endpoint_inventory'";
         }
 
         private static string Normalize(string value)
@@ -550,8 +504,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string PolicyId { get; }
 
         public bool IsValid =>
-            Requirement.IsValid &&
-            Requirement.SubplanKind == ActivitySetupSubplanKind.Release &&
+            Requirement is { IsValid: true, SubplanKind: ActivitySetupSubplanKind.Release } &&
             ReleaseKind != ActivityReleaseRequirementKind.Unknown &&
             !string.IsNullOrWhiteSpace(TargetId);
 
@@ -630,8 +583,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasRequirements => TotalRequirementCount > 0;
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(InventoryId) &&
             !string.IsNullOrWhiteSpace(Source) &&
             ParticipantRequirements != null &&
@@ -697,54 +649,4 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
-    public readonly struct ActivitySetupInventoryValidationResult
-    {
-        public ActivitySetupInventoryValidationResult(
-            ActivitySetupInventoryValidationResultKind kind,
-            ActivitySetupInventory inventory,
-            IReadOnlyList<string> errors,
-            IReadOnlyList<string> skippedRequirementIds,
-            string source,
-            string reason,
-            string message)
-        {
-            Kind = kind;
-            Inventory = inventory;
-            Errors = errors ?? Array.Empty<string>();
-            SkippedRequirementIds = skippedRequirementIds ?? Array.Empty<string>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
-        }
-
-        public ActivitySetupInventoryValidationResultKind Kind { get; }
-        public ActivitySetupInventory Inventory { get; }
-        public IReadOnlyList<string> Errors { get; }
-        public IReadOnlyList<string> SkippedRequirementIds { get; }
-        public string Source { get; }
-        public string Reason { get; }
-        public string Message { get; }
-
-        public bool IsValidResult => Kind == ActivitySetupInventoryValidationResultKind.Valid || Kind == ActivitySetupInventoryValidationResultKind.ValidWithSkips;
-        public bool IsFailed => Kind == ActivitySetupInventoryValidationResultKind.Failed;
-        public bool HasErrors => Errors != null && Errors.Count > 0;
-        public bool HasSkippedRequirements => SkippedRequirementIds != null && SkippedRequirementIds.Count > 0;
-        public bool IsValid =>
-            Kind != ActivitySetupInventoryValidationResultKind.Unknown &&
-            Inventory.IsValid &&
-            Errors != null &&
-            SkippedRequirementIds != null &&
-            !string.IsNullOrWhiteSpace(Source) &&
-            (!IsFailed || HasErrors);
-
-        public override string ToString()
-        {
-            return $"kind='{Kind}', inventory='{Inventory}', errors='{Errors.Count}', skippedRequirements='{SkippedRequirementIds.Count}', source='{Source}', reason='{Reason}', message='{Message}'";
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
 }

@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             {
                 _runtimeModeConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][BOOT] RuntimeModeConfigResolvedVia={via} asset={runtimeModeConfig.name}",
+                    $"RuntimeModeConfigResolvedVia={via} asset={runtimeModeConfig.name}",
                     DebugUtility.Colors.Info);
             }
 
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             {
                 _runtimeModeConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] RuntimeModeConfigResolvedVia={via} asset={_cachedRuntimeModeConfig.name}",
+                    $"RuntimeModeConfigResolvedVia={via} asset={_cachedRuntimeModeConfig.name}",
                     DebugUtility.Colors.Info);
             }
 

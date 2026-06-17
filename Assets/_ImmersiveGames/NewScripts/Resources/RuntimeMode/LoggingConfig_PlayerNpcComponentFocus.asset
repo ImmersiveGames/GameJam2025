@@ -1,0 +1,108 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6935924c1f1494e9b6c0fcc546001b1, type: 3}
+  m_Name: LoggingConfig_PlayerNpcComponentFocus
+  m_EditorClassIdentifier: 
+  globalEnabled: 1
+  verboseEnabled: 1
+  fallbacksEnabled: 0
+  repeatedVerboseEnabled: 0
+  defaultLevel: 2
+  rules:
+  - ruleId: logger.session.operational.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.SessionOperational
+    level: 2
+  - ruleId: logger.session.activity.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.SessionActivity
+    level: 2
+  - ruleId: logger.scenecomposition.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
+    level: 2
+  - ruleId: logger.save.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.SaveRuntime
+    level: 2
+  - ruleId: logger.inputmodes.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.InputModes
+    level: 2
+  - ruleId: logger.audio.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.AudioRuntime
+    level: 2
+  - ruleId: logger.camera.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.CameraPresentation
+    level: 2
+  - ruleId: logger.presentation.runtime.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
+    level: 2
+  - ruleId: logger.presentation.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Presentation
+    level: 2
+  - ruleId: logger.player.participation.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.PlayerParticipation
+    level: 2
+  - ruleId: logger.pool.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Foundation.Platform.Pooling
+    level: 2
+  - ruleId: logger.projectile.quiet
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Projectile
+    level: 2
+  - ruleId: logger.actors.players.activitysetup.logs
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
+    level: 4
+  - ruleId: logger.actors.players.runtime.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Players.Runtime
+    level: 4
+  - ruleId: logger.gameplay.player.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
+    level: 4
+  - ruleId: logger.gameplay.npc.eater.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater
+    level: 4
+  - ruleId: logger.gameplay.npc.dummy.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Dummy
+    level: 4
+  - ruleId: logger.gameplay.actors.core.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core
+    level: 4
+  - ruleId: logger.actors.attributes.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Attributes
+    level: 4
+  - ruleId: logger.actors.capabilities.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Capabilities
+    level: 4
+  - ruleId: logger.actors.runtime.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Runtime
+    level: 4
+  - ruleId: logger.actors.foundation.focus
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors.Foundation
+    level: 4

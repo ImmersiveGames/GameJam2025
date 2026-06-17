@@ -1,0 +1,14 @@
+Arquivos antigos que devem ser removidos ao substituir a pasta inteira:
+
+Guia-Visual-Componentes-Activity-Base20.html
+Guia-Visual-Componentes-Activity-Base20-v2.html
+01-reset.html
+02-snapshot.html
+03-restore.html
+04-release.html
+05-setup.html
+06-binding.html
+07-permission-gate.html
+08-save-persistencia.html
+
+Use a nova sequência 00 a 14.

@@ -17,36 +17,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string roleId,
             ActivityObjectContributorKind contributorKind,
             ActivitySetupRequirementRequiredness requiredness,
-            ActivityStateResetGroup resetGroup,
+            string resetDescriptorMetadata,
+            ActivityResetScopePlan resetScopePlan,
             string source,
             string reason)
         {
             Identity = identity;
-            PipelineId = Normalize(identity.PipelineId);
-            SessionStateId = Normalize(identity.SessionId);
-            ActivityId = Normalize(identity.ActivityId);
-            ActivityOrdinal = identity.ActivityOrdinal;
-            EntrySequence = identity.EntrySequence;
             TargetId = Normalize(targetId);
             RoleId = Normalize(roleId);
             ContributorKind = contributorKind;
             Requiredness = requiredness;
-            ResetGroup = resetGroup;
+            ResetDescriptorMetadata = NormalizeResetDescriptorMetadata(resetDescriptorMetadata);
+            ResetScopePlan = resetScopePlan;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public string PipelineId { get; }
-        public string SessionStateId { get; }
-        public string ActivityId { get; }
-        public int ActivityOrdinal { get; }
-        public int EntrySequence { get; }
         public string TargetId { get; }
         public string RoleId { get; }
         public ActivityObjectContributorKind ContributorKind { get; }
         public ActivitySetupRequirementRequiredness Requiredness { get; }
-        public ActivityStateResetGroup ResetGroup { get; }
+        public string ResetDescriptorMetadata { get; }
+        public ActivityResetScopePlan ResetScopePlan { get; }
+        public ActivityResetIntent ResetIntent => ResetScopePlan.ResetIntent;
+        public ActivityResetStateProfileKind StateProfileKind => ResetScopePlan.StateProfileKind;
         public string Source { get; }
         public string Reason { get; }
 
@@ -55,25 +50,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool IsValid =>
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionStateId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(TargetId) &&
             ContributorKind != ActivityObjectContributorKind.Unknown &&
             Requiredness != ActivitySetupRequirementRequiredness.Unknown &&
-            ResetGroup != ActivityStateResetGroup.Unknown &&
+            ResetScopePlan.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetGroup='{ResetGroup}', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetIntent='{ResetIntent}', resetStateProfile='{StateProfileKind}', resetDescriptor='{ResetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string NormalizeResetDescriptorMetadata(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
     }
 
@@ -122,7 +117,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityObjectResetEndpoint
     {
-        bool Supports(ActivityStateResetGroup resetGroup);
-        ActivityObjectResetResult ApplyReset(ActivityObjectResetCommand command);
+    }
+
+    public interface IActivityObjectEntryInitializeResetEndpoint : IActivityObjectResetEndpoint
+    {
+        ActivityObjectResetResult ApplyEntryInitializeReset(ActivityObjectResetCommand command);
+    }
+
+    public interface IActivityObjectRuntimeLocalResetEndpoint : IActivityObjectResetEndpoint
+    {
+        ActivityObjectResetResult ApplyRuntimeLocalReset(ActivityObjectResetCommand command);
+    }
+
+    public interface IActivityObjectRuntimeActivityResetEndpoint : IActivityObjectResetEndpoint
+    {
+        ActivityObjectResetResult ApplyRuntimeActivityReset(ActivityObjectResetCommand command);
+    }
+
+    public interface IActivityObjectRuntimeActivityTransitionResetEndpoint : IActivityObjectResetEndpoint
+    {
+        ActivityObjectResetResult ApplyRuntimeActivityTransitionReset(ActivityObjectResetCommand command);
+    }
+
+    public interface IActivityObjectRuntimeRouteTransitionResetEndpoint : IActivityObjectResetEndpoint
+    {
+        ActivityObjectResetResult ApplyRuntimeRouteTransitionReset(ActivityObjectResetCommand command);
     }
 }

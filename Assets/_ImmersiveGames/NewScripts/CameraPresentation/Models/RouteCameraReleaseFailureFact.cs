@@ -44,7 +44,7 @@
                 command != null ? command.RouteIdentity : string.Empty,
                 command != null ? command.RouteOperationId : string.Empty,
                 command != null ? command.TransitionId : string.Empty,
-                command != null ? command.RouteSequence : 0,
+                command?.RouteSequence ?? 0,
                 command != null ? command.SurfaceKind : string.Empty,
                 command != null ? command.RequirementId : string.Empty,
                 failureReason,

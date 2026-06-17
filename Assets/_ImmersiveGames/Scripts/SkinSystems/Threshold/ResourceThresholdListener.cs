@@ -173,9 +173,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 
         private bool ShouldInvoke(TriggerDirection dir, bool isAscending)
         {
-            return (dir == TriggerDirection.Both) ||
-                   (dir == TriggerDirection.Ascending && isAscending) ||
-                   (dir == TriggerDirection.Descending && !isAscending);
+            return dir == TriggerDirection.Both ||
+                   dir == TriggerDirection.Ascending && isAscending ||
+                   dir == TriggerDirection.Descending && !isAscending;
         }
         #endregion
     }

@@ -20,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string source,
             string reason)
         {
-            InputModesRuntimeResolvedConfig config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
-            SessionPlayerSlotsValidationContext slotsContext = SessionPlayerSlotsValidator.ValidateOrFail(
+            var config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
+            var slotsContext = SessionPlayerSlotsRuntimeResolver.ResolveOrFail(
                 runtimeModeConfig,
                 routeIdentity,
                 routeOperationId,
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 source,
                 reason);
 
-            EventSystem eventSystem = ValidateOrCreateEventSystemOnPersistentRoot(
+            var eventSystem = EnsureCanonicalEventSystemOnPersistentRoot(
                 slotsContext.PersistentRoot,
                 routeIdentity,
                 routeOperationId,
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 source,
                 reason);
 
-            ValidateOrCreateInputSystemUiInputModule(
+            EnsureCanonicalInputSystemUiInputModule(
                 slotsContext.PersistentRoot,
                 eventSystem,
                 config,
@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 reason);
         }
 
-        private static EventSystem ValidateOrCreateEventSystemOnPersistentRoot(
+        private static EventSystem EnsureCanonicalEventSystemOnPersistentRoot(
             Transform persistentRoot,
             string routeIdentity,
             string routeOperationId,
@@ -60,8 +60,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string source,
             string reason)
         {
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
-                BuildLog("SessionEventSystemValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
+                BuildLog("SessionEventSystemEnsureStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
 
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 FindObjectsSortMode.None);
 
             int observedCount = eventSystems?.Length ?? 0;
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("EventSystemObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"observedCount='{observedCount}' persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 var eventSystemGo = new GameObject("EventSystem");
                 eventSystemGo.transform.SetParent(persistentRoot, worldPositionStays: false);
-                EventSystem created = eventSystemGo.AddComponent<EventSystem>();
+                var created = eventSystemGo.AddComponent<EventSystem>();
 
                 DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
                     BuildLog("EventSystemCreated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -99,8 +99,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"EventSystem duplicado detectado. count='{eventSystems.Length}'.");
             }
 
-            EventSystem observed = eventSystems[0];
-            Transform observedRoot = observed.transform.root;
+            var observed = eventSystems[0];
+            var observedRoot = observed.transform.root;
             if (!ReferenceEquals(observedRoot, persistentRoot))
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             return observed;
         }
 
-        private static void ValidateOrCreateInputSystemUiInputModule(
+        private static void EnsureCanonicalInputSystemUiInputModule(
             Transform persistentRoot,
             EventSystem eventSystem,
             InputModesRuntimeResolvedConfig config,
@@ -128,15 +128,15 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             if (eventSystem == null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
-                    "EventSystem invalido para validacao do InputSystemUIInputModule.");
+                    "EventSystem invalido para preparar o InputSystemUIInputModule canonico.");
             }
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
-                BuildLog("SessionInputModuleValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
+                BuildLog("SessionInputModuleEnsureStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"eventSystem='{eventSystem.name}' persistentRoot='{persistentRoot.name}'"),
                 DebugUtility.Colors.Info);
 
-            StandaloneInputModule standaloneInputModule = eventSystem.GetComponent<StandaloneInputModule>();
+            var standaloneInputModule = eventSystem.GetComponent<StandaloneInputModule>();
             if (standaloneInputModule != null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -148,18 +148,18 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 FindObjectsSortMode.None);
 
             int observedCount = modules?.Length ?? 0;
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("InputSystemUIInputModuleObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"observedCount='{observedCount}' eventSystem='{eventSystem.name}'"),
                 DebugUtility.Colors.Info);
 
-            if (modules != null && modules.Length > 1)
+            if (modules is { Length: > 1 })
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"InputSystemUIInputModule duplicado detectado. count='{modules.Length}'.");
             }
 
-            InputSystemUIInputModule moduleOnEventSystem = eventSystem.GetComponent<InputSystemUIInputModule>();
+            var moduleOnEventSystem = eventSystem.GetComponent<InputSystemUIInputModule>();
             if (moduleOnEventSystem != null)
             {
                 BindCanonicalUiInputActionsOrFail(
@@ -179,14 +179,14 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 return;
             }
 
-            if (modules != null && modules.Length == 1)
+            if (modules is { Length: 1 })
             {
-                InputSystemUIInputModule observed = modules[0];
+                var observed = modules[0];
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"InputSystemUIInputModule fora do EventSystem persistente. inputModule='{observed.name}' moduleRoot='{observed.transform.root.name}' eventSystem='{eventSystem.name}' expectedRoot='{persistentRoot.name}'.");
             }
 
-            InputSystemUIInputModule created = eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
+            var created = eventSystem.gameObject.AddComponent<InputSystemUIInputModule>();
 
             DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("InputSystemUIInputModuleCreated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -225,8 +225,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     "InputSystemUIInputModule invalido para binding de UI actions.");
             }
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
-                BuildLog("SessionUiInputActionsValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
+                BuildLog("SessionUiInputActionsBindingStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"inputModule='{module.name}'"),
                 DebugUtility.Colors.Info);
 
@@ -236,29 +236,29 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     "uiActionsAsset canonico ausente.");
             }
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("UiInputActionsAssetObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"asset='{config.UiActionsAsset.name}'"),
                 DebugUtility.Colors.Info);
 
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiPoint, "uiPoint", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiLeftClick, "uiLeftClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiRightClick, "uiRightClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiMiddleClick, "uiMiddleClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiScrollWheel, "uiScrollWheel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiMove, "uiMove", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiSubmit, "uiSubmit", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiCancel, "uiCancel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiTrackedDevicePosition, "uiTrackedDevicePosition", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateCanonicalReferenceOrFail(config.UiActionsAsset, config.UiTrackedDeviceOrientation, "uiTrackedDeviceOrientation", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiPoint, "uiPoint", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiLeftClick, "uiLeftClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiRightClick, "uiRightClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiMiddleClick, "uiMiddleClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiScrollWheel, "uiScrollWheel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiMove, "uiMove", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiSubmit, "uiSubmit", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiCancel, "uiCancel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiTrackedDevicePosition, "uiTrackedDevicePosition", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireCanonicalReferenceOrFail(config.UiActionsAsset, config.UiTrackedDeviceOrientation, "uiTrackedDeviceOrientation", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
-                BuildLog("UiInputActionReferencesValidated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
+                BuildLog("UiInputActionReferencesRequired", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"asset='{config.UiActionsAsset.name}' actionCount='10'"),
                 DebugUtility.Colors.Info);
 
             module.UnassignActions();
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("InputSystemUIInputModuleUnassignedDefaults", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"inputModule='{module.name}'"),
                 DebugUtility.Colors.Info);
@@ -275,15 +275,15 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             module.trackedDevicePosition = config.UiTrackedDevicePosition;
             module.trackedDeviceOrientation = config.UiTrackedDeviceOrientation;
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
                 BuildLog("InputSystemUIInputModuleBound", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"inputModule='{module.name}' asset='{config.UiActionsAsset.name}' actionCount='10'"),
                 DebugUtility.Colors.Info);
 
-            ValidatePostBindOrFail(module, config, routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            ConfirmPostBindOrFail(module, config, routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
 
-            DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),
-                BuildLog("InputSystemUIInputModulePostBindValidated", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
+            DebugUtility.LogVerbose(typeof(UnityOperationalInputRuntimeAdapter),
+                BuildLog("InputSystemUIInputModulePostBindConfirmed", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"inputModule='{module.name}' asset='{config.UiActionsAsset.name}' actionCount='10'"),
                 DebugUtility.Colors.Success);
 
@@ -293,7 +293,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 DebugUtility.Colors.Success);
         }
 
-        private static void ValidatePostBindOrFail(
+        private static void ConfirmPostBindOrFail(
             InputSystemUIInputModule module,
             InputModesRuntimeResolvedConfig config,
             string routeIdentity,
@@ -309,19 +309,19 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     "Post-bind invalid: module.actionsAsset mismatch.");
             }
 
-            ValidateBoundReferenceOrFail(module.point, config.UiPoint, config.UiActionsAsset, "point", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.leftClick, config.UiLeftClick, config.UiActionsAsset, "leftClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.rightClick, config.UiRightClick, config.UiActionsAsset, "rightClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.middleClick, config.UiMiddleClick, config.UiActionsAsset, "middleClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.scrollWheel, config.UiScrollWheel, config.UiActionsAsset, "scrollWheel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.move, config.UiMove, config.UiActionsAsset, "move", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.submit, config.UiSubmit, config.UiActionsAsset, "submit", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.cancel, config.UiCancel, config.UiActionsAsset, "cancel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.trackedDevicePosition, config.UiTrackedDevicePosition, config.UiActionsAsset, "trackedDevicePosition", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
-            ValidateBoundReferenceOrFail(module.trackedDeviceOrientation, config.UiTrackedDeviceOrientation, config.UiActionsAsset, "trackedDeviceOrientation", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.point, config.UiPoint, config.UiActionsAsset, "point", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.leftClick, config.UiLeftClick, config.UiActionsAsset, "leftClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.rightClick, config.UiRightClick, config.UiActionsAsset, "rightClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.middleClick, config.UiMiddleClick, config.UiActionsAsset, "middleClick", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.scrollWheel, config.UiScrollWheel, config.UiActionsAsset, "scrollWheel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.move, config.UiMove, config.UiActionsAsset, "move", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.submit, config.UiSubmit, config.UiActionsAsset, "submit", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.cancel, config.UiCancel, config.UiActionsAsset, "cancel", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.trackedDevicePosition, config.UiTrackedDevicePosition, config.UiActionsAsset, "trackedDevicePosition", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
+            RequireBoundReferenceOrFail(module.trackedDeviceOrientation, config.UiTrackedDeviceOrientation, config.UiActionsAsset, "trackedDeviceOrientation", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason);
         }
 
-        private static void ValidateBoundReferenceOrFail(
+        private static void RequireBoundReferenceOrFail(
             InputActionReference observed,
             InputActionReference expected,
             InputActionAsset expectedAsset,
@@ -345,7 +345,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"Post-bind invalid: module.{fieldName}.action ausente.");
             }
 
-            InputActionAsset observedAsset = observed.action.actionMap?.asset;
+            var observedAsset = observed.action.actionMap?.asset;
             if (!ReferenceEquals(observedAsset, expectedAsset))
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -353,7 +353,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
         }
 
-        private static void ValidateCanonicalReferenceOrFail(
+        private static void RequireCanonicalReferenceOrFail(
             InputActionAsset expectedAsset,
             InputActionReference reference,
             string fieldName,
@@ -376,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"{fieldName}.action obrigatoria ausente.");
             }
 
-            InputActionAsset actionAsset = reference.action.actionMap?.asset;
+            var actionAsset = reference.action.actionMap?.asset;
             if (!ReferenceEquals(actionAsset, expectedAsset))
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -394,7 +394,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string detail)
         {
             string message = BuildLog(
-                "OperationalInputRuntimeValidationFailed",
+                "OperationalInputRuntimeEnsureFailed",
                 routeIdentity,
                 routeOperationId,
                 transitionId,
@@ -417,7 +417,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string reason,
             string extra)
         {
-            return $"[OBS][OperationalInputRuntime] event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
+            return $"event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
         }
+
     }
 }

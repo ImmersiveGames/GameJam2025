@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -44,29 +44,52 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         LoadingOnly = 4,
     }
 
+    public enum RouteActivitySaveContributorScopePolicy
+    {
+        Unknown = 0,
+        CurrentActivityObjectSnapshot = 1,
+        CurrentRouteSaveContributors = 2,
+        RouteAndActivitySaveContributors = 3,
+    }
+
     public readonly struct RouteActivitySavePolicy
     {
         public RouteActivitySavePolicy(
             bool loadActivitySaveOnEnter,
             bool saveActivityOnExit)
+            : this(
+                loadActivitySaveOnEnter,
+                saveActivityOnExit,
+                saveActivityOnExit
+                    ? RouteActivitySaveContributorScopePolicy.CurrentActivityObjectSnapshot
+                    : RouteActivitySaveContributorScopePolicy.Unknown)
+        {
+        }
+
+        public RouteActivitySavePolicy(
+            bool loadActivitySaveOnEnter,
+            bool saveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy contributorScopePolicy)
         {
             LoadActivitySaveOnEnter = loadActivitySaveOnEnter;
             SaveActivityOnExit = saveActivityOnExit;
+            ContributorScopePolicy = contributorScopePolicy;
         }
 
         public bool LoadActivitySaveOnEnter { get; }
         public bool SaveActivityOnExit { get; }
+        public RouteActivitySaveContributorScopePolicy ContributorScopePolicy { get; }
         public bool IsValid => true;
 
         public override string ToString()
         {
-            return $"loadActivitySaveOnEnter='{LoadActivitySaveOnEnter}' saveActivityOnExit='{SaveActivityOnExit}'";
+            return $"loadActivitySaveOnEnter='{LoadActivitySaveOnEnter}' saveActivityOnExit='{SaveActivityOnExit}' contributorScopePolicy='{ContributorScopePolicy}'";
         }
     }
 
     [CreateAssetMenu(
         fileName = "SessionOperationalRoute",
-        menuName = "ImmersiveGames/NewScripts/Session Operational/Operational Route/OperationalRoute",
+        menuName = "ImmersiveGames/Session Operational/Operational Route/OperationalRoute",
         order = 40)]
     public sealed class OperationalRouteAsset : ScriptableObject
     {
@@ -439,36 +462,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return true;
         }
 
-        public SessionOperationalRouteCommand CreateCommand(
-            string routeOperationId,
-            string transitionId,
-            int routeSequence,
-            string source,
-            string reason,
-            SessionOperationalRouteTransitionMode transitionMode,
-            SceneTransitionProfile transitionProfile,
-            SessionOperationalRouteAudioCommand audioCommand,
-            RouteActivitySavePolicy routeActivitySavePolicy,
-            IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
-            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
-            IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
-        {
-            return new SessionOperationalRouteCommand(
-                this,
-                routeOperationId,
-                transitionId,
-                routeSequence,
-                source,
-                reason,
-                transitionMode,
-                transitionProfile,
-                audioCommand,
-                routeActivitySavePolicy,
-                finalScenesToLoad,
-                autoScenesToUnload,
-                finalScenesToUnload);
-        }
-
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -583,69 +576,53 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public readonly struct SessionOperationalRouteCommand
     {
         public SessionOperationalRouteCommand(
-            OperationalRouteAsset route,
+            SessionOperationalRoutePlan plan,
             string routeOperationId,
             string transitionId,
             int routeSequence,
             string source,
-            string reason,
-            SessionOperationalRouteTransitionMode transitionMode,
-            SceneTransitionProfile transitionProfile,
-            SessionOperationalRouteAudioCommand audioCommand,
-            RouteActivitySavePolicy routeActivitySavePolicy,
-            IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
-            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
-            IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
+            string reason)
         {
-            Route = route;
+            Plan = plan;
             RouteOperationId = Normalize(routeOperationId);
             TransitionId = Normalize(transitionId);
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             Source = Normalize(source);
             Reason = Normalize(reason);
-            TransitionMode = transitionMode;
-            TransitionProfile = transitionProfile;
-            Audio = audioCommand;
-            ActivitySavePolicy = routeActivitySavePolicy;
-            FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
-            AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
-            FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
         }
 
-        public OperationalRouteAsset Route { get; }
+        public SessionOperationalRoutePlan Plan { get; }
         public string RouteOperationId { get; }
         public string TransitionId { get; }
         public int RouteSequence { get; }
         public string Source { get; }
         public string Reason { get; }
-        public SessionOperationalRouteTransitionMode TransitionMode { get; }
-        public SceneTransitionProfile TransitionProfile { get; }
-        public SessionOperationalRouteAudioCommand Audio { get; }
-        public RouteActivitySavePolicy ActivitySavePolicy { get; }
-        public string RouteIdentity => Route != null ? Route.RouteIdentity : string.Empty;
-        public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<SceneKeyAsset>();
-        public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<SceneKeyAsset>();
-        public IReadOnlyList<SceneKeyAsset> FinalScenesToLoad { get; }
-        public IReadOnlyList<SceneKeyAsset> AutoScenesToUnload { get; }
-        public IReadOnlyList<SceneKeyAsset> FinalScenesToUnload { get; }
-        public SceneKeyAsset ActiveSceneKey => Route != null ? Route.ActiveSceneKey : null;
-        public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => Route != null ? Route.CompletionHandoff : SessionOperationalRouteCompletionHandoffKind.NoHandoff;
-        public string HandoffSessionStateId => Route != null ? Route.HandoffSessionStateId : string.Empty;
-        public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
-        public string TransitionProfileLabel => TransitionProfile != null && !string.IsNullOrWhiteSpace(TransitionProfile.name) ? TransitionProfile.name.Trim() : string.Empty;
+        public string RouteIdentity => Plan.RouteIdentity;
+        public SessionOperationalRouteTransitionMode TransitionMode => Plan.TransitionMode;
+        public SceneTransitionProfile TransitionProfile => Plan.TransitionProfile;
+        public SessionOperationalRouteAudioCommand Audio => Plan.Audio;
+        public RouteActivitySavePolicy ActivitySavePolicy => Plan.ActivitySavePolicy;
+        public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Plan.ScenesToLoad;
+        public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Plan.ScenesToUnload;
+        public IReadOnlyList<SceneKeyAsset> FinalScenesToLoad => Plan.FinalScenesToLoad;
+        public IReadOnlyList<SceneKeyAsset> AutoScenesToUnload => Plan.AutoScenesToUnload;
+        public IReadOnlyList<SceneKeyAsset> FinalScenesToUnload => Plan.FinalScenesToUnload;
+        public SceneKeyAsset ActiveSceneKey => Plan.ActiveSceneKey;
+        public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => Plan.CompletionHandoff;
+        public string HandoffSessionStateId => Plan.HandoffSessionStateId;
+        public OperationalSurfaceKind SurfaceKind => Plan.OperationalSurfaceKind;
+        public SessionOperationalInputPolicy InputPolicy => Plan.InputPolicy;
+        public PlayerSetDefinitionAsset RouteParticipantSetDefinition => Plan.RouteParticipantSetDefinition;
+        public SurfacePresentationProfileAsset SurfacePresentationProfile => Plan.SurfacePresentationProfile;
+        public ActivityPresentationProfileAsset ActivityPresentationProfile => Plan.ActivityPresentationProfile;
+        public bool UsesTransition => Plan.UsesTransition;
+        public string TransitionProfileLabel => Plan.TransitionProfileLabel;
 
         public bool IsValid =>
-            Route != null &&
-            Route.IsValid &&
+            Plan.IsValid &&
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
-            (TransitionMode == SessionOperationalRouteTransitionMode.None || TransitionMode == SessionOperationalRouteTransitionMode.Profile) &&
-            (!UsesTransition || (TransitionProfile != null && TransitionProfile.TryValidate(out _))) &&
-            Audio.IsValid &&
-            ActivitySavePolicy.IsValid &&
-            FinalScenesToLoad != null &&
-            FinalScenesToLoad.Count > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
 
@@ -750,5 +727,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     }
 
 }
-
-

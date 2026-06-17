@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Host
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
-            if (existingHosts != null && existingHosts.Length > 0)
+            if (existingHosts is { Length: > 0 })
             {
                 var host = existingHosts[0];
                 host.EnsureListenerComponent();

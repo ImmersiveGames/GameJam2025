@@ -1,9 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 {
@@ -15,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             if (!request.HasOperations)
             {
                 DebugUtility.Log<SceneCompositionExecutor>(
-                    $"[OBS][SceneComposition] {GetScopePrefix(request.Scope)}CompositionNoOp correlationId='{request.CorrelationId}' reason='{request.Reason}'.",
+                    $"{GetScopePrefix(request.Scope)}CompositionNoOp correlationId='{request.CorrelationId}' reason='{request.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return new SceneCompositionResult(
@@ -41,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             string activeSceneLabel = string.IsNullOrWhiteSpace(request.ActiveScene) ? "<none>" : request.ActiveScene;
 
             DebugUtility.Log<SceneCompositionExecutor>(
-                $"[OBS][SceneComposition] LocalCompositionApplied correlationId='{request.CorrelationId}' scenesToLoad=[{string.Join(",", request.ScenesToLoad)}] scenesToUnload=[{string.Join(",", request.ScenesToUnload)}] addedScenes=[{addedList}] removedScenes=[{removedList}] activeScene='{activeSceneLabel}' addedCount={addedScenes.Count} removedCount={removedScenes.Count} reason='{request.Reason}'.",
+                $"LocalCompositionApplied correlationId='{request.CorrelationId}' scenesToLoad=[{string.Join(",", request.ScenesToLoad)}] scenesToUnload=[{string.Join(",", request.ScenesToUnload)}] addedScenes=[{addedList}] removedScenes=[{removedList}] activeScene='{activeSceneLabel}' addedCount={addedScenes.Count} removedCount={removedScenes.Count} reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
             return new SceneCompositionResult(
@@ -56,8 +55,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 
         private static async Task<List<string>> UnloadScenesAsync(IReadOnlyList<string> scenesToUnload, string activeSceneName, CancellationToken ct)
         {
-            List<string> removedScenes = new List<string>();
-            HashSet<string> dedupe = new HashSet<string>(StringComparer.Ordinal);
+            var removedScenes = new List<string>();
+            var dedupe = new HashSet<string>(StringComparer.Ordinal);
             string normalizedActiveScene = NormalizeSceneName(activeSceneName);
 
             if (scenesToUnload == null)
@@ -81,17 +80,17 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                     continue;
                 }
 
-                Scene scene = SceneManager.GetSceneByName(sceneName);
+                var scene = SceneManager.GetSceneByName(sceneName);
                 if (!scene.IsValid() || !scene.isLoaded)
                 {
                     continue;
                 }
 
                 DebugUtility.Log<SceneCompositionExecutor>(
-                    $"[OBS][SceneComposition] UnloadSceneStarted scene='{sceneName}'.",
+                    $"UnloadSceneStarted scene='{sceneName}'.",
                     DebugUtility.Colors.Info);
 
-                AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(scene);
+                var unloadOperation = SceneManager.UnloadSceneAsync(scene);
                 if (unloadOperation == null)
                 {
                     HardFailFastH1.Trigger(typeof(SceneCompositionExecutor),
@@ -106,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 
                 removedScenes.Add(sceneName);
                 DebugUtility.Log<SceneCompositionExecutor>(
-                    $"[OBS][SceneComposition] UnloadSceneCompleted scene='{sceneName}'.",
+                    $"UnloadSceneCompleted scene='{sceneName}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -115,8 +114,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 
         private static async Task<List<string>> LoadScenesAsync(IReadOnlyList<string> scenesToLoad, CancellationToken ct)
         {
-            List<string> addedScenes = new List<string>();
-            HashSet<string> dedupe = new HashSet<string>(StringComparer.Ordinal);
+            var addedScenes = new List<string>();
+            var dedupe = new HashSet<string>(StringComparer.Ordinal);
 
             if (scenesToLoad == null)
             {
@@ -133,14 +132,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                     continue;
                 }
 
-                Scene scene = SceneManager.GetSceneByName(sceneName);
+                var scene = SceneManager.GetSceneByName(sceneName);
                 if (!scene.IsValid() || !scene.isLoaded)
                 {
                     DebugUtility.Log<SceneCompositionExecutor>(
-                        $"[OBS][SceneComposition] LoadSceneStarted scene='{sceneName}'.",
+                        $"LoadSceneStarted scene='{sceneName}'.",
                         DebugUtility.Colors.Info);
 
-                    AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
+                    var loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
                     if (loadOperation == null)
                     {
                         HardFailFastH1.Trigger(typeof(SceneCompositionExecutor),
@@ -154,13 +153,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                     }
 
                     DebugUtility.Log<SceneCompositionExecutor>(
-                        $"[OBS][SceneComposition] LoadSceneCompleted scene='{sceneName}'.",
+                        $"LoadSceneCompleted scene='{sceneName}'.",
                         DebugUtility.Colors.Info);
                 }
                 else
                 {
                     DebugUtility.Log<SceneCompositionExecutor>(
-                        $"[OBS][SceneComposition] LoadSceneCompleted scene='{sceneName}' alreadyLoaded='true'.",
+                        $"LoadSceneCompleted scene='{sceneName}' alreadyLoaded='true'.",
                         DebugUtility.Colors.Info);
                 }
 
@@ -177,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                 return;
             }
 
-            Scene scene = SceneManager.GetSceneByName(activeSceneName.Trim());
+            var scene = SceneManager.GetSceneByName(activeSceneName.Trim());
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 HardFailFastH1.Trigger(typeof(SceneCompositionExecutor),
@@ -191,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             }
 
             DebugUtility.Log<SceneCompositionExecutor>(
-                $"[OBS][SceneComposition] SetActiveScene scene='{activeSceneName}' correlationId='{correlationId}' reason='{reason}'.",
+                $"SetActiveScene scene='{activeSceneName}' correlationId='{correlationId}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -231,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                 return false;
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName.Trim());
+            var scene = SceneManager.GetSceneByName(sceneName.Trim());
             return scene.IsValid() && scene.isLoaded;
         }
 

@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
-using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static class RuntimePersistentScenesComposition
@@ -19,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EnsureStartupRouteCompatibilityOrFail(runtimeModeConfig);
 
             DebugUtility.LogVerbose(typeof(RuntimePersistentScenesComposition),
-                "[OBS][RuntimeMode][PersistentScenes] installer='validated' status='ready'.",
+                "installer='validated' status='ready'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -38,8 +37,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _guaranteeRuntimeModeConfig = runtimeModeConfig;
             _guaranteeTask = EnsurePersistentScenesGuaranteedAsync(runtimeModeConfig);
 
-            DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                "[OBS][RuntimeMode][PersistentScenes] guarantee='started'.",
+            DebugUtility.LogVerbose(typeof(RuntimePersistentScenesComposition),
+                "guarantee='started'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -66,11 +65,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static async Task EnsurePersistentScenesGuaranteedAsync(RuntimeModeConfig runtimeModeConfig)
         {
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
             if (persistentScenesPolicy == null)
             {
                 DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                    "[OBS][RuntimeMode][PersistentScenes] policy='none' status='skipped'.",
+                    "policy='none' status='skipped'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -79,13 +78,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             if (persistentSceneNames.Count == 0)
             {
                 DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                    $"[OBS][RuntimeMode][PersistentScenes] policyId='{persistentScenesPolicy.PolicyId}' status='no_entries'.",
+                    $"policyId='{persistentScenesPolicy.PolicyId}' status='no_entries'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             SceneCompositionExecutor sceneCompositionExecutor = new();
-            SceneCompositionResult result = await sceneCompositionExecutor.ApplyAsync(
+            var result = await sceneCompositionExecutor.ApplyAsync(
                 new SceneCompositionRequest(
                     SceneCompositionScope.Local,
                     reason: $"runtime_persistent_scenes:{persistentScenesPolicy.PolicyId}",
@@ -103,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                $"[OBS][RuntimeMode][PersistentScenes] guaranteed policyId='{persistentScenesPolicy.PolicyId}' scenes=[{string.Join(", ", persistentSceneNames)}] correlationId='{result.CorrelationId}'.",
+                $"guaranteed policyId='{persistentScenesPolicy.PolicyId}' scenes=[{string.Join(", ", persistentSceneNames)}] correlationId='{result.CorrelationId}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -122,8 +121,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void EnsureStartupRouteCompatibilityOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            OperationalRouteAsset startupRoute = SessionOperationalRuntimeConfigResolver.ResolveStartupRouteOrFail(runtimeModeConfig);
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+            var startupRoute = SessionOperationalRuntimeConfigResolver.ResolveStartupRouteOrFail(runtimeModeConfig);
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
 
             if (startupRoute == null || persistentScenesPolicy == null)
             {
@@ -138,15 +137,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     throw new InvalidOperationException("[FATAL][Config][RuntimeMode][PersistentScenes] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                var registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string policyValidationError = string.Empty;
                 bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
                 if (!registryPolicyValid)
@@ -171,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                $"[OBS][RuntimePolicy][Config] RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
     }

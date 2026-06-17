@@ -25,10 +25,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             string source = $"ActivityCatalogAsset:{CatalogId}";
             for (int index = 0; index < activities.Count; index++)
             {
-                ActivityAsset current = activities[index];
-                string nextActivityId = index + 1 < activities.Count
-                    ? activities[index + 1].ActivityId
-                    : string.Empty;
+                var current = activities[index];
+                string nextActivityId = current.HasNextActivity ? current.NextActivityId : string.Empty;
                 definitions.Add(new SessionActivityDefinition(
                     activityId: current.ActivityId,
                     displayName: current.DisplayName,
@@ -65,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < activities.Count; index++)
             {
-                ActivityAsset activity = activities[index];
+                var activity = activities[index];
                 if (activity == null)
                 {
                     throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has null activity at index {index}.");
@@ -75,6 +73,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 if (!ids.Add(activity.ActivityId))
                 {
                     throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has duplicate activityId '{activity.ActivityId}'.");
+                }
+            }
+
+            for (int index = 0; index < activities.Count; index++)
+            {
+                var activity = activities[index];
+                if (activity == null || !activity.HasNextActivity)
+                {
+                    continue;
+                }
+
+                var next = activity.NextActivity;
+                if (next == null)
+                {
+                    throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has activity '{activity.ActivityId}' with null nextActivity reference.");
+                }
+
+                if (!ids.Contains(next.ActivityId))
+                {
+                    throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has activity '{activity.ActivityId}' referencing nextActivityId '{next.ActivityId}' outside this catalog.");
                 }
             }
         }

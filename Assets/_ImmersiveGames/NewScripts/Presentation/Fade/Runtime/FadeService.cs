@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -185,7 +185,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
                 }
 
                 DebugUtility.LogVerbose<FadeService>(
-                    $"[OBS][Fade] FadeScene ready (source=FadeService/EnsureController, scene='{_fadeSceneName}').");
+                    $"FadeScene ready (source=FadeService/EnsureController, scene='{_fadeSceneName}').");
             }
             finally
             {

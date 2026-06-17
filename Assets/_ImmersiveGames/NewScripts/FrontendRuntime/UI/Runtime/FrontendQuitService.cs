@@ -15,13 +15,13 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
 
 #if UNITY_EDITOR
             DebugUtility.Log(typeof(FrontendQuitService),
-                $"[OBS][Quit][Execute] Quit executado no Editor. Stopping Play Mode. reason='{normalizedReason}'.",
+                $"Quit executado no Editor. Stopping Play Mode. reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             EditorApplication.isPlaying = false;
 #else
             DebugUtility.Log(typeof(FrontendQuitService),
-                $"[OBS][Quit][Execute] Quit executado em build. Application.Quit() reason='{normalizedReason}'.",
+                $"Quit executado em build. Application.Quit() reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             Application.Quit();

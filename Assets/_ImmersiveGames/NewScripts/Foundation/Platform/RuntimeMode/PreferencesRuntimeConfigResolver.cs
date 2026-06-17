@@ -9,13 +9,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     {
         public static AudioDefaultsAsset ResolveAudioDefaultsOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            IPreferencesRuntimeConfigGroupReadOnly preferencesRuntime = ResolvePreferencesRuntimeGroupOrFail(runtimeModeConfig);
+            var preferencesRuntime = ResolvePreferencesRuntimeGroupOrFail(runtimeModeConfig);
 
-            AudioDefaultsAsset audioDefaults = preferencesRuntime.AudioDefaults
+            var audioDefaults = preferencesRuntime.AudioDefaults
                 ?? throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeConfigRegistry invariant breach: AudioDefaults obrigatorio ausente no snapshot.");
 
-            DebugUtility.Log(typeof(PreferencesRuntimeConfigResolver),
-                $"[OBS][Preferences][Config] AudioDefaults resolved via RuntimeConfigRegistry. asset='{audioDefaults.name}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimeConfigResolver),
+                $"AudioDefaults resolved via RuntimeConfigRegistry. asset='{audioDefaults.name}'.",
                 DebugUtility.Colors.Info);
 
             return audioDefaults;
@@ -23,13 +23,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
         public static VideoDefaultsAsset ResolveVideoDefaultsOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            IPreferencesRuntimeConfigGroupReadOnly preferencesRuntime = ResolvePreferencesRuntimeGroupOrFail(runtimeModeConfig);
+            var preferencesRuntime = ResolvePreferencesRuntimeGroupOrFail(runtimeModeConfig);
 
-            VideoDefaultsAsset videoDefaults = preferencesRuntime.VideoDefaults
+            var videoDefaults = preferencesRuntime.VideoDefaults
                 ?? throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeConfigRegistry invariant breach: VideoDefaults obrigatorio ausente no snapshot.");
 
-            DebugUtility.Log(typeof(PreferencesRuntimeConfigResolver),
-                $"[OBS][Preferences][Config] VideoDefaults resolved via RuntimeConfigRegistry. asset='{videoDefaults.name}'.",
+            DebugUtility.LogVerbose(typeof(PreferencesRuntimeConfigResolver),
+                $"VideoDefaults resolved via RuntimeConfigRegistry. asset='{videoDefaults.name}'.",
                 DebugUtility.Colors.Info);
 
             return videoDefaults;
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeModeConfig obrigatorio ausente para resolver defaults.");
             }
 
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) || snapshot == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeConfigRegistry snapshot obrigatorio ausente para PreferencesRuntime defaults migrados.");
             }

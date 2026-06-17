@@ -43,9 +43,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
             float bestDistance = float.MaxValue;
             Transform bestPlayer = null;
-            Vector3 origin = transform.position;
+            var origin = transform.position;
 
-            foreach (Transform candidate in players)
+            foreach (var candidate in players)
             {
                 if (candidate == null)
                 {
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         private Vector3 ApplyPlayerBounds(Vector3 desiredPosition)
         {
-            if (!TryGetClosestPlayerAnchor(out Vector3 anchor, out _))
+            if (!TryGetClosestPlayerAnchor(out var anchor, out _))
             {
                 return desiredPosition;
             }
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 maxDistance = minDistance;
             }
 
-            Vector3 offset = desiredPosition - anchor;
+            var offset = desiredPosition - anchor;
             float sqrMagnitude = offset.sqrMagnitude;
 
             if (maxDistance > 0f)
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 float minDistanceSqr = minDistance * minDistance;
                 if (sqrMagnitude < minDistanceSqr)
                 {
-                    Vector3 direction = offset.sqrMagnitude > Mathf.Epsilon ? offset.normalized : transform.forward;
+                    var direction = offset.sqrMagnitude > Mathf.Epsilon ? offset.normalized : transform.forward;
                     if (direction.sqrMagnitude <= Mathf.Epsilon)
                     {
                         direction = Vector3.forward;
@@ -202,13 +202,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return;
             }
 
-            Vector3 displacement = direction.normalized * (speed * deltaTime);
+            var displacement = direction.normalized * (speed * deltaTime);
             Translate(displacement, respectPlayerBounds);
         }
 
         internal void Translate(Vector3 displacement, bool respectPlayerBounds)
         {
-            Vector3 desiredPosition = transform.position + displacement;
+            var desiredPosition = transform.position + displacement;
             if (respectPlayerBounds)
             {
                 desiredPosition = ApplyPlayerBounds(desiredPosition);
@@ -224,7 +224,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return;
             }
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             float rotationSpeed = Config != null ? Config.RotationSpeed : 5f;
             rotationSpeed = Mathf.Max(0f, rotationSpeed);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, deltaTime * rotationSpeed);
@@ -232,19 +232,19 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         internal void LookAt(Vector3 targetPosition)
         {
-            Vector3 direction = targetPosition - transform.position;
+            var direction = targetPosition - transform.position;
             if (direction.sqrMagnitude <= Mathf.Epsilon)
             {
                 return;
             }
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = targetRotation;
         }
 
         internal bool TryGetClosestPlayerAnchor(out Vector3 anchor, out float distance)
         {
-            if (TryGetClosestPlayer(out Transform player, out float sqrDistance))
+            if (TryGetClosestPlayer(out var player, out float sqrDistance))
             {
                 anchor = player.position;
                 distance = Mathf.Sqrt(sqrDistance);
@@ -363,7 +363,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return false;
             }
 
-            _desireService = new EaterDesireService(Master, Config, _audioEmitter);
+            _desireService = new EaterDesireService(Master, Config, null);
             _desireService.EventDesireChanged += HandleDesireChanged;
             _missingDesireServiceLogged = false;
             return true;

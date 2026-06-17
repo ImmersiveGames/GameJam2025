@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 throw new InvalidOperationException("[FATAL][Preferences] IAudioSettingsService obrigatorio ausente antes de instalar Preferences.");
             }
 
-            AudioDefaultsAsset audioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
+            var audioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
             if (DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var registeredAudioDefaults)
                 && registeredAudioDefaults != null)
             {
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                     DebugUtility.Colors.Info);
             }
 
-            VideoDefaultsAsset videoDefaults = PreferencesRuntimeConfigResolver.ResolveVideoDefaultsOrFail(runtimeModeConfig);
+            var videoDefaults = PreferencesRuntimeConfigResolver.ResolveVideoDefaultsOrFail(runtimeModeConfig);
 
             if (DependencyManager.Provider.TryGetGlobal<VideoDefaultsAsset>(out var registeredVideoDefaults)
                 && registeredVideoDefaults != null)
