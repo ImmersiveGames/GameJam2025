@@ -120,9 +120,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
             _isCacheDirty = true;
         }
 
-        public void OnBeforeSerialize()
-        {
-        }
+        public void OnBeforeSerialize() { }
 
         public void OnAfterDeserialize()
         {

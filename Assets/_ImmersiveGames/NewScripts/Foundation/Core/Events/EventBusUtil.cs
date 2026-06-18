@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
 
         private static void ClearFilteredEventBuses()
         {
-            foreach ((var scope, var evt) in _filteredEventTypes)
+            foreach (var (scope, evt) in _filteredEventTypes)
             {
                 try
                 {
@@ -82,4 +82,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
         }
     }
 }
-

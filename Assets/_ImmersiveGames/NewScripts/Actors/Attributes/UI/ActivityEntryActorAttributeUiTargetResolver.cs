@@ -20,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             string normalizedSource = source.TrimToEmpty();
             string normalizedReason = reason.TrimToEmpty();
-            ActorAttributeUiTargetSelector selector = request.Selector;
-            ActorAttributeUiTargetSelectorKind selectorKind = selector?.Kind ?? default;
+            var selector = request.Selector;
+            var selectorKind = selector?.Kind ?? default;
             string selectorKindLabel = DescribeSelectorKind(selector);
 
             DebugUtility.LogVerbose(
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             IReadOnlyList<ActivityParticipantBinding> participants = participationContext.Participants;
             for (int index = 0; index < participants.Count; index++)
             {
-                ActivityParticipantBinding participant = participants[index];
+                var participant = participants[index];
                 if (!participant.IsValid ||
                     participant.Role != SessionParticipantRole.PrimaryPlayer)
                 {
@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                     "primary_player_participant_ambiguous");
             }
 
-            if (!registry.TryGetActiveHandleByParticipant(participantId, out PlayerActorRuntimeHandle handle) ||
+            if (!registry.TryGetActiveHandleByParticipant(participantId, out var handle) ||
                 !handle.IsValid)
             {
                 return Reject(
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             string reason,
             string selectorKindLabel)
         {
-            ActorId explicitActorId = request.Selector.ExplicitActorId;
+            var explicitActorId = request.Selector.ExplicitActorId;
             if (!explicitActorId.IsValid)
             {
                 return Reject(
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             IReadOnlyList<PlayerActorRuntimeHandle> handles = registry.GetIndexedActiveHandles();
             for (int index = 0; index < handles.Count; index++)
             {
-                PlayerActorRuntimeHandle candidate = handles[index];
+                var candidate = handles[index];
                 if (!candidate.IsValid ||
                     candidate.ActorId != explicitActorId)
                 {
@@ -255,7 +255,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             string reason,
             string selectorKindLabel)
         {
-            ActorInstanceRuntimeId explicitActorInstanceRuntimeId = request.Selector.ExplicitActorInstanceRuntimeId;
+            var explicitActorInstanceRuntimeId = request.Selector.ExplicitActorInstanceRuntimeId;
             if (!explicitActorInstanceRuntimeId.IsValid)
             {
                 return Reject(
@@ -268,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                     "explicit_actor_instance_runtime_id_missing");
             }
 
-            if (!registry.TryGetActiveHandleByActorInstance(explicitActorInstanceRuntimeId, out PlayerActorRuntimeHandle handle) ||
+            if (!registry.TryGetActiveHandleByActorInstance(explicitActorInstanceRuntimeId, out var handle) ||
                 !handle.IsValid)
             {
                 return Reject(
@@ -362,5 +362,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             return selector == null ? "missing" : selector.Kind.ToString();
         }
-}
+    }
 }

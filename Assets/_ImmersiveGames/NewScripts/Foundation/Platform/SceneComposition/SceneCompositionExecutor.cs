@@ -19,13 +19,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                     DebugUtility.Colors.Info);
 
                 return new SceneCompositionResult(
-                    success: true,
-                    scope: request.Scope,
-                    reason: request.Reason,
-                    correlationId: request.CorrelationId,
-                    scenesAdded: 0,
-                    scenesRemoved: 0,
-                    activeScene: request.ActiveScene);
+                    true,
+                    request.Scope,
+                    request.Reason,
+                    request.CorrelationId,
+                    0,
+                    0,
+                    request.ActiveScene);
             }
 
             bool activeSceneAlreadyLoaded = IsSceneLoaded(request.ActiveScene);
@@ -45,13 +45,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                 DebugUtility.Colors.Info);
 
             return new SceneCompositionResult(
-                success: true,
-                scope: request.Scope,
-                reason: request.Reason,
-                correlationId: request.CorrelationId,
-                scenesAdded: addedScenes.Count,
-                scenesRemoved: removedScenes.Count,
-                activeScene: request.ActiveScene);
+                true,
+                request.Scope,
+                request.Reason,
+                request.CorrelationId,
+                addedScenes.Count,
+                removedScenes.Count,
+                request.ActiveScene);
         }
 
         private static async Task<List<string>> UnloadScenesAsync(IReadOnlyList<string> scenesToUnload, string activeSceneName, CancellationToken ct)
@@ -276,5 +276,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
         }
     }
 }
-
-

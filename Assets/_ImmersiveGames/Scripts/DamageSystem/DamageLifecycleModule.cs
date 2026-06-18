@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
             IsDead = true;
             //FilteredEventBus<DeathEvent>.RaiseFiltered(
-                //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
+            //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
         }
 
         public void RevertDeathState(bool previousState, RuntimeAttributeType runtimeAttributeType)
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             if (IsDead)
             {
                 //FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
+                //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
             }
             //FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
         }

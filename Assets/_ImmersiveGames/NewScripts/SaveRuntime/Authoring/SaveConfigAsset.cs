@@ -28,8 +28,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
                 DefaultProfileId,
                 DefaultSlotId,
                 SchemaVersion,
-                revision: 0,
-                savedAtUtc: DateTime.UtcNow.ToString("O"));
+                0,
+                DateTime.UtcNow.ToString("O"));
         }
 
         public void ValidateOrThrow()
@@ -54,5 +54,5 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
                 throw new InvalidOperationException($"SaveConfigAsset '{name}' requires backend.");
             }
         }
-}
+    }
 }

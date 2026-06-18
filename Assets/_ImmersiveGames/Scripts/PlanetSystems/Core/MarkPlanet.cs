@@ -206,4 +206,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Core
         }
     }
 }
-

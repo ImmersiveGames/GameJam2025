@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 {
@@ -76,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
         public ActorInstanceRuntimeId ImpactActorInstanceRuntimeId => _impactActorInstanceRuntimeId;
         public ActorId OwnerActorId => _ownerActorId;
         public ActorInstanceRuntimeId OwnerActorInstanceRuntimeId => _ownerActorInstanceRuntimeId;
-        public string ImpactKind => string.IsNullOrWhiteSpace(_configuredImpactKind) ? Normalize(impactKind) : _configuredImpactKind;
+        public string ImpactKind => string.IsNullOrWhiteSpace(_configuredImpactKind) ? impactKind.TrimToEmpty() : _configuredImpactKind;
         public bool IsConfigured => _isConfigured;
 
         public void Configure(
@@ -99,8 +100,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             }
 
             string resolvedImpactKind = string.IsNullOrWhiteSpace(configuredImpactKind)
-                ? Normalize(impactKind)
-                : Normalize(configuredImpactKind);
+                ? impactKind.TrimToEmpty()
+                : configuredImpactKind.TrimToEmpty();
 
             if (string.IsNullOrWhiteSpace(resolvedImpactKind))
             {
@@ -119,12 +120,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactEndpointConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' targetLayerMask='{targetLayerMask.value}' requireTargetActorForRegisteredImpact='{requireTargetActorForRegisteredImpact}' ignoreSelfActor='{ignoreSelfActor}' ignoreOwnerActor='{ignoreOwnerActor}' singleImpact='{registerSingleImpactUntilReconfigured}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactEndpointConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' targetLayerMask='{targetLayerMask.value}' requireTargetActorForRegisteredImpact='{requireTargetActorForRegisteredImpact}' ignoreSelfActor='{ignoreSelfActor}' ignoreOwnerActor='{ignoreOwnerActor}' singleImpact='{registerSingleImpactUntilReconfigured}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactEndpointReady' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactEndpointReady' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
         }
 
@@ -138,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactDamageApplicationConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' adapterConfigured='{_damageApplicationAdapter != null && _damageApplicationAdapter.IsConfigured}' applyDamageOnRegisteredImpact='{applyDamageOnRegisteredImpact}' impactDamageAmount='{impactDamageAmount:0.###}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactDamageApplicationConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' adapterConfigured='{_damageApplicationAdapter != null && _damageApplicationAdapter.IsConfigured}' applyDamageOnRegisteredImpact='{applyDamageOnRegisteredImpact}' impactDamageAmount='{impactDamageAmount:0.###}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 _damageApplicationAdapter != null && _damageApplicationAdapter.IsConfigured ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -151,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactReturnHandlerConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' handlerConfigured='{_returnHandler != null && _returnHandler.IsConfigured}' requestReturnAfterRegisteredImpact='{requestReturnAfterRegisteredImpact}' requireDamageApplicationBeforeReturn='{requireDamageApplicationBeforeReturn}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactReturnHandlerConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' handlerConfigured='{_returnHandler != null && _returnHandler.IsConfigured}' requestReturnAfterRegisteredImpact='{requestReturnAfterRegisteredImpact}' requireDamageApplicationBeforeReturn='{requireDamageApplicationBeforeReturn}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 _returnHandler != null && _returnHandler.IsConfigured ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -161,7 +162,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string reason,
             out ActorImpactResult result)
         {
-            Collider targetCollider = targetObject == null ? null : targetObject.GetComponentInChildren<Collider>(includeInactive: true);
+            var targetCollider = targetObject == null ? null : targetObject.GetComponentInChildren<Collider>(includeInactive: true);
             return TryRegisterImpact(targetObject, targetCollider, ActorImpactContact.None, source, reason, out result);
         }
 
@@ -171,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string reason,
             out ActorImpactResult result)
         {
-            GameObject targetObject = targetCollider == null ? null : targetCollider.gameObject;
+            var targetObject = targetCollider == null ? null : targetCollider.gameObject;
             return TryRegisterImpact(targetObject, targetCollider, ActorImpactContact.None, source, reason, out result);
         }
 
@@ -204,8 +205,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return;
             }
 
-            Collider targetCollider = collision == null ? null : collision.collider;
-            GameObject targetObject = targetCollider == null ? null : targetCollider.gameObject;
+            var targetCollider = collision == null ? null : collision.collider;
+            var targetObject = targetCollider == null ? null : targetCollider.gameObject;
             TryRegisterImpact(
                 targetObject,
                 targetCollider,
@@ -223,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactColliderRelayConfigurationSkipped' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' reason='relay_install_disabled' source='{Normalize(source)}' triggerReason='{Normalize(reason)}'",
+                    $"event='ActorImpactColliderRelayConfigurationSkipped' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' reason='relay_install_disabled' source='{source.TrimToEmpty()}' triggerReason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -237,14 +238,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 for (int index = 0; index < colliders.Length; index++)
                 {
-                    Collider collider = colliders[index];
+                    var collider = colliders[index];
                     if (collider == null)
                     {
                         skippedCount++;
                         continue;
                     }
 
-                    ActorImpactEndpoint nearestEndpoint = collider.GetComponentInParent<ActorImpactEndpoint>();
+                    var nearestEndpoint = collider.GetComponentInParent<ActorImpactEndpoint>();
                     if (nearestEndpoint != this)
                     {
                         skippedCount++;
@@ -258,7 +259,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                         continue;
                     }
 
-                    ActorImpactColliderRelay relay = collider.GetComponent<ActorImpactColliderRelay>();
+                    var relay = collider.GetComponent<ActorImpactColliderRelay>();
                     if (relay == null)
                     {
                         relay = collider.gameObject.AddComponent<ActorImpactColliderRelay>();
@@ -271,7 +272,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactColliderRelaysConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' observedColliderCount='{observedCount}' configuredRelayCount='{configuredCount}' skippedColliderCount='{skippedCount}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactColliderRelaysConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' observedColliderCount='{observedCount}' configuredRelayCount='{configuredCount}' skippedColliderCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 configuredCount > 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -296,8 +297,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return;
             }
 
-            Collider targetCollider = collision == null ? null : collision.collider;
-            GameObject targetObject = targetCollider == null ? null : targetCollider.gameObject;
+            var targetCollider = collision == null ? null : collision.collider;
+            var targetObject = targetCollider == null ? null : targetCollider.gameObject;
             TryRegisterImpact(
                 targetObject,
                 targetCollider,
@@ -351,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 targetCollider,
                 source,
                 reason,
-                out ActorImpactTarget target);
+                out var target);
 
             ActorImpactIntent intent = new(
                 _impactActorId,
@@ -393,12 +394,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactDetected' impactActorId='{intent.ImpactActorId}' impactActorInstanceRuntimeId='{intent.ImpactActorInstanceRuntimeId}' ownerActorId='{intent.OwnerActorId}' ownerActorInstanceRuntimeId='{intent.OwnerActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' targetObject='{intent.TargetObjectName}' targetCollider='{intent.TargetColliderName}' impactKind='{intent.ImpactKind}' hasTargetActor='{target.HasTargetActor}' hasContact='{intent.Contact.HasContact}' contactPoint='{FormatVector(intent.Contact.Point)}' contactNormal='{FormatVector(intent.Contact.Normal)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactDetected' impactActorId='{intent.ImpactActorId}' impactActorInstanceRuntimeId='{intent.ImpactActorInstanceRuntimeId}' ownerActorId='{intent.OwnerActorId}' ownerActorInstanceRuntimeId='{intent.OwnerActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' targetObject='{intent.TargetObjectName}' targetCollider='{intent.TargetColliderName}' impactKind='{intent.ImpactKind}' hasTargetActor='{target.HasTargetActor}' hasContact='{intent.Contact.HasContact}' contactPoint='{FormatVector(intent.Contact.Point)}' contactNormal='{FormatVector(intent.Contact.Normal)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactRegistered' impactActorId='{intent.ImpactActorId}' impactActorInstanceRuntimeId='{intent.ImpactActorInstanceRuntimeId}' ownerActorId='{intent.OwnerActorId}' ownerActorInstanceRuntimeId='{intent.OwnerActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' impactKind='{intent.ImpactKind}' hasTargetActor='{target.HasTargetActor}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactRegistered' impactActorId='{intent.ImpactActorId}' impactActorInstanceRuntimeId='{intent.ImpactActorInstanceRuntimeId}' ownerActorId='{intent.OwnerActorId}' ownerActorInstanceRuntimeId='{intent.OwnerActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' impactKind='{intent.ImpactKind}' hasTargetActor='{target.HasTargetActor}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
 
             bool damageApplicationCompleted = TryApplyDamageFromRegisteredImpact(result, source, reason);
@@ -418,7 +419,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactDamageApplicationSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_damage_application_disabled' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactDamageApplicationSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_damage_application_disabled' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -427,28 +428,28 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactDamageApplicationSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_damage_application_adapter_missing_or_unconfigured' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactDamageApplicationSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_damage_application_adapter_missing_or_unconfigured' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
             if (!_damageApplicationAdapter.TryApplyDamage(
-                    impactResult,
-                    impactDamageAmount,
-                    nameof(ActorImpactEndpoint),
-                    "impact_registered_damage_application",
-                    out ActorDamageSourceResult damageResult))
+                impactResult,
+                impactDamageAmount,
+                nameof(ActorImpactEndpoint),
+                "impact_registered_damage_application",
+                out var damageResult))
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactDamageApplicationFailed' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{impactDamageAmount:0.###}' outcomeReason='{Normalize(damageResult.Reason)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactDamageApplicationFailed' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{impactDamageAmount:0.###}' outcomeReason='{damageResult.Reason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactDamageApplicationCompleted' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{impactDamageAmount:0.###}' outcome='{damageResult.Outcome}' changedFact='{damageResult.HasChangedFact}' thresholdFacts='{damageResult.HasThresholdFacts}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactDamageApplicationCompleted' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{impactDamageAmount:0.###}' outcome='{damageResult.Outcome}' changedFact='{damageResult.HasChangedFact}' thresholdFacts='{damageResult.HasThresholdFacts}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -465,7 +466,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactEffectEventSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_effect_event_disabled' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactEffectEventSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_effect_event_disabled' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -496,8 +497,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             }
 
             return !requireDamageApplicationBeforeReturn ||
-                   !applyDamageOnRegisteredImpact ||
-                   damageApplicationCompleted;
+                !applyDamageOnRegisteredImpact ||
+                damageApplicationCompleted;
         }
 
         private void TryRequestReturnFromRegisteredImpact(
@@ -510,7 +511,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactReturnSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_return_disabled' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactReturnSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_return_disabled' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -519,7 +520,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactReturnSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_return_handler_missing_or_unconfigured' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactReturnSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='impact_return_handler_missing_or_unconfigured' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -528,7 +529,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactReturnSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='damage_application_not_completed' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactReturnSkipped' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='damage_application_not_completed' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Warning);
                 return;
             }
@@ -539,21 +540,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 DebugUtility.Colors.Info);
 
             if (!_returnHandler.TryRequestReturn(
-                    impactResult,
-                    nameof(ActorImpactEndpoint),
-                    "impact_registered_return_request",
-                    out string returnReason))
+                impactResult,
+                nameof(ActorImpactEndpoint),
+                "impact_registered_return_request",
+                out string returnReason))
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactReturnFailed' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='{Normalize(returnReason)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                    $"event='ActorImpactReturnFailed' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='{returnReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Warning);
                 return;
             }
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactReturnCompleted' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='{Normalize(returnReason)}' source='{nameof(ActorImpactEndpoint)}' reason='impact_registered_return_request'",
+                $"event='ActorImpactReturnCompleted' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' outcomeReason='{returnReason.TrimToEmpty()}' source='{nameof(ActorImpactEndpoint)}' reason='impact_registered_return_request'",
                 DebugUtility.Colors.Success);
         }
 
@@ -566,7 +567,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             int targetLayer = targetObject.layer;
             int mask = targetLayerMask.value;
-            return (mask & (1 << targetLayer)) != 0;
+            return (mask & 1 << targetLayer) != 0;
         }
 
         private bool ShouldIgnoreTargetActor(
@@ -609,7 +610,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactRejected' impactActorId='{intent.ImpactActorId}' impactActorInstanceRuntimeId='{intent.ImpactActorInstanceRuntimeId}' ownerActorId='{intent.OwnerActorId}' ownerActorInstanceRuntimeId='{intent.OwnerActorInstanceRuntimeId}' targetActorId='{target.TargetActorId}' targetActorInstanceRuntimeId='{target.TargetActorInstanceRuntimeId}' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' impactKind='{ImpactKind}' outcomeReason='{Normalize(outcomeReason)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactRejected' impactActorId='{intent.ImpactActorId}' impactActorInstanceRuntimeId='{intent.ImpactActorInstanceRuntimeId}' ownerActorId='{intent.OwnerActorId}' ownerActorInstanceRuntimeId='{intent.OwnerActorInstanceRuntimeId}' targetActorId='{target.TargetActorId}' targetActorInstanceRuntimeId='{target.TargetActorInstanceRuntimeId}' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' impactKind='{ImpactKind}' outcomeReason='{outcomeReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Warning);
         }
 
@@ -626,9 +627,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             }
         }
 
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
     }
 }

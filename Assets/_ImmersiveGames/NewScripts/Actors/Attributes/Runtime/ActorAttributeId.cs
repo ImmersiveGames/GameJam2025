@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
     [Serializable]
     public struct ActorAttributeId : IEquatable<ActorAttributeId>
     {
-        public static readonly ActorAttributeId Empty = new ActorAttributeId(string.Empty);
+        public static readonly ActorAttributeId Empty = new(string.Empty);
 
         [field: SerializeField] public string Value { get; private set; }
 

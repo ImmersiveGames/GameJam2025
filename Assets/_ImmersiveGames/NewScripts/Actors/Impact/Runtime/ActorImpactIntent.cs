@@ -60,5 +60,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
         public Vector3 ContactPoint => Contact.Point;
         public Vector3 ContactNormal => Contact.Normal;
-}
+    }
 }

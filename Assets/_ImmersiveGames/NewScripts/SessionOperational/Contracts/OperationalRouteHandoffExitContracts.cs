@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Accepted = 1,
         NotRequired = 2,
         RejectedByPolicy = 3,
-        Failed = 4,
+        Failed = 4
     }
 
     public readonly struct OperationalRouteHandoffExitPreflightRequest
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Reason { get; }
 
         public bool RequiresHandoffExit => !string.IsNullOrWhiteSpace(HandoffIdentity);
-}
+    }
 
     public readonly struct OperationalRouteHandoffExitRequest
     {
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Reason { get; }
 
         public bool RequiresHandoffExit => !string.IsNullOrWhiteSpace(HandoffIdentity);
-}
+    }
 
     public readonly struct OperationalRouteHandoffExitPreflightResult
     {
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
     public enum OperationalRouteHandoffExitKind
     {
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         NotRequired = 1,
         Completed = 2,
         RejectedByPolicy = 3,
-        Failed = 4,
+        Failed = 4
     }
 
     public readonly struct OperationalRouteHandoffExitResult
@@ -136,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', handoffIdentity='{HandoffIdentity}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
     public interface IOperationalRouteHandoffExitPort
     {

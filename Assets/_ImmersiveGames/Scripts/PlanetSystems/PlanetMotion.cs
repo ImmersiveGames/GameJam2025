@@ -5,7 +5,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-60)]
-
     public sealed class PlanetMotion : MonoBehaviour
     {
         [Header("Orbit Configuration")]
@@ -13,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [SerializeField] private Transform orbitCenter;
 
         [Tooltip("Raio atual da órbita em unidades do mundo.")]
-        [SerializeField, Min(0f)] private float orbitRadius;
+        [SerializeField] [Min(0f)] private float orbitRadius;
 
         [Tooltip("Velocidade angular da órbita em graus por segundo.")]
         [SerializeField] private float orbitAngularSpeed;
@@ -176,4 +175,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 #endif
     }
 }
-

@@ -61,9 +61,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         public bool ShouldParticipate(ResetScope scope)
         {
             return scope == ResetScope.AllActorsInScene ||
-                   scope == ResetScope.PlayersOnly ||
-                   scope == ResetScope.EaterOnly ||
-                   scope == ResetScope.ActorIdSet;
+                scope == ResetScope.PlayersOnly ||
+                scope == ResetScope.EaterOnly ||
+                scope == ResetScope.ActorIdSet;
         }
 
         public Task Reset_CleanupAsync(ResetContext ctx)
@@ -380,4 +380,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         // ContextMenu removidos — debug deve ser via DebugUtility/Inspector Customizado.
     }
 }
-

@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         public bool IsValid =>
             Requirement.IsValid &&
             !string.IsNullOrWhiteSpace(ReasonCode);
-}
+    }
 
     public readonly struct ActorPresentationContainerResolutionResult
     {
@@ -76,8 +76,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 ActorPresentationContainerResolutionResultKind.Success,
                 bindings,
                 skippedOptionalSlots,
-                reasonCode: string.Empty,
-                message: message);
+                string.Empty,
+                message);
         }
 
         public static ActorPresentationContainerResolutionResult SkippedOptional(
@@ -104,5 +104,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 reasonCode,
                 message);
         }
-}
+    }
 }

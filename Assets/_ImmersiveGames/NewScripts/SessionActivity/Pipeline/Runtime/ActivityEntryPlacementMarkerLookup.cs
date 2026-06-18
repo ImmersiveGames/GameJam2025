@@ -193,5 +193,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
             return $"{current},{value.Trim()}";
         }
-}
+    }
 }

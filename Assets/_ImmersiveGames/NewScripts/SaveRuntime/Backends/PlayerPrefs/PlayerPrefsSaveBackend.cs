@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
                 schemaVersion = record.SchemaVersion,
                 revision = record.Revision,
                 savedAtUtc = record.SavedAtUtc,
-                entries = BuildEntries(record.Entries),
+                entries = BuildEntries(record.Entries)
             };
 
             return JsonUtility.ToJson(dto);
@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
             }
 
             var list = new List<EntryDto>(source.Count);
-            foreach (var pair in source)
+            foreach (KeyValuePair<string, string> pair in source)
             {
                 if (string.IsNullOrWhiteSpace(pair.Key))
                 {
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
                 list.Add(new EntryDto
                 {
                     key = pair.Key.Trim(),
-                    value = pair.Value ?? string.Empty,
+                    value = pair.Value ?? string.Empty
                 });
             }
 

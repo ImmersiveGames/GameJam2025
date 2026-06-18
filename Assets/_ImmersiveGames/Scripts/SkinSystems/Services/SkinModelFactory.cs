@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
             instance.SetActive(config.GetActiveState());
             return instance;
         }
-        
+
         private void ApplyTransformConfig(Transform target, ISkinConfig config)
         {
             target.localPosition = config.GetPosition();

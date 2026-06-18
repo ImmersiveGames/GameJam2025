@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         BlockActivityExecution = 1,
         ReleaseActivityExecution = 2,
         BlockSessionSimulation = 3,
-        ReleaseSessionSimulation = 4,
+        ReleaseSessionSimulation = 4
     }
 
     public enum ActivityExecutionBlockingFactKind
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         ActivityExecutionReleased = 2,
         SessionExecutionBlocked = 3,
         SessionExecutionReleased = 4,
-        ActivityExecutionBlockingCommandRejected = 5,
+        ActivityExecutionBlockingCommandRejected = 5
     }
 
     [Serializable]
@@ -80,31 +80,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         public bool MatchesSessionScope(ActivityExecutionBlockingIdentity other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal);
+                string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal);
         }
 
         public bool MatchesActivityScope(ActivityExecutionBlockingIdentity other)
         {
             return MatchesSessionScope(other) &&
-                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                   ActivityOrdinal == other.ActivityOrdinal &&
-                   EntrySequence == other.EntrySequence &&
-                   Stage == other.Stage;
+                string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                ActivityOrdinal == other.ActivityOrdinal &&
+                EntrySequence == other.EntrySequence &&
+                Stage == other.Stage;
         }
 
         public bool Equals(ActivityExecutionBlockingIdentity other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                   ActivityOrdinal == other.ActivityOrdinal &&
-                   EntrySequence == other.EntrySequence &&
-                   Stage == other.Stage &&
-                   string.Equals(Source, other.Source, StringComparison.Ordinal) &&
-                   string.Equals(Reason, other.Reason, StringComparison.Ordinal);
+                string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                ActivityOrdinal == other.ActivityOrdinal &&
+                EntrySequence == other.EntrySequence &&
+                Stage == other.Stage &&
+                string.Equals(Source, other.Source, StringComparison.Ordinal) &&
+                string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
 
-        public override bool Equals(object obj) => obj is ActivityExecutionBlockingIdentity other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is ActivityExecutionBlockingIdentity other && Equals(other);
+        }
 
         public override int GetHashCode()
         {
@@ -124,9 +127,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', stage='{Stage}', source='{Source}', reason='{Reason}'";
         }
 
-        public static bool operator ==(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right) => left.Equals(right);
-        public static bool operator !=(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right) => !left.Equals(right);
-}
+        public static bool operator ==(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     [Serializable]
     public readonly struct ActivityExecutionBlockingCommand
@@ -154,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     [Serializable]
     public readonly struct SimulationGateFact
@@ -185,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     [Serializable]
     public readonly struct SimulationGateSnapshot
@@ -231,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"commandKind='{CommandKind}', commandIdentity='{CommandIdentity}', sessionBlocked='{SessionBlocked}', sessionIdentity='{SessionIdentity}', activityBlocked='{ActivityBlocked}', activityIdentity='{ActivityIdentity}', lastFact='{LastFact}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     [Serializable]
     public sealed class ActivityExecutionBlockingState
@@ -288,6 +297,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"command='{Command}', factsCount='{Facts.Count}', reason='{Reason}', snapshot='{Snapshot}'";
         }
+    }
 }
-}
-

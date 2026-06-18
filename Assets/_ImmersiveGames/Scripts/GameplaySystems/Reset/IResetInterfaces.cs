@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
     {
         bool ShouldParticipate(ResetScope scope);
     }
-    
+
     public interface IResetOrchestrator
     {
         bool IsResetInProgress { get; }

@@ -21,5 +21,5 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         public bool IsCurrent { get; }
 
         public bool IsValid => SlotId.IsValid && SlotKind != SaveSlotKind.Unknown;
-}
+    }
 }

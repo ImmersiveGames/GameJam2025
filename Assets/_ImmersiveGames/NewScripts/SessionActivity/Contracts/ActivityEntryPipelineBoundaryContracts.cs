@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         CameraBinding = 7,
         ActivitySetupComplete = 8,
         ActivityRunning = 9,
-        Deactivation = 10,
+        Deactivation = 10
     }
 
     public readonly struct ActivityEntryPipelineBoundaryContext
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             Definition.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public interface IActivityEntryStageBoundary
     {

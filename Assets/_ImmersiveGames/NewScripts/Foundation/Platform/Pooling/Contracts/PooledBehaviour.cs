@@ -40,4 +40,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
         protected virtual void OnAfterPoolDestroyed() { }
     }
 }
-

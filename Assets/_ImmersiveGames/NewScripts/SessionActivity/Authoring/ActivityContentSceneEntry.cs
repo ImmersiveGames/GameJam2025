@@ -38,5 +38,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException($"{validationSource} content scene entry at index {index} references SceneKeyAsset '{sceneKey.name}' with empty SceneName.");
             }
         }
-}
+    }
 }

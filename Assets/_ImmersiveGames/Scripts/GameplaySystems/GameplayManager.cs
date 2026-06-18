@@ -49,7 +49,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
 
             _sceneNameCached = gameObject.scene.name;
 
-            DependencyManager.Provider.RegisterGlobal<IGameplayManager>(this, allowOverride: true);
+            DependencyManager.Provider.RegisterGlobal<IGameplayManager>(this, true);
 
             DebugUtility.Log<GameplayManager>(
                 "GameplayManager inicializado (resolu��o do Eater via Dom�nio quando dispon�vel).",
@@ -77,4 +77,3 @@ namespace _ImmersiveGames.Scripts.GameplaySystems
         }
     }
 }
-

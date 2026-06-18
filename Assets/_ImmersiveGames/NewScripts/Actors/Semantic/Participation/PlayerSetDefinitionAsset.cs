@@ -226,5 +226,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
             return resolvedEntries;
         }
-}
+    }
 }

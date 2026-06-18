@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            _bgmService.Play(primaryCue, fadeInSeconds: -1f, reason: "qa_crossfade_to_primary");
+            _bgmService.Play(primaryCue, -1f, "qa_crossfade_to_primary");
             LogInfo("CrossfadeToPrimary", $"cue='{primaryCue.name}'");
         }
 
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            _bgmService.Play(alternateCue, fadeInSeconds: -1f, reason: "qa_crossfade_to_alternate");
+            _bgmService.Play(alternateCue, -1f, "qa_crossfade_to_alternate");
             LogInfo("CrossfadeToAlternate", $"cue='{alternateCue.name}'");
         }
 
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            _bgmService.Stop(fadeOutSeconds: -1f, reason: "qa_stop");
+            _bgmService.Stop(-1f, "qa_stop");
             LogInfo("Stop", "requested");
         }
 
@@ -201,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             LogInfo("RunBasicScenario", $"step='play_primary' cue='{primaryCue.name}'");
             yield return new WaitForSeconds(stepDelay);
 
-            _bgmService.Play(alternateCue, fadeInSeconds: -1f, reason: "qa_scenario_crossfade_to_alternate");
+            _bgmService.Play(alternateCue, -1f, "qa_scenario_crossfade_to_alternate");
             LogInfo("RunBasicScenario", $"step='crossfade_to_alternate' cue='{alternateCue.name}'");
             yield return new WaitForSeconds(stepDelay);
 
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             LogInfo("RunBasicScenario", "step='ducking_off'");
             yield return new WaitForSeconds(stepDelay);
 
-            _bgmService.Stop(fadeOutSeconds: -1f, reason: "qa_scenario_stop");
+            _bgmService.Stop(-1f, "qa_scenario_stop");
             LogInfo("RunBasicScenario", "step='stop'");
 
             LogInfo("RunBasicScenario", "complete");
@@ -276,4 +276,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         }
     }
 }
-

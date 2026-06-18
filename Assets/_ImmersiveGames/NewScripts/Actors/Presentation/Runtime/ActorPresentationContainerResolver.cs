@@ -153,5 +153,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             return $"{slotKind}:{slotId.TrimToEmpty()}";
         }
-}
+    }
 }

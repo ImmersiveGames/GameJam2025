@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Audio;
@@ -9,8 +8,8 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
-using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
 {
@@ -43,7 +42,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+
+    }
 
     public enum ActorProjectileFireCommandBindingState
     {
@@ -67,7 +67,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
         public bool IsExecutable => State == ActorProjectileFireCommandBindingState.Executable;
         public bool Skipped => State == ActorProjectileFireCommandBindingState.SkippedOptional;
         public bool IsValid => State != ActorProjectileFireCommandBindingState.Unknown && !string.IsNullOrWhiteSpace(ObservedEndpoint);
-}
+
+    }
 
     public sealed class ActorProjectileFireCommandBindingExecutor
     {
@@ -75,16 +76,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
 
         private readonly IPoolService _poolService;
         private readonly IGlobalAudioService _globalAudioService;
-        private readonly IActorAttributeEventStream _actorAttributeEventStream;
 
         public ActorProjectileFireCommandBindingExecutor(
             IPoolService poolService,
-            IGlobalAudioService globalAudioService,
-            IActorAttributeEventStream actorAttributeEventStream)
+            IGlobalAudioService globalAudioService)
         {
             _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
             _globalAudioService = globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService));
-            _actorAttributeEventStream = actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream));
         }
 
         public ActorProjectileFireCommandBindingResult Execute(
@@ -186,11 +184,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
                 "projectile_spawn_runtime_state_pool_service_configured_by_actor_projectile_binding");
 
             string adapterId = BuildAdapterId(context, projectileFireEndpoint);
-            ActorDamageSourceEndpoint damageSourceEndpoint = ResolveDamageSourceEndpoint(projectileFireEndpoint);
+            var damageSourceEndpoint = ResolveDamageSourceEndpoint(projectileFireEndpoint);
             IActorProjectileSpawnAdapter spawnAdapter = new PooledActorProjectileSpawnAdapter(
                 adapterId,
                 _poolService,
-                _actorAttributeEventStream,
                 damageSourceEndpoint);
             projectileFireEndpoint.ConfigureSpawnAdapter(
                 spawnAdapter,
@@ -223,7 +220,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
                 return null;
             }
 
-            Actor actorRoot = component.GetComponentInParent<Actor>(includeInactive: true);
+            var actorRoot = component.GetComponentInParent<Actor>(includeInactive: true);
             if (actorRoot != null &&
                 actorRoot.CapabilitySurface != null &&
                 actorRoot.CapabilitySurface.TryGetEndpoint(out ActorDamageSourceEndpoint surfaceEndpoint) &&
@@ -232,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
                 return surfaceEndpoint;
             }
 
-            ActorDamageSourceEndpoint localEndpoint = component.GetComponent<ActorDamageSourceEndpoint>();
+            var localEndpoint = component.GetComponent<ActorDamageSourceEndpoint>();
             if (localEndpoint != null)
             {
                 return localEndpoint;

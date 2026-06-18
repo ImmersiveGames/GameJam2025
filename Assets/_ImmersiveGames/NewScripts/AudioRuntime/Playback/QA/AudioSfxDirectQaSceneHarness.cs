@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 
         [Header("3D QA")]
         [SerializeField] private Transform spatialFollowTarget;
-        [SerializeField] private Vector3 spatialProbePosition = new Vector3(0f, 1.5f, 2f);
+        [SerializeField] private Vector3 spatialProbePosition = new(0f, 1.5f, 2f);
 
         [Header("Burst/Cooldown QA")]
         [SerializeField] [Min(1)] private int burstCount = 4;
@@ -52,9 +52,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             PlayAndLog(
-                cue: direct2DCue,
-                context: AudioPlaybackContext.Global(reason: "qa_direct_play_2d"),
-                action: "PlayDirect2d");
+                direct2DCue,
+                AudioPlaybackContext.Global(reason: "qa_direct_play_2d"),
+                "PlayDirect2d");
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Play 3D Position")]
@@ -66,11 +66,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             PlayAndLog(
-                cue: direct3DCue,
-                context: AudioPlaybackContext.Spatial(
-                    worldPosition: spatialProbePosition,
+                direct3DCue,
+                AudioPlaybackContext.Spatial(
+                    spatialProbePosition,
                     reason: "qa_direct_play_3d_position"),
-                action: "PlayDirect3dPosition");
+                "PlayDirect3dPosition");
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Play 3D Follow")]
@@ -88,12 +88,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             PlayAndLog(
-                cue: direct3DCue,
-                context: AudioPlaybackContext.Spatial(
-                    worldPosition: spatialFollowTarget.position,
-                    followTarget: spatialFollowTarget,
-                    reason: "qa_direct_play_3d_follow"),
-                action: "PlayDirect3dFollow");
+                direct3DCue,
+                AudioPlaybackContext.Spatial(
+                    spatialFollowTarget.position,
+                    spatialFollowTarget,
+                    "qa_direct_play_3d_follow"),
+                "PlayDirect3dFollow");
         }
 
         [ContextMenu("QA/Audio/SFX/Direct/Burst Simultaneous")]
@@ -245,4 +245,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         }
     }
 }
-

@@ -94,10 +94,10 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 }
 
                 _runtimePipeline.RequestAudioPreview(
-                    masterVolume: ReadSliderValue(masterVolumeSlider),
-                    bgmVolume: ReadSliderValue(bgmVolumeSlider),
-                    sfxVolume: ReadSliderValue(sfxVolumeSlider),
-                    reason: reason);
+                    ReadSliderValue(masterVolumeSlider),
+                    ReadSliderValue(bgmVolumeSlider),
+                    ReadSliderValue(sfxVolumeSlider),
+                    reason);
             }
             catch (Exception ex)
             {
@@ -285,7 +285,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 return;
             }
 
-            var relays = slider.GetComponents<AudioPreferencesSliderInteractionRelay>();
+            AudioPreferencesSliderInteractionRelay[] relays = slider.GetComponents<AudioPreferencesSliderInteractionRelay>();
             if (relays is { Length: > 1 })
             {
                 throw new InvalidOperationException("[FATAL][Preferences] Relay duplicado encontrado no mesmo slider de Audio.");
@@ -301,4 +301,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
         }
     }
 }
-

@@ -4,13 +4,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     {
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
-                moduleId: "RuntimePersistentScenes",
-                installerDependencies: new[] { "RuntimePolicy", "OperationalCameraRuntime" },
-                bootstrapDependencies: new[] { "InputModes", "OperationalCameraRuntime", "CameraPresentation" },
-                installer: RuntimePersistentScenesComposition.Install,
-                bootstrap: RuntimePersistentScenesComposition.ComposeRuntime,
-                installerEntry: "RuntimePersistentScenesComposition.Install",
-                runtimeComposerEntry: "RuntimePersistentScenesComposition.ComposeRuntime",
+                "RuntimePersistentScenes",
+                new[] { "RuntimePolicy", "OperationalCameraRuntime" },
+                new[] { "InputModes", "OperationalCameraRuntime", "CameraPresentation" },
+                RuntimePersistentScenesComposition.Install,
+                RuntimePersistentScenesComposition.ComposeRuntime,
+                "RuntimePersistentScenesComposition.Install",
+                "RuntimePersistentScenesComposition.ComposeRuntime",
                 description: "Guarantee of persistent scenes preload according to RuntimePersistentScenesPolicy.");
     }
 }

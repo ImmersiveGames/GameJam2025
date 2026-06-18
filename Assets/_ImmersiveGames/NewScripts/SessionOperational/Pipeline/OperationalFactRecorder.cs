@@ -254,7 +254,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public string DumpState()
         {
-            return $"pipelineId='{_state.SessionOperationalPipelineId}' routeIdentity='{_state.RouteIdentity}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
+            return
+                $"pipelineId='{_state.SessionOperationalPipelineId}' routeIdentity='{_state.RouteIdentity}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
         }
 
         // Etapa 3: helpers for per-operation fact recording (canonization - stages should use these or TryRecordStage)
@@ -328,5 +329,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 _ => SessionOperationalFactKind.Unknown
             };
         }
-}
+    }
 }

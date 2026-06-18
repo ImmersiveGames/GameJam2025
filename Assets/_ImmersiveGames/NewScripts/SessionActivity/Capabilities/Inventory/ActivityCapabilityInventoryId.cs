@@ -59,8 +59,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 : "<none>";
         }
 
-        public static bool operator ==(ActivityCapabilityInventoryId left, ActivityCapabilityInventoryId right) => left.Equals(right);
-        public static bool operator !=(ActivityCapabilityInventoryId left, ActivityCapabilityInventoryId right) => !left.Equals(right);
+        public static bool operator ==(ActivityCapabilityInventoryId left, ActivityCapabilityInventoryId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActivityCapabilityInventoryId left, ActivityCapabilityInventoryId right)
+        {
+            return !left.Equals(right);
+        }
 
         public static string DeriveOwnerId(ActivityCapabilityInventoryId inventoryId, ActivityCapabilityOwnerKind ownerKind, string ownerPath, string ownerSource)
         {
@@ -81,5 +87,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"{pipelineId}|{sessionStateId}|{activityId}|{entrySequence}";
         }
-}
+    }
 }

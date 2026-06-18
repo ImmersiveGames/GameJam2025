@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return targets;
         }
-}
+    }
 
     public sealed class ActorInventoryFeed
     {

@@ -19,9 +19,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         [Header("Referências")]
         [SerializeField] private Image desireIcon;
         [SerializeField] private EaterBehavior eaterBehavior;
-        [SerializeField, Tooltip("Sprite utilizada quando não houver desejo ativo ou quando o ícone do recurso estiver indisponível.")]
+        [SerializeField] [Tooltip("Sprite utilizada quando não houver desejo ativo ou quando o ícone do recurso estiver indisponível.")]
         private Sprite fallbackSprite;
-        [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
+        [SerializeField] [Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
         private bool hideWhenNoDesire = true;
 
         [Inject] private IGameplayManager _gameplayManager;
@@ -203,8 +203,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     DebugUtility.LogWarning(
                         "Componente Image do ícone de desejo não configurado.",
-                        context: this,
-                        instance: this);
+                        this,
+                        this);
                     _warnedMissingIcon = true;
                 }
                 return;
@@ -289,8 +289,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         _currentInfo.HasResource
                             ? $"Ícone específico para {_currentInfo.Resource.Value} indisponível. Utilizando fallback."
                             : "Ícone de desejo indisponível. Utilizando fallback.",
-                        context: this,
-                        instance: this);
+                        this,
+                        this);
                 }
             }
             else
@@ -302,8 +302,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                         _currentInfo.HasResource
                             ? $"Ícone específico para {_currentInfo.Resource.Value} não encontrado e nenhum fallback foi configurado."
                             : "Ícone de desejo não encontrado e nenhum fallback foi configurado.",
-                        context: this,
-                        instance: this);
+                        this,
+                        this);
                 }
             }
         }
@@ -359,8 +359,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     DebugUtility.LogWarning(
                         $"Nenhuma definição encontrada para o recurso {resource}.",
-                        context: this,
-                        instance: this);
+                        this,
+                        this);
                 }
 
                 _pendingIconResolve = true;
@@ -374,8 +374,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     DebugUtility.LogWarning(
                         $"A definição do recurso {resource} não possui sprite configurado.",
-                        context: this,
-                        instance: this);
+                        this,
+                        this);
                 }
 
                 _pendingIconResolve = true;
@@ -504,8 +504,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 {
                     DebugUtility.LogWarning(
                         "IGameplayManager não foi injetado. Não é possível resolver o Eater via domínio.",
-                        context: this,
-                        instance: this);
+                        this,
+                        this);
                     _warnedMissingGameplayManager = true;
                 }
                 return false;
@@ -546,8 +546,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 DebugUtility.LogWarning(
                     "EaterBehavior não encontrado no Eater resolvido via domínio.",
-                    context: this,
-                    instance: this);
+                    this,
+                    this);
                 _warnedMissingBehavior = true;
             }
 
@@ -555,4 +555,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
     }
 }
-

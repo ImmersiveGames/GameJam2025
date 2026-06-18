@@ -14,9 +14,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float _hungryDelayDeadline;
         private bool _hungryDelayActive;
 
-        public EaterWanderingState() : base("Wandering")
-        {
-        }
+        public EaterWanderingState() : base("Wandering") { }
 
         public override void OnEnter()
         {
@@ -94,8 +92,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.LogVerbose(
                 $"Nova direção de passeio: {direction} | velocidade={speed:F2}",
                 DebugUtility.Colors.CrucialInfo,
-                context: Behavior,
-                instance: this);
+                Behavior,
+                this);
         }
 
         internal bool ConsumeHungryTransitionRequest()
@@ -188,4 +186,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-

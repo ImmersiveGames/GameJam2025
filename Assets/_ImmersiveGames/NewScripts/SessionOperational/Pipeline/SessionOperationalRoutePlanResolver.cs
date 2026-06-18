@@ -356,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneKey.SceneName.Trim();
         }
-private readonly struct SessionOperationalRouteLoadPlan
+        private readonly struct SessionOperationalRouteLoadPlan
         {
             public SessionOperationalRouteLoadPlan(bool activeSceneImplicitLoad, IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
             {

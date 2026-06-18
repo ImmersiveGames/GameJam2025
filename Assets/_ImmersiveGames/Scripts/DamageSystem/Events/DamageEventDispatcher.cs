@@ -18,4 +18,3 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Events
         }
     }
 }
-

@@ -52,5 +52,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 default,
                 reason);
         }
-}
+    }
 }

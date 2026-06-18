@@ -101,10 +101,10 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 bool fullscreen = ReadFullscreen();
 
                 _runtimePipeline.RequestVideoPreview(
-                    width: selectedPreset.x,
-                    height: selectedPreset.y,
-                    fullscreen: fullscreen,
-                    reason: reason);
+                    selectedPreset.x,
+                    selectedPreset.y,
+                    fullscreen,
+                    reason);
 
                 _runtimePipeline.RequestVideoCommit(fieldHint, reason);
             }
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 return;
             }
 
-            var presets = _stateService.GetVideoResolutionPresets();
+            IReadOnlyList<Vector2Int> presets = _stateService.GetVideoResolutionPresets();
             _availablePresets.Clear();
 
             foreach (var preset in presets)
@@ -311,4 +311,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
         }
     }
 }
-

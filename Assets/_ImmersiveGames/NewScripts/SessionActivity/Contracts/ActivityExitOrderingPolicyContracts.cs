@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         CompleteCurrentActivity = 1,
         RestartCurrentActivity = 2,
         RouteExitFromActivityRunning = 3,
-        RouteExitFromDeactivationWindowReady = 4,
+        RouteExitFromDeactivationWindowReady = 4
     }
 
     public enum ActivityExitOrderingContinuation
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         StopActivityLifecycle = 1,
         StartNextActivity = 2,
         RestartSameActivity = 3,
-        CompleteRouteExitHandoff = 4,
+        CompleteRouteExitHandoff = 4
     }
 
     public enum ActivityExitDeactivationWindowRule
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         UseDeclaredWindow = 1,
         ReuseActiveWindow = 2,
-        SkipByExplicitRestartPolicy = 3,
+        SkipByExplicitRestartPolicy = 3
     }
 
     public enum ActivityExitOrderingStep
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         CompleteActivityExit = 10,
         CompleteRouteExitHandoff = 11,
         StartNextActivityEntry = 12,
-        RestartCurrentActivityEntry = 13,
+        RestartCurrentActivityEntry = 13
     }
 
     public readonly struct ActivityExitOrderingPolicy : IEquatable<ActivityExitOrderingPolicy>
@@ -88,13 +88,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool Equals(ActivityExitOrderingPolicy other)
         {
             return Scenario == other.Scenario &&
-                   DeactivationWindowRule == other.DeactivationWindowRule &&
-                   Continuation == other.Continuation &&
-                   SnapshotBeforeTeardown == other.SnapshotBeforeTeardown &&
-                   ReleaseAfterDeactivationWindow == other.ReleaseAfterDeactivationWindow &&
-                   OperationalMayContinueBeforeRouteExitCompleted == other.OperationalMayContinueBeforeRouteExitCompleted &&
-                   string.Equals(PolicyId, other.PolicyId, StringComparison.Ordinal) &&
-                   string.Equals(Reason, other.Reason, StringComparison.Ordinal);
+                DeactivationWindowRule == other.DeactivationWindowRule &&
+                Continuation == other.Continuation &&
+                SnapshotBeforeTeardown == other.SnapshotBeforeTeardown &&
+                ReleaseAfterDeactivationWindow == other.ReleaseAfterDeactivationWindow &&
+                OperationalMayContinueBeforeRouteExitCompleted == other.OperationalMayContinueBeforeRouteExitCompleted &&
+                string.Equals(PolicyId, other.PolicyId, StringComparison.Ordinal) &&
+                string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
@@ -135,46 +135,46 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             }
         }
 
-        public static readonly ActivityExitOrderingPolicy CompleteCurrentActivity = new ActivityExitOrderingPolicy(
+        public static readonly ActivityExitOrderingPolicy CompleteCurrentActivity = new(
             ActivityExitOrderingScenario.CompleteCurrentActivity,
             ActivityExitDeactivationWindowRule.UseDeclaredWindow,
             ActivityExitOrderingContinuation.StartNextActivity,
-            snapshotBeforeTeardown: true,
-            releaseAfterDeactivationWindow: true,
-            operationalMayContinueBeforeRouteExitCompleted: true,
-            policyId: ActivityExitOrderingPolicyIds.CompleteCurrentActivity,
-            reason: "complete_current_activity_uses_deactivation_before_release");
+            true,
+            true,
+            true,
+            ActivityExitOrderingPolicyIds.CompleteCurrentActivity,
+            "complete_current_activity_uses_deactivation_before_release");
 
-        public static readonly ActivityExitOrderingPolicy RestartCurrentActivity = new ActivityExitOrderingPolicy(
+        public static readonly ActivityExitOrderingPolicy RestartCurrentActivity = new(
             ActivityExitOrderingScenario.RestartCurrentActivity,
             ActivityExitDeactivationWindowRule.SkipByExplicitRestartPolicy,
             ActivityExitOrderingContinuation.RestartSameActivity,
-            snapshotBeforeTeardown: false,
-            releaseAfterDeactivationWindow: true,
-            operationalMayContinueBeforeRouteExitCompleted: true,
-            policyId: ActivityExitOrderingPolicyIds.RestartCurrentActivity,
-            reason: "restart_current_activity_uses_explicit_restart_skip_policy");
+            false,
+            true,
+            true,
+            ActivityExitOrderingPolicyIds.RestartCurrentActivity,
+            "restart_current_activity_uses_explicit_restart_skip_policy");
 
-        public static readonly ActivityExitOrderingPolicy RouteExitFromActivityRunning = new ActivityExitOrderingPolicy(
+        public static readonly ActivityExitOrderingPolicy RouteExitFromActivityRunning = new(
             ActivityExitOrderingScenario.RouteExitFromActivityRunning,
             ActivityExitDeactivationWindowRule.UseDeclaredWindow,
             ActivityExitOrderingContinuation.CompleteRouteExitHandoff,
-            snapshotBeforeTeardown: true,
-            releaseAfterDeactivationWindow: true,
-            operationalMayContinueBeforeRouteExitCompleted: false,
-            policyId: ActivityExitOrderingPolicyIds.RouteExitFromActivityRunning,
-            reason: "route_exit_from_running_must_complete_deactivation_and_release_before_operational_continues");
+            true,
+            true,
+            false,
+            ActivityExitOrderingPolicyIds.RouteExitFromActivityRunning,
+            "route_exit_from_running_must_complete_deactivation_and_release_before_operational_continues");
 
-        public static readonly ActivityExitOrderingPolicy RouteExitFromDeactivationWindowReady = new ActivityExitOrderingPolicy(
+        public static readonly ActivityExitOrderingPolicy RouteExitFromDeactivationWindowReady = new(
             ActivityExitOrderingScenario.RouteExitFromDeactivationWindowReady,
             ActivityExitDeactivationWindowRule.ReuseActiveWindow,
             ActivityExitOrderingContinuation.CompleteRouteExitHandoff,
-            snapshotBeforeTeardown: true,
-            releaseAfterDeactivationWindow: true,
-            operationalMayContinueBeforeRouteExitCompleted: false,
-            policyId: ActivityExitOrderingPolicyIds.RouteExitFromDeactivationWindowReady,
-            reason: "route_exit_from_deactivation_window_ready_must_reuse_active_window_and_complete_single_exit_rail");
-}
+            true,
+            true,
+            false,
+            ActivityExitOrderingPolicyIds.RouteExitFromDeactivationWindowReady,
+            "route_exit_from_deactivation_window_ready_must_reuse_active_window_and_complete_single_exit_rail");
+    }
 
     public static class ActivityExitOrderingPolicyIds
     {

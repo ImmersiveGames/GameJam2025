@@ -36,11 +36,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"ActivityResetStage requires reset scope plan from the current activity cycle. activityId='{command.ActivityId}'.");
             }
 
-            SessionActivityIdentity resetIdentity = command.Identity;
+            var resetIdentity = command.Identity;
             string activityId = command.ActivityId;
             int activityOrdinal = command.ActivityOrdinal;
             int entrySequence = resetIdentity.EntrySequence;
-            ActivityObjectContributorDiscoveryResult discoveryResult = context.DiscoveryResult;
+            var discoveryResult = context.DiscoveryResult;
 
             emitFact(
                 SessionActivityFactKind.ObjectResetStarted,
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int filteredByEligibilityCount = 0;
             int reportEvaluatedCount = 0;
 
-            ActivityCapabilityInventory resetInventory = context.ResetInventory;
+            var resetInventory = context.ResetInventory;
             bool hasRequiredContributor = hasRequiredResetContributor(discoveryResult, activityId, activityOrdinal, entrySequence);
             bool hasValidResetInventory =
                 resetInventory.IsValid &&
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                var report = discoveryResult.Reports[reportIndex];
                 if (!report.IsValid || !isReportForCurrentEntry(report, activityId, activityOrdinal, entrySequence))
                 {
                     continue;
@@ -188,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     SessionActivityFactKind.ObjectResetCommandIssued,
                     $"'{activityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetDescriptor='{resetDescriptorMetadata}' resetDescriptors='{resetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
 
-                ActivityObjectResetResult result = executeObjectResetCommand(resetCommand, endpoints);
+                var result = executeObjectResetCommand(resetCommand, endpoints);
                 if (!result.IsValid)
                 {
                     throw new InvalidOperationException(

@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             if (DependencyManager.HasInstance)
             {
-                DependencyManager.Provider.RegisterGlobal(_cachedRuntimeModeConfig, allowOverride: false);
+                DependencyManager.Provider.RegisterGlobal(_cachedRuntimeModeConfig, false);
             }
 
             return true;
@@ -126,4 +126,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
-

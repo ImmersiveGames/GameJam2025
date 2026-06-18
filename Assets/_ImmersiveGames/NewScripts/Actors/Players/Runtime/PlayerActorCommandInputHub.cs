@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         [SerializeField] private List<ActorCommandInputBinding> commandBindings = new();
 
         [Header("Filtering")]
-        [SerializeField, Range(0f, 1f)] private float deadzone = 0.1f;
+        [SerializeField] [Range(0f, 1f)] private float deadzone = 0.1f;
         [SerializeField] private bool clampMagnitude = true;
 
         private readonly List<ResolvedCommandBinding> _resolvedBindings = new();
@@ -356,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 return false;
             }
 
-            action = currentActionMap.FindAction(actionName, throwIfNotFound: false);
+            action = currentActionMap.FindAction(actionName, false);
             return action != null;
         }
 
@@ -401,8 +401,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 new ActorCommandSourceIdentity(nameof(PlayerActorCommandInputHub)),
                 _commandSequence++,
                 value,
-                source: nameof(PlayerActorCommandInputHub),
-                reason: bindingId.Value);
+                nameof(PlayerActorCommandInputHub),
+                bindingId.Value);
 
             if (!command.IsValid)
             {
@@ -505,8 +505,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 new ActorCommandSourceIdentity(nameof(PlayerActorCommandInputHub)),
                 _commandSequence++,
                 value,
-                source: nameof(PlayerActorCommandInputHub),
-                reason: bindingId.Value);
+                nameof(PlayerActorCommandInputHub),
+                bindingId.Value);
 
             if (!command.IsValid)
             {

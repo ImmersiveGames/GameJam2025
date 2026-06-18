@@ -12,8 +12,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy
         [SerializeField] private float offset = 0.5f;
 
         [Header("Fuzzy Config")]
-        [SerializeField, Range(0f, 1f)] private float fuzzyPercent;
-        [SerializeField, Range(0f, 30f)] private float fuzzyAngle;
+        [SerializeField] [Range(0f, 1f)] private float fuzzyPercent;
+        [SerializeField] [Range(0f, 30f)] private float fuzzyAngle;
         private int? _randomSeed = null;
 
         [Header("Audio")]

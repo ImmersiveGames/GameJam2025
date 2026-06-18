@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         [SerializeField] private ModelType modelType = ModelType.ModelRoot;
 
         [Header("Prefabs")]
-        [SerializeField] private List<GameObject> prefabs = new List<GameObject>();
+        [SerializeField] private List<GameObject> prefabs = new();
         [SerializeField] private InstantiationMode instantiationMode = InstantiationMode.First;
         [SerializeField] private int specificIndex;
 
@@ -36,10 +36,22 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         public string ConfigName => configName;
         public ModelType ModelType => modelType;
 
-        public Vector3 GetPosition() => position;
-        public Vector3 GetRotation() => rotation;
-        public Vector3 GetScale() => scale;
-        public bool GetActiveState() => activeState;
+        public Vector3 GetPosition()
+        {
+            return position;
+        }
+        public Vector3 GetRotation()
+        {
+            return rotation;
+        }
+        public Vector3 GetScale()
+        {
+            return scale;
+        }
+        public bool GetActiveState()
+        {
+            return activeState;
+        }
 
         public List<GameObject> GetSelectedPrefabs()
         {
@@ -76,7 +88,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         CanvasRoot,
         FxRoot,
         SoundRoot,
-        FlagMark,
+        FlagMark
     }
 
     public enum InstantiationMode

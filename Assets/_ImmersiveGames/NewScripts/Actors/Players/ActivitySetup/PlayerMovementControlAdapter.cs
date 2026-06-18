@@ -59,9 +59,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 if ((!registry.TryGetActiveHandleByParticipant(actor.ParticipantId, out var handle) ||
-                    !handle.IsValid) &&
+                        !handle.IsValid) &&
                     (!registry.TryGetRouteScopedHandleByParticipant(actor.ParticipantId, out handle) ||
-                     !handle.IsValid))
+                        !handle.IsValid))
                 {
                     throw new InvalidOperationException($"Movement control failed: actor not found for playerActorId='{actor.PlayerActorId}'.");
                 }
@@ -120,10 +120,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         private static bool IsRejected(PermissionOutcomeKind outcomeKind)
         {
             return outcomeKind == PermissionOutcomeKind.RejectedInvalidCommand ||
-                   outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
-                   outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
-                   outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
-                   outcomeKind == PermissionOutcomeKind.Failed;
+                outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
+                outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
+                outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
+                outcomeKind == PermissionOutcomeKind.Failed;
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
@@ -258,5 +258,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             string token = ActivityCapabilityPermissionIds.ToToken(permissionId);
             return string.Equals(token, ActivityCapabilityPermissionIds.ActivityGameplayControl, StringComparison.Ordinal);
         }
-}
+    }
 }

@@ -21,8 +21,8 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         public int MaterialIndex => materialIndex;
         public MaterialGroupConfig MaterialGroup => materialGroup;
         public Material CurrentAppliedMaterial => _currentAppliedMaterial;
-        
-        public bool IsValid => targetRenderers is { Length: > 0 } && 
+
+        public bool IsValid => targetRenderers is { Length: > 0 } &&
             materialGroup != null;
 
         public void Initialize()
@@ -41,14 +41,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                 {
                     Material[] materials = renderer.sharedMaterials;
                     _originalMaterials[i] = new Material[materials.Length];
-                    
+
                     for (int j = 0; j < materials.Length; j++)
                     {
                         _originalMaterials[i][j] = materials[j];
                     }
                 }
             }
-            
+
             _isInitialized = true;
         }
 
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                     renderer.materials = _originalMaterials[i];
                 }
             }
-            
+
             _currentAppliedMaterial = null;
         }
 
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
             {
                 return materials[materialIndex];
             }
-            
+
             return null;
         }
 

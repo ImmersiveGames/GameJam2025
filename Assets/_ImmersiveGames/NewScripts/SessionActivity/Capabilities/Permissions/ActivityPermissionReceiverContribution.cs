@@ -68,5 +68,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             ReceiverId.IsValid &&
             Provider != null &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 }

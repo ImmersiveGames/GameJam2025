@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 
         [Header("Owner Context")]
         [SerializeField] private Transform ownerTransform;
-        [SerializeField] private Vector3 fallbackSpatialPosition = new Vector3(0f, 1.5f, 2f);
+        [SerializeField] private Vector3 fallbackSpatialPosition = new(0f, 1.5f, 2f);
 
         [Header("Auto Stop QA")]
         [SerializeField] [Min(0f)] private float autoStopDelaySeconds = 0.05f;
@@ -54,8 +54,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             var handle = emitterUnderTest.PlayCue(
-                cue: explicitCue,
-                reason: "qa_entity_emitter_cue_local");
+                explicitCue,
+                "qa_entity_emitter_cue_local");
 
             LogHandle("PlayCueLocal", handle, explicitCue.name);
             ScheduleAutoStop(nameof(PlayCueLocal));
@@ -78,9 +78,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var owner = ResolveOwner(out string ownerSource);
             var position = owner != null ? owner.position : fallbackSpatialPosition;
             var context = AudioPlaybackContext.Spatial(
-                worldPosition: position,
-                followTarget: owner,
-                reason: "qa_entity_emitter_cue_spatial");
+                position,
+                owner,
+                "qa_entity_emitter_cue_spatial");
 
             var handle = emitterUnderTest.PlayCue(explicitCue, context);
             LogHandle("PlayCueSpatial", handle, $"cue='{explicitCue.name}' owner='{SafeName(owner)}' ownerSource='{ownerSource}'");
@@ -227,4 +227,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         }
     }
 }
-

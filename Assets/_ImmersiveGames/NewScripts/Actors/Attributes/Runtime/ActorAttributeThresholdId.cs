@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
     [Serializable]
     public struct ActorAttributeThresholdId : IEquatable<ActorAttributeThresholdId>
     {
-        public static readonly ActorAttributeThresholdId Empty = new ActorAttributeThresholdId(string.Empty);
+        public static readonly ActorAttributeThresholdId Empty = new(string.Empty);
 
         [field: SerializeField] public string Value { get; private set; }
 
@@ -47,5 +47,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         {
             return !left.Equals(right);
         }
-}
+    }
 }

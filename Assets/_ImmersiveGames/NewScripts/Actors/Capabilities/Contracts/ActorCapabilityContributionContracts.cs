@@ -15,14 +15,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorCapabilityId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorCapabilityId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorCapabilityId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorCapabilityId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorCapabilityId left, ActorCapabilityId right) => left.Equals(right);
-        public static bool operator !=(ActorCapabilityId left, ActorCapabilityId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorCapabilityId left, ActorCapabilityId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorCapabilityId left, ActorCapabilityId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public enum ActorCapabilityContributionPhase
     {
@@ -33,14 +51,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         Reset = 4,
         Snapshot = 5,
         Restore = 6,
-        Release = 7,
+        Release = 7
     }
 
     public enum ActorCapabilityContributionRequirement
     {
         Unknown = 0,
         Optional = 1,
-        Required = 2,
+        Required = 2
     }
 
     public enum ActorCapabilitySnapshotPayloadFormat
@@ -48,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         Unknown = 0,
         Json = 1,
         Text = 2,
-        BinaryBase64 = 3,
+        BinaryBase64 = 3
     }
 
     public enum ActorCapabilityRestoreCompatibility
@@ -59,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         IncompatibleCapability = 3,
         IncompatibleSchema = 4,
         IncompatibleVersion = 5,
-        Unsupported = 6,
+        Unsupported = 6
     }
 
     public readonly struct ActorCapabilityContributionContext
@@ -105,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorScope != ActorScope.Unknown &&
             !string.IsNullOrWhiteSpace(ComponentPath) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorCapabilityContributionDescriptor
     {
@@ -158,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorScope != ActorScope.Unknown &&
             !string.IsNullOrWhiteSpace(ComponentPath) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorCapabilitySnapshotPayload
     {
@@ -218,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             SchemaVersion > 0 &&
             PayloadFormat != ActorCapabilitySnapshotPayloadFormat.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorCapabilitySnapshotCaptureResult
     {
@@ -243,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         public string Reason { get; }
 
         public bool IsValid => Captured ? Payload.IsValid : !string.IsNullOrWhiteSpace(OutcomeReason);
-}
+    }
 
     public readonly struct ActorCapabilityRestoreResult
     {
@@ -271,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             Compatibility != ActorCapabilityRestoreCompatibility.Unknown &&
             !string.IsNullOrWhiteSpace(OutcomeReason) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorCapabilityReleaseResult
     {
@@ -293,7 +311,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         public string Reason { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(OutcomeReason) && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public interface IActorCapabilityContribution
     {
@@ -301,17 +319,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         bool IsValid { get; }
     }
 
-    public interface IActorSetupContribution : IActorCapabilityContribution
-    {
-    }
+    public interface IActorSetupContribution : IActorCapabilityContribution { }
 
-    public interface IActorBindingContribution : IActorCapabilityContribution
-    {
-    }
+    public interface IActorBindingContribution : IActorCapabilityContribution { }
 
-    public interface IActorPermissionReceiverContribution : IActorCapabilityContribution
-    {
-    }
+    public interface IActorPermissionReceiverContribution : IActorCapabilityContribution { }
 
     public interface IActorResetContribution : IActorCapabilityContribution
     {

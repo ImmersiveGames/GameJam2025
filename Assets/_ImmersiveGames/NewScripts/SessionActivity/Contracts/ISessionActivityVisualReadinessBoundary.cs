@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Ready = 1,
         NotRequired = 2,
         RejectedForeignOrStale = 3,
-        Failed = 4,
+        Failed = 4
     }
 
     public readonly struct SessionActivityVisualReadinessRequest
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"sessionStateId='{SessionStateId}', expectedRouteOperationId='{ExpectedRouteOperationId}', routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct SessionActivityVisualReadinessResult
     {
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', routeOperationId='{RouteOperationId}', activityId='{ActivityId}', entrySequence='{EntrySequence}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
     public interface ISessionActivityVisualReadinessBoundary
     {

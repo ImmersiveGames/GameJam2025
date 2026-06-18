@@ -115,9 +115,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
             else
             {
                 _chaseTween = transform.DOMove(currentTarget.position, _chaseSpeed)
-                                       .SetSpeedBased(true)
-                                       .SetEase(Ease.Linear)
-                                       .SetRecyclable(true);
+                    .SetSpeedBased(true)
+                    .SetEase(Ease.Linear)
+                    .SetRecyclable(true);
             }
 
             if (_chaseTween == null)
@@ -224,4 +224,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         }
     }
 }
-

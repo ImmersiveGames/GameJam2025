@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Accepted = 1,
         RejectedByPolicy = 2,
         IgnoredAlreadyInFlight = 3,
-        FailedInvalidConfig = 4,
+        FailedInvalidConfig = 4
     }
 
     public readonly struct RouteRequestSubmissionResult
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Detail { get; }
         public bool IsAccepted => Kind == RouteRequestSubmissionKind.Accepted;
         public bool IsRejectedByPolicy => Kind == RouteRequestSubmissionKind.RejectedByPolicy;
-}
+    }
 
     public readonly struct RouteOperationCompletionSignal
     {
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string RouteOperationId { get; }
         public bool Succeeded { get; }
         public string Reason { get; }
-}
+    }
 
     public sealed class SessionOperationalPipeline : IRouteActivityLoadedSnapshotPayloadProvider, IRouteActivityLoadedSnapshotPayloadStore
     {
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             outcomeReason = string.IsNullOrWhiteSpace(result.Reason) ? result.Detail : result.Reason;
             bool qaSkipped = result.IsCompleted && outcomeReason.TrimToEmpty().StartsWith("qa_save_skipped_", StringComparison.Ordinal);
-            string outcomeKind = result.IsCompleted ? (qaSkipped ? "Skipped" : "Saved") : "Failed";
+            string outcomeKind = result.IsCompleted ? qaSkipped ? "Skipped" : "Saved" : "Failed";
             DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
                 $"event='RouteActivitySaveQaRequested' outcomeKind='{outcomeKind}' reason='{outcomeReason.TrimToEmpty()}' sessionStateId='{sessionStateId.TrimToEmpty()}' saveOwnerActivityIdentity='{sessionStateId.TrimToEmpty()}' payloadActivityIdentity='{activityIdentity.TrimToEmpty()}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 result.IsCompleted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
@@ -389,14 +389,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             try
             {
                 if (!TryBeginRouteOperation(
-                        routeOperationId,
-                        transitionId,
-                        routeSequence,
-                        routeIdentity,
-                        routeIdentity,
-                        routeIdentity,
-                        source,
-                        reason))
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    routeIdentity,
+                    routeIdentity,
+                    routeIdentity,
+                    source,
+                    reason))
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][H1][SessionOperationalPipeline][Route] Failed to record RouteOperationStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.");
@@ -757,13 +757,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 fadeOutCompleted = revealResult.FadeOutCompleted;
 
                 if (!TryCompleteRouteOperation(
-                        routeOperationId,
-                        transitionId,
-                        routeSequence,
-                        routeIdentity,
-                        routeIdentity,
-                        sourceText,
-                        reasonText))
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    routeIdentity,
+                    routeIdentity,
+                    sourceText,
+                    reasonText))
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][H1][SessionOperationalPipeline][Transition] Failed to record OperationalRouteCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.");
@@ -1293,16 +1293,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             // Etapa 4: direct to recorder (consolidation; order enforced in recorder for primary stage Completed).
             if (!_factRecorder.TryRecordStage(
-                    SessionOperationalStage.Completed,
-                    _activeOperationalRouteIdentity,
-                    routeOperationId,
-                    transitionId,
-                    transitionSequence,
-                    routeId,
-                    routeProfileId,
-                    source,
-                    reason,
-                    "Completed."))
+                SessionOperationalStage.Completed,
+                _activeOperationalRouteIdentity,
+                routeOperationId,
+                transitionId,
+                transitionSequence,
+                routeId,
+                routeProfileId,
+                source,
+                reason,
+                "Completed."))
             {
                 return false;
             }
@@ -1318,7 +1318,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             return _factRecorder.DumpState();
         }
-private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
+        private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
         {
             if (sceneKey == null)
             {
@@ -1616,7 +1616,6 @@ private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
                 sourceText,
                 reasonText);
         }
-
 
 
     }

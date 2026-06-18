@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 return false;
             }
 
-            if (!_endpoint.TryGetState(target.AttributeId, out ActorAttributeState state) || state == null)
+            if (!_endpoint.TryGetState(target.AttributeId, out var state) || state == null)
             {
                 failureReason = "attribute_state_missing";
                 return false;

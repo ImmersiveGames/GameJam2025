@@ -2,26 +2,51 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     public sealed class ActorAttributeEndpoint : MonoBehaviour
     {
         [SerializeField] private ActorAttributeProfileAsset attributeProfile;
 
-        private readonly Dictionary<ActorAttributeId, ActorAttributeState> _statesById = new Dictionary<ActorAttributeId, ActorAttributeState>();
+        private readonly Dictionary<ActorAttributeId, ActorAttributeState> _statesById = new();
         private ActorAttributeState[] _runtimeStates = Array.Empty<ActorAttributeState>();
+        private ActorId _currentActorId = default;
         private ActorInstanceRuntimeId _currentActorInstanceRuntimeId = default;
         private SessionActivityIdentity _currentActivityIdentity = default;
+        private IActorAttributeEventStream _eventStream;
         private bool _isInitialized;
 
         public ActorAttributeProfileAsset AttributeProfile => attributeProfile;
         public IReadOnlyList<ActorAttributeState> RuntimeStates => _runtimeStates;
+        public ActorId CurrentActorId => _currentActorId;
         public ActorInstanceRuntimeId CurrentActorInstanceRuntimeId => _currentActorInstanceRuntimeId;
         public SessionActivityIdentity CurrentActivityIdentity => _currentActivityIdentity;
         public bool IsInitialized => _isInitialized;
         public int AttributeCount => _runtimeStates.Length;
+
+        public void ConfigureEventStream(
+            ActorId actorId,
+            IActorAttributeEventStream eventStream,
+            string source,
+            string reason)
+        {
+            if (!actorId.IsValid)
+            {
+                throw new InvalidOperationException("ActorAttributeEndpoint requires a valid ActorId for canonical event publishing.");
+            }
+
+            _eventStream = eventStream ?? throw new InvalidOperationException("ActorAttributeEndpoint requires a non-null IActorAttributeEventStream for canonical event publishing.");
+            _currentActorId = actorId;
+
+            DebugUtility.LogVerbose(
+                typeof(ActorAttributeEndpoint),
+                $"event='ActorAttributeEventStreamConfigured' actorId='{_currentActorId}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                DebugUtility.Colors.Info);
+        }
 
         public bool TryInitialize(ActorInstanceRuntimeId actorInstanceRuntimeId, out ActorAttributeSetupResult result)
         {
@@ -64,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            if (!profile.TryValidate(out var validationReason))
+            if (!profile.TryValidate(out string validationReason))
             {
                 result = ActorAttributeSetupResult.Fail(actorInstanceRuntimeId, $"attribute_profile_invalid:{validationReason}");
                 return false;
@@ -81,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return true;
             }
 
-            for (var i = 0; i < _runtimeStates.Length; i++)
+            for (int i = 0; i < _runtimeStates.Length; i++)
             {
                 var state = _runtimeStates[i];
                 if (state == null)
@@ -155,15 +180,23 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            if (!TryResolveNewValue(state, command, out var rawValue, out var failureReason))
+            if (!TryResolveNewValue(state, command, out float rawValue, out string failureReason))
             {
                 result = ActorAttributeApplyResult.Reject(_currentActorInstanceRuntimeId, command.AttributeId, failureReason);
                 return false;
             }
 
-            var previousValue = state.CurrentValue;
-            var clampedValue = state.Clamp(rawValue);
-            var clamped = Math.Abs(clampedValue - rawValue) > float.Epsilon;
+            float previousValue = state.CurrentValue;
+            float clampedValue = state.Clamp(rawValue);
+            bool clamped = Math.Abs(clampedValue - rawValue) > float.Epsilon;
+            bool changed = Math.Abs(clampedValue - previousValue) > float.Epsilon;
+
+            if (changed && (!_currentActorId.IsValid || _eventStream == null))
+            {
+                result = ActorAttributeApplyResult.Fail(_currentActorInstanceRuntimeId, command.AttributeId, "attribute_event_stream_not_configured");
+                return false;
+            }
+
             state.SetCurrentValue(clampedValue);
 
             var fact = new ActorAttributeChangedFact(
@@ -180,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 command.Source,
                 command.Reason);
 
-            var thresholdFacts = ActorAttributeThresholdEvaluator.EvaluateCrossedThresholds(
+            IReadOnlyList<ActorAttributeThresholdCrossedFact> thresholdFacts = ActorAttributeThresholdEvaluator.EvaluateCrossedThresholds(
                 command.ActivityIdentity,
                 _currentActorInstanceRuntimeId,
                 state.AttributeId,
@@ -194,6 +227,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 command.Reason);
 
             result = ActorAttributeApplyResult.AppliedWithFact(fact, thresholdFacts);
+
+            if (changed &&
+                !ActorAttributeApplyResultEventPublisher.TryPublish(
+                    _eventStream,
+                    _currentActorId,
+                    result,
+                    command.Source,
+                    command.Reason))
+            {
+                result = ActorAttributeApplyResult.Fail(_currentActorInstanceRuntimeId, command.AttributeId, "attribute_event_publish_failed");
+                return false;
+            }
+
             return true;
         }
 
@@ -234,8 +280,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return true;
             }
 
-            var resetCount = 0;
-            for (var i = 0; i < _runtimeStates.Length; i++)
+            int resetCount = 0;
+            for (int i = 0; i < _runtimeStates.Length; i++)
             {
                 var state = _runtimeStates[i];
                 if (state == null || !state.IsReady)
@@ -281,7 +327,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            var releasedCount = _runtimeStates.Length;
+            int releasedCount = _runtimeStates.Length;
             var releasedActorInstanceRuntimeId = _currentActorInstanceRuntimeId;
             ClearRuntimeState();
 
@@ -347,15 +393,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             }
 
             return candidateIdentity.IsValid &&
-                   candidateIdentity.CycleKey == requiredIdentity.CycleKey;
+                candidateIdentity.CycleKey == requiredIdentity.CycleKey;
         }
+
 
         private void ClearRuntimeState()
         {
             _statesById.Clear();
             _runtimeStates = Array.Empty<ActorAttributeState>();
+            _currentActorId = default;
             _currentActorInstanceRuntimeId = default;
             _currentActivityIdentity = default;
+            _eventStream = null;
             _isInitialized = false;
         }
     }

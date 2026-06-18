@@ -34,5 +34,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             !string.IsNullOrWhiteSpace(ActiveScene);
     }
 }
-
-

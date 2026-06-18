@@ -43,12 +43,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Audio
 
             var context = AudioPlaybackContext.Spatial(
                 worldPosition,
-                followTarget: null,
-                reason: normalizedReason,
-                volumeScale: resolvedVolumeScale);
+                null,
+                normalizedReason,
+                resolvedVolumeScale);
 
             var handle = _audioService.Play(cue, context);
-            bool valid = handle != null && handle.IsValid;
+            bool valid = handle is { IsValid: true };
 
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileFireAudioAdapter),
@@ -62,5 +62,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Audio
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
         }
-}
+    }
 }

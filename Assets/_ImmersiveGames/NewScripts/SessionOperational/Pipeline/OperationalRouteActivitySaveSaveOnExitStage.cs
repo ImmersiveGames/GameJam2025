@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalRouteActivitySaveSaveOnExitCommand
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig != null &&
             RouteCommand.IsValid &&
             RouteActivitySavePlan.IsValid;
-}
+    }
 
     public readonly struct OperationalRouteActivitySaveSaveOnExitResult
     {
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Reason { get; }
         public string Detail { get; }
         public bool IsCompleted => Kind == OperationalRouteActivitySaveSaveOnExitResultKind.Completed;
-}
+    }
 
     public readonly struct OperationalRouteActivitySaveQaSaveCommand
     {
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig != null &&
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public sealed class OperationalRouteActivitySaveSaveOnExitStage
     {
@@ -480,7 +480,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ? observedSlotContext.SlotId.Value
                 : string.Empty;
             bool snapshotIdMatches = !string.IsNullOrWhiteSpace(expectedSnapshotId) &&
-                                     string.Equals(expectedSnapshotId, observedSnapshotId, StringComparison.Ordinal);
+                string.Equals(expectedSnapshotId, observedSnapshotId, StringComparison.Ordinal);
 
             DebugUtility.LogVerbose(typeof(OperationalRouteActivitySaveSaveOnExitStage),
                 $"RouteActivitySaveCurrentSnapshotPointerObserved operationKind='{operationKind.TrimToEmpty()}' activityIdentity='{activityIdentity.TrimToEmpty()}' routeIdentity='{routeIdentity.TrimToEmpty()}' routeOperationId='{routeOperationId.TrimToEmpty()}' transitionId='{transitionId.TrimToEmpty()}' routeSequence='{routeSequence}' expectedSlotId='{expectedSlotId.TrimToEmpty()}' observedSlotId='{observedSlotId.TrimToEmpty()}' expectedSnapshotId='{expectedSnapshotId.TrimToEmpty()}' observedSnapshotId='{observedSnapshotId.TrimToEmpty()}' snapshotIdMatches='{snapshotIdMatches.ToString().ToLowerInvariant()}' payloadKind='{payloadKind.TrimToEmpty()}' recordCount='{recordCount}' pointerOwner='ProgressionSlotContextResolver' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
@@ -527,15 +527,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!saveOnExitPlan.HasPreviousRoute)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
-                    schemaId: string.Empty,
-                    sourceActivityId: string.Empty,
-                    sourceEntrySequence: 0,
-                    recordCount: 0,
-                    targetIds: string.Empty,
-                    payloadSize: 0,
-                    failureKind: RouteActivitySaveSnapshotFailureKind.NoPreviousRoute,
-                    failureReason: "no_previous_route",
-                    contributorResolutionKind: "no_previous_route");
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    0,
+                    string.Empty,
+                    0,
+                    RouteActivitySaveSnapshotFailureKind.NoPreviousRoute,
+                    "no_previous_route",
+                    "no_previous_route");
                 return false;
             }
 
@@ -543,30 +543,30 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (string.IsNullOrWhiteSpace(sessionStateId))
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
-                    schemaId: string.Empty,
-                    sourceActivityId: string.Empty,
-                    sourceEntrySequence: 0,
-                    recordCount: 0,
-                    targetIds: string.Empty,
-                    payloadSize: 0,
-                    failureKind: RouteActivitySaveSnapshotFailureKind.NoSessionActivity,
-                    failureReason: "no_session_activity",
-                    contributorResolutionKind: "no_session_activity");
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    0,
+                    string.Empty,
+                    0,
+                    RouteActivitySaveSnapshotFailureKind.NoSessionActivity,
+                    "no_session_activity",
+                    "no_session_activity");
                 return false;
             }
 
             if (contributorScopePolicy == RouteActivitySaveContributorScopePolicy.CurrentRouteSaveContributors)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
-                    schemaId: string.Empty,
-                    sourceActivityId: string.Empty,
-                    sourceEntrySequence: 0,
-                    recordCount: 0,
-                    targetIds: string.Empty,
-                    payloadSize: 0,
-                    failureKind: RouteActivitySaveSnapshotFailureKind.NoRouteSaveContributors,
-                    failureReason: "no_route_save_contributors",
-                    contributorResolutionKind: "no_route_save_contributors");
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    0,
+                    string.Empty,
+                    0,
+                    RouteActivitySaveSnapshotFailureKind.NoRouteSaveContributors,
+                    "no_route_save_contributors",
+                    "no_route_save_contributors");
                 return false;
             }
 
@@ -574,15 +574,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (provider == null)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
-                    schemaId: string.Empty,
-                    sourceActivityId: string.Empty,
-                    sourceEntrySequence: 0,
-                    recordCount: 0,
-                    targetIds: string.Empty,
-                    payloadSize: 0,
-                    failureKind: RouteActivitySaveSnapshotFailureKind.NoSessionSaveContributors,
-                    failureReason: "no_session_save_contributors",
-                    contributorResolutionKind: "no_session_save_contributors");
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    0,
+                    string.Empty,
+                    0,
+                    RouteActivitySaveSnapshotFailureKind.NoSessionSaveContributors,
+                    "no_session_save_contributors",
+                    "no_session_save_contributors");
                 return false;
             }
 
@@ -594,30 +594,30 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!resolved)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
-                    schemaId: string.Empty,
-                    sourceActivityId: string.Empty,
-                    sourceEntrySequence: 0,
-                    recordCount: 0,
-                    targetIds: string.Empty,
-                    payloadSize: 0,
-                    failureKind: ResolveFailureKindFromFailureReason(failureReason),
-                    failureReason: failureReason.TrimToEmpty(),
-                    contributorResolutionKind: failureReason.TrimToEmpty());
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    0,
+                    string.Empty,
+                    0,
+                    ResolveFailureKindFromFailureReason(failureReason),
+                    failureReason.TrimToEmpty(),
+                    failureReason.TrimToEmpty());
                 return false;
             }
 
             if (!payload.IsValid)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
-                    schemaId: string.Empty,
-                    sourceActivityId: string.Empty,
-                    sourceEntrySequence: 0,
-                    recordCount: 0,
-                    targetIds: string.Empty,
-                    payloadSize: 0,
-                    failureKind: RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed,
-                    failureReason: string.IsNullOrWhiteSpace(failureReason) ? "snapshot_capture_failed" : failureReason.TrimToEmpty(),
-                    contributorResolutionKind: "snapshot_capture_failed");
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    0,
+                    string.Empty,
+                    0,
+                    RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed,
+                    string.IsNullOrWhiteSpace(failureReason) ? "snapshot_capture_failed" : failureReason.TrimToEmpty(),
+                    "snapshot_capture_failed");
                 return false;
             }
 
@@ -837,7 +837,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             builder.Append(',');
             AppendJsonField(builder, "activityId", payload.ActivityId);
             builder.Append(',');
-            AppendJsonField(builder, "entrySequence", payload.EntrySequence.ToString(CultureInfo.InvariantCulture), isNumber: true);
+            AppendJsonField(builder, "entrySequence", payload.EntrySequence.ToString(CultureInfo.InvariantCulture), true);
             builder.Append(',');
             AppendJsonField(builder, "canonicalPayload", "CapabilitySnapshotEnvelope");
             builder.Append(',');
@@ -850,9 +850,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             builder.Append(',');
             AppendJsonField(builder, "activityId", envelope.ActivityId);
             builder.Append(',');
-            AppendJsonField(builder, "activityOrdinal", envelope.ActivityOrdinal.ToString(CultureInfo.InvariantCulture), isNumber: true);
+            AppendJsonField(builder, "activityOrdinal", envelope.ActivityOrdinal.ToString(CultureInfo.InvariantCulture), true);
             builder.Append(',');
-            AppendJsonField(builder, "entrySequence", envelope.EntrySequence.ToString(CultureInfo.InvariantCulture), isNumber: true);
+            AppendJsonField(builder, "entrySequence", envelope.EntrySequence.ToString(CultureInfo.InvariantCulture), true);
             builder.Append(',');
             AppendJsonField(builder, "source", envelope.Source);
             builder.Append(',');
@@ -881,7 +881,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 builder.Append(',');
                 AppendJsonField(builder, "payloadSchemaId", record.PayloadSchemaId);
                 builder.Append(',');
-                AppendJsonField(builder, "payloadSchemaVersion", record.PayloadSchemaVersion.ToString(CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "payloadSchemaVersion", record.PayloadSchemaVersion.ToString(CultureInfo.InvariantCulture), true);
                 builder.Append(',');
                 AppendJsonField(builder, "payloadFormat", record.PayloadFormat.ToString());
                 builder.Append(',');
@@ -1007,5 +1007,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             public string FailureReason { get; }
             public string ContributorResolutionKind { get; }
         }
-}
+    }
 }

@@ -5,9 +5,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// </summary>
     internal sealed class EaterDeathState : EaterBehaviorState
     {
-        public EaterDeathState() : base("Death")
-        {
-        }
+        public EaterDeathState() : base("Death") { }
 
         public override void OnEnter()
         {

@@ -8,13 +8,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
     [DisallowMultipleComponent]
     public sealed class PlayerActorIdentity : MonoBehaviour
     {
-        [SerializeField, HideInInspector] private string pipelineId;
-        [SerializeField, HideInInspector] private string sessionId;
-        [SerializeField, HideInInspector] private string activityId;
-        [SerializeField, HideInInspector] private int activityOrdinal;
-        [SerializeField, HideInInspector] private int entrySequence;
-        [SerializeField, HideInInspector] private string playerSlotId;
-        [SerializeField, HideInInspector] private string playerActorId;
+        [SerializeField] [HideInInspector] private string pipelineId;
+        [SerializeField] [HideInInspector] private string sessionId;
+        [SerializeField] [HideInInspector] private string activityId;
+        [SerializeField] [HideInInspector] private int activityOrdinal;
+        [SerializeField] [HideInInspector] private int entrySequence;
+        [SerializeField] [HideInInspector] private string playerSlotId;
+        [SerializeField] [HideInInspector] private string playerActorId;
 
         public string PipelineId => pipelineId;
         public string SessionId => sessionId;

@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         Death,
         Revive,
         Custom1,
-        Custom2,
+        Custom2
     }
 
     [Serializable]
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
     public class SkinAudioConfigData : SkinConfigData, ISkinAudioConfig
     {
         [Header("Audio Entries (Key -> SoundData)")]
-        [SerializeField] private List<SkinAudioEntry> audioEntries = new List<SkinAudioEntry>();
+        [SerializeField] private List<SkinAudioEntry> audioEntries = new();
 
         //private Dictionary<SkinAudioKey, SoundData> _audioMap;
 

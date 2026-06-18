@@ -23,4 +23,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
             out string reason);
     }
 }
-

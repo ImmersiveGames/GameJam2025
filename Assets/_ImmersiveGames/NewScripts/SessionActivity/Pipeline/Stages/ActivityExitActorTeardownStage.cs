@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public SessionActivityIdentity Identity { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     internal interface IActivityExitActorTeardownRuntimeBridge
     {
@@ -106,10 +106,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             ExecuteActorPresentationRelease(command, definition, endpoint, runtimeState, bridge, facts, snapshots);
             ExecuteActorAttributeRelease(command, definition, endpoint, runtimeState, bridge, facts, snapshots);
-            SessionActivityIdentity completedIdentity = ExecuteActorParticipationExit(command, definition, endpoint, runtimeState, bridge, sessionActorRuntimeStore, facts, snapshots);
+            var completedIdentity = ExecuteActorParticipationExit(command, definition, endpoint, runtimeState, bridge, sessionActorRuntimeStore, facts, snapshots);
 
             return new ActivityExitActorTeardownResult(
-                completed: true,
+                true,
                 completedIdentity,
                 "activity_exit_actor_teardown_completed");
         }
@@ -129,17 +129,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.EntrySequence;
-            SessionActivityPipeline.ActorPresentationReleaseRail rail = command.ReleaseRail;
-            ActorInstanceRuntimeId targetActorInstanceRuntimeId = command.TargetActorInstanceRuntimeId;
+            var rail = command.ReleaseRail;
+            var targetActorInstanceRuntimeId = command.TargetActorInstanceRuntimeId;
 
-            SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseStarted, entrySequence);
+            var startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseStarted, entrySequence);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorPresentationReleaseStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release started rail='{rail}' target='{(targetActorInstanceRuntimeId.IsValid ? targetActorInstanceRuntimeId.Value : "all")}'.");
             endpoint.EmitSnapshot(snapshots, "actor_presentation_release_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release started rail='{rail}'.");
             IReadOnlyList<ActivityActorExitRuntimeState.ActorPresentationCapabilityState> activeStates = runtimeState.ResolveActiveActorPresentationStates(targetActorInstanceRuntimeId);
             if (activeStates == null || activeStates.Count == 0)
             {
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
+                var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationReleaseSkipped);
                 endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release skipped reason='no_active_actor_presentation_handle' rail='{rail}'.");
                 endpoint.EmitSnapshot(snapshots, "actor_presentation_release_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release skipped reason='no_active_actor_presentation_handle' rail='{rail}'.");
@@ -148,58 +148,66 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 for (int index = 0; index < activeStates.Count; index++)
                 {
-                    ActivityActorExitRuntimeState.ActorPresentationCapabilityState state = activeStates[index];
-                    ActorPresentationRuntimeHandle handle = state.RuntimeHandle;
+                    var state = activeStates[index];
+                    var handle = state.RuntimeHandle;
                     if (!handle.IsValid)
                     {
                         continue;
                     }
 
-                    ActorPresentationReleasePolicy policy = handle.ResolvedPlan.ReleasePolicy;
+                    var policy = handle.ResolvedPlan.ReleasePolicy;
                     bool shouldRelease = rail switch
                     {
                         SessionActivityPipeline.ActorPresentationReleaseRail.BeforeRematerialization => true,
                         SessionActivityPipeline.ActorPresentationReleaseRail.ActivityExit => policy == ActorPresentationReleasePolicy.ReleaseOnActivityExit,
                         SessionActivityPipeline.ActorPresentationReleaseRail.RouteExit => policy == ActorPresentationReleasePolicy.ReleaseOnRouteExit,
-                        _ => false,
+                        _ => false
                     };
 
                     if (!shouldRelease)
                     {
-                        SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
+                        var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
                         endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationReleaseSkipped);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release skipped actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' reason='policy_mismatch' policy='{policy}' rail='{rail}' mode='Retained'.");
-                        DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorPresentationRetained' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' actorScope='{ResolveActorScopeLabel(state.ActorInstanceRuntimeId)}' componentKind='ActorPresentation' componentLifetimePolicy='{policy}' releaseTrigger='{rail}' releaseDecision='Retain' reason='policy_mismatch' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
+                        DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage),
+                            $"event='ActorPresentationRetained' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' actorScope='{ResolveActorScopeLabel(state.ActorInstanceRuntimeId)}' componentKind='ActorPresentation' componentLifetimePolicy='{policy}' releaseTrigger='{rail}' releaseDecision='Retain' reason='policy_mismatch' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Info);
                         continue;
                     }
 
-                    ActorPresentationResult releaseResult = bridge.ReleaseActorPresentation(handle, command.Source, command.Reason);
+                    var releaseResult = bridge.ReleaseActorPresentation(handle, command.Source, command.Reason);
                     if (!releaseResult.IsSuccess)
                     {
-                        SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseFailed, entrySequence);
+                        var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationReleaseFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release failed actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' reason='{releaseResult.ReasonCode}' rail='{rail}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_presentation_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release failed actorId='{state.ActorId}' reason='{releaseResult.ReasonCode}' rail='{rail}'.");
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorPresentationReleaseFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' rail='{rail}' reason='{releaseResult.ReasonCode}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
+                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                            $"event='ActorPresentationReleaseFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' rail='{rail}' reason='{releaseResult.ReasonCode}' source='{command.Source}' reasonDetail='{command.Reason}'.",
+                            DebugUtility.Colors.Error);
                         throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorPresentationRelease] Release failed actorId='{state.ActorId}' reason='{releaseResult.ReasonCode}'.");
                     }
 
                     bool keptBound = policy == ActorPresentationReleasePolicy.KeepBound;
-                    SessionActivityIdentity releasedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleased, entrySequence);
+                    var releasedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleased, entrySequence);
                     endpoint.SetCurrentIdentity(releasedIdentity, SessionActivityStage.ActorPresentationReleased);
                     endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleased, releasedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation released actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' policy='{policy}' rail='{rail}' keptBound='{keptBound}' mode='{(keptBound ? "Retained" : "Released")}'.");
                     endpoint.EmitSnapshot(snapshots, "actor_presentation_released", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation released actorId='{state.ActorId}' policy='{policy}' rail='{rail}' keptBound='{keptBound}'.");
-                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorPresentationReleased' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' actorScope='{ResolveActorScopeLabel(state.ActorInstanceRuntimeId)}' componentKind='ActorPresentation' componentLifetimePolicy='{policy}' releaseTrigger='{rail}' releaseDecision='{(keptBound ? "Retain" : "Release")}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                        $"event='ActorPresentationReleased' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' actorScope='{ResolveActorScopeLabel(state.ActorInstanceRuntimeId)}' componentKind='ActorPresentation' componentLifetimePolicy='{policy}' releaseTrigger='{rail}' releaseDecision='{(keptBound ? "Retain" : "Release")}' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Success);
 
                     if (keptBound)
                     {
                         if (rail == SessionActivityPipeline.ActorPresentationReleaseRail.BeforeRematerialization)
                         {
-                            SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseFailed, entrySequence);
+                            var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseFailed, entrySequence);
                             endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationReleaseFailed);
                             endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release failed actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' reason='keep_bound_blocks_rematerialization'.");
                             endpoint.EmitSnapshot(snapshots, "actor_presentation_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release failed actorId='{state.ActorId}' reason='keep_bound_blocks_rematerialization'.");
-                            DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorPresentationReleaseFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' rail='{rail}' reason='keep_bound_blocks_rematerialization' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
+                            DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                                $"event='ActorPresentationReleaseFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{state.ActorId}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' rail='{rail}' reason='keep_bound_blocks_rematerialization' source='{command.Source}' reasonDetail='{command.Reason}'.",
+                                DebugUtility.Colors.Error);
                             throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorPresentationRelease] KeepBound blocks rematerialization actorId='{state.ActorId}'.");
                         }
 
@@ -210,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
             }
 
-            SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseCompleted, entrySequence);
+            var completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseCompleted, entrySequence);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorPresentationReleaseCompleted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release completed rail='{rail}'.");
             endpoint.EmitSnapshot(snapshots, "actor_presentation_release_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release completed rail='{rail}'.");
@@ -226,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivitySnapshot> snapshots)
         {
             int entrySequence = command.EntrySequence;
-            SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseStarted, entrySequence);
+            var startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseStarted, entrySequence);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorAttributeReleaseStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release started.");
             endpoint.EmitSnapshot(snapshots, "actor_attribute_release_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release started.");
@@ -239,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int initialStateResetSkippedCount = 0;
             if (activeStates == null || activeStates.Count == 0)
             {
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseSkipped, entrySequence);
+                var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseSkipped, entrySequence);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorAttributeReleaseSkipped);
                 endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release skipped reason='no_active_attribute_capability'.");
                 endpoint.EmitSnapshot(snapshots, "actor_attribute_release_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release skipped reason='no_active_attribute_capability'.");
@@ -250,38 +258,42 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 int releasedOrSkippedCount = 0;
                 for (int index = 0; index < activeStates.Count; index++)
                 {
-                    SessionActivityPipeline.ActorAttributeCapabilityState capabilityState = activeStates[index];
+                    var capabilityState = activeStates[index];
                     if (!capabilityState.IsValid || capabilityState.Endpoint == null)
                     {
                         continue;
                     }
 
                     string actorId = capabilityState.ActorId;
-                    ActivityResetIntent initialStateResetIntent = ActivityResetIntent.EntryInitialize;
-                    ActivityResetStateProfileKind initialStateResetProfile = ActivityResetIntentProfileDefaults.ResolveStateProfile(initialStateResetIntent);
+                    var initialStateResetIntent = ActivityResetIntent.EntryInitialize;
+                    var initialStateResetProfile = ActivityResetIntentProfileDefaults.ResolveStateProfile(initialStateResetIntent);
                     if (!capabilityState.Endpoint.TryResetToInitial(
-                            startedIdentity,
-                            command.Source,
-                            command.Reason,
-                            out ActorAttributeResetResult initialStateResetResult))
+                        startedIdentity,
+                        command.Source,
+                        command.Reason,
+                        out var initialStateResetResult))
                     {
                         failedCount += 1;
-                        SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
+                        var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeReleaseFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' reason='{initialStateResetResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_initial_state_reset_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorAttributeInitialStateResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                            $"event='ActorAttributeInitialStateResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Error);
                         throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeInitialStateReset] Initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
                     }
 
                     if (initialStateResetResult.Rejected || initialStateResetResult.Failed)
                     {
                         failedCount += 1;
-                        SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
+                        var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeReleaseFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' reason='{initialStateResetResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_initial_state_reset_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorAttributeInitialStateResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                            $"event='ActorAttributeInitialStateResetFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Error);
                         throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeInitialStateReset] Initial-state reset failed actorId='{actorId}' reason='{initialStateResetResult.Reason}'.");
                     }
 
@@ -294,12 +306,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         initialStateResetAppliedCount += 1;
                     }
 
-                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='{(initialStateResetResult.SkippedNoContent ? "ActorAttributeInitialStateResetSkipped" : "ActorAttributeInitialStateResetApplied")}' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' resetAttributeCount='{initialStateResetResult.ResetAttributeCount}' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.", initialStateResetResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
+                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                        $"event='{(initialStateResetResult.SkippedNoContent ? "ActorAttributeInitialStateResetSkipped" : "ActorAttributeInitialStateResetApplied")}' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' resetIntent='{initialStateResetIntent}' resetStateProfile='{initialStateResetProfile}' resetProfileSource='entry_initialize_initial_state' resetAttributeCount='{initialStateResetResult.ResetAttributeCount}' outcomeReason='{initialStateResetResult.Reason}' source='{command.Source}' reason='{command.Reason}'.",
+                        initialStateResetResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
-                    if (!capabilityState.Endpoint.TryRelease(startedIdentity, out ActorAttributeReleaseResult releaseResult))
+                    if (!capabilityState.Endpoint.TryRelease(startedIdentity, out var releaseResult))
                     {
                         failedCount += 1;
-                        SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
+                        var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeReleaseFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release failed actorId='{actorId}' reason='{releaseResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release failed actorId='{actorId}' reason='{releaseResult.Reason}'.");
@@ -309,27 +323,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (releaseResult.Rejected || releaseResult.Failed)
                     {
                         failedCount += 1;
-                        SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
+                        var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
                         endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorAttributeReleaseFailed);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release failed actorId='{actorId}' reason='{releaseResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release failed actorId='{actorId}' reason='{releaseResult.Reason}'.");
                         throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorAttributeRelease] Release failed actorId='{actorId}' reason='{releaseResult.Reason}'.");
                     }
 
-                    SessionActivityStage stage = releaseResult.SkippedNoContent
+                    var stage = releaseResult.SkippedNoContent
                         ? SessionActivityStage.ActorAttributeReleaseSkipped
                         : SessionActivityStage.ActorAttributeReleased;
-                    SessionActivityFactKind factKind = releaseResult.SkippedNoContent
+                    var factKind = releaseResult.SkippedNoContent
                         ? SessionActivityFactKind.ActorAttributeReleaseSkipped
                         : SessionActivityFactKind.ActorAttributeReleased;
                     string snapshotKind = releaseResult.SkippedNoContent ? "actor_attribute_release_skipped" : "actor_attribute_released";
                     string eventName = releaseResult.SkippedNoContent ? "ActorAttributeReleaseSkipped" : "ActorAttributeReleased";
 
-                    SessionActivityIdentity outcomeIdentity = endpoint.BuildIdentity(definition, stage, entrySequence);
+                    var outcomeIdentity = endpoint.BuildIdentity(definition, stage, entrySequence);
                     endpoint.SetCurrentIdentity(outcomeIdentity, stage);
                     endpoint.EmitFact(facts, factKind, outcomeIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release outcome actorId='{actorId}' reason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}'.");
                     endpoint.EmitSnapshot(snapshots, snapshotKind, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release outcome actorId='{actorId}' reason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}'.");
-                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='{eventName}' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' actorScope='{ResolveActorScopeLabel(capabilityState.ActorInstanceRuntimeId)}' componentKind='ActorAttribute' componentScope='ActivityScoped' componentLifetimePolicy='ActorAttributeEndpointRelease' releaseTrigger='{command.ReleaseRail}' releaseDecision='{(releaseResult.SkippedNoContent ? "Skip" : "Release")}' outcomeReason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}' source='{command.Source}' reason='{command.Reason}'.", releaseResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
+                    DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                        $"event='{eventName}' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{capabilityState.ActorInstanceRuntimeId}' actorScope='{ResolveActorScopeLabel(capabilityState.ActorInstanceRuntimeId)}' componentKind='ActorAttribute' componentScope='ActivityScoped' componentLifetimePolicy='ActorAttributeEndpointRelease' releaseTrigger='{command.ReleaseRail}' releaseDecision='{(releaseResult.SkippedNoContent ? "Skip" : "Release")}' outcomeReason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}' source='{command.Source}' reason='{command.Reason}'.",
+                        releaseResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
                     if (releaseResult.SkippedNoContent)
                     {
@@ -347,14 +363,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (releasedOrSkippedCount == 0)
                 {
                     skippedCount += 1;
-                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseSkipped, entrySequence);
+                    var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseSkipped, entrySequence);
                     endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorAttributeReleaseSkipped);
                     endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release skipped reason='no_active_attribute_capability'.");
                     endpoint.EmitSnapshot(snapshots, "actor_attribute_release_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release skipped reason='no_active_attribute_capability'.");
                 }
             }
 
-            SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseCompleted, entrySequence);
+            var completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseCompleted, entrySequence);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorAttributeReleaseCompleted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeReleaseCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release completed total='{totalCount}' released='{releasedCount}' skipped='{skippedCount}' failed='{failedCount}' initialStateResetApplied='{initialStateResetAppliedCount}' initialStateResetSkipped='{initialStateResetSkippedCount}'.");
             endpoint.EmitSnapshot(snapshots, "actor_attribute_release_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release completed total='{totalCount}' released='{releasedCount}' skipped='{skippedCount}' failed='{failedCount}' initialStateResetApplied='{initialStateResetAppliedCount}' initialStateResetSkipped='{initialStateResetSkippedCount}'.");
@@ -370,8 +386,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
-            ActivityActorParticipationExitBoundaryCommand boundaryCommand = PrepareActorParticipationExitBoundaryCommand(command, definition, endpoint);
-            ActivityActorParticipationExitBoundaryResult boundaryResult = ExecuteActorParticipationExitBoundary(
+            var boundaryCommand = PrepareActorParticipationExitBoundaryCommand(command, definition, endpoint);
+            var boundaryResult = ExecuteActorParticipationExitBoundary(
                 boundaryCommand,
                 runtimeState,
                 bridge,
@@ -388,8 +404,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IActivityEntryRuntimeBridge endpoint)
         {
             int entrySequence = command.EntrySequence;
-            ActorLifetimeTrigger lifetimeTrigger = ResolveLifetimeTrigger(command.ReleaseRail);
-            SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitStarted, entrySequence);
+            var lifetimeTrigger = ResolveLifetimeTrigger(command.ReleaseRail);
+            var startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitStarted, entrySequence);
             return new ActivityActorParticipationExitBoundaryCommand(command, definition, startedIdentity, lifetimeTrigger);
         }
 
@@ -407,14 +423,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityActorParticipationExitBoundaryCommand is invalid.");
             }
 
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
-            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
+            var startedIdentity = boundaryCommand.StartedIdentity;
             int entrySequence = command.EntrySequence;
 
             EmitActorParticipationExitStarted(boundaryCommand, endpoint, facts, snapshots);
 
-            ActorParticipationExitResult exitResult = ExecuteActorParticipationExitTechnicalStep(boundaryCommand, runtimeState);
+            var exitResult = ExecuteActorParticipationExitTechnicalStep(boundaryCommand, runtimeState);
 
             List<PlayerActorIdentityRecord> exitedPlayerActors = new();
             HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds = new();
@@ -451,7 +467,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 EmitActorParticipationExitSkippedForNoExitedActors(command, definition, endpoint, facts, snapshots, entrySequence);
             }
 
-            SessionActivityIdentity completedIdentity = EmitActorParticipationExitCompleted(
+            var completedIdentity = EmitActorParticipationExitCompleted(
                 boundaryCommand,
                 endpoint,
                 facts,
@@ -475,12 +491,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityActorParticipationExitBoundaryCommand boundaryCommand,
             ActivityActorExitRuntimeState runtimeState)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
-            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
+            var startedIdentity = boundaryCommand.StartedIdentity;
             int entrySequence = command.EntrySequence;
 
-            ActorInventoryFeedResult feedResult = runtimeState.GetActorInventoryFeedForExit(startedIdentity, command.Source, command.Reason);
+            var feedResult = runtimeState.GetActorInventoryFeedForExit(startedIdentity, command.Source, command.Reason);
             ActorParticipationExitCommand exitCommand = new(
                 startedIdentity,
                 definition.ActivityId,
@@ -497,9 +513,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
-            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
+            var startedIdentity = boundaryCommand.StartedIdentity;
 
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorParticipationExitStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit started mode='inventory_feed'.");
@@ -520,13 +536,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<PlayerActorIdentityRecord> exitedPlayerActors,
             HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityIdentity startedIdentity = boundaryCommand.StartedIdentity;
+            var command = boundaryCommand.Command;
+            var startedIdentity = boundaryCommand.StartedIdentity;
             int entrySequence = command.EntrySequence;
 
             for (int index = 0; index < exitResult.ActorResults.Count; index++)
             {
-                ActorParticipationExitActorResult actorResult = exitResult.ActorResults[index];
+                var actorResult = exitResult.ActorResults[index];
                 ApplyActorParticipationExitActorResult(
                     boundaryCommand,
                     runtimeState,
@@ -603,9 +619,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             ActorParticipationExitActorResult actorResult)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
-            ActorInstanceRecord instance = actorResult.Instance;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
+            var instance = actorResult.Instance;
             EmitActorParticipationExitSkipped(
                 endpoint,
                 facts,
@@ -625,9 +641,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             ActorParticipationExitActorResult actorResult)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
-            ActorInstanceRecord instance = actorResult.Instance;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
+            var instance = actorResult.Instance;
 
             EmitActorParticipationExitFailed(
                 endpoint,
@@ -654,10 +670,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<PlayerActorIdentityRecord> exitedPlayerActors,
             HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
-            ActorInstanceRecord instance = actorResult.Instance;
-            ActorInstanceRuntimeId actorInstanceRuntimeId = instance.ActorInstanceRuntimeId;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
+            var instance = actorResult.Instance;
+            var actorInstanceRuntimeId = instance.ActorInstanceRuntimeId;
             if (!actorInstanceRuntimeId.IsValid)
             {
                 EmitActorParticipationExitFailed(
@@ -722,8 +738,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             HashSet<ActorInstanceRuntimeId> actorLifetimeDecisionRuntimeIds)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            ActivityActorParticipationExitDecisionRecord lifetimeDecision = ResolveActorParticipationExitLifetimeDecision(
+            var command = boundaryCommand.Command;
+            var lifetimeDecision = ResolveActorParticipationExitLifetimeDecision(
                 command,
                 startedIdentity,
                 instance,
@@ -761,11 +777,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<PlayerActorIdentityRecord> exitedPlayerActors)
         {
             if (TryResolvePlayerActorIdentityForParticipationExit(
-                    runtimeState,
-                    actorResult,
-                    instance,
-                    out PlayerActivityParticipantBinding participantBinding,
-                    out string participantBindingFailureReason))
+                runtimeState,
+                actorResult,
+                instance,
+                out var participantBinding,
+                out string participantBindingFailureReason))
             {
                 PlayerActorIdentityRecord resolvedIdentity = new(
                     startedIdentity,
@@ -792,11 +808,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorInstanceRecord instance,
             ActorParticipationExitActorResult actorResult)
         {
-            SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
+            var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
             endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationExitSkipped);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
             endpoint.EmitSnapshot(snapshots, "actor_participation_exit_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-            DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipOrFailureKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+            DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage),
+                $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipOrFailureKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Warning);
         }
 
         private static void EmitActorParticipationExitFailed(
@@ -811,11 +829,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string reasonCodeOverride = null)
         {
             string reasonCode = reasonCodeOverride.TrimToOrDefault(actorResult.ReasonCode);
-            SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
+            var failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
             endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{reasonCode}'.");
             endpoint.EmitSnapshot(snapshots, "actor_participation_exit_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{reasonCode}'.");
-            DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{reasonCode}' failureReason='{reasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+            DebugUtility.Log(typeof(ActivityExitActorTeardownStage),
+                $"event='ActorParticipationExitFailed' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{reasonCode}' failureReason='{reasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
         }
 
         private static void EmitActorParticipationExitExited(
@@ -894,7 +913,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorInstanceRecord instance,
             ActorLifetimeTrigger trigger)
         {
-            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(instance.Scope, trigger);
+            var decision = ActorLifetimePolicyRuntime.ResolveDecision(instance.Scope, trigger);
             return BuildActorParticipationExitDecisionRecord(command, identity, instance, trigger, decision);
         }
 
@@ -904,7 +923,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActorRuntimeEntry entry,
             ActorLifetimeTrigger trigger)
         {
-            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, trigger);
+            var decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, trigger);
             return BuildActorParticipationExitDecisionRecord(command, identity, entry, trigger, decision);
         }
 
@@ -956,11 +975,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
+            var skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitSkipped, entrySequence);
             endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationExitSkipped);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped reason='no_exited_actors'.");
             endpoint.EmitSnapshot(snapshots, "actor_participation_exit_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit skipped reason='no_exited_actors'.");
-            DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_exited_actors' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+            DebugUtility.LogVerbose(typeof(ActivityExitActorTeardownStage), $"event='ActorParticipationExitSkipped' owner='ActivityExitActorTeardownStage' macroLifecycleOwner='SessionActivityPipeline' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_exited_actors' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Warning);
         }
 
         private static SessionActivityIdentity EmitActorParticipationExitCompleted(
@@ -973,10 +993,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int skipped,
             int failed)
         {
-            ActivityExitActorTeardownCommand command = boundaryCommand.Command;
-            SessionActivityDefinition definition = boundaryCommand.Definition;
+            var command = boundaryCommand.Command;
+            var definition = boundaryCommand.Definition;
             int entrySequence = command.EntrySequence;
-            SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitCompleted, entrySequence);
+            var completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitCompleted, entrySequence);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorParticipationExitCompleted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit completed total='{total}' exited='{exited}' skipped='{skipped}' failed='{failed}'.");
             endpoint.EmitSnapshot(snapshots, "actor_participation_exit_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit completed total='{total}' exited='{exited}' skipped='{skipped}' failed='{failed}'.");
@@ -1011,19 +1031,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<ActorInstanceRuntimeId> resolvedRuntimeIds = alreadyResolvedRuntimeIds ?? new HashSet<ActorInstanceRuntimeId>();
             for (int index = 0; index < sessionActors.Count; index++)
             {
-                SessionActorRuntimeEntry entry = sessionActors[index];
+                var entry = sessionActors[index];
                 if (!entry.IsValid)
                 {
                     continue;
                 }
 
-                ActorInstanceRuntimeId runtimeId = entry.ActorInstanceRuntimeId;
+                var runtimeId = entry.ActorInstanceRuntimeId;
                 if (!runtimeId.IsValid || resolvedRuntimeIds.Contains(runtimeId))
                 {
                     continue;
                 }
 
-                ActivityActorParticipationExitDecisionRecord lifetimeDecision = ResolveActorParticipationExitLifetimeDecision(command, identity, entry, ActorLifetimeTrigger.RouteExit);
+                var lifetimeDecision = ResolveActorParticipationExitLifetimeDecision(command, identity, entry, ActorLifetimeTrigger.RouteExit);
                 EmitActorLifetimeDecision(endpoint, facts, lifetimeDecision);
                 resolvedRuntimeIds.Add(runtimeId);
             }
@@ -1097,13 +1117,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return "Unknown";
         }
-private static ActorLifetimeTrigger ResolveLifetimeTrigger(SessionActivityPipeline.ActorPresentationReleaseRail releaseRail)
+        private static ActorLifetimeTrigger ResolveLifetimeTrigger(SessionActivityPipeline.ActorPresentationReleaseRail releaseRail)
         {
             return releaseRail switch
             {
                 SessionActivityPipeline.ActorPresentationReleaseRail.ActivityExit => ActorLifetimeTrigger.ActivityExit,
                 SessionActivityPipeline.ActorPresentationReleaseRail.RouteExit => ActorLifetimeTrigger.RouteExit,
-                _ => throw new InvalidOperationException($"Unsupported ActorPresentationReleaseRail='{releaseRail}' for lifetime decision."),
+                _ => throw new InvalidOperationException($"Unsupported ActorPresentationReleaseRail='{releaseRail}' for lifetime decision.")
             };
         }
 
@@ -1156,7 +1176,7 @@ private static ActorLifetimeTrigger ResolveLifetimeTrigger(SessionActivityPipeli
             IReadOnlyList<PlayerActorParticipationExitRecord> exitRecords = bridge.ExecutePlayerActorParticipationExit(exitCommand, stageStartedIdentity);
             for (int index = 0; index < exitRecords.Count; index++)
             {
-                PlayerActorParticipationExitRecord record = exitRecords[index];
+                var record = exitRecords[index];
                 if (!record.IsValid)
                 {
                     throw new InvalidOperationException(
@@ -1178,7 +1198,7 @@ private static ActorLifetimeTrigger ResolveLifetimeTrigger(SessionActivityPipeli
                 command.Reason,
                 $"'{definition.ActivityId}' player actor participation exited. actors='{exitRecords.Count}'.");
 
-            SessionActivityIdentity stageCompletedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerActorParticipationExitStageCompleted, entrySequence);
+            var stageCompletedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerActorParticipationExitStageCompleted, entrySequence);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.PlayerActorParticipationExitStageCompleted,

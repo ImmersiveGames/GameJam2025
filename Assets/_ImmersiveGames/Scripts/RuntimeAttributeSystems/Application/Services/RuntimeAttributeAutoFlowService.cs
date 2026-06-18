@@ -128,9 +128,18 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             return delta;
         }
 
-        public void Pause() => IsPaused = true;
-        public void Resume() => IsPaused = false;
-        public void Toggle() => IsPaused = !IsPaused;
+        public void Pause()
+        {
+            IsPaused = true;
+        }
+        public void Resume()
+        {
+            IsPaused = false;
+        }
+        public void Toggle()
+        {
+            IsPaused = !IsPaused;
+        }
 
         public void Dispose()
         {
@@ -140,4 +149,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
     }
 }
-

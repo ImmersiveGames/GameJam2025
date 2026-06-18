@@ -86,7 +86,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         }
 
         public bool IsDestroyed => _destroyed;
-        public RuntimeAttributeContext GetResourceSystem() => runtimeAttributeContext;
+        public RuntimeAttributeContext GetResourceSystem()
+        {
+            return runtimeAttributeContext;
+        }
     }
 }
-

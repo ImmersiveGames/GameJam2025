@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
 {
 
-    public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController,IExecutionToggleIgnored
+    public class PlayerAnimationController : AnimationControllerBase, IActorAnimationController, IExecutionToggleIgnored
     {
         private EventBinding<DamageEvent> _damageBinding;
         private EventBinding<DeathEvent> _deathBinding;
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
             }
 
 // FilteredEventBus<DamageEvent>.Register(_damageBinding, Actor.ActorId);
-           // FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
+            // FilteredEventBus<DeathEvent>.Register(_deathBinding, Actor.ActorId);
             //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, Actor.ActorId);
             _listenersRegistered = true;
 
@@ -128,10 +128,21 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Animations
             PlayRevive();
         }
 
-        public void PlayHit() => PlayHash(HitHash);
-        public void PlayDeath() => PlayHash(DeathHash);
-        public void PlayRevive() => PlayHash(ReviveHash);
-        public void PlayIdle() => PlayHash(IdleHash);
+        public void PlayHit()
+        {
+            PlayHash(HitHash);
+        }
+        public void PlayDeath()
+        {
+            PlayHash(DeathHash);
+        }
+        public void PlayRevive()
+        {
+            PlayHash(ReviveHash);
+        }
+        public void PlayIdle()
+        {
+            PlayHash(IdleHash);
+        }
     }
 }
-

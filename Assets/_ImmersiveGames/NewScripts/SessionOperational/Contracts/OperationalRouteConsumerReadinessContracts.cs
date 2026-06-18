@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Ready = 1,
         NotRequired = 2,
         RejectedForeignOrStale = 3,
-        Failed = 4,
+        Failed = 4
     }
 
     public readonly struct OperationalRouteConsumerReadinessRequest
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct OperationalRouteConsumerReadinessResult
     {
@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', consumerIdentity='{ConsumerIdentity}', routeOperationId='{RouteOperationId}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
     public interface IOperationalRouteConsumerReadinessPort
     {

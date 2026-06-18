@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
     {
         Unknown = 0,
         Submitted = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalInputModeRequest
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             InputPolicy != SessionOperationalInputPolicy.Unknown &&
             !string.IsNullOrWhiteSpace(RouteClass) &&
             !string.IsNullOrWhiteSpace(ContextSignature);
-}
+    }
 
     public readonly struct OperationalInputModeRequestResult
     {
@@ -55,12 +55,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Detail { get; }
         public bool IsSubmitted => Kind == OperationalInputModeRequestResultKind.Submitted;
 
-        public static OperationalInputModeRequestResult Submitted(string reason) =>
-            new(OperationalInputModeRequestResultKind.Submitted, reason, string.Empty);
+        public static OperationalInputModeRequestResult Submitted(string reason)
+        {
+            return new OperationalInputModeRequestResult(OperationalInputModeRequestResultKind.Submitted, reason, string.Empty);
+        }
 
-        public static OperationalInputModeRequestResult Failed(string reason, string detail) =>
-            new(OperationalInputModeRequestResultKind.Failed, reason, detail);
-}
+        public static OperationalInputModeRequestResult Failed(string reason, string detail)
+        {
+            return new OperationalInputModeRequestResult(OperationalInputModeRequestResultKind.Failed, reason, detail);
+        }
+    }
 
     public interface IOperationalInputModeRequestPort
     {

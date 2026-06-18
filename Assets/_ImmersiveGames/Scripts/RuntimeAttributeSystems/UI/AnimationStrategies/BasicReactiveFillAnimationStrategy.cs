@@ -64,16 +64,16 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.AnimationStrategies
 
             // === 1️⃣ ANIMAÇÃO PRINCIPAL ===
             _mainTween = DOTween.To(
-                () => _main.fillAmount,
-                x => _main.fillAmount = x,
-                _targetValue,
-                _profile.mainSpeed
-            ).SetEase(_profile.mainEase)
-             .OnUpdate(() =>
-             {
-                 _currentValue = _main.fillAmount;
-             })
-             .OnComplete(TryAnimateResidual);
+                    () => _main.fillAmount,
+                    x => _main.fillAmount = x,
+                    _targetValue,
+                    _profile.mainSpeed
+                ).SetEase(_profile.mainEase)
+                .OnUpdate(() =>
+                {
+                    _currentValue = _main.fillAmount;
+                })
+                .OnComplete(TryAnimateResidual);
         }
 
         private void TryAnimateResidual()

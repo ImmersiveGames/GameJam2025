@@ -46,14 +46,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return BuildMissResult(command, "participant_binding_not_actor_or_input_relevant");
             }
 
-            PlayerActivityParticipationContext retainedParticipationContext = command.RetainedParticipationContext;
+            var retainedParticipationContext = command.RetainedParticipationContext;
             bool hasRetainedParticipationContext =
-                retainedParticipationContext != null &&
-                retainedParticipationContext.IsValid &&
-                retainedParticipationContext.Participants != null &&
-                retainedParticipationContext.Participants.Count > 0;
+                retainedParticipationContext is { IsValid: true, Participants: { Count: > 0 } };
             bool hasMatchingRetainedBinding = hasRetainedParticipationContext &&
-                                              TryFindMatchingRetainedBinding(command, retainedParticipationContext, out _);
+                TryFindMatchingRetainedBinding(command, retainedParticipationContext, out _);
 
             if (hasRetainedParticipationContext &&
                 IsForeignCycle(retainedParticipationContext.SessionActivityIdentity, command.Identity))
@@ -74,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
             if (command.ParticipantBinding.ActorScope == ActorScope.RouteScoped)
             {
-                if (TryResolveRouteScopedHandle(command, out PlayerActorRuntimeHandle retainedHandle))
+                if (TryResolveRouteScopedHandle(command, out var retainedHandle))
                 {
                     if (!IsCompatibleRetainedHandle(command, retainedHandle))
                     {
@@ -104,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
             if (command.ParticipantBinding.ActorScope == ActorScope.SessionScoped)
             {
-                if (TryResolveActiveHandle(command, out PlayerActorRuntimeHandle activeHandle))
+                if (TryResolveActiveHandle(command, out var activeHandle))
                 {
                     if (!IsCompatibleRetainedHandle(command, activeHandle))
                     {
@@ -121,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                         GetResolvedDetail(command, "retained_active_handle_resolved"));
                 }
 
-                if (TryResolveSessionScopedHandle(command, out PlayerActorRuntimeHandle sessionScopedHandle))
+                if (TryResolveSessionScopedHandle(command, out var sessionScopedHandle))
                 {
                     if (!IsCompatibleRetainedHandle(command, sessionScopedHandle))
                     {
@@ -185,13 +182,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             out PlayerActorRuntimeHandle handle)
         {
             handle = default;
-            if (!_sessionActorRuntimeStore.TryGetByParticipantId(command.Identity, command.ParticipantBinding.ParticipantId, out SessionActorRuntimeEntry entry) ||
+            if (!_sessionActorRuntimeStore.TryGetByParticipantId(command.Identity, command.ParticipantBinding.ParticipantId, out var entry) ||
                 !entry.IsValid)
             {
                 return false;
             }
 
-            PlayerActorIdentityRecord reboundIdentity = PlayerActorIdentityRecord.Create(command.Identity, command.ParticipantBinding);
+            var reboundIdentity = PlayerActorIdentityRecord.Create(command.Identity, command.ParticipantBinding);
             handle = new PlayerActorRuntimeHandle(reboundIdentity, entry.Instance, entry.Actor);
             return handle.IsValid;
         }
@@ -242,9 +239,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             }
 
             return retainedHandle.ParticipantId == command.ParticipantBinding.ParticipantId &&
-                   retainedHandle.ActorId == command.ParticipantBinding.ActorId &&
-                   retainedHandle.ParticipantBinding.ActorScope == command.ParticipantBinding.ActorScope &&
-                   retainedHandle.PlayerSlotId == command.ParticipantBinding.PlayerSlotId;
+                retainedHandle.ActorId == command.ParticipantBinding.ActorId &&
+                retainedHandle.ParticipantBinding.ActorScope == command.ParticipantBinding.ActorScope &&
+                retainedHandle.PlayerSlotId == command.ParticipantBinding.PlayerSlotId;
         }
 
         private static string GetResolvedDetail(
@@ -338,16 +335,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActivityRetainedParticipantLookup),
-                $"event='{eventName}' owner='ActivityRetainedParticipantLookup' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionId}' activityId='{command.Identity.ActivityId}' entrySequence='{command.Identity.EntrySequence}' previousEntrySequence='{(command.RetainedParticipationContext is { IsValid: true } ? command.RetainedParticipationContext.SessionActivityIdentity.EntrySequence : 0)}' participantId='{command.ParticipantBinding.ParticipantId}' actorId='{command.ParticipantBinding.ActorId}' actorScope='{command.ParticipantBinding.ActorScope}' outcomeKind='{outcomeKind}' sourceKind='{sourceKind}' retainedContextState='{(command.RetainedParticipationContext != null && command.RetainedParticipationContext.IsValid ? "present" : "absent")}' detail='{detail.TrimToEmpty()}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}'.",
+                $"event='{eventName}' owner='ActivityRetainedParticipantLookup' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionId}' activityId='{command.Identity.ActivityId}' entrySequence='{command.Identity.EntrySequence}' previousEntrySequence='{(command.RetainedParticipationContext is { IsValid: true } ? command.RetainedParticipationContext.SessionActivityIdentity.EntrySequence : 0)}' participantId='{command.ParticipantBinding.ParticipantId}' actorId='{command.ParticipantBinding.ActorId}' actorScope='{command.ParticipantBinding.ActorScope}' outcomeKind='{outcomeKind}' sourceKind='{sourceKind}' retainedContextState='{(command.RetainedParticipationContext is { IsValid: true } ? "present" : "absent")}' detail='{detail.TrimToEmpty()}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}'.",
                 outcomeKind == ActivityRetainedParticipantLookupOutcomeKind.Resolved ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
         private static bool IsForeignCycle(SessionActivityIdentity left, SessionActivityIdentity right)
         {
             return left.IsValid &&
-                   right.IsValid &&
-                   (!string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) ||
+                right.IsValid &&
+                (!string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) ||
                     !string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal));
         }
-}
+    }
 }

@@ -11,34 +11,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public enum ActivityCatalogAdvanceAtEndMode
     {
         StopAtEnd = 0,
-        LoopToFirst = 1,
+        LoopToFirst = 1
     }
 
     public enum ActivityWindowMode
     {
         None = 0,
-        AdditiveScene = 1,
+        AdditiveScene = 1
     }
 
     public enum ActivityTransitionMode
     {
         None = 0,
         CutWithCurtain = 1,
-        Seamless = 2,
+        Seamless = 2
     }
 
     public enum ActivityTransitionProfileSource
     {
         None = 0,
         OverrideProfile = 1,
-        InheritRouteProfile = 2,
+        InheritRouteProfile = 2
     }
 
     public enum ActivityTransitionContinuePolicy
     {
         Unknown = 0,
         AutoContinue = 1,
-        ManualContinue = 2,
+        ManualContinue = 2
     }
 
     public enum ActivitySceneDiscoveryMode
@@ -46,14 +46,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         None = 0,
         StrictDeclaredOnly = 1,
         AllowOptionalDiscovered = 2,
-        Open = 3,
+        Open = 3
     }
 
     public enum ActivitySceneRevealSafety
     {
         Unknown = 0,
         SafeForCutWithCurtain = 1,
-        SafeForSeamlessCandidate = 2,
+        SafeForSeamlessCandidate = 2
     }
 
     public enum SessionActivityStage
@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotCaptureCompleted = 148,
         ActorCommandBindingStarted = 149,
         ActorCommandBindingSkippedNoRequiredCapability = 150,
-        ActorCommandBindingCompleted = 151,
+        ActorCommandBindingCompleted = 151
     }
 
     public enum ActivityExecutionState
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         Stopped = 1,
         Running = 2,
-        Paused = 3,
+        Paused = 3
     }
 
     public readonly struct SessionActivityCycleKey : IEquatable<SessionActivityCycleKey>
@@ -238,10 +238,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool Equals(SessionActivityCycleKey other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                   ActivityOrdinal == other.ActivityOrdinal &&
-                   EntrySequence == other.EntrySequence;
+                string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                ActivityOrdinal == other.ActivityOrdinal &&
+                EntrySequence == other.EntrySequence;
         }
 
         public override bool Equals(object obj)
@@ -254,17 +254,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             unchecked
             {
                 int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
-                hashCode = (hashCode * 397) ^ ActivityOrdinal;
-                hashCode = (hashCode * 397) ^ EntrySequence;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
+                hashCode = hashCode * 397 ^ ActivityOrdinal;
+                hashCode = hashCode * 397 ^ EntrySequence;
                 return hashCode;
             }
         }
 
-        public static bool operator ==(SessionActivityCycleKey left, SessionActivityCycleKey right) => left.Equals(right);
-        public static bool operator !=(SessionActivityCycleKey left, SessionActivityCycleKey right) => !left.Equals(right);
-}
+        public static bool operator ==(SessionActivityCycleKey left, SessionActivityCycleKey right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionActivityCycleKey left, SessionActivityCycleKey right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct SessionActivityStageKey : IEquatable<SessionActivityStageKey>
     {
@@ -292,12 +298,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             unchecked
             {
-                return (CycleKey.GetHashCode() * 397) ^ (int)Stage;
+                return CycleKey.GetHashCode() * 397 ^ (int)Stage;
             }
         }
 
-        public static bool operator ==(SessionActivityStageKey left, SessionActivityStageKey right) => left.Equals(right);
-        public static bool operator !=(SessionActivityStageKey left, SessionActivityStageKey right) => !left.Equals(right);
+        public static bool operator ==(SessionActivityStageKey left, SessionActivityStageKey right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionActivityStageKey left, SessionActivityStageKey right)
+        {
+            return !left.Equals(right);
+        }
     }
 
     public readonly struct SessionActivityIdentity : IEquatable<SessionActivityIdentity>
@@ -363,14 +375,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 : "<none>";
         }
 
-        public static bool operator ==(SessionActivityIdentity left, SessionActivityIdentity right) => left.Equals(right);
-        public static bool operator !=(SessionActivityIdentity left, SessionActivityIdentity right) => !left.Equals(right);
+        public static bool operator ==(SessionActivityIdentity left, SessionActivityIdentity right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionActivityIdentity left, SessionActivityIdentity right)
+        {
+            return !left.Equals(right);
+        }
 
         private static string BuildCycleSignature(string pipelineId, string sessionStateId, string activityId, int activityOrdinal, int entrySequence, SessionActivityStage stage)
         {
             return $"{pipelineId}|{sessionStateId}|{activityId}|{activityOrdinal}|{entrySequence}|{stage}";
         }
-}
+    }
 
     public readonly struct SessionActivityDefinition
     {
@@ -438,14 +456,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasValidNextActivityTransitionContinuePolicy => NextActivityTransitionContinuePolicy != ActivityTransitionContinuePolicy.Unknown;
 
         private bool IsActivityContentConfigurationValid =>
-            (ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null) ||
-            (ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null);
+            ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null ||
+            ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null;
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return
+                $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
-}
+    }
 
     public enum SessionActivityCommandKind
     {
@@ -464,7 +483,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PauseSimulation = 12,
         ResumeSimulation = 13,
         CloseForRouteExit = 14,
-        ResetSession = 15,
+        ResetSession = 15
     }
 
     public enum SessionActivityPendingOperationKind
@@ -475,14 +494,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         DeactivationWindowSceneLoad = 12,
         DeactivationWindowSceneUnload = 13,
         ActivityContentSceneLoad = 20,
-        ActivityContentSceneUnload = 21,
+        ActivityContentSceneUnload = 21
     }
 
     public enum SessionActivityPendingWindowKind
     {
         None = 0,
         ActivationWindow = 1,
-        DeactivationWindow = 2,
+        DeactivationWindow = 2
     }
 
     public enum SessionActivityRailKind
@@ -492,7 +511,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityCompletionRail = 2,
         ActivityRestartRail = 3,
         ActivityNavigationRail = 4,
-        ActivityRouteExitRail = 5,
+        ActivityRouteExitRail = 5
     }
 
     public enum SessionActivityRailStatus
@@ -503,7 +522,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         InProgress = 3,
         BlockedOnPendingOperation = 4,
         Completed = 5,
-        Failed = 6,
+        Failed = 6
     }
 
     public readonly struct SessionActivityPendingOperation
@@ -560,9 +579,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"operationId='{OperationId}', pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', windowKind='{WindowKind}', operationKind='{OperationKind}', sceneKey='{(string.IsNullOrWhiteSpace(SceneKey) ? "<none>" : SceneKey)}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', source='{Source}', reason='{Reason}'";
+            return
+                $"operationId='{OperationId}', pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', windowKind='{WindowKind}', operationKind='{OperationKind}', sceneKey='{(string.IsNullOrWhiteSpace(SceneKey) ? "<none>" : SceneKey)}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct SessionActivityCommand
     {
@@ -596,7 +616,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', targetActivityId='{(string.IsNullOrWhiteSpace(TargetActivityId) ? "<none>" : TargetActivityId)}'";
         }
-}
+    }
 
     public enum SessionActivityFactKind
     {
@@ -833,7 +853,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityParticipantBindApplied = 111,
         ActivityParticipantMaterialized = 112,
         ActivityParticipantResetApplied = 114,
-        ActivityParticipantSetupFailed = 115,
+        ActivityParticipantSetupFailed = 115
     }
 
     public readonly struct SessionActivityFact
@@ -870,7 +890,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public readonly struct SessionActivitySnapshot
     {
@@ -906,7 +926,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', definition='{Definition}', handoff='{Handoff}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public enum SessionActivityCommandResultKind
     {
@@ -916,7 +936,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         InProgress = 3,
         Completed = 4,
         Failed = 5,
-        SkippedNoContent = 6,
+        SkippedNoContent = 6
     }
 
     public readonly struct SessionActivityCommandResult
@@ -948,7 +968,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsCompleted => Kind == SessionActivityCommandResultKind.Completed;
         public bool IsFailed => Kind == SessionActivityCommandResultKind.Failed;
         public bool IsSkippedNoContent => Kind == SessionActivityCommandResultKind.SkippedNoContent;
-}
+    }
 
     public readonly struct SessionActivityHandoff
     {
@@ -986,7 +1006,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"from='{FromIdentity}', to='{ToIdentity}', nextActivityId='{NextActivityId}', source='{Source}', reason='{Reason}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
-}
+    }
 
     public interface ISessionActivityPauseOverlayAdapter
     {
@@ -999,7 +1019,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         ActivityGameplay = 1,
         PauseOverlay = 2,
-        Disabled = 3,
+        Disabled = 3
     }
 
     public readonly struct SessionActivityInputModeCommand
@@ -1025,7 +1045,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != SessionActivityInputModeKind.Unknown &&
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct SessionActivityInputModeObservation
     {
@@ -1051,7 +1071,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(Fact) &&
             !string.IsNullOrWhiteSpace(Snapshot) &&
             !string.IsNullOrWhiteSpace(Outcome);
-}
+    }
 
     public interface ISessionActivityInputModeAdapter
     {
@@ -1082,7 +1102,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool HasFadeProfile => FadeProfile != null;
         public bool HasLoadingProfile => LoadingProfile != null;
-}
+    }
 
     public readonly struct ActivitySceneContractContributorEntry
     {
@@ -1093,7 +1113,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public string ContributorId { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributorId);
-}
+    }
 
     public readonly struct ActivitySceneContractSnapshot
     {
@@ -1118,7 +1138,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IReadOnlyList<ActivitySceneContractContributorEntry> DeclaredContributors { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ActivitySceneId);
-}
+    }
 
     public interface ISessionActivityTransitionAdapter
     {

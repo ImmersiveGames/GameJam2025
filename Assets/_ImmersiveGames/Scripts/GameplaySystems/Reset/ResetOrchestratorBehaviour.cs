@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
     {
         [Header("Event Wiring")]
         [Tooltip("Se ligado, o Orchestrator tamb�m escuta OldGameResetRequestedEvent. " +
-                 "Desligue para evitar conflito com fluxos macro de reset (GameManager/MenuContext).")]
+            "Desligue para evitar conflito com fluxos macro de reset (GameManager/MenuContext).")]
         [SerializeField] private bool listenToGameResetRequestedEvent;
 
         [Header("Scene-level Participants")]
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             _sceneName = gameObject.scene.name;
 
             // Registra no DI por cena
-            DependencyManager.Provider.RegisterForScene<IResetOrchestrator>(_sceneName, this, allowOverride: true);
+            DependencyManager.Provider.RegisterForScene<IResetOrchestrator>(_sceneName, this, true);
 
             ResolveServices();
 
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
         private void OnResetRequested(OldGameResetRequestedEvent evt)
         {
-            _ = RequestResetAsync(new ResetRequest(ResetScope.AllActorsInScene, reason: "OldGameResetRequestedEvent"));
+            _ = RequestResetAsync(new ResetRequest(ResetScope.AllActorsInScene, "OldGameResetRequestedEvent"));
         }
 
         public Task<bool> RequestResetAsync(ResetRequest request)
@@ -548,7 +548,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 {
                     case ResetStructs.Cleanup: syncP.Reset_Cleanup(ctx); break;
                     case ResetStructs.Restore: syncP.Reset_Restore(ctx); break;
-                    case ResetStructs.Rebind:  syncP.Reset_Rebind(ctx);  break;
+                    case ResetStructs.Rebind: syncP.Reset_Rebind(ctx); break;
                 }
 
                 return Task.CompletedTask;
@@ -558,4 +558,3 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         }
     }
 }
-

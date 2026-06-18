@@ -123,4 +123,3 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Base
         }
     }
 }
-

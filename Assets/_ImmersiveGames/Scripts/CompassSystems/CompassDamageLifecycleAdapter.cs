@@ -100,7 +100,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
 
             //FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _entityId);
             //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _entityId);
-           // FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _entityId);
+            // FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _entityId);
 
             _eventsRegistered = false;
         }
@@ -223,6 +223,3 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         void RegisterTarget();
     }
 }
-
-
-

@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         Unknown = 0,
         WorldTransform = 1,
-        LocalTransform = 2,
+        LocalTransform = 2
     }
 
     public readonly struct ActivityObjectSnapshot
@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(TargetId) &&
             CoordinateSpace != ActivityObjectSnapshotCoordinateSpace.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityObjectSnapshotCaptureCommand
     {
@@ -96,14 +96,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(TargetId) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public enum ActivityObjectSnapshotCaptureResultKind
     {
         Unknown = 0,
         Captured = 1,
         SkippedOptional = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct ActivityObjectSnapshotCaptureResult
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != ActivityObjectSnapshotCaptureResultKind.Unknown &&
             Command.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public interface IActivityObjectSnapshotProvider
     {
@@ -207,14 +207,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(TargetId) &&
             CoordinateSpace != ActivityObjectSnapshotCoordinateSpace.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public enum ActivityObjectSnapshotRestoreResultKind
     {
         Unknown = 0,
         Restored = 1,
         SkippedOptional = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct ActivityObjectSnapshotRestoreResult
@@ -267,7 +267,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != ActivityObjectSnapshotRestoreResultKind.Unknown &&
             Command.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public interface IActivityObjectSnapshotRestoreEndpoint
     {

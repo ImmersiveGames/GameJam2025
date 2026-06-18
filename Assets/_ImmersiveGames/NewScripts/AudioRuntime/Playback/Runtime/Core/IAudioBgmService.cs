@@ -18,4 +18,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         void SetPauseDucking(bool paused, string reason = null);
     }
 }
-

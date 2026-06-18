@@ -71,8 +71,14 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
             }
         }
 
-        public void ShowVictory(string reason = null) => ShowInternal("VICTORY", reason);
-        public void ShowGameOver(string reason = null) => ShowInternal("GAME OVER", reason);
+        public void ShowVictory(string reason = null)
+        {
+            ShowInternal("VICTORY", reason);
+        }
+        public void ShowGameOver(string reason = null)
+        {
+            ShowInternal("GAME OVER", reason);
+        }
 
         public void Hide()
         {
@@ -153,4 +159,3 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
         }
     }
 }
-

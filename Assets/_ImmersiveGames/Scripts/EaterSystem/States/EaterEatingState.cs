@@ -64,9 +64,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
         }
 
-        public EaterEatingState() : base("Eating")
-        {
-        }
+        public EaterEatingState() : base("Eating") { }
 
         public override void OnEnter()
         {
@@ -88,7 +86,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             TrySetEatingAnimation(true);
 
             EnsureOrbitFreezeController().TryFreeze(Behavior, Behavior.CurrentTargetPlanet);
-            PrepareTarget(Behavior.CurrentTargetPlanet, restartOrbit: true);
+            PrepareTarget(Behavior.CurrentTargetPlanet, true);
         }
 
         public override void OnExit()
@@ -127,7 +125,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             EnsureOrbitFreezeController().TryFreeze(Behavior, target);
             if (target != _currentTarget)
             {
-                PrepareTarget(target, restartOrbit: true);
+                PrepareTarget(target, true);
                 if (_pendingWanderingTransition)
                 {
                     return;
@@ -262,12 +260,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _currentAngle = 0f;
 
             _orbitTween = DOTween.To(() => _currentAngle, angle =>
-                {
-                    _currentAngle = angle;
-                    ApplyOrbitAngle(angle);
-                },
-                360f,
-                OrbitDuration)
+                    {
+                        _currentAngle = angle;
+                        ApplyOrbitAngle(angle);
+                    },
+                    360f,
+                    OrbitDuration)
                 .SetEase(Ease.Linear)
                 .SetLoops(-1, LoopType.Restart)
                 .OnUpdate(LookAtTarget);
@@ -277,8 +275,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 DebugUtility.LogVerbose(
                     "Órbita iniciada.",
                     DebugUtility.Colors.Success,
-                    context: Behavior,
-                    instance: this);
+                    Behavior,
+                    this);
             }
         }
 
@@ -1052,4 +1050,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-

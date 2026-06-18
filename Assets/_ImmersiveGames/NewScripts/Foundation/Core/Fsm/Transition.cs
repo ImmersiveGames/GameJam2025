@@ -47,7 +47,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Fsm
             _func = func;
         }
 
-        public bool Evaluate() => _func.Invoke();
+        public bool Evaluate()
+        {
+            return _func.Invoke();
+        }
     }
 
     /// <summary>
@@ -88,8 +91,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Fsm
             return result;
         }
 
-        public void Trigger() => _triggered = true; // Chamado por listener de evento
+        public void Trigger()
+        {
+            _triggered = true;
+            // Chamado por listener de evento
+        }
     }
 }
-
-

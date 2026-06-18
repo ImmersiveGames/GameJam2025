@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 intent.Source,
                 intent.Reason);
 
-            if (!target.TryApplyDamageIntent(damageIntent, out ActorDamageResult damageResult) ||
+            if (!target.TryApplyDamageIntent(damageIntent, out var damageResult) ||
                 damageResult.Rejected ||
                 damageResult.Failed)
             {
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             }
 
             return candidateIdentity.IsValid &&
-                   candidateIdentity.CycleKey == requiredIdentity.CycleKey;
+                candidateIdentity.CycleKey == requiredIdentity.CycleKey;
         }
-}
+    }
 }

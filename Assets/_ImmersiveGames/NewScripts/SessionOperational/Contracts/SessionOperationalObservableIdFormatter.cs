@@ -12,5 +12,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"{routeIdentity.TrimToEmpty()}|{activeScene.TrimToEmpty()}|{sequence}|sandbox";
         }
-}
+    }
 }

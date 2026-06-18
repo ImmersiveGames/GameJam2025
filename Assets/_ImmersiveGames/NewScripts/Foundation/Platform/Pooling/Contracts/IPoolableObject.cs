@@ -11,4 +11,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
         void OnPoolDestroyed();
     }
 }
-

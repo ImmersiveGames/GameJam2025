@@ -67,9 +67,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera
         public bool Matches(PlayerActorRuntimeHandle handle)
         {
             return IsValid &&
-                   handle.IsValid &&
-                   ActorInstanceRuntimeId == handle.ActorInstanceRuntimeId &&
-                   ActorId == handle.ActorId;
+                handle.IsValid &&
+                ActorInstanceRuntimeId == handle.ActorInstanceRuntimeId &&
+                ActorId == handle.ActorId;
         }
-}
+    }
 }

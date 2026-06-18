@@ -27,7 +27,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
             }
 
             _orbitWaitTween = DOVirtual.DelayedCall(orbitIdleDelaySeconds, () => onCompleted?.Invoke())
-                                      .SetRecyclable(true);
+                .SetRecyclable(true);
         }
 
         public void CancelOrbitWait()

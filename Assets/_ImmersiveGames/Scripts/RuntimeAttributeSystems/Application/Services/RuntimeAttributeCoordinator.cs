@@ -50,7 +50,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             _strategy = strategy ?? new DefaultAttributeCanvasStrategy();
         }
 
-        public string GetObjectId() => "RuntimeAttributeCoordinator";
+        public string GetObjectId()
+        {
+            return "RuntimeAttributeCoordinator";
+        }
 
         public void OnDependenciesInjected()
         {
@@ -328,11 +331,20 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             DebugUtility.LogVerbose<RuntimeAttributeCoordinator>($"Unregistered actor '{actorId}'");
         }
 
-        public RuntimeAttributeContext GetActorResourceSystem(string actorId) => _actors.GetValueOrDefault(actorId);
+        public RuntimeAttributeContext GetActorResourceSystem(string actorId)
+        {
+            return _actors.GetValueOrDefault(actorId);
+        }
 
-        public bool IsActorRegistered(string actorId) => _actors.ContainsKey(actorId);
+        public bool IsActorRegistered(string actorId)
+        {
+            return _actors.ContainsKey(actorId);
+        }
 
-        public IReadOnlyCollection<string> GetRegisteredActorIds() => _actors.Keys;
+        public IReadOnlyCollection<string> GetRegisteredActorIds()
+        {
+            return _actors.Keys;
+        }
 
         public bool IsCanvasRegisteredForActor(string actorId)
         {
@@ -348,12 +360,19 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             }
         }
 
-        public bool TryGetActorResource(string actorId, out RuntimeAttributeContext runtimeAttributeContext) =>
-            _actors.TryGetValue(actorId, out runtimeAttributeContext);
+        public bool TryGetActorResource(string actorId, out RuntimeAttributeContext runtimeAttributeContext)
+        {
+            return _actors.TryGetValue(actorId, out runtimeAttributeContext);
+        }
 
-        public bool IsCanvasRegistered(string canvasId) => _canvases.ContainsKey(canvasId);
+        public bool IsCanvasRegistered(string canvasId)
+        {
+            return _canvases.ContainsKey(canvasId);
+        }
 
-        public IReadOnlyCollection<string> GetRegisteredCanvasIds() => _canvases.Keys;
+        public IReadOnlyCollection<string> GetRegisteredCanvasIds()
+        {
+            return _canvases.Keys;
+        }
     }
 }
-

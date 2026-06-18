@@ -92,14 +92,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 actorParticipations.Add(new ActorParticipationRecord(
                     identity,
                     actorInstanceRuntimeId,
-                    participatesInCurrentEntry: true,
-                    policy: actorIdentity.ParticipationPolicy,
-                    explicitActivityIds: actorIdentity.ParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds
+                    true,
+                    actorIdentity.ParticipationPolicy,
+                    actorIdentity.ParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds
                         ? actorIdentity.ExplicitActivityIds
                         : Array.Empty<string>(),
-                    policyMetadata: actorIdentity.ParticipationPolicy.ToString(),
-                    source: source,
-                    reason: reason));
+                    actorIdentity.ParticipationPolicy.ToString(),
+                    source,
+                    reason));
             }
 
             return new ActivityActorInstanceSourceResult(actorInstances, actorParticipations);

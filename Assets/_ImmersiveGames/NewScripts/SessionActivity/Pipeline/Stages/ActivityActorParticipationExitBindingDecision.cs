@@ -43,19 +43,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Kind == ActivityActorParticipationExitBindingDecisionKind.Failed;
 
         public static ActivityActorParticipationExitBindingDecision NotRequired(
-            ActivityActorParticipationExitBindingResolutionResult resolution) =>
-            new(ActivityActorParticipationExitBindingDecisionKind.NotRequired, resolution, default, "player_identity_not_resolved_for_actor");
+            ActivityActorParticipationExitBindingResolutionResult resolution)
+        {
+            return new ActivityActorParticipationExitBindingDecision(ActivityActorParticipationExitBindingDecisionKind.NotRequired, resolution, default, "player_identity_not_resolved_for_actor");
+        }
 
         public static ActivityActorParticipationExitBindingDecision Resolved(
             ActivityActorParticipationExitBindingResolutionResult resolution,
-            PlayerActorIdentityRecord playerActorIdentity) =>
-            new(ActivityActorParticipationExitBindingDecisionKind.Resolved, resolution, playerActorIdentity, "player_participant_binding_resolved");
+            PlayerActorIdentityRecord playerActorIdentity)
+        {
+            return new ActivityActorParticipationExitBindingDecision(ActivityActorParticipationExitBindingDecisionKind.Resolved, resolution, playerActorIdentity, "player_participant_binding_resolved");
+        }
 
         public static ActivityActorParticipationExitBindingDecision Failed(
             ActivityActorParticipationExitBindingResolutionResult resolution,
-            string reason) =>
-            new(ActivityActorParticipationExitBindingDecisionKind.Failed, resolution, default, reason);
-}
+            string reason)
+        {
+            return new ActivityActorParticipationExitBindingDecision(ActivityActorParticipationExitBindingDecisionKind.Failed, resolution, default, reason);
+        }
+    }
 
     internal static class ActivityActorParticipationExitBindingDecisionBuilder
     {
@@ -65,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorInstanceRecord instance,
             SessionActivityIdentity startedIdentity)
         {
-            ActivityActorParticipationExitBindingResolutionResult bindingResolution =
+            var bindingResolution =
                 runtimeState.ResolveActivePlayerParticipantBindingForExit(startedIdentity, instance);
 
             if (bindingResolution.IsResolved)
@@ -114,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return;
             }
 
-            ActivityActorParticipationExitBindingResolutionResult bindingResolution = bindingDecision.Resolution;
+            var bindingResolution = bindingDecision.Resolution;
             throw new InvalidOperationException(
                 $"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] {bindingDecision.Reason} kind='{bindingResolution.Kind}' sourceKind='{bindingResolution.SourceKind}' reason='{bindingResolution.Reason}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}' activityId='{activityId}' entrySequence='{entrySequence}'.");
         }

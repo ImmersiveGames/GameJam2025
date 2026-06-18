@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 return;
             }
 
-            DependencyManager.Provider.RegisterGlobal(audioDefaults, allowOverride: false);
+            DependencyManager.Provider.RegisterGlobal(audioDefaults, false);
 
             DebugUtility.LogVerbose(
                 typeof(AudioInstaller),
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
         private static void RegisterAudioSettings()
         {
             RegisterIfMissing<IAudioSettingsService>(
-                factory: () =>
+                () =>
                 {
                     if (!DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults) || defaults == null)
                     {
@@ -101,20 +101,20 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                     }
 
                     return new AudioSettingsService(
-                        masterVolume: defaults.MasterVolume,
-                        bgmVolume: defaults.BgmVolume,
-                        sfxVolume: defaults.SfxVolume,
-                        bgmCategoryMultiplier: defaults.BgmCategoryMultiplier,
-                        sfxCategoryMultiplier: defaults.SfxCategoryMultiplier);
+                        defaults.MasterVolume,
+                        defaults.BgmVolume,
+                        defaults.SfxVolume,
+                        defaults.BgmCategoryMultiplier,
+                        defaults.SfxCategoryMultiplier);
                 },
-                alreadyRegisteredMessage: "[Audio][BOOT] IAudioSettingsService already registered.",
-                registeredMessage: "[Audio][BOOT] IAudioSettingsService registered from AudioDefaultsAsset.");
+                "[Audio][BOOT] IAudioSettingsService already registered.",
+                "[Audio][BOOT] IAudioSettingsService registered from AudioDefaultsAsset.");
         }
 
         private static void RegisterAudioRoutingResolver()
         {
             RegisterIfMissing<IAudioRoutingResolver>(
-                factory: () =>
+                () =>
                 {
                     if (!DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var defaults) || defaults == null)
                     {
@@ -123,8 +123,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 
                     return new AudioRoutingResolver(defaults);
                 },
-                alreadyRegisteredMessage: "[Audio][BOOT] IAudioRoutingResolver already registered.",
-                registeredMessage: "[Audio][BOOT] IAudioRoutingResolver registered.");
+                "[Audio][BOOT] IAudioRoutingResolver already registered.",
+                "[Audio][BOOT] IAudioRoutingResolver registered.");
         }
 
         private static void RegisterIfMissing<T>(

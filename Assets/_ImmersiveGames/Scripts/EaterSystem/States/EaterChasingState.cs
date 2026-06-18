@@ -19,9 +19,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private Collider _eaterCollider;
         private bool _preserveOrbitAnchor;
 
-        public EaterChasingState() : base("Chasing")
-        {
-        }
+        public EaterChasingState() : base("Chasing") { }
 
         public override void OnEnter()
         {
@@ -150,7 +148,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                     : fallbackForward;
 
                 float correction = stopDist - surfDist;
-                Behavior.Translate(retreatDir * correction, respectPlayerBounds: false);
+                Behavior.Translate(retreatDir * correction, false);
                 surfDist = stopDist;
                 surfDir = centerDir;
             }
@@ -197,7 +195,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             Behavior.RotateTowards(direction, Time.deltaTime);
-            Behavior.Translate(direction * travelDistance, respectPlayerBounds: false);
+            Behavior.Translate(direction * travelDistance, false);
         }
 
         private void HaltChasingTarget(Transform target, Vector3 targetCenter, Vector3 surfaceDirection, float stopDistance, float surfaceDistance)
@@ -353,14 +351,14 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             if (eaterCollider != null && eaterCollider.enabled && Physics.ComputePenetration(
-                    eaterCollider,
-                    eaterCollider.transform.position,
-                    eaterCollider.transform.rotation,
-                    targetCollider,
-                    targetCollider.transform.position,
-                    targetCollider.transform.rotation,
-                    out var separationDirection,
-                    out float separationDistance))
+                eaterCollider,
+                eaterCollider.transform.position,
+                eaterCollider.transform.rotation,
+                targetCollider,
+                targetCollider.transform.position,
+                targetCollider.transform.rotation,
+                out var separationDirection,
+                out float separationDistance))
             {
                 directionToSurface = separationDirection.sqrMagnitude > Mathf.Epsilon
                     ? separationDirection.normalized
@@ -402,7 +400,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
                 return;
             }
 
-            Behavior.Translate(direction * difference, respectPlayerBounds: false);
+            Behavior.Translate(direction * difference, false);
         }
 
         private void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float stopDistance, float surfaceDistance)
@@ -415,4 +413,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-

@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalConsumerEntryAndReadinessResult
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason,
                 detail);
         }
-}
+    }
 
     public readonly struct OperationalConsumerEntryAndReadinessCommand
     {
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public sealed class OperationalConsumerEntryAndReadinessStage
     {
@@ -289,7 +289,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var readinessPort = _readinessPortResolver();
             if (readinessPort == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{command.RouteCommand.HandoffSessionStateId.TrimToEmpty()}'.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{command.RouteCommand.HandoffSessionStateId.TrimToEmpty()}'.");
             }
 
             return readinessPort;
@@ -322,7 +323,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 PlayerParticipationOutcome.ObservedNoOp => "ObservedNoOp",
                 PlayerParticipationOutcome.SeedResolved => "SeedResolved",
                 PlayerParticipationOutcome.Materialized => "Materialized",
-                _ => "Unknown",
+                _ => "Unknown"
             };
         }
 
@@ -352,5 +353,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return plan.RouteParticipantSetDefinition.name.TrimToOrDefault("<unnamed>");
         }
-}
+    }
 }

@@ -34,6 +34,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         private EventBinding<RuntimeAttributeThresholdEvent> _thresholdBinding;
 
         #region Unity Lifecycle
+
         private void OnEnable()
         {
             _expectedActorId = GetComponentInParent<IActor>()?.ActorId ?? "";
@@ -70,9 +71,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 }
             }
         }
+
         #endregion
 
         #region Event Handling
+
         private void RegisterThresholdListener()
         {
             _thresholdBinding = new EventBinding<RuntimeAttributeThresholdEvent>(OnResourceThreshold);
@@ -172,9 +175,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         private bool ShouldInvoke(TriggerDirection dir, bool isAscending)
         {
             return dir == TriggerDirection.Both ||
-                   dir == TriggerDirection.Ascending && isAscending ||
-                   dir == TriggerDirection.Descending && !isAscending;
+                dir == TriggerDirection.Ascending && isAscending ||
+                dir == TriggerDirection.Descending && !isAscending;
         }
+
         #endregion
     }
 }

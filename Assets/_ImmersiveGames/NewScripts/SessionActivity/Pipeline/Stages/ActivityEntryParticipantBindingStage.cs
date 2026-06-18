@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         retainedParticipant.RequirementId.Value,
                         ActivityParticipantRequirementKind.ControllablePlayer,
                         retainedParticipant,
-                        required: true));
+                        true));
                 }
 
                 if (retainedParticipants.Count > 0)
@@ -240,12 +240,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         $"'{command.ActivityId}' participant binding completed resolved='{retainedParticipants.Count}' skipped='0' totalRequirements='0' status='ResolvedFromRetainedParticipantLookup'.");
                     return new ActivityEntryParticipantBindingResult(
                         completedAfterRetentionIdentity,
-                        totalRequirements: 0,
-                        requiredRequirements: 0,
-                        resolvedRequirements: retainedParticipants.Count,
-                        skippedRequirements: 0,
-                        requiredResolvedRequirements: 0,
-                        resolvedParticipants: retainedResolvedParticipants);
+                        0,
+                        0,
+                        retainedParticipants.Count,
+                        0,
+                        0,
+                        retainedResolvedParticipants);
                 }
 
                 var skippedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements);
@@ -294,12 +294,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{command.ActivityId}' participant binding completed resolved='0' skipped='0' totalRequirements='0' status='SkippedNoRequirements'.");
                 return new ActivityEntryParticipantBindingResult(
                     completedAfterSkipIdentity,
-                    totalRequirements: 0,
-                    requiredRequirements: 0,
-                    resolvedRequirements: 0,
-                    skippedRequirements: 0,
-                    requiredResolvedRequirements: 0,
-                    resolvedParticipants: Array.Empty<ActivityEntryParticipantBindingResolvedRecord>());
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    Array.Empty<ActivityEntryParticipantBindingResolvedRecord>());
             }
 
             var sessionParticipationContext = ResolveSessionParticipationContextOrFail(
@@ -374,12 +374,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 if (!TryBuildActivityParticipantBinding(
-                        requirement,
-                        sessionParticipationContext,
-                        command.Source,
-                        command.Reason,
-                        out var activityParticipantBinding,
-                        out string activityParticipationResolutionReason))
+                    requirement,
+                    sessionParticipationContext,
+                    command.Source,
+                    command.Reason,
+                    out var activityParticipantBinding,
+                    out string activityParticipationResolutionReason))
                 {
                     if (!requirementRequired)
                     {
@@ -853,9 +853,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"activity_participant_materialization_identity_invalid: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}'.");
             }
 
-            PlayerActivityParticipationContext retainedParticipationContext =
+            var retainedParticipationContext =
                 activityParticipationRuntimeState?.CurrentParticipationContext;
-            ActivityRetainedParticipantLookupResult retainedLookupResult = retainedParticipantLookup.Execute(
+            var retainedLookupResult = retainedParticipantLookup.Execute(
                 new ActivityRetainedParticipantLookupCommand(
                     identity,
                     participant,
@@ -935,10 +935,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             EnsurePlayerRuntimeActorIdentityBoundOrFail(records[0].Instance, identity, participant.ParticipantId, "materialization");
             playerActorRegistry.IndexActiveHandle(records[0].RuntimeHandle);
             if (ActivityActorScopeCompatibilityPolicy.ShouldTrackInRouteIndex(
-                    identity,
-                    records[0].RuntimeHandle,
-                    nameof(SessionActivityPipeline),
-                    "RegisterMaterializedPlayerActor"))
+                identity,
+                records[0].RuntimeHandle,
+                nameof(SessionActivityPipeline),
+                "RegisterMaterializedPlayerActor"))
             {
                 playerActorRegistry.IndexRouteScopedHandle(records[0].RuntimeHandle);
             }
@@ -1103,10 +1103,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 var handle = activeHandles[index];
                 if (ActivityActorScopeCompatibilityPolicy.ShouldRetainActiveHandleOnActivityScopeBegin(
-                        identity,
-                        handle,
-                        nameof(SessionActivityPipeline),
-                        "BeginPlayerActorActivityScope"))
+                    identity,
+                    handle,
+                    nameof(SessionActivityPipeline),
+                    "BeginPlayerActorActivityScope"))
                 {
                     var scopedHandle = RebindRetainedPlayerActorHandleForCurrentActivityOrFail(
                         identity,
@@ -1166,10 +1166,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             playerActorRegistry.IndexActiveHandle(handle);
             if (ActivityActorScopeCompatibilityPolicy.ShouldTrackInRouteIndex(
-                    identity,
-                    handle,
-                    nameof(SessionActivityPipeline),
-                    "RegisterRetainedPlayerActorParticipation"))
+                identity,
+                handle,
+                nameof(SessionActivityPipeline),
+                "RegisterRetainedPlayerActorParticipation"))
             {
                 playerActorRegistry.IndexRouteScopedHandle(handle);
             }
@@ -1237,12 +1237,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("Cannot emit retained participant lookup fact for invalid participant binding.");
             }
 
-            SessionActivityFactKind factKind = lookupResult.OutcomeKind switch
+            var factKind = lookupResult.OutcomeKind switch
             {
                 ActivityRetainedParticipantLookupOutcomeKind.Resolved => SessionActivityFactKind.ActivityRetainedParticipantLookupResolved,
                 ActivityRetainedParticipantLookupOutcomeKind.RejectedForeign => SessionActivityFactKind.ActivityRetainedParticipantLookupRejectedForeign,
                 ActivityRetainedParticipantLookupOutcomeKind.RejectedStale => SessionActivityFactKind.ActivityRetainedParticipantLookupRejectedStale,
-                _ => SessionActivityFactKind.ActivityRetainedParticipantLookupMissed,
+                _ => SessionActivityFactKind.ActivityRetainedParticipantLookupMissed
             };
 
             endpoint.EmitFact(
@@ -1484,5 +1484,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ? transform.name
                 : $"{parentPath}/{transform.name}";
         }
-}
+    }
 }

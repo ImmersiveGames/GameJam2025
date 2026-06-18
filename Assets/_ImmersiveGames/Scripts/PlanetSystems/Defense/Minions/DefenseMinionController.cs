@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 
         // Campos de runtime, sempre preenchidos via profile para evitar dados duplicados em prefabs.
         private float _entryDurationSeconds = DefaultEntryDurationSeconds;
-        private float _initialScaleFactor   = DefaultInitialScaleFactor;
+        private float _initialScaleFactor = DefaultInitialScaleFactor;
         private float _orbitIdleDelaySeconds = DefaultOrbitIdleDelaySeconds;
         private float _chaseSpeed = DefaultChaseSpeed;
         private MinionEntryStrategySo _entryStrategy;
@@ -332,8 +332,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
             if (profileV2 != null)
             {
                 // Entrada / órbita
-                _entryDurationSeconds  = Mathf.Max(0.1f, profileV2.EntryDuration);
-                _initialScaleFactor    = Mathf.Clamp(profileV2.InitialScaleFactor, 0.05f, 1f);
+                _entryDurationSeconds = Mathf.Max(0.1f, profileV2.EntryDuration);
+                _initialScaleFactor = Mathf.Clamp(profileV2.InitialScaleFactor, 0.05f, 1f);
                 _orbitIdleDelaySeconds = Mathf.Max(0f, profileV2.OrbitIdleSeconds);
 
                 // Estratégias
@@ -367,7 +367,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
                     $"ChaseStrategy={(_chaseStrategy != null ? _chaseStrategy.name : "NONE")}, " +
                     $"SnapFacing={profileV2.SnapFacingOnChaseStart}, " +
                     $"ChaseRotLerp={profileV2.ChaseRotationLerpFactor:0.00}",
-                    null,this);
+                    null, this);
 
                 return;
             }
@@ -379,4 +379,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 
     }
 }
-

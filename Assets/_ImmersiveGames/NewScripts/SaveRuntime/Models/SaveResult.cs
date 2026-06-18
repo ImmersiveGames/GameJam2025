@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         Loaded = 2,
         Skipped = 3,
         Failed = 4,
-        Deleted = 5,
+        Deleted = 5
     }
 
     public sealed class SaveResult

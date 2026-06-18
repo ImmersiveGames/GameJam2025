@@ -19,14 +19,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorProjectileFireEndpointId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorProjectileFireEndpointId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorProjectileFireEndpointId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorProjectileFireEndpointId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorProjectileFireEndpointId left, ActorProjectileFireEndpointId right) => left.Equals(right);
-        public static bool operator !=(ActorProjectileFireEndpointId left, ActorProjectileFireEndpointId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorProjectileFireEndpointId left, ActorProjectileFireEndpointId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorProjectileFireEndpointId left, ActorProjectileFireEndpointId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public enum ActorProjectileFireEndpointReadinessKind
     {
@@ -39,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         MissingMuzzle = 6,
         InvalidCommand = 7,
         NotExecutable = 8,
-        Failed = 9,
+        Failed = 9
     }
 
     public readonly struct ActorProjectileFireEndpointDescriptor
@@ -85,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             BoundCommandId.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActorProjectileFireEndpointReadiness
     {
@@ -169,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
                 reason,
                 message);
         }
-}
+    }
 
 
     public interface IActorProjectileFireAudioAdapter

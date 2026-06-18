@@ -20,7 +20,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         private bool _isDestroyed;
 
         public DependencyInjectionState InjectionState { get; set; }
-        public string GetObjectId() => _actor?.ActorId ?? gameObject.name;
+        public string GetObjectId()
+        {
+            return _actor?.ActorId ?? gameObject.name;
+        }
 
         // Reset deve ocorrer relativamente cedo para a UI rebindar lendo valores já corretos.
         public int ResetOrder => -80;
@@ -29,9 +32,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         {
             // Serve para player e planetas. Se o scope for PlayersOnly, planetas não entram porque não são alvos.
             return scope == ResetScope.AllActorsInScene ||
-                   scope == ResetScope.PlayersOnly ||
-                   scope == ResetScope.EaterOnly ||
-                   scope == ResetScope.ActorIdSet;
+                scope == ResetScope.PlayersOnly ||
+                scope == ResetScope.EaterOnly ||
+                scope == ResetScope.ActorIdSet;
         }
 
         private void Awake()
@@ -110,7 +113,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             }
         }
 
-        public RuntimeAttributeContext GetResourceSystem() => _service;
+        public RuntimeAttributeContext GetResourceSystem()
+        {
+            return _service;
+        }
 
         #region Reset
 
@@ -156,4 +162,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         #endregion
     }
 }
-

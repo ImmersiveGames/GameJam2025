@@ -84,5 +84,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 supportedReleaseKinds = new List<ActivityReleaseRequirementKind>();
             }
         }
-}
+    }
 }

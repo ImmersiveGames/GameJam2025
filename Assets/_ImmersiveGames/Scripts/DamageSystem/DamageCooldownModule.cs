@@ -77,6 +77,9 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
         }
 
-        public void Clear() => _cooldowns.Clear();
+        public void Clear()
+        {
+            _cooldowns.Clear();
+        }
     }
 }

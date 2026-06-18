@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ? ActorKind.Player
                 : ActorKind.Actor;
         }
-}
+    }
 
     internal readonly struct ActorReleaseContributionStageResult
     {
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public int Skipped { get; }
         public string Reason { get; }
         public bool IsValid => Completed && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     internal static class ActorReleaseContributionStage
     {
@@ -107,15 +107,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int skippedCount = 0;
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorReleaseContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     skippedCount++;
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(command, provider);
-                if (!provider.TryCreateReleaseContribution(contributionContext, out IActorReleaseContribution contribution))
+                var contributionContext = BuildContributionContext(command, provider);
+                if (!provider.TryCreateReleaseContribution(contributionContext, out var contribution))
                 {
                     skippedCount++;
                     continue;
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     throw new InvalidOperationException($"[FATAL][ActorReleaseContributionStage] Invalid release contribution provider='{provider.GetType().Name}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}'.");
                 }
 
-                if (!contribution.ReleaseEndpoint.TryRelease(contributionContext, out ActorCapabilityReleaseResult result) ||
+                if (!contribution.ReleaseEndpoint.TryRelease(contributionContext, out var result) ||
                     !result.IsValid ||
                     !result.Released)
                 {
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             string path = transform.name;
-            Transform parent = transform.parent;
+            var parent = transform.parent;
             while (parent != null)
             {
                 path = parent.name + "/" + path;
@@ -191,5 +191,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return path;
         }
-}
+    }
 }

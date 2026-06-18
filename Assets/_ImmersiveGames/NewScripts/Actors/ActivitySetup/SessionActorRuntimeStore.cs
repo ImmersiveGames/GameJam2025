@@ -95,28 +95,28 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         {
             entry = default;
             return identity.IsValid &&
-                   actorInstanceRuntimeId.IsValid &&
-                   _entriesByRuntimeId.TryGetValue(actorInstanceRuntimeId, out entry) &&
-                   entry.IsValid &&
-                   IsSameSessionPipeline(entry.Identity, identity);
+                actorInstanceRuntimeId.IsValid &&
+                _entriesByRuntimeId.TryGetValue(actorInstanceRuntimeId, out entry) &&
+                entry.IsValid &&
+                IsSameSessionPipeline(entry.Identity, identity);
         }
 
         public bool TryGetByActorId(SessionActivityIdentity identity, ActorId actorId, out SessionActorRuntimeEntry entry)
         {
             entry = default;
             return identity.IsValid &&
-                   actorId.IsValid &&
-                   _runtimeIdByActorId.TryGetValue(actorId, out var runtimeId) &&
-                   TryGetByRuntimeId(identity, runtimeId, out entry);
+                actorId.IsValid &&
+                _runtimeIdByActorId.TryGetValue(actorId, out var runtimeId) &&
+                TryGetByRuntimeId(identity, runtimeId, out entry);
         }
 
         public bool TryGetByParticipantId(SessionActivityIdentity identity, SessionParticipantId participantId, out SessionActorRuntimeEntry entry)
         {
             entry = default;
             return identity.IsValid &&
-                   participantId.IsValid &&
-                   _runtimeIdByParticipantId.TryGetValue(participantId, out var runtimeId) &&
-                   TryGetByRuntimeId(identity, runtimeId, out entry);
+                participantId.IsValid &&
+                _runtimeIdByParticipantId.TryGetValue(participantId, out var runtimeId) &&
+                TryGetByRuntimeId(identity, runtimeId, out entry);
         }
 
         public IReadOnlyList<SessionActorRuntimeEntry> GetEntriesForSession(SessionActivityIdentity identity)
@@ -210,9 +210,9 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         private static bool IsSameSessionPipeline(SessionActivityIdentity left, SessionActivityIdentity right)
         {
             return left.IsValid &&
-                   right.IsValid &&
-                   string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal);
+                right.IsValid &&
+                string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal);
         }
     }
 }

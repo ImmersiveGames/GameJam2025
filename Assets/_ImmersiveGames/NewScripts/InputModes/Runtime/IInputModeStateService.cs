@@ -8,4 +8,3 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         InputModeRequestKind CurrentMode { get; }
     }
 }
-

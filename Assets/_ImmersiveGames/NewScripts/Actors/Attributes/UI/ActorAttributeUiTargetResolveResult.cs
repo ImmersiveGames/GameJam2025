@@ -67,5 +67,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 reason,
                 failureReason);
         }
-}
+    }
 }

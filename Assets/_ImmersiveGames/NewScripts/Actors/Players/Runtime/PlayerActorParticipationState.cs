@@ -12,15 +12,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
     {
         Unknown = 0,
         ActiveInActivity = 1,
-        ExitedActivity = 2,
+        ExitedActivity = 2
     }
 
     [DisallowMultipleComponent]
     public sealed class PlayerActorParticipationState : MonoBehaviour, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider
     {
-        [SerializeField, HideInInspector] private PlayerActorParticipationStateKind participationState = PlayerActorParticipationStateKind.ActiveInActivity;
-        [SerializeField, HideInInspector] private string currentActivityId;
-        [SerializeField, HideInInspector] private int currentEntrySequence;
+        [SerializeField] [HideInInspector] private PlayerActorParticipationStateKind participationState = PlayerActorParticipationStateKind.ActiveInActivity;
+        [SerializeField] [HideInInspector] private string currentActivityId;
+        [SerializeField] [HideInInspector] private int currentEntrySequence;
         [Header("Reset")]
         [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
 
@@ -71,40 +71,40 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         {
             ApplyParticipationStateProfile(
                 context,
-                participationProfileKind: nameof(ActivityResetStateProfileKind.InitialState),
-                participationProfileSource: "entry_initialize_activity_participation_active");
+                nameof(ActivityResetStateProfileKind.InitialState),
+                "entry_initialize_activity_participation_active");
         }
 
         public void ApplyRuntimeLocalReset(ActorResetContext context)
         {
             ApplyParticipationStateProfile(
                 context,
-                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
-                participationProfileSource: "runtime_local_activity_participation_reaffirm_active");
+                nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                "runtime_local_activity_participation_reaffirm_active");
         }
 
         public void ApplyRuntimeActivityReset(ActorResetContext context)
         {
             ApplyParticipationStateProfile(
                 context,
-                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                participationProfileSource: "runtime_activity_activity_participation_reenter_active");
+                nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                "runtime_activity_activity_participation_reenter_active");
         }
 
         public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
         {
             ApplyParticipationStateProfile(
                 context,
-                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
-                participationProfileSource: "runtime_activity_transition_activity_participation_active_in_next_activity");
+                nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
+                "runtime_activity_transition_activity_participation_active_in_next_activity");
         }
 
         public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
         {
             ApplyParticipationStateProfile(
                 context,
-                participationProfileKind: nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
-                participationProfileSource: "runtime_route_transition_activity_participation_clear");
+                nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
+                "runtime_route_transition_activity_participation_clear");
         }
 
         private void ApplyParticipationStateProfile(
@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         {
             EnsureParticipationResetContext(context, participationProfileKind);
 
-            PlayerActorParticipationStateKind stateBefore = participationState;
+            var stateBefore = participationState;
             string activityBefore = CurrentActivityId;
             int entrySequenceBefore = currentEntrySequence;
 
@@ -127,7 +127,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 MarkActiveInActivity(context.PipelineIdentity);
             }
 
-            DebugUtility.LogVerbose(typeof(PlayerActorParticipationState), $"event='ParticipationStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' participationProfileKind='{participationProfileKind}' participationProfileSource='{participationProfileSource}' participationStateBefore='{stateBefore}' participationStateAfter='{participationState}' activityIdBefore='{activityBefore}' activityIdAfter='{CurrentActivityId}' entrySequenceBefore='{entrySequenceBefore}' entrySequenceAfter='{currentEntrySequence}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
+            DebugUtility.LogVerbose(typeof(PlayerActorParticipationState),
+                $"event='ParticipationStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' participationProfileKind='{participationProfileKind}' participationProfileSource='{participationProfileSource}' participationStateBefore='{stateBefore}' participationStateAfter='{participationState}' activityIdBefore='{activityBefore}' activityIdAfter='{CurrentActivityId}' entrySequenceBefore='{entrySequenceBefore}' entrySequenceAfter='{currentEntrySequence}' source='{context.Source}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info, this);
         }
 
         private static void EnsureParticipationResetContext(ActorResetContext context, string operation)

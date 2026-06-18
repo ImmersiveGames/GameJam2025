@@ -26,8 +26,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         public bool ShouldParticipate(ResetScope scope)
         {
             return scope == ResetScope.AllActorsInScene ||
-                   scope == ResetScope.PlayersOnly ||
-                   scope == ResetScope.ActorIdSet;
+                scope == ResetScope.PlayersOnly ||
+                scope == ResetScope.ActorIdSet;
         }
 
         #endregion
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 
             // Player pode operar múltiplos sensores; guardamos referência.
             _sensorController = GetComponent<SensorController>() ??
-                                GetComponentInChildren<SensorController>(includeInactive: true);
+                GetComponentInChildren<SensorController>(includeInactive: true);
         }
 
         private void Start()
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
             if (_sensorController == null)
             {
                 _sensorController = GetComponent<SensorController>() ??
-                                    GetComponentInChildren<SensorController>(includeInactive: true);
+                    GetComponentInChildren<SensorController>(includeInactive: true);
             }
 
             if (_sensorController == null)
@@ -286,4 +286,3 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
         #endregion
     }
 }
-

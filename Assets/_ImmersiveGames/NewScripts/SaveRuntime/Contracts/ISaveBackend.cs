@@ -24,4 +24,3 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Contracts
             out string reason);
     }
 }
-

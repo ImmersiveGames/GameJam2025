@@ -124,8 +124,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             int returnedCount = 0;
             for (int index = 0; index < rentedSnapshot.Count; index++)
             {
-                GameObject instance = rentedSnapshot[index];
-                if (instance == null || !_instancesByObject.TryGetValue(instance, out PoolRuntimeInstance runtimeInstance))
+                var instance = rentedSnapshot[index];
+                if (instance == null || !_instancesByObject.TryGetValue(instance, out var runtimeInstance))
                 {
                     continue;
                 }

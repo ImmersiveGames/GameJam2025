@@ -103,9 +103,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         private static bool IsFinite01(float value)
         {
             return !float.IsNaN(value) &&
-                   !float.IsInfinity(value) &&
-                   value >= 0f &&
-                   value <= 1f;
+                !float.IsInfinity(value) &&
+                value is >= 0f and <= 1f;
         }
 
         private static float Clamp01(float value)
@@ -122,5 +121,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
             return value > 1f ? 1f : value;
         }
-}
+    }
 }

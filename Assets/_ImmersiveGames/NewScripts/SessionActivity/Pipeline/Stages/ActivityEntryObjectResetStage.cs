@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"ActivityEntryObjectResetStage requires reset scope plan from the current activity cycle. activityId='{command.ActivityId}'.");
             }
 
-            SessionActivityIdentity resetIdentity = command.Identity;
+            var resetIdentity = command.Identity;
             int entrySequence = resetIdentity.EntrySequence;
             endpoint.SetCurrentIdentity(resetIdentity, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                var report = discoveryResult.Reports[reportIndex];
                 if (!IsReportForCurrentEntryForIdentity(report, resetIdentity, entrySequence, resetIdentity))
                 {
                     continue;
@@ -212,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{command.ActivityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetDescriptor='{resetDescriptorMetadata}' resetDescriptors='{resetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report' resetIntent='{resetScopePlan.ResetIntent}' resetStateProfile='{resetScopePlan.StateProfileKind}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
 
-                ActivityObjectResetResult result = ExecuteObjectResetCommand(resetCommand, endpoints);
+                var result = ExecuteObjectResetCommand(resetCommand, endpoints);
                 if (!IsObjectResetResultForCurrentEntry(result, resetIdentity, entrySequence, resetIdentity))
                 {
                     failedCount += 1;

@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         public bool Applied => Outcome == ActorAttributeMutationOutcome.Applied;
         public bool Rejected => Outcome == ActorAttributeMutationOutcome.Rejected;
         public bool Failed => Outcome == ActorAttributeMutationOutcome.Failed;
-        public bool HasChangedFact => HasApplyResult && ApplyResult.HasFact;
+        public bool HasChangedFact => HasApplyResult && ApplyResult.HasFact && ApplyResult.Fact.Changed;
         public bool HasThresholdFacts => HasApplyResult && ApplyResult.HasThresholdFacts;
 
         private ActorAttributeMutationResult(
@@ -122,5 +122,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 default,
                 reason);
         }
-}
+
+    }
 }

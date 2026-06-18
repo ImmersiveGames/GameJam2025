@@ -16,12 +16,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 
         public Task CloseCurtainAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
         {
-            return ExecuteAsync(identity, resolution, source, reason, close: true);
+            return ExecuteAsync(identity, resolution, source, reason, true);
         }
 
         public Task OpenCurtainAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
         {
-            return ExecuteAsync(identity, resolution, source, reason, close: false);
+            return ExecuteAsync(identity, resolution, source, reason, false);
         }
 
         private async Task ExecuteAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason, bool close)

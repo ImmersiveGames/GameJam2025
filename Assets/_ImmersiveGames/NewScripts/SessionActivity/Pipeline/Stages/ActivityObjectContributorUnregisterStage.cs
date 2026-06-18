@@ -127,11 +127,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{command.Identity.ActivityId}' activity object contributor unregister completed unregisteredCount='0'.");
                 return new ActivityObjectContributorUnregisterStageResult(
-                    completed: true,
-                    identity: completedIdentity,
-                    unregisteredCount: 0,
-                    skippedNoContributors: true,
-                    reason: "no_discovery_result");
+                    true,
+                    completedIdentity,
+                    0,
+                    true,
+                    "no_discovery_result");
             }
 
             if (!IsDiscoveryResultForCurrentEntry(discoveryResult, unregisterStartedIdentity, entrySequence))
@@ -216,11 +216,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.Identity.ActivityId}' activity object contributor unregister completed unregisteredCount='{unregisteredCount}'.");
 
             return new ActivityObjectContributorUnregisterStageResult(
-                completed: true,
-                identity: completedIdentityFinal,
-                unregisteredCount: unregisteredCount,
-                skippedNoContributors: skipped,
-                reason: skipped ? "no_contributors_for_entry" : "completed");
+                true,
+                completedIdentityFinal,
+                unregisteredCount,
+                skipped,
+                skipped ? "no_contributors_for_entry" : "completed");
         }
 
         private static SessionActivityIdentity BuildIdentity(
@@ -245,12 +245,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence)
         {
             return result.IsValid &&
-                   identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+                identity.IsValid &&
+                string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
@@ -259,12 +259,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence)
         {
             return report.IsValid &&
-                   identity.IsValid &&
-                   string.Equals(report.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   report.ActivityOrdinal == identity.ActivityOrdinal &&
-                   report.EntrySequence == entrySequence;
+                identity.IsValid &&
+                string.Equals(report.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(report.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                report.ActivityOrdinal == identity.ActivityOrdinal &&
+                report.EntrySequence == entrySequence;
         }
     }
 }

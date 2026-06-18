@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Unknown = 0,
         Completed = 1,
         Rejected = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalRouteConsumerEntryRequest
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             HasSessionParticipationContext &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct OperationalRouteConsumerEntryResult
     {
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public bool IsCompleted => Kind == OperationalRouteConsumerEntryResultKind.Completed;
         public bool IsRejected => Kind == OperationalRouteConsumerEntryResultKind.Rejected;
         public bool IsFailed => Kind == OperationalRouteConsumerEntryResultKind.Failed;
-}
+    }
 
     public interface IOperationalRouteConsumerEntryPort
     {

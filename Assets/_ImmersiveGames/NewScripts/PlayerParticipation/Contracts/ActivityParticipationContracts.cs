@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             ActorId.IsValid &&
             ActorScope != ActorScope.Unknown &&
             MaterializationPolicy != ActorMaterializationPolicyKind.Unknown;
-}
+    }
 
     public sealed class ActivityParticipationContext
     {
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
             return true;
         }
-}
+    }
 
     public readonly struct ActorMaterializationRequest
     {
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && Participant.IsValid;
-}
+    }
 
     public readonly struct ActorMaterializationResult
     {
@@ -169,5 +169,5 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
             (Materialized || Retained);
-}
+    }
 }

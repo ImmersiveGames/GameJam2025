@@ -32,5 +32,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             Identity.IsValid &&
             ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 }

@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         [Tooltip("Se true, exibe o Ã­cone genÃ©rico de planeta atÃ© a descoberta do recurso; caso contrÃ¡rio, usa o Ã­cone padrÃ£o.")]
         public bool hideUntilDiscovered = true;
 
-        [Tooltip("Ãcone opcional a ser usado para planetas antes do recurso ser descoberto (Ã­cone genÃ©rico)." )]
+        [Tooltip("Ãcone opcional a ser usado para planetas antes do recurso ser descoberto (Ã­cone genÃ©rico).")]
         public Sprite undiscoveredPlanetIcon;
 
         [Header("Planet Resource Styles")]

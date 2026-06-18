@@ -43,8 +43,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             var host = new PoolRuntimeHost(
-                hostName: $"Pool_{Sanitize(validatedDefinition.PoolLabel)}",
-                globalRoot: _globalRoot);
+                $"Pool_{Sanitize(validatedDefinition.PoolLabel)}",
+                _globalRoot);
             var pool = new GameObjectPool(validatedDefinition, host);
             _pools.Add(validatedDefinition, pool);
 
@@ -125,8 +125,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
             foreach (KeyValuePair<PoolDefinitionAsset, GameObjectPool> kv in _pools)
             {
-                PoolDefinitionAsset definition = kv.Key;
-                GameObjectPool pool = kv.Value;
+                var definition = kv.Key;
+                var pool = kv.Value;
                 if (definition == null || pool == null || definition.LifetimeScope != scope)
                 {
                     continue;
@@ -157,9 +157,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             }
 
             int returnedObjectCountBeforeRelease = 0;
-            foreach (PoolDefinitionAsset definition in definitionsToRelease)
+            foreach (var definition in definitionsToRelease)
             {
-                GameObjectPool pool = _pools[definition];
+                var pool = _pools[definition];
                 returnedObjectCountBeforeRelease += pool.ReturnAllRentedObjects("scope_release_before_pool_cleanup");
                 pool.Cleanup();
                 _pools.Remove(definition);

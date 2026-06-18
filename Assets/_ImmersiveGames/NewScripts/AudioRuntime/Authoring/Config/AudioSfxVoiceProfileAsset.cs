@@ -37,4 +37,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         public float ReleaseGraceSeconds => releaseGraceSeconds;
     }
 }
-

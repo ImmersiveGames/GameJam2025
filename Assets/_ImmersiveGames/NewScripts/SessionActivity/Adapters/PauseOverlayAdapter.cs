@@ -19,4 +19,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         }
     }
 }
-

@@ -16,13 +16,16 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         private bool _isInitialized;
 
         #region Unity Lifecycle
+
         private void Start()
         {
             Initialize();
         }
+
         #endregion
 
         #region Initialization
+
         private void Initialize()
         {
             if (_isInitialized)
@@ -42,9 +45,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 DebugUtility.LogVerbose<PartsController>($"Initialized with {parts.Length} parts on {gameObject.name}");
             }
         }
+
         #endregion
 
         #region Public Methods for UnityEvents
+
         // M�todo unificado para registro em UnityEvents (suporta Both)
         public void HandleThresholdCrossed(float threshold, float percentage, bool ascending)
         {
@@ -60,9 +65,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 DebugUtility.LogVerbose<PartsController>($"Handled threshold at {threshold} (Ascending={ascending}) on {gameObject.name}");
             }
         }
+
         #endregion
 
         #region Parts Management
+
         private void UpdatePartsState(float healthPercentage, bool isAscending)
         {
             if (showDebugLogs)
@@ -136,9 +143,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
         {
             return index >= 0 && index < parts.Length;
         }
+
         #endregion
 
         #region Public API
+
         public void Reset()
         {
             SetAllParts(true);
@@ -147,6 +156,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
                 DebugUtility.LogVerbose<PartsController>($"Reset to initial state (all active, health=100%) on {gameObject.name}");
             }
         }
+
         #endregion
     }
 

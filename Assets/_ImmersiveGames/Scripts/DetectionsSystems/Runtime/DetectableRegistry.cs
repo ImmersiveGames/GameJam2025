@@ -67,4 +67,3 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         }
     }
 }
-

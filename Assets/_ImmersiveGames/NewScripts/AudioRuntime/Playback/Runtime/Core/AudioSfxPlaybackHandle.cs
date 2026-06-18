@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         private Action<AudioSfxPlaybackHandle, EntityId, string, string, string> _onCompleted;
         private Coroutine _stopRoutine;
 
-        private EntityId  _cueId;
+        private EntityId _cueId;
         private string _cueName;
         private string _modeLabel;
         private string _reason;
@@ -181,4 +181,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         }
     }
 }
-

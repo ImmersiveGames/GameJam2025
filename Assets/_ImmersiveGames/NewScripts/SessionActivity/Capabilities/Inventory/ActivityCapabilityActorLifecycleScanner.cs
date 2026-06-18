@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 throw new InvalidOperationException("Activity capability scan context is invalid.");
             }
 
-            ActivityCapabilityInventoryId inventoryId = context.InventoryId;
+            var inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
             List<IActivityCapabilityRuntimeReference> runtimeReferences = new();
@@ -38,13 +38,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < context.ActorTargets.Count; index++)
             {
-                ActorScanTarget target = context.ActorTargets[index];
+                var target = context.ActorTargets[index];
                 if (!target.IsValid)
                 {
                     continue;
                 }
 
-                ActorCapabilitySurface surface = target.CapabilitySurface;
+                var surface = target.CapabilitySurface;
                 if (surface == null)
                 {
                     throw new InvalidOperationException(
@@ -147,15 +147,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorResetContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
                 string providerTypeName = provider.GetType().FullName ?? provider.GetType().Name;
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "reset");
-                if (!provider.TryCreateResetContribution(contributionContext, out IActorResetContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "reset");
+                if (!provider.TryCreateResetContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     capabilityKeys,
                     capabilities,
                     runtimeReferences,
-                        providerTypeName,
+                    providerTypeName,
                     new ActorCapabilityResetEndpointReference(
                         BuildActorLifecycleCapabilityId(
                             inventoryId,
@@ -216,14 +216,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorSnapshotContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "snapshot");
-                if (!provider.TryCreateSnapshotContribution(contributionContext, out IActorSnapshotContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "snapshot");
+                if (!provider.TryCreateSnapshotContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -282,14 +282,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorRestoreContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "restore");
-                if (!provider.TryCreateRestoreContribution(contributionContext, out IActorRestoreContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "restore");
+                if (!provider.TryCreateRestoreContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -348,14 +348,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             for (int index = 0; index < providers.Count; index++)
             {
-                IActorReleaseContributionProvider provider = providers[index];
+                var provider = providers[index];
                 if (provider == null)
                 {
                     continue;
                 }
 
-                ActorCapabilityContributionContext contributionContext = BuildContributionContext(target, provider, context, "release");
-                if (!provider.TryCreateReleaseContribution(contributionContext, out IActorReleaseContribution contribution))
+                var contributionContext = BuildContributionContext(target, provider, context, "release");
+                if (!provider.TryCreateReleaseContribution(contributionContext, out var contribution))
                 {
                     continue;
                 }
@@ -435,7 +435,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 BuildPolicyMetadata(target, provider, contribution, providerComponentPath),
                 contribution.Descriptor.Source));
 
-            if (runtimeReference != null && runtimeReference.IsValid)
+            if (runtimeReference is { IsValid: true })
             {
                 runtimeReferences.Add(runtimeReference);
             }
@@ -471,38 +471,38 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             List<ActivityCapabilityPolicyEntry> metadata = new(16)
             {
-                new("actorId", target.ActorId),
-                new("actorInstanceRuntimeId", target.ActorInstanceRuntimeId.Value),
-                new("actorKind", target.ActorKind.ToString()),
-                new("actorRole", target.ActorRole.ToString()),
-                new("actorScope", target.ActorScope.ToString()),
-                new("actorSourceKind", target.ActorSourceKind.ToString()),
-                new("actorSourceScene", target.SourceSceneName),
-                new("actorRootPath", target.ActorRoot != null ? ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform) : string.Empty),
-                new("componentPath", componentPath),
-                new("providerType", provider.GetType().FullName ?? provider.GetType().Name),
-                new("capabilityPhase", contribution.Descriptor.Phase.ToString()),
-                new("capabilityRequirement", contribution.Descriptor.Requirement.ToString()),
-                new("capabilitySource", contribution.Descriptor.Source),
+                new ActivityCapabilityPolicyEntry("actorId", target.ActorId),
+                new ActivityCapabilityPolicyEntry("actorInstanceRuntimeId", target.ActorInstanceRuntimeId.Value),
+                new ActivityCapabilityPolicyEntry("actorKind", target.ActorKind.ToString()),
+                new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
+                new ActivityCapabilityPolicyEntry("actorScope", target.ActorScope.ToString()),
+                new ActivityCapabilityPolicyEntry("actorSourceKind", target.ActorSourceKind.ToString()),
+                new ActivityCapabilityPolicyEntry("actorSourceScene", target.SourceSceneName),
+                new ActivityCapabilityPolicyEntry("actorRootPath", target.ActorRoot != null ? ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform) : string.Empty),
+                new ActivityCapabilityPolicyEntry("componentPath", componentPath),
+                new ActivityCapabilityPolicyEntry("providerType", provider.GetType().FullName ?? provider.GetType().Name),
+                new ActivityCapabilityPolicyEntry("capabilityPhase", contribution.Descriptor.Phase.ToString()),
+                new ActivityCapabilityPolicyEntry("capabilityRequirement", contribution.Descriptor.Requirement.ToString()),
+                new ActivityCapabilityPolicyEntry("capabilitySource", contribution.Descriptor.Source)
             };
 
             if (contribution is IActorResetContribution resetContribution)
             {
-                metadata.Add(new("resetBoundaryEligibility", ActivityResetBoundaryEligibilityFormatter.Format(resetContribution.ResetBoundaryEligibility)));
-                metadata.Add(new("resetDescriptor", "endpoint_inventory"));
-                metadata.Add(new("descriptorMode", "endpoint_inventory"));
+                metadata.Add(new ActivityCapabilityPolicyEntry("resetBoundaryEligibility", ActivityResetBoundaryEligibilityFormatter.Format(resetContribution.ResetBoundaryEligibility)));
+                metadata.Add(new ActivityCapabilityPolicyEntry("resetDescriptor", "endpoint_inventory"));
+                metadata.Add(new ActivityCapabilityPolicyEntry("descriptorMode", "endpoint_inventory"));
             }
 
             if (contribution is IActorSnapshotContribution snapshotContribution)
             {
-                metadata.Add(new("schemaId", snapshotContribution.SchemaId));
-                metadata.Add(new("schemaVersion", snapshotContribution.SchemaVersion.ToString()));
+                metadata.Add(new ActivityCapabilityPolicyEntry("schemaId", snapshotContribution.SchemaId));
+                metadata.Add(new ActivityCapabilityPolicyEntry("schemaVersion", snapshotContribution.SchemaVersion.ToString()));
             }
 
             if (contribution is IActorRestoreContribution restoreContribution)
             {
-                metadata.Add(new("schemaId", restoreContribution.SchemaId));
-                metadata.Add(new("schemaVersion", restoreContribution.SchemaVersion.ToString()));
+                metadata.Add(new ActivityCapabilityPolicyEntry("schemaId", restoreContribution.SchemaId));
+                metadata.Add(new ActivityCapabilityPolicyEntry("schemaVersion", restoreContribution.SchemaVersion.ToString()));
             }
 
             return metadata;
@@ -527,7 +527,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             return ActivityCapabilityOwnerKind.Unsupported;
         }
-private static string BuildActorLifecycleOwnerId(
+        private static string BuildActorLifecycleOwnerId(
             ActivityCapabilityInventoryId inventoryId,
             ActivityCapabilityOwnerKind ownerKind,
             string actorId,
@@ -593,7 +593,7 @@ private static string BuildActorLifecycleOwnerId(
             !string.IsNullOrWhiteSpace(ProviderType) &&
             Endpoint != null &&
             Contribution != null;
-}
+    }
 
     public sealed class ActorCapabilitySnapshotContributionReference : IActivityCapabilityRuntimeReference
     {
@@ -627,7 +627,7 @@ private static string BuildActorLifecycleOwnerId(
         public string SchemaId => Contribution?.SchemaId ?? string.Empty;
         public int SchemaVersion => Contribution?.SchemaVersion ?? 0;
         public bool IsValid => TypedCapabilityId.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && Contribution != null && SnapshotEndpoint != null;
-}
+    }
 
     public sealed class ActorCapabilitySnapshotRestoreContributionReference : IActivityCapabilityRuntimeReference
     {
@@ -661,7 +661,7 @@ private static string BuildActorLifecycleOwnerId(
         public string SchemaId => Contribution?.SchemaId ?? string.Empty;
         public int SchemaVersion => Contribution?.SchemaVersion ?? 0;
         public bool IsValid => TypedCapabilityId.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && Contribution != null && RestoreEndpoint != null;
-}
+    }
 
     public sealed class ActorCapabilityReleaseEndpointReference : IActivityCapabilityRuntimeReference
     {
@@ -693,5 +693,5 @@ private static string BuildActorLifecycleOwnerId(
         public IActorReleaseContribution Contribution { get; }
         public IActorCapabilityReleaseEndpoint ReleaseEndpoint => Contribution?.ReleaseEndpoint;
         public bool IsValid => TypedCapabilityId.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && Contribution != null && ReleaseEndpoint != null;
-}
+    }
 }

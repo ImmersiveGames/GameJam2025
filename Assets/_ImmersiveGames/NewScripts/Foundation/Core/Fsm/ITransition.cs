@@ -6,5 +6,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Fsm
         IPredicate Condition { get; }
     }
 }
-
-

@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             CurrentPolicy.IsValid &&
             LoadOnEnter.IsValid &&
             SaveOnExit.IsValid;
-}
+    }
 
     public readonly struct RouteActivitySaveLoadPlan
     {
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
             (ShouldLoad || SkipKind != RouteActivitySaveSkipKind.None);
-}
+    }
 
     public readonly struct RouteActivitySaveOnExitPlan
     {
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(CurrentTransitionId) &&
             CurrentRouteSequence > 0 &&
             (ShouldSave || SkipKind != RouteActivitySaveSkipKind.None);
-}
+    }
 
     public static class RouteActivitySavePlanResolver
     {
@@ -289,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 previousRouteContributorScopePolicy,
                 previousActivityIdentity,
                 previousActivitySaveKey,
-                shouldSave: true,
+                true,
                 RouteActivitySaveSkipKind.None,
                 string.Empty);
         }
@@ -320,7 +320,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 previousRouteContributorScopePolicy,
                 previousActivityIdentity,
                 previousActivitySaveKey,
-                shouldSave: false,
+                false,
                 skipKind,
                 skipDetail);
         }

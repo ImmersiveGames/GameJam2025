@@ -93,14 +93,13 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 
             _entrySequence.Append(
                 transform.DOMove(orbitPosition, entryDurationSeconds)
-                         .SetEase(Ease.OutQuad));
+                    .SetEase(Ease.OutQuad));
 
             _entrySequence.Join(
                 transform.DOScale(finalScale, entryDurationSeconds)
-                         .From(tinyScale));
+                    .From(tinyScale));
 
             _entrySequence.OnComplete(() => { onCompleted?.Invoke(); });
         }
     }
 }
-

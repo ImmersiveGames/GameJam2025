@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             _sceneName = gameObject.scene.name;
 
             // 1) Registrar Coordinator no DI por cena (scene-scoped)
-            DependencyManager.Provider.RegisterForScene<IGameplayExecutionCoordinator>(_sceneName, this, allowOverride: true);
+            DependencyManager.Provider.RegisterForScene<IGameplayExecutionCoordinator>(_sceneName, this, true);
 
             // 2) Resolver Gate global
             if (!DependencyManager.Provider.TryGetGlobal(out _gate) || _gate == null)
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             }
 
             // Reaplica estado ap�s registrar participantes para garantir consist�ncia imediata.
-            ApplyGateState(_gate.IsOpen, forceReapplyToParticipants: true);
+            ApplyGateState(_gate.IsOpen, true);
         }
 
         private void OnDestroy()
@@ -171,4 +171,3 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         }
     }
 }
-

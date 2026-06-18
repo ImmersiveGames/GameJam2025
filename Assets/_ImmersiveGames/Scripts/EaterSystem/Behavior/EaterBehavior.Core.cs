@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     public sealed partial class EaterBehavior : MonoBehaviour
     {
         [Header("Debug")]
-        [SerializeField, Tooltip("Registra mudanças de estado para depuração básica.")]
+        [SerializeField] [Tooltip("Registra mudanças de estado para depuração básica.")]
         private bool logStateTransitions = true;
 
         internal bool ShouldLogStateTransitions => logStateTransitions;

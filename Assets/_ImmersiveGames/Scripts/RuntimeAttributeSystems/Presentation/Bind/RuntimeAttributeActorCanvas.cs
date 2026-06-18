@@ -43,7 +43,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         public AttributeCanvasInitializationState State { get; private set; }
         public DependencyInjectionState InjectionState { get; set; }
 
-        public string GetObjectId() => CanvasId;
+        public string GetObjectId()
+        {
+            return CanvasId;
+        }
 
         protected virtual void Awake()
         {
@@ -113,7 +116,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             }
         }
 
-        public virtual bool CanAcceptBinds() => State == AttributeCanvasInitializationState.Ready;
+        public virtual bool CanAcceptBinds()
+        {
+            return State == AttributeCanvasInitializationState.Ready;
+        }
 
         public virtual void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data)
         {
@@ -203,14 +209,19 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             }
         }
 
-        public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots() => _actorSlots;
+        public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots()
+        {
+            return _actorSlots;
+        }
         public bool TryGetSlot(string actorId, RuntimeAttributeType runtimeAttributeType, out RuntimeAttributeUISlot slot)
         {
             slot = null;
             return _actorSlots.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot> actorDict) &&
                 actorDict.TryGetValue(runtimeAttributeType, out slot) && slot != null;
         }
-        public int GetActorSlotsCount() => _actorSlots.Count;
+        public int GetActorSlotsCount()
+        {
+            return _actorSlots.Count;
+        }
     }
 }
-

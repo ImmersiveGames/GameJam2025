@@ -21,4 +21,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI.Animation
         public Ease colorTransitionEase = Ease.OutQuad;
     }
 }
-

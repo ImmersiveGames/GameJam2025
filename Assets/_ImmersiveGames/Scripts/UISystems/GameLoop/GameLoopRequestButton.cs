@@ -14,7 +14,7 @@ namespace _ImmersiveGames.Scripts.UISystems.GameLoop
         Resume,
         Reset,
         GameOver,
-        Victory,
+        Victory
     }
 
     [DisallowMultipleComponent]
@@ -78,4 +78,3 @@ namespace _ImmersiveGames.Scripts.UISystems.GameLoop
 #endif
     }
 }
-

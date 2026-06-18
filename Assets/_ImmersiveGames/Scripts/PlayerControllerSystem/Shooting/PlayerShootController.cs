@@ -39,7 +39,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         [SerializeField] private string actionName = "Fire";
 
         [Header("Cooldown Config")]
-        [SerializeField, Min(0f)] private float cooldown = 0.5f;
+        [SerializeField] [Min(0f)] private float cooldown = 0.5f;
 
         [Header("Spawn Strategy Config")]
         [SerializeField] private SpawnStrategyType strategyType = SpawnStrategyType.Single;
@@ -479,5 +479,3 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         #endregion
     }
 }
-
-

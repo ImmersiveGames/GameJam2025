@@ -65,4 +65,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         public float SfxRetriggerCooldownSeconds => sfxRetriggerCooldownSeconds;
     }
 }
-

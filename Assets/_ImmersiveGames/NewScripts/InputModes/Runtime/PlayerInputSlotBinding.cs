@@ -43,5 +43,5 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             initializedBySource = source.TrimToEmpty();
             initializedByReason = reason.TrimToEmpty();
         }
-}
+    }
 }

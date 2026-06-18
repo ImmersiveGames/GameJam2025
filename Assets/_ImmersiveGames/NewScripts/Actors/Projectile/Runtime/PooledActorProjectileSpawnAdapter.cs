@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Impact.Runtime;
@@ -9,8 +8,8 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
-using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
@@ -23,19 +22,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         private readonly string _adapterId;
         private readonly Transform _spawnParent;
         private readonly IPoolService _poolService;
-        private readonly IActorAttributeEventStream _actorAttributeEventStream;
         private readonly IActorDamageSourceEndpoint _damageSourceEndpoint;
 
         public PooledActorProjectileSpawnAdapter(
             string adapterId,
             IPoolService poolService,
-            IActorAttributeEventStream actorAttributeEventStream = null,
             IActorDamageSourceEndpoint damageSourceEndpoint = null,
             Transform spawnParent = null)
         {
             _adapterId = adapterId.TrimToEmpty();
             _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
-            _actorAttributeEventStream = actorAttributeEventStream;
             _damageSourceEndpoint = damageSourceEndpoint;
             _spawnParent = spawnParent;
         }
@@ -159,10 +155,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 }
 
                 if (!motionEndpoint.TryConfigureMotion(
-                        command.MotionBootstrap,
-                        nameof(PooledActorProjectileSpawnAdapter),
-                        "projectile_motion_bootstrap_configured",
-                        out string motionConfigurationReason))
+                    command.MotionBootstrap,
+                    nameof(PooledActorProjectileSpawnAdapter),
+                    "projectile_motion_bootstrap_configured",
+                    out string motionConfigurationReason))
                 {
                     string motionFailureReason = string.IsNullOrWhiteSpace(motionConfigurationReason)
                         ? "projectile_motion_bootstrap_rejected"
@@ -405,8 +401,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(PooledActorProjectileSpawnAdapter),
-                    $"event='ActorProjectileSpawnInstancePrepared' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' positionApplied='{positionApplied}' rotationApplied='{rotationApplied}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' presentationEndpointPresent='{presentationEndpointPresent}' presentationProfileId='{presentationProfileId}' presentationVisualRootPresent='{presentationVisualRootPresent}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_instance_prepared'.",
-                    DebugUtility.Colors.Success);
+                $"event='ActorProjectileSpawnInstancePrepared' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' positionApplied='{positionApplied}' rotationApplied='{rotationApplied}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' presentationEndpointPresent='{presentationEndpointPresent}' presentationProfileId='{presentationProfileId}' presentationVisualRootPresent='{presentationVisualRootPresent}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_instance_prepared'.",
+                DebugUtility.Colors.Success);
 
             return true;
         }
@@ -435,7 +431,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             int configuredCount = 0;
             for (int index = 0; index < impactEndpoints.Length; index++)
             {
-                ActorImpactEndpoint impactEndpoint = impactEndpoints[index];
+                var impactEndpoint = impactEndpoints[index];
                 if (impactEndpoint == null)
                 {
                     continue;
@@ -451,7 +447,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     "projectile_impact_endpoint_configured_by_spawn_adapter");
 
                 impactEndpoint.ConfigureDamageApplication(
-                    new ActorImpactDamageApplicationAdapter(_damageSourceEndpoint, _actorAttributeEventStream),
+                    new ActorImpactDamageApplicationAdapter(_damageSourceEndpoint),
                     nameof(PooledActorProjectileSpawnAdapter),
                     "projectile_impact_damage_application_configured_by_spawn_adapter");
 
@@ -523,5 +519,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###},{value.w:0.###}";
         }
-}
+
+    }
 }

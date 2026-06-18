@@ -43,13 +43,13 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 
             for (int index = 0; index < poolDefinitions.Count; index++)
             {
-                PoolDefinitionAsset poolDefinition = poolDefinitions[index];
+                var poolDefinition = poolDefinitions[index];
                 if (poolDefinition == null)
                 {
                     throw new InvalidOperationException($"AudioSfxPoolPreparationStage catalog returned null pool definition at index='{index}'.");
                 }
 
-                EntityId poolDefinitionId = poolDefinition.GetEntityId();
+                var poolDefinitionId = poolDefinition.GetEntityId();
                 if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
                 {
                     continue;
@@ -86,5 +86,5 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 $"event='AudioSfxPoolPreparationCompleted' catalogCount='{catalogCount}' resolvedPoolCount='{resolvedCount}' preparedPoolCount='{preparedCount}' skippedPoolCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
         }
-}
+    }
 }

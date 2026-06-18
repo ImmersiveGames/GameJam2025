@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         NotRequired = 1,
         Completed = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     internal readonly struct OperationalActivityPoolReleaseCommand
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Reason { get; }
 
         public bool IsValid => RouteCommand.IsValid;
-}
+    }
 
     internal readonly struct OperationalActivityPoolReleaseResult
     {
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsAccepted => Kind == OperationalActivityPoolReleaseResultKind.NotRequired || Kind == OperationalActivityPoolReleaseResultKind.Completed;
         public bool IsCompleted => Kind == OperationalActivityPoolReleaseResultKind.Completed;
         public bool IsFailed => Kind == OperationalActivityPoolReleaseResultKind.Failed;
-}
+    }
 
     internal sealed class OperationalActivityPoolReleaseStage
     {
@@ -183,5 +183,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 normalizedReason,
                 normalizedDetail);
         }
-}
+    }
 }

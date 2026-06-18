@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
     {
         Prepared = 0,
         Skipped = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct SessionOperationalRouteCameraPrepareCommand
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             !string.IsNullOrWhiteSpace(SurfaceKind) &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct SessionOperationalRouteCameraPrepareResult
     {
@@ -117,13 +117,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason,
                 string.Empty);
         }
-}
+    }
 
     public enum SessionOperationalRouteCameraReleaseOutcomeKind
     {
         Released = 0,
         Skipped = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct SessionOperationalRouteCameraReleaseCommand
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct SessionOperationalRouteCameraReleaseResult
     {
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason,
                 string.Empty);
         }
-}
+    }
 
     public interface ISessionOperationalRouteCameraAdapter
     {

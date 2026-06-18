@@ -96,4 +96,3 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         }
     }
 }
-

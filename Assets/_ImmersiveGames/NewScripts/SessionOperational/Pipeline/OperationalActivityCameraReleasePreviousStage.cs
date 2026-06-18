@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Released = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalActivityCameraReleasePreviousCommand
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct OperationalActivityCameraReleasePreviousResult
     {
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsSkipped => Kind == OperationalActivityCameraReleasePreviousResultKind.Skipped;
         public bool IsFailed => Kind == OperationalActivityCameraReleasePreviousResultKind.Failed;
         public bool IsAccepted => IsReleased || IsSkipped;
-}
+    }
 
     public sealed class OperationalActivityCameraReleasePreviousStage
     {
@@ -104,9 +104,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Reason);
 
             if (!_activityCameraAdapter.TryReleaseActivityCamera(
-                    releaseCommand,
-                    out var releaseResult,
-                    out string releaseReason))
+                releaseCommand,
+                out var releaseResult,
+                out string releaseReason))
             {
                 string failureReason = string.IsNullOrWhiteSpace(releaseReason)
                     ? releaseResult.Reason
@@ -168,5 +168,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 string.IsNullOrWhiteSpace(reason) ? "activity_camera_release_previous_failed" : reason,
                 string.IsNullOrWhiteSpace(detail) ? "activity_camera_release_previous_failed" : detail);
         }
-}
+    }
 }

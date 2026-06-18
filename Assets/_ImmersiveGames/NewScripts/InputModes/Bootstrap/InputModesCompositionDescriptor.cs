@@ -6,13 +6,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
     {
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
-                moduleId: "InputModes",
-                installerDependencies: new[] { "RuntimePolicy" },
-                bootstrapDependencies: Array.Empty<string>(),
-                installer: runtimeModeConfig => InputModesInstaller.Install(runtimeModeConfig),
-                bootstrap: runtimeModeConfig => InputModesRuntimeComposer.ComposeRuntime(runtimeModeConfig),
-                installerEntry: "InputModesInstaller.Install",
-                runtimeComposerEntry: "InputModesRuntimeComposer.ComposeRuntime",
+                "InputModes",
+                new[] { "RuntimePolicy" },
+                Array.Empty<string>(),
+                runtimeModeConfig => InputModesInstaller.Install(runtimeModeConfig),
+                runtimeModeConfig => InputModesRuntimeComposer.ComposeRuntime(runtimeModeConfig),
+                "InputModesInstaller.Install",
+                "InputModesRuntimeComposer.ComposeRuntime",
                 description: "Canonical operational input mode rail (request -> coordinator -> service -> changed event).");
     }
 }

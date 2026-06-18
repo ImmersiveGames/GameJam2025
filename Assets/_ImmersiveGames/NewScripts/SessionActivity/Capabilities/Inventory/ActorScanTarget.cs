@@ -95,5 +95,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source);
             return target.IsValid;
         }
-}
+    }
 }

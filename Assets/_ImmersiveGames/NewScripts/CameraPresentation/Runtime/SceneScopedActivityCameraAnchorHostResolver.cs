@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public SceneScopedActivityCameraAnchorHostResolver(IDependencyProvider dependencyProvider)
         {
-            this._dependencyProvider = dependencyProvider;
+            _dependencyProvider = dependencyProvider;
         }
 
         public bool TryResolve(

@@ -9,4 +9,3 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
         public abstract ISaveBackend CreateBackend();
     }
 }
-

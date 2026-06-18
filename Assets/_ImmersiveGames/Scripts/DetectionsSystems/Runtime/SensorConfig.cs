@@ -17,12 +17,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         [SerializeField] private float minFrequency = 0.1f;
         [SerializeField] private float maxFrequency = 0.5f;
         [SerializeField] private bool debugMode;
-        
+
         [Header("Detection Mode")]
         [SerializeField] private SensorDetectionMode detectionMode = SensorDetectionMode.Spherical;
         [SerializeField] private float coneAngle = 90f;
         [SerializeField] private Vector3 coneDirection = Vector3.forward;
-        
+
         [Header("Gizmo Colors (Editor Only)")]
         [SerializeField] private Color idleColor = Color.red;
         [SerializeField] private Color detectingColor = Color.green;

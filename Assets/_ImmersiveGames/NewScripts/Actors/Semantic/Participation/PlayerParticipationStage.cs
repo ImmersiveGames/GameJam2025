@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     seedEntry.HasPrefabReference,
                     seedEntry.PlacementMode,
                     seedEntry.HasPlacementPlan,
-                    isMaterialized ? PlayerParticipationSeedEntryStatus.Materialized : (isSkipped ? PlayerParticipationSeedEntryStatus.Skipped : seedEntry.Status),
+                    isMaterialized ? PlayerParticipationSeedEntryStatus.Materialized : isSkipped ? PlayerParticipationSeedEntryStatus.Skipped : seedEntry.Status,
                     record.MaterializationStatus == PlayerMaterializationStatus.Unknown ? PlayerMaterializationStatus.NotMaterialized : record.MaterializationStatus,
                     record.RuntimeName,
                     record.RuntimeSceneName));
@@ -278,9 +278,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         {
             return outcome == PlayerParticipationOutcome.SeedResolved
                 ? "Player participation seed resolved. Actor materialization remains owned by ActivityEntryPipeline."
-                : (outcome == PlayerParticipationOutcome.Materialized
+                : outcome == PlayerParticipationOutcome.Materialized
                     ? "Player participation materialization observed."
-                    : "No player participation seed entries resolved. Stage observed as canonical no-op.");
+                    : "No player participation seed entries resolved. Stage observed as canonical no-op.";
         }
 
         private static PlayerMaterializationRecord ResolveRecord(PlayerParticipationSeedEntry seedEntry, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)

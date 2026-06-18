@@ -380,4 +380,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }
     }
 }
-

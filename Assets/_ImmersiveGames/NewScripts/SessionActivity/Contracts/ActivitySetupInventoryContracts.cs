@@ -17,14 +17,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         HudBinding = 7,
         Warmup = 8,
         StateReset = 9,
-        Release = 10,
+        Release = 10
     }
 
     public enum ActivitySetupRequirementRequiredness
     {
         Unknown = 0,
         Optional = 1,
-        Required = 2,
+        Required = 2
     }
 
     public enum ActivitySetupRequirementStatus
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Missing = 4,
         Failed = 5,
         Completed = 6,
-        Unsupported = 7,
+        Unsupported = 7
     }
 
     public enum ActivityParticipantRequirementKind
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         ControllablePlayer = 1,
         Actor = 2,
-        SessionParticipant = 3,
+        SessionParticipant = 3
     }
 
     public enum ActivityObjectEntryRequirementKind
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         SceneObject = 1,
         RuntimeSpawn = 2,
-        PooledInstance = 3,
+        PooledInstance = 3
     }
 
     public enum ActivityPlacementRequirementKind
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         Marker = 1,
         TransformSnapshot = 2,
-        PreserveCurrent = 3,
+        PreserveCurrent = 3
     }
 
     public enum ActivityCameraBindingRequirementKind
@@ -68,28 +68,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         ActivityCamera = 1,
         RouteCamera = 2,
-        WindowCamera = 3,
+        WindowCamera = 3
     }
 
     public enum ActivityInteractionBindingRequirementKind
     {
         Unknown = 0,
         InteractionMap = 1,
-        InteractorBinding = 2,
+        InteractorBinding = 2
     }
 
     public enum ActivityHudBindingRequirementKind
     {
         Unknown = 0,
         ActivityHud = 1,
-        RouteHud = 2,
+        RouteHud = 2
     }
 
     public enum ActivityWarmupRequirementKind
     {
         Unknown = 0,
         AdapterWarmup = 1,
-        PoolWarmup = 2,
+        PoolWarmup = 2
     }
 
     public enum ActivityReleaseRequirementKind
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         UnloadActivityContentScene = 1,
         ReturnToPool = 2,
         DestroyRuntimeInstance = 3,
-        Unbind = 4,
+        Unbind = 4
     }
 
     public enum ActivitySetupInventoryBuildResultKind
@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         Built = 1,
         SkippedNoRequirements = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct ActivitySetupRequirement
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', subplanKind='{SubplanKind}', requirementId='{RequirementId}', requiredness='{Requiredness}', status='{Status}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ParticipantRequirement
     {
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', participantKind='{ParticipantKind}', participantId='{ParticipantId}', expectedSessionRole='{ExpectedSessionRole}', placementRequirementId='{PlacementRequirementId}'";
         }
-}
+    }
 
     public readonly struct ObjectEntryRequirement
     {
@@ -219,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', objectEntryKind='{ObjectEntryKind}', objectId='{ObjectId}', objectTypeId='{ObjectTypeId}', placementRequirementId='{PlacementRequirementId}'";
         }
-}
+    }
 
     public readonly struct SceneContributorRequirement
     {
@@ -248,7 +248,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', contributorId='{ContributorId}', contributorRole='{ContributorRole}', sceneName='{SceneName}'";
         }
-}
+    }
 
     public readonly struct PlacementRequirement
     {
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', placementKind='{PlacementKind}', targetId='{TargetId}', markerId='{MarkerId}', sceneName='{SceneName}'";
         }
-}
+    }
 
     public readonly struct CameraBindingRequirement
     {
@@ -314,7 +314,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', cameraBindingKind='{CameraBindingKind}', bindingId='{BindingId}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-}
+    }
 
     public readonly struct InteractionBindingRequirement
     {
@@ -347,7 +347,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', interactionBindingKind='{InteractionBindingKind}', bindingId='{BindingId}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-}
+    }
 
     public readonly struct HudBindingRequirement
     {
@@ -380,7 +380,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', hudBindingKind='{HudBindingKind}', bindingId='{BindingId}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-}
+    }
 
     public readonly struct WarmupRequirement
     {
@@ -410,7 +410,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', warmupKind='{WarmupKind}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-}
+    }
 
     public readonly struct StateResetRequirement
     {
@@ -433,7 +433,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', targetId='{TargetId}', resetDescriptor='endpoint_inventory'";
         }
-}
+    }
 
     public readonly struct ReleaseRequirement
     {
@@ -463,7 +463,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', releaseKind='{ReleaseKind}', targetId='{TargetId}', policyId='{PolicyId}'";
         }
-}
+    }
 
     public readonly struct ActivitySetupInventory
     {
@@ -545,9 +545,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', inventoryId='{InventoryId}', totalRequirements='{TotalRequirementCount}', participants='{ParticipantRequirements.Count}', objects='{ObjectEntryRequirements.Count}', contributors='{SceneContributorRequirements.Count}', placements='{PlacementRequirements.Count}', cameras='{CameraBindingRequirements.Count}', interactions='{InteractionBindingRequirements.Count}', hud='{HudBindingRequirements.Count}', warmup='{WarmupRequirements.Count}', reset='{StateResetRequirements.Count}', release='{ReleaseRequirements.Count}', source='{Source}', reason='{Reason}'";
+            return
+                $"identity='{Identity}', inventoryId='{InventoryId}', totalRequirements='{TotalRequirementCount}', participants='{ParticipantRequirements.Count}', objects='{ObjectEntryRequirements.Count}', contributors='{SceneContributorRequirements.Count}', placements='{PlacementRequirements.Count}', cameras='{CameraBindingRequirements.Count}', interactions='{InteractionBindingRequirements.Count}', hud='{HudBindingRequirements.Count}', warmup='{WarmupRequirements.Count}', reset='{StateResetRequirements.Count}', release='{ReleaseRequirements.Count}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivitySetupInventoryBuildResult
     {
@@ -583,6 +584,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', inventory='{Inventory}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
 }

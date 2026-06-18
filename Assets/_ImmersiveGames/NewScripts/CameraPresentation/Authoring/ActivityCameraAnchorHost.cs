@@ -168,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
                 return;
             }
 
-            DependencyManager.Provider.RegisterForScene(sceneName, this, allowOverride: false);
+            DependencyManager.Provider.RegisterForScene(sceneName, this, false);
 
             DebugUtility.Log(
                 typeof(ActivityCameraAnchorHost),

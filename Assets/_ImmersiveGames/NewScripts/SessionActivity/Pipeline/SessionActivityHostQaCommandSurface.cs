@@ -11,55 +11,55 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
     {
         public static void CompleteCurrentActivity(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
+            var result = RequirePipeline(pipeline).CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
             LogResult(pipeline, "CompleteCurrentActivity", result);
         }
 
         public static void CompleteActivationWindow(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).CompleteActivationWindow(QaSource("CompleteActivationWindow"), QaReason("CompleteActivationWindow"));
+            var result = RequirePipeline(pipeline).CompleteActivationWindow(QaSource("CompleteActivationWindow"), QaReason("CompleteActivationWindow"));
             LogResult(pipeline, "CompleteActivationWindow", result);
         }
 
         public static void CompleteDeactivationWindow(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).CompleteDeactivationWindow(QaSource("CompleteDeactivationWindow"), QaReason("CompleteDeactivationWindow"));
+            var result = RequirePipeline(pipeline).CompleteDeactivationWindow(QaSource("CompleteDeactivationWindow"), QaReason("CompleteDeactivationWindow"));
             LogResult(pipeline, "CompleteDeactivationWindow", result);
         }
 
         public static void ContinueToNextActivity(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).ContinueToNextActivity(QaSource("ContinueToNextActivity"), QaReason("ContinueToNextActivity"));
+            var result = RequirePipeline(pipeline).ContinueToNextActivity(QaSource("ContinueToNextActivity"), QaReason("ContinueToNextActivity"));
             LogResult(pipeline, "ContinueToNextActivity", result);
         }
 
         public static void RestartCurrentActivity(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
+            var result = RequirePipeline(pipeline).RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
             LogResult(pipeline, "RestartCurrentActivity", result);
         }
 
         public static void ResetSession(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).ResetSession(QaSource("ResetSession"), QaReason("ResetSession"));
+            var result = RequirePipeline(pipeline).ResetSession(QaSource("ResetSession"), QaReason("ResetSession"));
             LogResult(pipeline, "ResetSession", result);
         }
 
         public static void RequestPause(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
+            var result = RequirePipeline(pipeline).PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
             LogResult(pipeline, "RequestPause", result);
         }
 
         public static void RequestResume(SessionActivityPipeline pipeline)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
+            var result = RequirePipeline(pipeline).ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
             LogResult(pipeline, "RequestResume", result);
         }
 
         public static SessionActivityCommandResult ExecuteCommand(SessionActivityPipeline pipeline, SessionActivityCommand command, string actionLabel)
         {
-            SessionActivityCommandResult result = RequirePipeline(pipeline).Execute(command);
+            var result = RequirePipeline(pipeline).Execute(command);
             LogResult(pipeline, actionLabel, result);
             return result;
         }
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public static bool ResetCurrentPlayerActor(SessionActivityPipeline pipeline)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool applied;
             string outcomeReason;
             try
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public static bool ResetCurrentActivityObjects(SessionActivityPipeline pipeline)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool applied;
             string outcomeReason;
             try
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public static bool CaptureCurrentActivitySnapshotPayload(SessionActivityPipeline pipeline)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool captured;
             string outcomeReason;
             try
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             float setValue)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool applied = pipeline.TryApplyActorAttributeCommand(
                 state.CurrentIdentity,
                 actorId,
@@ -165,15 +165,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 setValue,
                 QaSource(action),
                 QaReason(action),
-                out ActorAttributeApplyResult result);
+                out var result);
 
-            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            string outcome = applied ? "Applied" : result.Rejected ? "Rejected" : "Failed";
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
                 $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{actorId.TrimToEmpty()}' attributeId='{attributeId.TrimToEmpty()}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}'");
 
             if (applied && result.HasFact)
             {
-                ActorAttributeChangedFact fact = result.Fact;
+                var fact = result.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
                     $"operation='{fact.Operation}' actorId='{actorId.TrimToEmpty()}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
@@ -191,7 +191,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             float setValue)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool applied = pipeline.TryApplyActorAttributeMutationIntent(
                 state.CurrentIdentity,
                 actorId,
@@ -201,15 +201,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 setValue,
                 QaSource(action),
                 QaReason(action),
-                out ActorAttributeMutationResult result);
+                out var result);
 
-            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            string outcome = applied ? "Applied" : result.Rejected ? "Rejected" : "Failed";
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
                 $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{actorId.TrimToEmpty()}' attributeId='{attributeId.TrimToEmpty()}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorAttributeMutationReceiverEndpoint'");
 
             if (applied && result.HasChangedFact)
             {
-                ActorAttributeChangedFact fact = result.ApplyResult.Fact;
+                var fact = result.ApplyResult.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
                     $"event='ActorAttributeMutationQaApplied' operation='{fact.Operation}' actorId='{actorId.TrimToEmpty()}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
@@ -224,22 +224,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             float rawDamageAmount)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool applied = pipeline.TryApplyActorDamageIntent(
                 state.CurrentIdentity,
                 actorId,
                 rawDamageAmount,
                 QaSource(action),
                 QaReason(action),
-                out ActorDamageResult result);
+                out var result);
 
-            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            string outcome = applied ? "Applied" : result.Rejected ? "Rejected" : "Failed";
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
                 $"action='{action}' outcomeKind='{outcome}' actorId='{actorId.TrimToEmpty()}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' targetAttributeId='{result.TargetAttributeId}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageableEndpoint'");
 
             if (applied && result.HasChangedFact)
             {
-                ActorAttributeChangedFact fact = result.MutationResult.ApplyResult.Fact;
+                var fact = result.MutationResult.ApplyResult.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
                     $"event='ActorDamageQaApplied' actorId='{actorId.TrimToEmpty()}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{result.RawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
@@ -255,7 +255,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             float rawDamageAmount)
         {
             pipeline = RequirePipeline(pipeline);
-            SessionActivityRuntimeState state = pipeline.State;
+            var state = pipeline.State;
             bool applied = pipeline.TryApplyActorDamageSourceIntent(
                 state.CurrentIdentity,
                 sourceActorId,
@@ -263,16 +263,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 rawDamageAmount,
                 QaSource(action),
                 QaReason(action),
-                out ActorDamageSourceResult result);
+                out var result);
 
-            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            string outcome = applied ? "Applied" : result.Rejected ? "Rejected" : "Failed";
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
                 $"action='{action}' outcomeKind='{outcome}' sourceActorId='{sourceActorId.TrimToEmpty()}' targetActorId='{targetActorId.TrimToEmpty()}' rawDamageAmount='{rawDamageAmount:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageSourceEndpoint'");
 
             if (applied && result.HasChangedFact)
             {
-                ActorDamageResult damageResult = result.DamageResult;
-                ActorAttributeChangedFact fact = damageResult.MutationResult.ApplyResult.Fact;
+                var damageResult = result.DamageResult;
+                var fact = damageResult.MutationResult.ApplyResult.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
                     $"event='ActorDamageSourceQaApplied' sourceActorId='{sourceActorId.TrimToEmpty()}' sourceActorInstanceRuntimeId='{result.SourceActorInstanceRuntimeId}' targetActorId='{targetActorId.TrimToEmpty()}' targetActorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{damageResult.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{damageResult.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
@@ -318,5 +318,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             return $"SessionActivityHost/QA/{action}";
         }
-}
+    }
 }

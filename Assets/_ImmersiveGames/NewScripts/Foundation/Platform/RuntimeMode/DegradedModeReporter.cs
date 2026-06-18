@@ -17,14 +17,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         private bool _configSourceLogged;
 
         public DegradedModeReporter()
-            : this(new UnityRuntimeModeProvider(), null)
-        {
-        }
+            : this(new UnityRuntimeModeProvider(), null) { }
 
         public DegradedModeReporter(IRuntimeModeProvider runtimeModeProvider)
-            : this(runtimeModeProvider, null)
-        {
-        }
+            : this(runtimeModeProvider, null) { }
 
         public DegradedModeReporter(IRuntimeModeProvider runtimeModeProvider, RuntimeModeConfig config)
         {
@@ -325,15 +321,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             public static EffectiveRuntimePolicySettings FromRegistry(IRuntimePolicyConfigGroupReadOnly source)
             {
                 return new EffectiveRuntimePolicySettings(
-                    hasRuntimePolicy: true,
-                    reporterDedupStrategy: source.ReporterDedupStrategy,
-                    reporterCooldownSeconds: source.ReporterCooldownSeconds,
-                    reporterEmitSummaryEverySeconds: source.ReporterEmitSummaryEverySeconds,
-                    reporterMaxUniqueKeys: source.ReporterMaxUniqueKeys,
-                    reporterLogFirstOccurrence: source.ReporterLogFirstOccurrence,
-                    reporterIncludeCountInLog: source.ReporterIncludeCountInLog,
-                    strictnessDegradedAsError: source.StrictnessDegradedAsError,
-                    strictnessDegradedAsException: source.StrictnessDegradedAsException);
+                    true,
+                    source.ReporterDedupStrategy,
+                    source.ReporterCooldownSeconds,
+                    source.ReporterEmitSummaryEverySeconds,
+                    source.ReporterMaxUniqueKeys,
+                    source.ReporterLogFirstOccurrence,
+                    source.ReporterIncludeCountInLog,
+                    source.StrictnessDegradedAsError,
+                    source.StrictnessDegradedAsException);
             }
 
         }

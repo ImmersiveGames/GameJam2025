@@ -91,4 +91,3 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         }
     }
 }
-

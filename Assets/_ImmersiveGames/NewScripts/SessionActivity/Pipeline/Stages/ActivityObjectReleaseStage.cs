@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public int FailedCount { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     internal static class ActivityObjectReleaseStage
     {
@@ -127,13 +127,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{definition.ActivityId}' object release completed with no contributors for current entry.");
                 return new ActivityObjectReleaseStageResult(
-                    completed: true,
-                    identity: completedIdentity,
-                    commandCount: 0,
-                    appliedCount: 0,
-                    skippedCount: 0,
-                    failedCount: 0,
-                    reason: "no_contributors");
+                    true,
+                    completedIdentity,
+                    0,
+                    0,
+                    0,
+                    0,
+                    "no_contributors");
             }
 
             int commandCount = 0;
@@ -309,13 +309,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 $"'{definition.ActivityId}' object release completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
             return new ActivityObjectReleaseStageResult(
-                completed: true,
-                identity: completedIdentityFinal,
-                commandCount: commandCount,
-                appliedCount: appliedCount,
-                skippedCount: skippedCount,
-                failedCount: failedCount,
-                reason: failedCount == 0 ? "completed" : "completed_with_failures");
+                true,
+                completedIdentityFinal,
+                commandCount,
+                appliedCount,
+                skippedCount,
+                failedCount,
+                failedCount == 0 ? "completed" : "completed_with_failures");
         }
 
         private static IActivityObjectReleaseEndpoint[] ResolveObjectReleaseEndpointsFromInventory(
@@ -431,9 +431,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity releaseIdentity)
         {
             return IsObjectReleaseResultForCurrentEntry(result, entrySequence, releaseIdentity) &&
-                   issuedCommand.IsValid &&
-                   string.Equals(result.Command.TargetId, issuedCommand.TargetId, StringComparison.Ordinal) &&
-                   result.Command.ReleaseKind == issuedCommand.ReleaseKind;
+                issuedCommand.IsValid &&
+                string.Equals(result.Command.TargetId, issuedCommand.TargetId, StringComparison.Ordinal) &&
+                result.Command.ReleaseKind == issuedCommand.ReleaseKind;
         }
 
         private static bool IsObjectReleaseResultForCurrentEntry(
@@ -443,15 +443,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             var identity = result.Command.Identity;
             return result.IsValid &&
-                   identity.IsValid &&
-                   releaseIdentity.IsValid &&
-                   string.Equals(identity.PipelineId, releaseIdentity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(identity.SessionId, releaseIdentity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(identity.ActivityId, releaseIdentity.ActivityId, StringComparison.Ordinal) &&
-                   identity.ActivityOrdinal == releaseIdentity.ActivityOrdinal &&
-                   identity.EntrySequence == entrySequence &&
-                   !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
-                   result.Command.ReleaseKind != ActivityReleaseRequirementKind.Unknown;
+                identity.IsValid &&
+                releaseIdentity.IsValid &&
+                string.Equals(identity.PipelineId, releaseIdentity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(identity.SessionId, releaseIdentity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(identity.ActivityId, releaseIdentity.ActivityId, StringComparison.Ordinal) &&
+                identity.ActivityOrdinal == releaseIdentity.ActivityOrdinal &&
+                identity.EntrySequence == entrySequence &&
+                !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
+                result.Command.ReleaseKind != ActivityReleaseRequirementKind.Unknown;
         }
 
         private static bool IsDiscoveryResultForCurrentEntry(

@@ -67,5 +67,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             ActorInstanceRuntimeId.IsValid &&
             PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 }

@@ -10,7 +10,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
     [Serializable]
     public class BasicDamageStrategy : IDamageStrategy
     {
-        public float CalculateDamage(DamageContext ctx) => ctx.damageValue;
+        public float CalculateDamage(DamageContext ctx)
+        {
+            return ctx.damageValue;
+        }
     }
 
     /// <summary>

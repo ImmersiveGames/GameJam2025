@@ -25,13 +25,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         private readonly ActorPresentationContainerResolver _containerResolver;
 
         public ActorPresentationPlanResolver()
-            : this(new ActorPresentationContainerResolver())
-        {
-        }
+            : this(new ActorPresentationContainerResolver()) { }
 
         public ActorPresentationPlanResolver(ActorPresentationContainerResolver containerResolver)
         {
-            this._containerResolver = containerResolver ?? throw new ArgumentNullException(nameof(containerResolver));
+            _containerResolver = containerResolver ?? throw new ArgumentNullException(nameof(containerResolver));
         }
 
         public ActorPresentationPlanResolutionResult Resolve(

@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         InvalidEntrySequence = 7,
         UnsupportedLegacyPayload = 8,
         InvalidEnvelope = 9,
-        UnknownFailure = 10,
+        UnknownFailure = 10
     }
 
     public readonly struct RouteActivitySnapshotPayloadReadResult
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public RouteActivitySnapshotPayloadReadFailureKind FailureKind { get; }
         public string FailureReason { get; }
         public string Detail { get; }
-}
+    }
 
     public static class RouteActivitySnapshotPayloadReader
     {
@@ -212,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 failureReason,
                 detail);
         }
-[Serializable]
+        [Serializable]
         private sealed class SnapshotPayloadDto
         {
             public string schemaId;

@@ -9,6 +9,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         RejectedForeignIdentity = 4,
         RejectedStaleIdentity = 5,
         RejectedInvalidCommand = 6,
-        Failed = 7,
+        Failed = 7
     }
 }

@@ -95,7 +95,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// A versão com strategy é a única realmente utilizada externamente.
         /// </summary>
         /// // void StartWaves(PlanetsMaster planet, DetectionType detectionType);
-
         /// <summary>
         /// Inicia as waves de defesa para o planeta utilizando uma estratégia explícita.
         /// Esta é a versão usada pelo PlanetDefenseOrchestrationService.

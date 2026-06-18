@@ -31,13 +31,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             provider.RegisterForScene<ISceneScopeMarker>(
                 _sceneName,
                 new SceneScopeMarker(),
-                allowOverride: false);
+                false);
 
             var worldRoot = EnsureWorldRoot(scene);
             provider.RegisterForScene(
                 _sceneName,
                 new SceneWorldRootContext(_sceneName, worldRoot),
-                allowOverride: false);
+                false);
 
             _registered = true;
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),

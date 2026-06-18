@@ -127,5 +127,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             ClearInventoryState(activityId, entrySequence, source, reason);
             ClearSnapshotPayloadForSaveOnExit(activityId, entrySequence, source, reason);
         }
-}
+    }
 }

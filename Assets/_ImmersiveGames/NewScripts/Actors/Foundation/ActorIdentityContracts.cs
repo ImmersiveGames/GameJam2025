@@ -16,14 +16,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         [field: SerializeField] public string Value { get; private set; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorId left, ActorId right) => left.Equals(right);
-        public static bool operator !=(ActorId left, ActorId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorId left, ActorId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorId left, ActorId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     [Serializable]
     public struct ActorInstanceRuntimeId : IEquatable<ActorInstanceRuntimeId>
@@ -38,13 +56,31 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         [field: SerializeField] public string Value { get; private set; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorInstanceRuntimeId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorInstanceRuntimeId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorInstanceRuntimeId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorInstanceRuntimeId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorInstanceRuntimeId left, ActorInstanceRuntimeId right) => left.Equals(right);
-        public static bool operator !=(ActorInstanceRuntimeId left, ActorInstanceRuntimeId right) => !left.Equals(right);
+        public static bool operator ==(ActorInstanceRuntimeId left, ActorInstanceRuntimeId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorInstanceRuntimeId left, ActorInstanceRuntimeId right)
+        {
+            return !left.Equals(right);
+        }
 
         public static ActorInstanceRuntimeId FromScopedRuntimeActorIdentity(
             SessionActivityIdentity identity,
@@ -72,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
                     $"{identity.PipelineId}|{identity.SessionId}|route|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
                 ActorScope.ActivityScoped => new ActorInstanceRuntimeId(
                     $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
-                _ => default,
+                _ => default
             };
         }
 
@@ -96,5 +132,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             return new ActorInstanceRuntimeId(
                 $"{ownerActorInstanceRuntimeId.Value}|runtime-spawn|{RuntimeActorTypeDiscriminator}|{normalizedSpawnedActorId}|{normalizedSequence}");
         }
-}
+    }
 }

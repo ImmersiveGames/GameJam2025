@@ -22,6 +22,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private Dictionary<MaterialGroupConfig, List<MaterialSlot>> _groupedSlots;
 
         #region Unity Lifecycle
+
         protected override void Start()
         {
             base.Start();
@@ -37,6 +38,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Initialized with {materialSlots.Length} slots");
             }
         }
+
         #endregion
 
         #region SkinConfigurable Implementation
@@ -76,9 +78,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 ApplyGroupedMaterials();
             }
         }
+
         #endregion
 
         #region Group Management
+
         private void InitializeGroups()
         {
             _groupedSlots = new Dictionary<MaterialGroupConfig, List<MaterialSlot>>();
@@ -273,9 +277,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset group '{group.GroupName}' to original");
             }
         }
+
         #endregion
 
         #region Query Methods
+
         /// <summary>
         /// Obt�m todos os grupos �nicos
         /// </summary>
@@ -343,9 +349,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             return materialSlots.Select(slot => slot?.GetSlotInfo() ?? new SlotInfo()).ToArray();
         }
+
         #endregion
 
         #region Editor Helpers
+
         #if UNITY_EDITOR
         [ContextMenu("Validate Material Slots")]
         private void EditorValidateSlots()
@@ -399,6 +407,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
         }
         #endif
+
         #endregion
     }
 

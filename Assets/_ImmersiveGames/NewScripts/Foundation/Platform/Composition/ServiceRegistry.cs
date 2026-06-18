@@ -68,4 +68,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
-

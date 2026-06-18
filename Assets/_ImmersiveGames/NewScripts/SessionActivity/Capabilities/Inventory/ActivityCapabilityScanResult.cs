@@ -62,5 +62,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source,
                 reason);
         }
-}
+    }
 }

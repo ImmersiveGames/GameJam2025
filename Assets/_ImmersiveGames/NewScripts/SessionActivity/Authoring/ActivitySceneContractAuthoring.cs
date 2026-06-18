@@ -78,5 +78,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 }
             }
         }
-}
+    }
 }

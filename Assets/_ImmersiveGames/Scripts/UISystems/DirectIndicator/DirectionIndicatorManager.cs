@@ -112,4 +112,3 @@ namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
         }
     }
 }
-

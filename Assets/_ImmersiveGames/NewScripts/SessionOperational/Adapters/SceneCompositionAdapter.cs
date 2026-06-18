@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 compositionResult.Reason,
                 "scene_composition_applied");
         }
-private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
+        private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
         {
             if (sceneKey == null)
             {

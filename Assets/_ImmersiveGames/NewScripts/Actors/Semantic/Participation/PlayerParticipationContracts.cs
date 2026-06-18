@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         Unknown = 0,
         ObservedNoOp = 1,
         SeedResolved = 2,
-        Materialized = 3,
+        Materialized = 3
     }
 
     public enum PlayerParticipationKind
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         Unknown = 0,
         NoPlayers = 1,
         ActivityEntryWithoutPlayerSet = 2,
-        PlayerSetExpected = 3,
+        PlayerSetExpected = 3
     }
 
     public readonly struct PlayerSetEntry
@@ -56,14 +56,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             ActorId.IsValid;
-}
+    }
 
     public enum PlayerParticipationSeedEntryStatus
     {
         Unknown = 0,
         SeedResolved = 1,
         Materialized = 2,
-        Skipped = 3,
+        Skipped = 3
     }
 
     public readonly struct PlayerParticipationSeedEntry
@@ -109,14 +109,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             ActorId.IsValid &&
             ActorScope != ActorScope.Unknown &&
             Status != PlayerParticipationSeedEntryStatus.Unknown;
-}
+    }
 
     public enum PlayerMaterializationStatus
     {
         Unknown = 0,
         NotMaterialized = 1,
         Materialized = 2,
-        Skipped = 3,
+        Skipped = 3
     }
 
     public readonly struct PlayerMaterializationEntry
@@ -168,9 +168,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             ActorDefinitionId.IsValid &&
             ActorId.IsValid &&
             (ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized ||
-             ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized ||
-             ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped);
-}
+                ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized ||
+                ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped);
+    }
 
     public enum PlayerReadinessStatus
     {
@@ -178,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         PendingMaterialization = 1,
         OptionalPending = 2,
         Ready = 3,
-        OptionalSkipped = 4,
+        OptionalSkipped = 4
     }
 
     public readonly struct PlayerReadinessEntry
@@ -230,14 +230,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 MaterializationStatus == PlayerMaterializationStatus.NotMaterialized &&
                 (Required && ReadinessStatus == PlayerReadinessStatus.PendingMaterialization ||
                     !Required && ReadinessStatus == PlayerReadinessStatus.OptionalPending) ||
-             ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized &&
+                ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized &&
                 MaterializationStatus == PlayerMaterializationStatus.Materialized &&
                 ReadinessStatus == PlayerReadinessStatus.Ready ||
-             !Required &&
+                !Required &&
                 ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped &&
                 MaterializationStatus == PlayerMaterializationStatus.Skipped &&
                 ReadinessStatus == PlayerReadinessStatus.OptionalSkipped);
-}
+    }
 
     public readonly struct PlayerMaterializationRecord
     {
@@ -264,7 +264,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public string RuntimeName { get; }
         public string RuntimeSceneName { get; }
         public bool IsValid => ActorId.IsValid && MaterializationStatus != PlayerMaterializationStatus.Unknown;
-}
+    }
     public readonly struct PlayerSet
     {
         public PlayerSet(IReadOnlyList<PlayerSetEntry> entries)
@@ -350,7 +350,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(TransitionId);
-}
+    }
 
     public readonly struct PlayerParticipationPlan
     {
@@ -379,7 +379,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSet.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct PlayerParticipationSeedSnapshot
     {
@@ -500,7 +500,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
             return count;
         }
-private static bool AreMaterializationEntriesValid(IReadOnlyList<PlayerMaterializationEntry> entries)
+        private static bool AreMaterializationEntriesValid(IReadOnlyList<PlayerMaterializationEntry> entries)
         {
             if (entries == null)
             {
@@ -612,36 +612,36 @@ private static bool AreMaterializationEntriesValid(IReadOnlyList<PlayerMateriali
             if (outcome == PlayerParticipationOutcome.ObservedNoOp)
             {
                 return seedEntriesCount == 0 &&
-                       seedCount == 0 &&
-                       materializationCount == 0 &&
-                       readinessCount == 0 &&
-                       requiredPlayersCount == 0 &&
-                       optionalPlayersCount == 0 &&
-                       notMaterializedPlayersCount == 0 &&
-                       pendingRequiredPlayersCount == 0 &&
-                       pendingOptionalPlayersCount == 0;
+                    seedCount == 0 &&
+                    materializationCount == 0 &&
+                    readinessCount == 0 &&
+                    requiredPlayersCount == 0 &&
+                    optionalPlayersCount == 0 &&
+                    notMaterializedPlayersCount == 0 &&
+                    pendingRequiredPlayersCount == 0 &&
+                    pendingOptionalPlayersCount == 0;
             }
 
             if (outcome == PlayerParticipationOutcome.SeedResolved)
             {
                 return seedEntriesCount > 0 &&
-                       seedCount == seedEntriesCount &&
-                       materializationCount == seedEntriesCount &&
-                       readinessCount == seedEntriesCount &&
-                       requiredPlayersCount + optionalPlayersCount == seedEntriesCount &&
-                       notMaterializedPlayersCount == seedEntriesCount &&
-                       pendingRequiredPlayersCount == requiredPlayersCount &&
-                       pendingOptionalPlayersCount == optionalPlayersCount;
+                    seedCount == seedEntriesCount &&
+                    materializationCount == seedEntriesCount &&
+                    readinessCount == seedEntriesCount &&
+                    requiredPlayersCount + optionalPlayersCount == seedEntriesCount &&
+                    notMaterializedPlayersCount == seedEntriesCount &&
+                    pendingRequiredPlayersCount == requiredPlayersCount &&
+                    pendingOptionalPlayersCount == optionalPlayersCount;
             }
 
             if (outcome == PlayerParticipationOutcome.Materialized)
             {
                 return seedEntriesCount > 0 &&
-                       seedCount == seedEntriesCount &&
-                       materializationCount == seedEntriesCount &&
-                       readinessCount == seedEntriesCount &&
-                       requiredPlayersCount + optionalPlayersCount == seedEntriesCount &&
-                       pendingRequiredPlayersCount == 0;
+                    seedCount == seedEntriesCount &&
+                    materializationCount == seedEntriesCount &&
+                    readinessCount == seedEntriesCount &&
+                    requiredPlayersCount + optionalPlayersCount == seedEntriesCount &&
+                    pendingRequiredPlayersCount == 0;
             }
 
             return false;

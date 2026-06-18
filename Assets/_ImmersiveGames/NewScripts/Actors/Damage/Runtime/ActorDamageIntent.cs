@@ -67,5 +67,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
-}
+    }
 }

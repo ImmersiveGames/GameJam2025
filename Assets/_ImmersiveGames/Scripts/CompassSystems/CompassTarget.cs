@@ -66,6 +66,3 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         }
     }
 }
-
-
-

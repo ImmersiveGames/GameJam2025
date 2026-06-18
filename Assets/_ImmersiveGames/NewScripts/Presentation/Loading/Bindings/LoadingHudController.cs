@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
             ApplyProgress(_currentProgress);
 
             DebugUtility.LogVerbose<LoadingHudController>(
-                $"LoadingHudRoot ready root='{name}' canvas='{canvas.name}' hasText={(loadingText != null)} hasSpinner={(spinnerVisual != null)}.",
+                $"LoadingHudRoot ready root='{name}' canvas='{canvas.name}' hasText={loadingText != null} hasSpinner={spinnerVisual != null}.",
                 DebugUtility.Colors.Success);
         }
 
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
         {
             if (rootGroup == null || canvas == null)
             {
-                FailFast("root_missing", $"root='{name}' canvasConfigured={(canvas != null)} canvasGroupConfigured={(rootGroup != null)}.");
+                FailFast("root_missing", $"root='{name}' canvasConfigured={canvas != null} canvasGroupConfigured={rootGroup != null}.");
             }
 
             if (_isVisible == visible)
@@ -269,5 +269,3 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
         }
     }
 }
-
-

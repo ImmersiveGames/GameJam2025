@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity previewIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
+            var previewIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             endpoint.SetCurrentIdentity(previewIdentity, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
                 facts,
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{buildStage.ActivityObjectScannerId}'.");
             bool hasDiscoveryForCurrentEntry = IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, previewIdentity);
-            bool hasActorTargets = actorTargets != null && actorTargets.Count > 0;
+            bool hasActorTargets = actorTargets is { Count: > 0 };
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
             {
                 inventoryState.ClearCurrentActivityCapabilityInventoryPreview();
@@ -54,13 +54,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return default;
             }
 
-            ActivityCapabilityInventoryBuildResult buildResult = buildStage.BuildForEntry(
+            var buildResult = buildStage.BuildForEntry(
                 previewIdentity,
                 hasDiscoveryForCurrentEntry ? discoveryResult : default,
                 actorTargets,
                 command.Source,
                 command.Reason);
-            ActivityCapabilityInventory inventory = buildResult.Inventory;
+            var inventory = buildResult.Inventory;
             inventoryState.SetCurrentActivityCameraBindingContributions(buildResult.CameraBindingContributions);
             inventoryState.SetCurrentActivityAttributeSetupContributions(buildResult.AttributeSetupContributions);
             inventoryState.SetCurrentActivityPresentationSetupContributions(buildResult.PresentationSetupContributions);

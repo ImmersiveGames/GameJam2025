@@ -16,4 +16,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime
         float SfxCategoryMultiplier { get; set; }
     }
 }
-

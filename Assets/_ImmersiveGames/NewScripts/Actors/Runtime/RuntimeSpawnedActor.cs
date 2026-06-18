@@ -146,14 +146,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public void OnPoolReturn()
         {
-            RestoreLayerBaseline("pool_return", log: true);
+            RestoreLayerBaseline("pool_return", true);
             RaisePoolLifecycleEvent(PoolReturned, "pool_return");
             ClearRuntimeMetadata();
         }
 
         public void OnPoolDestroyed()
         {
-            RestoreLayerBaseline("pool_destroyed", log: true);
+            RestoreLayerBaseline("pool_destroyed", true);
             RaisePoolLifecycleEvent(PoolDestroyed, "pool_destroyed");
             ClearRuntimeMetadata();
         }
@@ -186,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
             for (int index = 0; index < runtimeLayerBaselineTransforms.Length; index++)
             {
-                Transform transform = runtimeLayerBaselineTransforms[index];
+                var transform = runtimeLayerBaselineTransforms[index];
                 runtimeLayerBaselineValues[index] = transform == null ? 0 : transform.gameObject.layer;
             }
 
@@ -209,7 +209,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             int restoreCount = Math.Min(runtimeLayerBaselineTransforms.Length, runtimeLayerBaselineValues.Length);
             for (int index = 0; index < restoreCount; index++)
             {
-                Transform transform = runtimeLayerBaselineTransforms[index];
+                var transform = runtimeLayerBaselineTransforms[index];
                 if (transform == null)
                 {
                     continue;

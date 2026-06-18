@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 IReadOnlyList<PlayerActorIdentityRecord> retainedTargets = bridge.ResolveRetainedMovementTargets(startedIdentity) ?? Array.Empty<PlayerActorIdentityRecord>();
                 if (retainedTargets.Count > 0)
                 {
-                    bridge.SetMovementControlTargets(retainedTargets, enableAllowed: true);
+                    bridge.SetMovementControlTargets(retainedTargets, true);
                     for (int index = 0; index < retainedTargets.Count; index++)
                     {
                         var retained = retainedTargets[index];
@@ -92,18 +92,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         command.Reason,
                         $"'{command.ActivityId}' movement binding completed status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false'.");
                     return new ActivityEntryMovementBindingResult(
-                        completed: true,
-                        identity: retainedCompletedIdentity,
-                        requiredCount: 0,
-                        requiredBoundCount: 0,
-                        totalBoundCount: 0,
-                        retainedCount: retainedTargets.Count,
-                        retainedExistingBinding: true,
-                        skipped: false,
-                        reason: "retained_existing_binding");
+                        true,
+                        retainedCompletedIdentity,
+                        0,
+                        0,
+                        0,
+                        retainedTargets.Count,
+                        true,
+                        false,
+                        "retained_existing_binding");
                 }
 
-                bridge.SetMovementControlTargets(Array.Empty<PlayerActorIdentityRecord>(), enableAllowed: false);
+                bridge.SetMovementControlTargets(Array.Empty<PlayerActorIdentityRecord>(), false);
                 var skippedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
                 identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
                 factBridge.EmitFact(
@@ -144,15 +144,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{command.ActivityId}' movement binding completed status='NoMovementCapabilityRequired' controlEnabled='false'.");
                 return new ActivityEntryMovementBindingResult(
-                    completed: true,
-                    identity: skippedCompletedIdentity,
-                    requiredCount: 0,
-                    requiredBoundCount: 0,
-                    totalBoundCount: 0,
-                    retainedCount: 0,
-                    retainedExistingBinding: false,
-                    skipped: true,
-                    reason: "no_required_movement");
+                    true,
+                    skippedCompletedIdentity,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false,
+                    true,
+                    "no_required_movement");
             }
 
             for (int index = 0; index < requirements.Count; index++)
@@ -218,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     record.ActorIdentity.PlayerActorId));
             }
 
-            bridge.SetMovementControlTargets(boundTargets, enableAllowed: true);
+            bridge.SetMovementControlTargets(boundTargets, true);
             if (boundTargets.Count > 0)
             {
                 bridge.PublishInitialMovementControlBlocked(
@@ -287,15 +287,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.ActivityId}' movement binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false'.");
 
             return new ActivityEntryMovementBindingResult(
-                completed: true,
-                identity: completedIdentity,
-                requiredCount: requiredCount,
-                requiredBoundCount: requiredBoundCount,
-                totalBoundCount: records.Count,
-                retainedCount: 0,
-                retainedExistingBinding: false,
-                skipped: false,
-                reason: "movement_bound");
+                true,
+                completedIdentity,
+                requiredCount,
+                requiredBoundCount,
+                records.Count,
+                0,
+                false,
+                false,
+                "movement_bound");
         }
 
         private static SessionActivityIdentity BuildIdentity(

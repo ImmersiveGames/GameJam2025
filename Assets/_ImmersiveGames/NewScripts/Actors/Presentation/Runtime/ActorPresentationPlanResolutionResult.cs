@@ -46,8 +46,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             return new ActorPresentationPlanResolutionResult(
                 ActorPresentationPlanResolutionResultKind.Success,
                 resolvedPlan,
-                reasonCode: string.Empty,
-                message: message);
+                string.Empty,
+                message);
         }
 
         public static ActorPresentationPlanResolutionResult SkippedOptional(
@@ -71,5 +71,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 reasonCode,
                 message);
         }
-}
+    }
 }

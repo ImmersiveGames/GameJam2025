@@ -56,5 +56,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
-}
+    }
 }

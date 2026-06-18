@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity discoveryIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
+            var discoveryIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted,
@@ -70,13 +70,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 List<ActivityObjectContributionReport> reports = new();
                 for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
                 {
-                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
+                    var record = loadedSet.Scenes[sceneIndex];
                     if (!record.IsValid)
                     {
                         continue;
                     }
 
-                    Scene scene = SceneManager.GetSceneByName(record.SceneName);
+                    var scene = SceneManager.GetSceneByName(record.SceneName);
                     if (!scene.IsValid() || !scene.isLoaded)
                     {
                         throw new InvalidOperationException(
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 for (int reportIndex = 0; reportIndex < reports.Count; reportIndex++)
                 {
-                    ActivityObjectContributionReport report = reports[reportIndex];
+                    var report = reports[reportIndex];
                     factBridge.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectContributorDiscovered,
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
                 for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
                 {
-                    ActivityObjectContributor contributor = contributors[contributorIndex];
+                    var contributor = contributors[contributorIndex];
                     if (contributor == null)
                     {
                         continue;

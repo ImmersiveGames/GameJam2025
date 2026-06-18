@@ -40,10 +40,18 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
 
         // Métodos da interface (apenas encaminham)
-        public void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class =>
+        public void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class
+        {
             _globalRegistry.Register(null, service, allowOverride);
-        public bool TryGetGlobal<T>(out T service) where T : class => _globalRegistry.TryGet(null, out service);
-        public bool UnregisterGlobal<T>(T service) where T : class => _globalRegistry.Unregister(service);
+        }
+        public bool TryGetGlobal<T>(out T service) where T : class
+        {
+            return _globalRegistry.TryGet(null, out service);
+        }
+        public bool UnregisterGlobal<T>(T service) where T : class
+        {
+            return _globalRegistry.Unregister(service);
+        }
 
         public void RegisterForObject<T>(string objectId, T service, bool allowOverride = false) where T : class
         {
@@ -54,12 +62,20 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _objectRegistry.Register(objectId, service, allowOverride);
         }
 
-        public bool TryGetForObject<T>(string objectId, out T service) where T : class => _objectRegistry.TryGet(objectId, out service);
+        public bool TryGetForObject<T>(string objectId, out T service) where T : class
+        {
+            return _objectRegistry.TryGet(objectId, out service);
+        }
 
-        public void RegisterForScene<T>(string sceneName, T service, bool allowOverride = false) where T : class =>
+        public void RegisterForScene<T>(string sceneName, T service, bool allowOverride = false) where T : class
+        {
             _sceneRegistry.Register(sceneName, service, allowOverride);
+        }
 
-        public bool TryGetForScene<T>(string sceneName, out T service) where T : class => _sceneRegistry.TryGet(sceneName, out service);
+        public bool TryGetForScene<T>(string sceneName, out T service) where T : class
+        {
+            return _sceneRegistry.TryGet(sceneName, out service);
+        }
 
         public void GetAllForScene<T>(string sceneName, List<T> services) where T : class
         {
@@ -113,15 +129,39 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _injector.InjectDependencies(target, objectId);
         }
 
-        public void ClearSceneServices(string sceneName) => _sceneRegistry.Clear(sceneName);
-        public void ClearAllSceneServices() => _sceneRegistry.ClearAll();
-        public void ClearObjectServices(string objectId) => _objectRegistry.Clear(objectId);
-        public void ClearAllObjectServices() => _objectRegistry.ClearAll();
-        public void ClearGlobalServices() => _globalRegistry.Clear(null);
+        public void ClearSceneServices(string sceneName)
+        {
+            _sceneRegistry.Clear(sceneName);
+        }
+        public void ClearAllSceneServices()
+        {
+            _sceneRegistry.ClearAll();
+        }
+        public void ClearObjectServices(string objectId)
+        {
+            _objectRegistry.Clear(objectId);
+        }
+        public void ClearAllObjectServices()
+        {
+            _objectRegistry.ClearAll();
+        }
+        public void ClearGlobalServices()
+        {
+            _globalRegistry.Clear(null);
+        }
 
-        public List<Type> ListServicesForObject(string objectId) => _objectRegistry.ListServices(objectId);
-        public List<Type> ListServicesForScene(string sceneName) => _sceneRegistry.ListServices(sceneName);
-        public List<Type> ListGlobalServices() => _globalRegistry.ListServices(null);
+        public List<Type> ListServicesForObject(string objectId)
+        {
+            return _objectRegistry.ListServices(objectId);
+        }
+        public List<Type> ListServicesForScene(string sceneName)
+        {
+            return _sceneRegistry.ListServices(sceneName);
+        }
+        public List<Type> ListGlobalServices()
+        {
+            return _globalRegistry.ListServices(null);
+        }
 
         protected void OnDestroy()
         {
@@ -157,4 +197,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
-

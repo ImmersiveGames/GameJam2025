@@ -32,14 +32,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             handle = runtimeObject.AddComponent<AudioSfxPlaybackHandle>();
             handle.Initialize(
-                cueId: cue.GetEntityId(),
-                cueName: cue.name,
-                source: source,
-                followTarget: context.followTarget,
-                modeLabel: mode,
-                reason: reason,
-                destroyOwnerOnComplete: true,
-                onCompleted: OnPlaybackCompleted);
+                cue.GetEntityId(),
+                cue.name,
+                source,
+                context.followTarget,
+                mode,
+                reason,
+                true,
+                OnPlaybackCompleted);
 
             source.Play();
 
@@ -125,4 +125,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         }
     }
 }
-

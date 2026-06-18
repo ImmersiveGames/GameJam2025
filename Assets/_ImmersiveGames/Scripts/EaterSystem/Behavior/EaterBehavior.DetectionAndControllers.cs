@@ -54,7 +54,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                     }
                     // Se vier um AnimationControllerBase, tenta converter para EaterAnimationController
                     else if (DependencyManager.Provider.TryGetForObject(actorId, out AnimationControllerBase baseController)
-                             && baseController is EaterAnimationController eaterController)
+                        && baseController is EaterAnimationController eaterController)
                     {
                         _animationController = eaterController;
 
@@ -104,4 +104,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         }*/
     }
 }
-

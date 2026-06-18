@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     string unresolvedComponentPath = endpointComponent != null
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;
-                    DebugUtility.LogWarning(typeof(ActivityCapabilityCameraTargetScanner), 
+                    DebugUtility.LogWarning(typeof(ActivityCapabilityCameraTargetScanner),
                         $"event='CameraBindingContributionIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' bindingKind='CameraBindingContribution' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
@@ -81,12 +81,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 }
 
                 if (!ActorCameraBindingContributionBuilder.TryBuild(
-                        context.Identity,
-                        target,
-                        endpoint,
-                        context.Source,
-                        context.Reason,
-                        out var contribution))
+                    context.Identity,
+                    target,
+                    endpoint,
+                    context.Source,
+                    context.Reason,
+                    out var contribution))
                 {
                     continue;
                 }

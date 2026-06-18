@@ -30,13 +30,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             Behavior = behavior;
         }
 
-        public virtual void Update()
-        {
-        }
+        public virtual void Update() { }
 
-        public virtual void FixedUpdate()
-        {
-        }
+        public virtual void FixedUpdate() { }
 
         public virtual void OnEnter()
         {
@@ -74,6 +70,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-
-
-

@@ -45,4 +45,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
         }
     }
 }
-

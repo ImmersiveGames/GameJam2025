@@ -13,10 +13,21 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
             EventBusUtil.RegisterEventType(typeof(T));
         }
 
-        public static void Register(EventBinding<T> binding) => GlobalBus.Register(binding);
-        public static void Unregister(EventBinding<T> binding) => GlobalBus.Unregister(binding);
-        public static void Raise(T @event) => GlobalBus.Raise(@event);
-        public static void Clear() => GlobalBus.Clear();
+        public static void Register(EventBinding<T> binding)
+        {
+            GlobalBus.Register(binding);
+        }
+        public static void Unregister(EventBinding<T> binding)
+        {
+            GlobalBus.Unregister(binding);
+        }
+        public static void Raise(T @event)
+        {
+            GlobalBus.Raise(@event);
+        }
+        public static void Clear()
+        {
+            GlobalBus.Clear();
+        }
     }
 }
-

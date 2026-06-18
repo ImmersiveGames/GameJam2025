@@ -177,5 +177,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             string token = ActivityCapabilityPermissionIds.ToToken(permissionId);
             return string.Equals(token, ActivityCapabilityPermissionIds.ActivityGameplayControl, StringComparison.Ordinal);
         }
-}
+    }
 }

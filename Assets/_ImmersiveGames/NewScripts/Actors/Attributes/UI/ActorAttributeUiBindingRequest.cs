@@ -18,8 +18,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         public ActorAttributeId AttributeId { get; }
 
         public bool IsValid =>
-            Selector != null &&
-            Selector.IsStructurallyValid &&
+            Selector is { IsStructurallyValid: true } &&
             AttributeId.IsValid;
 
         public string GetInvalidReason()

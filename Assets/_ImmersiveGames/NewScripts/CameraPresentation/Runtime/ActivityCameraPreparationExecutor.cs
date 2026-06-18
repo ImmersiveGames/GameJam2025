@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public ActivityCameraPreparationExecutor(IActivityCameraDirector director)
         {
-            this._director = director;
+            _director = director;
         }
 
         public bool TryPrepare(
@@ -245,10 +245,10 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             ActivityCameraBindingHandle handle)
         {
             return handle.RouteIdentity == command.RouteIdentity
-                   && handle.RouteOperationId == command.RouteOperationId
-                   && handle.TransitionId == command.TransitionId
-                   && handle.RouteSequence == command.RouteSequence
-                   && handle.ActivityIdentity == command.ActivityIdentity;
+                && handle.RouteOperationId == command.RouteOperationId
+                && handle.TransitionId == command.TransitionId
+                && handle.RouteSequence == command.RouteSequence
+                && handle.ActivityIdentity == command.ActivityIdentity;
         }
     }
 }

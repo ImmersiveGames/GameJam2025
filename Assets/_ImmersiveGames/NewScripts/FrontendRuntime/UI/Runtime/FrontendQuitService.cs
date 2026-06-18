@@ -30,4 +30,3 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
         }
     }
 }
-

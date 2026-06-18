@@ -17,25 +17,25 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             var steps = new List<CompositionPipelineStep>(16);
 
             steps.Add(new CompositionPipelineStep(
-                id: "RuntimePolicy",
-                installer: _ => RegisterRuntimePolicyServices(),
-                installerDependencies: Array.Empty<string>(),
-                bootstrap: null,
-                bootstrapDependencies: Array.Empty<string>()));
+                "RuntimePolicy",
+                _ => RegisterRuntimePolicyServices(),
+                Array.Empty<string>(),
+                null,
+                Array.Empty<string>()));
 
             steps.Add(new CompositionPipelineStep(
-                id: "Pooling",
-                installer: _ => InstallPoolingServices(),
-                installerDependencies: Array.Empty<string>(),
-                bootstrap: null,
-                bootstrapDependencies: Array.Empty<string>()));
+                "Pooling",
+                _ => InstallPoolingServices(),
+                Array.Empty<string>(),
+                null,
+                Array.Empty<string>()));
 
             steps.Add(new CompositionPipelineStep(
-                id: "Gates",
-                installer: _ => InstallGatesServices(),
-                installerDependencies: Array.Empty<string>(),
-                bootstrap: null,
-                bootstrapDependencies: Array.Empty<string>()));
+                "Gates",
+                _ => InstallGatesServices(),
+                Array.Empty<string>(),
+                null,
+                Array.Empty<string>()));
 
             var compositionProfile = runtimeModeConfig.compositionProfile;
 
@@ -53,11 +53,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             steps.Add(new CompositionPipelineStep(
-                id: "SceneComposition",
-                installer: _ => InstallSceneCompositionServices(),
-                installerDependencies: Array.Empty<string>(),
-                bootstrap: null,
-                bootstrapDependencies: Array.Empty<string>()));
+                "SceneComposition",
+                _ => InstallSceneCompositionServices(),
+                Array.Empty<string>(),
+                null,
+                Array.Empty<string>()));
 
             return steps;
         }
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 CompositionPipelineStep.FromDescriptor(OperationalCameraRuntimeCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(CameraPresentationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(RuntimePersistentScenesCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(SessionOperationalRuntimeCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SessionOperationalRuntimeCompositionDescriptor.Descriptor)
             };
         }
 

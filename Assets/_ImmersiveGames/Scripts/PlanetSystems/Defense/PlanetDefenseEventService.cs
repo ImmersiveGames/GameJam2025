@@ -20,7 +20,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public DependencyInjectionState InjectionState { get; set; }
 
-        public string GetObjectId() => nameof(PlanetDefenseEventService);
+        public string GetObjectId()
+        {
+            return nameof(PlanetDefenseEventService);
+        }
 
         /// <summary>
         /// Injeta o ActorId do planeta para resgatar serviços registrados com o mesmo identificador.
@@ -181,4 +184,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 }
-

@@ -26,10 +26,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             var scannerRegistry = new ActivityCapabilityScannerRegistry();
             scannerRegistry.Register(_objectScanner);
             scannerRegistry.Register(_actorLifecycleScanner);
-            scannerRegistry.Register(new ActivityCapabilityPermissionScanner());  // H2a: no longer depends on dedicated player resolver
+            scannerRegistry.Register(new ActivityCapabilityPermissionScanner()); // H2a: no longer depends on dedicated player resolver
             scannerRegistry.Register(new ActivityCapabilityActorPresentationScanner());
             scannerRegistry.Register(new ActivityCapabilityActorAttributeScanner());
-            scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner());  // H2a: no longer depends on dedicated player resolver
+            scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner()); // H2a: no longer depends on dedicated player resolver
 
             _inventoryBuilder = new ActivityCapabilityInventoryBuilder(scannerRegistry);
         }
@@ -152,22 +152,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         private static bool IsLifecycleCapability(ActivityCapabilityKind kind)
         {
             return kind == ActivityCapabilityKind.ResetEndpoint ||
-                   kind == ActivityCapabilityKind.SnapshotProvider ||
-                   kind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
-                   kind == ActivityCapabilityKind.ReleaseEndpoint;
+                kind == ActivityCapabilityKind.SnapshotProvider ||
+                kind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
+                kind == ActivityCapabilityKind.ReleaseEndpoint;
         }
 
         private static bool IsActivityObjectLifecycleOwnerKind(ActivityCapabilityOwnerKind ownerKind)
         {
             return ownerKind == ActivityCapabilityOwnerKind.ActivityObject ||
-                   ownerKind == ActivityCapabilityOwnerKind.SceneContributor;
+                ownerKind == ActivityCapabilityOwnerKind.SceneContributor;
         }
 
         private static bool IsActorLifecycleOwnerKind(ActivityCapabilityOwnerKind ownerKind)
         {
             return ownerKind == ActivityCapabilityOwnerKind.PlayerActor ||
-                   ownerKind == ActivityCapabilityOwnerKind.Actor ||
-                   ownerKind == ActivityCapabilityOwnerKind.RuntimeSpawnedActor;
+                ownerKind == ActivityCapabilityOwnerKind.Actor ||
+                ownerKind == ActivityCapabilityOwnerKind.RuntimeSpawnedActor;
         }
 
         private static string FormatCapabilityKindsSummary(IReadOnlyList<ActivityCapabilityDescriptor> capabilities)

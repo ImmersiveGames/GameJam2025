@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Completed = 1,
         SkippedNoHandoff = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     // Etapa 2 (canonização Command/Result/Fact): Result já seguia o modelo (IsCompleted/IsSkipped/IsAccepted + Kind).
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public sealed class OperationalPlayerParticipationStage
     {
@@ -524,5 +524,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"event='PlayerParticipationCompleted' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' outcome='{FormatPlayerParticipationOutcome(result)}'.",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

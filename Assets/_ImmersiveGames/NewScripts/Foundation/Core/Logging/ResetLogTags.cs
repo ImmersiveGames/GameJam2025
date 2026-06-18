@@ -16,4 +16,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         public const string Completed = "ResetCompleted";
     }
 }
-

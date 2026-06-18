@@ -69,10 +69,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             DebugUtility.LogVerbose<RuntimeAttributeLinkBridge>($"? Link adicionado: {link.sourceRuntimeAttribute} -> {link.targetRuntimeAttribute}");
         }
 
-        public bool HasLink(RuntimeAttributeType src) =>
-            _linkService != null && actor != null && _linkService.HasLink(actor.ActorId, src);
+        public bool HasLink(RuntimeAttributeType src)
+        {
+            return _linkService != null && actor != null && _linkService.HasLink(actor.ActorId, src);
+        }
 
-        public RuntimeAttributeLinkConfig[] GetAllLinks() => resourceLinks;
+        public RuntimeAttributeLinkConfig[] GetAllLinks()
+        {
+            return resourceLinks;
+        }
     }
 }
-

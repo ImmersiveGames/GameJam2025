@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => DiscoveryResult.IsValid && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public sealed class ActivityObjectCapabilityScanTargetAdapter
     {

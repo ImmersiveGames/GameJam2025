@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Applied = 1,
         SkippedOptional = 2,
         Failed = 3,
-        RejectedStaleOrForeign = 4,
+        RejectedStaleOrForeign = 4
     }
 
     public readonly struct ActivityObjectResetCommand
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetIntent='{ResetIntent}', resetStateProfile='{StateProfileKind}', resetDescriptor='{ResetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report', source='{Source}', reason='{Reason}'";
         }
-private static string NormalizeResetDescriptorMetadata(string value)
+        private static string NormalizeResetDescriptorMetadata(string value)
         {
             return value.TrimToOrDefault("<none>");
         }
@@ -103,11 +103,9 @@ private static string NormalizeResetDescriptorMetadata(string value)
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
-
-    public interface IActivityObjectResetEndpoint
-    {
     }
+
+    public interface IActivityObjectResetEndpoint { }
 
     public interface IActivityObjectEntryInitializeResetEndpoint : IActivityObjectResetEndpoint
     {

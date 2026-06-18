@@ -8,14 +8,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         Unknown = 0,
         Player = 1,
         SceneActor = 2,
-        Object = 3,
+        Object = 3
     }
 
     public enum ActorPlacementMode
     {
         None = 0,
         SceneMarker = 1,
-        FixedTransform = 2,
+        FixedTransform = 2
     }
 
     [CreateAssetMenu(
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
     {
         private static readonly IUniqueIdFactory IdFactory = new UniqueIdFactory();
 
-        [SerializeField, Tooltip("Canonical authoring definition id. This identifies the ActorDefinition asset/domain, not the runtime actor.")]
+        [SerializeField] [Tooltip("Canonical authoring definition id. This identifies the ActorDefinition asset/domain, not the runtime actor.")]
         private string actorDefinitionId;
         [SerializeField] private string displayName;
         [SerializeField] private ActorDefinitionKind actorKind = ActorDefinitionKind.Unknown;
@@ -88,17 +88,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 }
             }
         }
-private static bool IsValidPlacementMode(ActorPlacementMode value)
+        private static bool IsValidPlacementMode(ActorPlacementMode value)
         {
             return value == ActorPlacementMode.None ||
-                   value == ActorPlacementMode.SceneMarker ||
-                   value == ActorPlacementMode.FixedTransform;
+                value == ActorPlacementMode.SceneMarker ||
+                value == ActorPlacementMode.FixedTransform;
         }
 
         private static bool ResolveHasPlacementPlan(ActorPlacementMode mode, string key)
         {
             return mode == ActorPlacementMode.FixedTransform ||
-                   mode == ActorPlacementMode.SceneMarker && !string.IsNullOrWhiteSpace(key);
+                mode == ActorPlacementMode.SceneMarker && !string.IsNullOrWhiteSpace(key);
         }
     }
 }

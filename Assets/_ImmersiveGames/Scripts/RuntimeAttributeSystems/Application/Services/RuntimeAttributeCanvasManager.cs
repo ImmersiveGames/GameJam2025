@@ -21,7 +21,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         private EventBinding<RuntimeAttributeEventHub.CanvasRegisteredEvent> _canvasRegisteredBinding;
 
         public DependencyInjectionState InjectionState { get; set; }
-        public string GetObjectId() => "RuntimeAttributeCanvasManager";
+        public string GetObjectId()
+        {
+            return "RuntimeAttributeCanvasManager";
+        }
 
         protected override void InitializeSingleton()
         {
@@ -170,4 +173,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
     }
 }
-

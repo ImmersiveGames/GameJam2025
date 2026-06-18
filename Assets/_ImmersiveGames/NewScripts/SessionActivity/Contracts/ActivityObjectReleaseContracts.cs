@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Applied = 1,
         SkippedOptional = 2,
         Failed = 3,
-        RejectedStaleOrForeign = 4,
+        RejectedStaleOrForeign = 4
     }
 
     public readonly struct ActivityObjectReleaseCommand
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', releaseKind='{ReleaseKind}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityObjectReleaseResult
     {
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public interface IActivityObjectReleaseEndpoint
     {

@@ -132,6 +132,3 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
         }
     }
 }
-
-
-

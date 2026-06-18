@@ -34,5 +34,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             return new ActorAttributeUiBindingResult(kind, null, failureReason);
         }
-}
+    }
 }

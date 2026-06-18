@@ -66,5 +66,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
             !string.IsNullOrWhiteSpace(ComponentPath) &&
             Endpoint != null &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 }

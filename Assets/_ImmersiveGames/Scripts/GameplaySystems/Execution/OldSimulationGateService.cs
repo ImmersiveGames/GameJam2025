@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             if (string.IsNullOrWhiteSpace(token))
             {
                 DebugUtility.LogWarning<OldLegacySimulationGateService>("Acquire chamado com token nulo/vazio. Ignorando.");
-                return new ReleaseHandle(this, string.Empty, shouldRelease: false);
+                return new ReleaseHandle(this, string.Empty, false);
             }
 
             bool changed;
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             }
 
             DebugUtility.LogVerbose<OldLegacySimulationGateService>($"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
-            return new ReleaseHandle(this, token, shouldRelease: true);
+            return new ReleaseHandle(this, token, true);
         }
 
         public void Release(string token)
@@ -147,4 +147,3 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         }
     }
 }
-

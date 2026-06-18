@@ -20,17 +20,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
     {
         [Header("Amplitude lateral")]
         [Tooltip("Intensidade do deslocamento lateral em cada oscilação (unidades de mundo).")]
-        [SerializeField, Min(0.1f)]
+        [SerializeField] [Min(0.1f)]
         private float lateralAmplitude = 2f;
 
         [Header("Quantidade de ZigZags")]
         [Tooltip("Quantas idas/voltas laterais o minion faz até chegar no alvo.")]
-        [SerializeField, Min(1)]
+        [SerializeField] [Min(1)]
         private int zigZagCount = 3;
 
         [Header("Suavização da rotação")]
         [Tooltip("O controller já faz um Lerp no forward, mas podemos ajustar quanto 'distorce' o caminho.")]
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField] [Range(0f, 1f)]
         private float lateralBlendFactor = 1f;
 
         public override Tween CreateChaseTween(Transform minion, Transform target, float speed, string targetLabel)
@@ -43,10 +43,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 
             // Direção principal (reta) até o alvo
             var startPos = minion.position;
-            var endPos   = target.position;
+            var endPos = target.position;
 
             var forwardDir = endPos - startPos;
-            float distance     = forwardDir.magnitude;
+            float distance = forwardDir.magnitude;
 
             if (distance <= 0.001f || speed <= 0.001f)
             {
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 
             // Movimento principal até o alvo
             TweenerCore<Vector3, Vector3, VectorOptions> moveForward = minion.DOMove(endPos, duration)
-                                    .SetEase(Ease.Linear);
+                .SetEase(Ease.Linear);
 
             seq.Join(moveForward);
 
@@ -85,8 +85,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
             int loops = Mathf.Max(1, zigZagCount * 2);
 
             var lateralTween = minion.DOBlendableMoveBy(lateralDir, duration / loops)
-                                     .SetEase(Ease.InOutSine)
-                                     .SetLoops(loops, LoopType.Yoyo);
+                .SetEase(Ease.InOutSine)
+                .SetLoops(loops, LoopType.Yoyo);
 
             seq.Join(lateralTween);
 
@@ -94,4 +94,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
         }
     }
 }
-

@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalPreviousRouteExitBoundaryCommand
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Reason { get; }
 
         public bool IsValid => RouteCommand.IsValid;
-}
+    }
 
     public readonly struct OperationalPreviousRouteExitBoundaryResult
     {
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Detail { get; }
         public bool IsCompleted => Kind == OperationalPreviousRouteExitBoundaryResultKind.Completed;
         public bool IsFailed => Kind == OperationalPreviousRouteExitBoundaryResultKind.Failed;
-}
+    }
 
     public sealed class OperationalPreviousRouteExitBoundary
     {

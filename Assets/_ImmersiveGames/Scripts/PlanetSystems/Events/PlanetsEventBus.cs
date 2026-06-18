@@ -79,4 +79,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Events
     }
 
 }
-

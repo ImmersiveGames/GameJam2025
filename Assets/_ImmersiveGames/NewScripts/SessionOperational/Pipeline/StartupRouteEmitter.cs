@@ -95,8 +95,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 await pipeline.RequestOperationalRouteAsync(
                     startupRoute,
-                    source: nameof(StartupRouteEmitter),
-                    reason: StartupReason);
+                    nameof(StartupRouteEmitter),
+                    StartupReason);
             }
             catch (Exception ex)
             {
@@ -168,4 +168,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 }
-

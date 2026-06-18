@@ -79,5 +79,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             failureReason = "resolved";
             return true;
         }
-}
+    }
 }

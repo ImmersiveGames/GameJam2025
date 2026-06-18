@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         {
             // Remove eventos com mais de 1 frame de idade
             var oldEvents = _processedEvents.Where(kvp => kvp.Value < Time.frameCount - 1)
-                                          .Select(kvp => kvp.Key).ToList();
+                .Select(kvp => kvp.Key).ToList();
 
             foreach (string key in oldEvents)
             {

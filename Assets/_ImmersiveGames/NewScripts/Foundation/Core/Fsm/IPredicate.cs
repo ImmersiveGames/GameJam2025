@@ -12,5 +12,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Fsm
         bool Evaluate();
     }
 }
-
-

@@ -38,22 +38,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsValid =>
             ParticipantId.IsValid &&
             (PlacementMode == ActorPlacementMode.None ||
-             PlacementMode == ActorPlacementMode.SceneMarker ||
-             PlacementMode == ActorPlacementMode.FixedTransform);
+                PlacementMode == ActorPlacementMode.SceneMarker ||
+                PlacementMode == ActorPlacementMode.FixedTransform);
         public bool HasPrefab => Prefab != null;
 
         public bool Equals(SessionActivityActorMaterializationPlanEntry other)
         {
             return ParticipantId.Equals(other.ParticipantId) &&
-                   Required == other.Required &&
-                   Equals(Prefab, other.Prefab) &&
-                   PlacementMode == other.PlacementMode &&
-                   string.Equals(PlacementId, other.PlacementId, StringComparison.Ordinal) &&
-                   LocalPosition.Equals(other.LocalPosition) &&
-                   LocalEulerAngles.Equals(other.LocalEulerAngles);
+                Required == other.Required &&
+                Equals(Prefab, other.Prefab) &&
+                PlacementMode == other.PlacementMode &&
+                string.Equals(PlacementId, other.PlacementId, StringComparison.Ordinal) &&
+                LocalPosition.Equals(other.LocalPosition) &&
+                LocalEulerAngles.Equals(other.LocalEulerAngles);
         }
 
-        public override bool Equals(object obj) => obj is SessionActivityActorMaterializationPlanEntry other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityActorMaterializationPlanEntry other && Equals(other);
+        }
         public override int GetHashCode()
         {
             unchecked
@@ -68,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 return hashCode;
             }
         }
-}
+    }
 
     public readonly struct SessionActivityRouteTransitionContext : IEquatable<SessionActivityRouteTransitionContext>
     {
@@ -92,9 +95,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool Equals(SessionActivityRouteTransitionContext other)
         {
             return HasRouteFadeProfile == other.HasRouteFadeProfile &&
-                   Equals(RouteFadeProfile, other.RouteFadeProfile) &&
-                   HasRouteLoadingProfile == other.HasRouteLoadingProfile &&
-                   Equals(RouteLoadingProfile, other.RouteLoadingProfile);
+                Equals(RouteFadeProfile, other.RouteFadeProfile) &&
+                HasRouteLoadingProfile == other.HasRouteLoadingProfile &&
+                Equals(RouteLoadingProfile, other.RouteLoadingProfile);
         }
 
         public override bool Equals(object obj)
@@ -182,16 +185,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool Equals(SessionActivityEntryHandoff other)
         {
             return string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                   ActivityOrdinal == other.ActivityOrdinal &&
-                   EntrySequence == other.EntrySequence &&
-                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(SessionParticipationContext?.RouteOperationId, other.SessionParticipationContext?.RouteOperationId, StringComparison.Ordinal) &&
-                   SessionParticipationRevision == other.SessionParticipationRevision &&
-                   ActorMaterializationPlanEntryCount == other.ActorMaterializationPlanEntryCount &&
-                   RouteTransitionContext.Equals(other.RouteTransitionContext) &&
-                   LoadedSnapshotPayloadContext.HasPayload == other.LoadedSnapshotPayloadContext.HasPayload &&
-                   string.Equals(Source, other.Source, StringComparison.Ordinal) &&
-                   string.Equals(Reason, other.Reason, StringComparison.Ordinal);
+                ActivityOrdinal == other.ActivityOrdinal &&
+                EntrySequence == other.EntrySequence &&
+                string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                string.Equals(SessionParticipationContext?.RouteOperationId, other.SessionParticipationContext?.RouteOperationId, StringComparison.Ordinal) &&
+                SessionParticipationRevision == other.SessionParticipationRevision &&
+                ActorMaterializationPlanEntryCount == other.ActorMaterializationPlanEntryCount &&
+                RouteTransitionContext.Equals(other.RouteTransitionContext) &&
+                LoadedSnapshotPayloadContext.HasPayload == other.LoadedSnapshotPayloadContext.HasPayload &&
+                string.Equals(Source, other.Source, StringComparison.Ordinal) &&
+                string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
@@ -231,11 +234,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                     ? $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='{EntrySequence}'"
                     : "activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>'";
 
-            return $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
+            return
+                $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
 
-        public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => left.Equals(right);
-        public static bool operator !=(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => !left.Equals(right);
+        public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right)
+        {
+            return !left.Equals(right);
+        }
 
         private static int CountMaterializationPlanEntries(IReadOnlyList<SessionActivityActorMaterializationPlanEntry> entries)
         {
@@ -255,8 +265,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
             return count;
         }
+    }
 }
-}
-
-
-

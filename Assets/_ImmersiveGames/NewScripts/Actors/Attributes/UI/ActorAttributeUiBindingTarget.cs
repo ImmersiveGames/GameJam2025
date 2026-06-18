@@ -30,5 +30,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             ActorInstanceRuntimeId.IsValid &&
             AttributeId.IsValid &&
             string.IsNullOrWhiteSpace(InvalidReason);
-}
+    }
 }

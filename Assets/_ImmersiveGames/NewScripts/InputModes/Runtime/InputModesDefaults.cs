@@ -7,4 +7,3 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public const string MenuActionMapName = "UI";
     }
 }
-

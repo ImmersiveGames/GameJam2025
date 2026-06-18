@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public void OnPoolCreated()
         {
-            ClearMotionState("pool_created", log: false);
+            ClearMotionState("pool_created", false);
         }
 
         public void OnPoolRent()
@@ -77,12 +77,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public void OnPoolReturn()
         {
-            ClearMotionState("pool_return", log: true);
+            ClearMotionState("pool_return", true);
         }
 
         public void OnPoolDestroyed()
         {
-            ClearMotionState("pool_destroyed", log: true);
+            ClearMotionState("pool_destroyed", true);
         }
 
         private void Update()
@@ -92,13 +92,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            Vector3 delta = _velocity * Time.deltaTime;
+            var delta = _velocity * Time.deltaTime;
             if (delta.sqrMagnitude <= 0f)
             {
                 return;
             }
 
-            Vector3 before = transform.position;
+            var before = transform.position;
             transform.position = before + delta;
 
             if (_hasLoggedMotionTickAdvanced)
@@ -149,5 +149,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
         }
-}
+    }
 }

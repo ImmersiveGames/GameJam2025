@@ -45,8 +45,8 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         public bool ShouldParticipate(ResetScope scope)
         {
             return scope == ResetScope.AllActorsInScene ||
-                   scope == ResetScope.PlayersOnly ||
-                   scope == ResetScope.ActorIdSet;
+                scope == ResetScope.PlayersOnly ||
+                scope == ResetScope.ActorIdSet;
         }
 
         #endregion
@@ -225,5 +225,3 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         #endregion
     }
 }
-
-

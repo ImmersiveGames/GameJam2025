@@ -35,10 +35,10 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
         // Defaults mínimos (ciclo mínimo).
         private static readonly FadeConfig DefaultConfig =
             new(
-                fadeInDuration: 0.5f,
-                fadeOutDuration: 0.5f,
-                fadeInCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
-                fadeOutCurve: AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
+                0.5f,
+                0.5f,
+                AnimationCurve.EaseInOut(0f, 0f, 1f, 1f),
+                AnimationCurve.EaseInOut(0f, 0f, 1f, 1f));
 
         public FadeService(string fadeSceneName)
         {
@@ -153,8 +153,8 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
                     if (loadOp == null)
                     {
                         AbortAsFatal(
-                            reason: "load_scene_async_null",
-                            detail: $"LoadSceneAsync returned null for '{_fadeSceneName}'. Check Build Settings.");
+                            "load_scene_async_null",
+                            $"LoadSceneAsync returned null for '{_fadeSceneName}'. Check Build Settings.");
                         throw new InvalidOperationException("Unreachable after AbortAsFatal.");
                     }
 
@@ -171,8 +171,8 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
                 if (!fadeScene.IsValid() || !fadeScene.isLoaded)
                 {
                     AbortAsFatal(
-                        reason: "fade_scene_not_loaded",
-                        detail: $"FadeScene '{_fadeSceneName}' is not loaded after LoadSceneAsync.");
+                        "fade_scene_not_loaded",
+                        $"FadeScene '{_fadeSceneName}' is not loaded after LoadSceneAsync.");
                 }
 
                 _controller = FindControllerInScene(fadeScene);
@@ -180,8 +180,8 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
                 if (_controller == null)
                 {
                     AbortAsFatal(
-                        reason: "fade_controller_missing",
-                        detail: $"No {nameof(FadeController)} found in FadeScene '{_fadeSceneName}'.");
+                        "fade_controller_missing",
+                        $"No {nameof(FadeController)} found in FadeScene '{_fadeSceneName}'.");
                 }
 
                 DebugUtility.LogVerbose<FadeService>(
@@ -229,4 +229,3 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
         }
     }
 }
-

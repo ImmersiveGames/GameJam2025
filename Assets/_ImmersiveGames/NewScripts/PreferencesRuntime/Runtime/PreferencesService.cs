@@ -138,12 +138,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             }
 
             var nextSnapshot = ResolveSupportedVideoSnapshot(
-                profileId: CurrentVideoSnapshot.ProfileId,
-                slotId: CurrentVideoSnapshot.SlotId,
-                width: width,
-                height: height,
-                fullscreen: fullscreen,
-                reason: reason);
+                CurrentVideoSnapshot.ProfileId,
+                CurrentVideoSnapshot.SlotId,
+                width,
+                height,
+                fullscreen,
+                reason);
 
             if (HasSameVideoValues(CurrentVideoSnapshot, nextSnapshot))
             {
@@ -306,5 +306,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         }
     }
 }
-
-

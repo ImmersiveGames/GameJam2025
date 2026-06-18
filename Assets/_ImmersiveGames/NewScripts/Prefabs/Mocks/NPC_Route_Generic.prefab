@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 2666666666666666666}
   - component: {fileID: 2527674146183889330}
   - component: {fileID: 7541607155000875233}
+  - component: {fileID: 720000000000000001}
+  - component: {fileID: 720000000000000002}
   - component: {fileID: 6263442345676608419}
   - component: {fileID: -5061788580996308860}
   m_Layer: 0
@@ -124,6 +126,41 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.Runtime.ActorDamageableEndpoint
   targetAttributeDefinition: {fileID: 11400000, guid: b101e7a7894cc9c4d8535ace53589d2b, type: 2}
+--- !u!114 &720000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f886418908ae3744b3a139e5bdd5d82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.Runtime.ActorDamageSourceEndpoint
+  damageKind: contact
+--- !u!114 &720000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f9329d4a7c24d8c9baf109a84f7710c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.Runtime.ActorContactDamageEndpoint
+  damageAmount: 10
+  damageKind: contact
+  targetLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  cooldownSecondsPerReceiver: 0.5
+  detectTriggerEnter: 1
+  detectCollisionEnter: 1
+  installColliderRelaysInChildren: 1
+  damageSourceEndpoint: {fileID: 720000000000000001}
 --- !u!114 &6263442345676608419
 MonoBehaviour:
   m_ObjectHideFlags: 0

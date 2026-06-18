@@ -98,8 +98,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 records.Add(new PlayerInputBindingRecord(
                     requirement,
                     actorHandle.ActorIdentity,
-                    bound: true,
-                    observedInputId: $"{resolvedInput.name}|index={resolvedInput.playerIndex}|instance={resolvedInput.GetEntityId()}|actionsRebound={resolution.ActionsReboundToCanonical}|currentActionMap={resolvedInput.currentActionMap?.name ?? "<none>"}"));
+                    true,
+                    $"{resolvedInput.name}|index={resolvedInput.playerIndex}|instance={resolvedInput.GetEntityId()}|actionsRebound={resolution.ActionsReboundToCanonical}|currentActionMap={resolvedInput.currentActionMap?.name ?? "<none>"}"));
             }
 
             return records;

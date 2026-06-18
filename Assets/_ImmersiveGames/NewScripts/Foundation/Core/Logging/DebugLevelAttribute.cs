@@ -5,7 +5,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
     public class DebugLevelAttribute : Attribute
     {
         public DebugLevel Level { get; }
-        public DebugLevelAttribute(DebugLevel level) => Level = level;
+        public DebugLevelAttribute(DebugLevel level)
+        {
+            Level = level;
+        }
     }
 }
-

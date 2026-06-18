@@ -19,8 +19,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
         public bool IsValid =>
             Request.IsValid &&
-            Sink != null &&
-            Sink.IsReady;
+            Sink is { IsReady: true };
 
         public string GetInvalidReason()
         {

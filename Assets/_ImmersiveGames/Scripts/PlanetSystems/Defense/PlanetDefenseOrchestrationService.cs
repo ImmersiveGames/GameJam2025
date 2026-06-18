@@ -31,7 +31,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public DependencyInjectionState InjectionState { get; set; }
 
-        public string GetObjectId() => nameof(PlanetDefenseOrchestrationService);
+        public string GetObjectId()
+        {
+            return nameof(PlanetDefenseOrchestrationService);
+        }
 
         public void OnDependenciesInjected()
         {
@@ -423,4 +426,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 }
-

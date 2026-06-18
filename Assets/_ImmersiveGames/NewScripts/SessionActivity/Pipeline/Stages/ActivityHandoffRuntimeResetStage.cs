@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string TriggerReason { get; }
 
         public bool IsValid => InitialIdentity.IsValid && EntrySequence > 0;
-}
+    }
 
     internal static class ActivityHandoffRuntimeResetStage
     {
@@ -91,5 +91,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 message,
                 color);
         }
-}
+    }
 }

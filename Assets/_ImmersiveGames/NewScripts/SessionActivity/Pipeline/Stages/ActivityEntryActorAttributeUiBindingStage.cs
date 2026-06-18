@@ -52,12 +52,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     DebugUtility.Colors.Info);
 
                 return new ActivityEntryActorAttributeUiBindingResult(
-                    totalRequests: 0,
-                    resolvedCount: 0,
-                    boundCount: 0,
-                    activeHandleCount: bindingRuntimeState.ActiveHandleCount,
-                    skipped: true,
-                    reason: "no_binding_requests");
+                    0,
+                    0,
+                    0,
+                    bindingRuntimeState.ActiveHandleCount,
+                    true,
+                    "no_binding_requests");
             }
 
             ActivityEntryActorAttributeUiTargetResolver targetResolver = new();
@@ -68,13 +68,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 for (int index = 0; index < requestEntries.Count; index++)
                 {
-                    ActorAttributeUiBindingRequestEntry entry = requestEntries[index];
+                    var entry = requestEntries[index];
                     if (!entry.IsValid)
                     {
                         throw new InvalidOperationException($"[FATAL][ActivityEntryActorAttributeUiBindingStage][ActorAttributeUiBinding] Invalid binding request index='{index}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' reason='{entry.GetInvalidReason()}'.");
                     }
 
-                    ActorAttributeUiTargetResolveResult targetResolveResult = targetResolver.Resolve(
+                    var targetResolveResult = targetResolver.Resolve(
                         entry.Request,
                         participationContext,
                         registry,
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     resolvedCount += 1;
 
-                    if (!runtimeState.TryGetActiveActorAttributeCapability(targetResolveResult.ActorInstanceRuntimeId, out SessionActivityPipeline.ActorAttributeCapabilityState capabilityState) ||
+                    if (!runtimeState.TryGetActiveActorAttributeCapability(targetResolveResult.ActorInstanceRuntimeId, out var capabilityState) ||
                         !capabilityState.IsValid ||
                         capabilityState.Endpoint == null)
                     {
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     ActorAttributeEndpointUiStateReader stateReader = new(capabilityState.Endpoint);
                     ActorAttributeUiBindingRuntime bindingRuntime = new(eventStream, stateReader);
-                    ActorAttributeUiBindingResult bindingResult = bindingRuntime.Bind(
+                    var bindingResult = bindingRuntime.Bind(
                         targetResolveResult.Target,
                         entry.Sink,
                         normalizedSource,
@@ -123,12 +123,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             return new ActivityEntryActorAttributeUiBindingResult(
-                totalRequests: requestEntries.Count,
-                resolvedCount: resolvedCount,
-                boundCount: boundCount,
-                activeHandleCount: bindingRuntimeState.ActiveHandleCount,
-                skipped: false,
-                reason: "bindings_applied");
+                requestEntries.Count,
+                resolvedCount,
+                boundCount,
+                bindingRuntimeState.ActiveHandleCount,
+                false,
+                "bindings_applied");
         }
-}
+    }
 }

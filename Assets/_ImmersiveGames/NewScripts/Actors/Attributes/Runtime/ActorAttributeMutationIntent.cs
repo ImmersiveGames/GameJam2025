@@ -183,10 +183,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         private static bool IsKnownOperation(ActorAttributeOperation operation)
         {
             return operation == ActorAttributeOperation.Set ||
-                   operation == ActorAttributeOperation.Add ||
-                   operation == ActorAttributeOperation.Subtract ||
-                   operation == ActorAttributeOperation.ResetToInitial ||
-                   operation == ActorAttributeOperation.RestoreToMax;
+                operation == ActorAttributeOperation.Add ||
+                operation == ActorAttributeOperation.Subtract ||
+                operation == ActorAttributeOperation.ResetToInitial ||
+                operation == ActorAttributeOperation.RestoreToMax;
         }
 
         private static bool HasValidPayload(ActorAttributeOperation operation, float amount, float setValue)
@@ -200,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             {
                 ActorAttributeOperation.Add => amount >= 0f,
                 ActorAttributeOperation.Subtract => amount >= 0f,
-                _ => true,
+                _ => true
             };
         }
 
@@ -208,5 +208,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
-}
+    }
 }

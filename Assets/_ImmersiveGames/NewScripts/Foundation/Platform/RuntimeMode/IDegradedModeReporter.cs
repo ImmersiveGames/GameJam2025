@@ -10,4 +10,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             string profile = null);
     }
 }
-

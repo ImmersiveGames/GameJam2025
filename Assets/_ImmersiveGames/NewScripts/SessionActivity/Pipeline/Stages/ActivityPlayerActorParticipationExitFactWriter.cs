@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            SessionActivityIdentity stageCompletedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerActorParticipationExitStageCompleted, entrySequence);
+            var stageCompletedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerActorParticipationExitStageCompleted, entrySequence);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.PlayerActorParticipationExitStageCompleted,

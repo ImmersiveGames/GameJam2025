@@ -12,7 +12,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
         private Ease ease = Ease.Linear;
 
         [Tooltip("Fator de duração extra (1 = apenas distância/velocidade).")]
-        [SerializeField, Min(0f)]
+        [SerializeField] [Min(0f)]
         private float extraDurationFactor;
 
         public override Tween CreateChaseTween(

@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalRouteCameraPresentationResult
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalRouteCameraPresentationResultKind.Completed,
                 reason);
         }
-}
+    }
 
     public readonly struct OperationalRouteCameraPresentationCommand
     {
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public sealed class OperationalRouteCameraPresentationStage
     {
@@ -207,5 +207,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"RouteCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activeScene='{command.ActiveSceneName.TrimToEmpty()}' operationalSurfaceKind='{command.RouteCommand.SurfaceKind}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

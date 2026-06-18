@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Player participation exit permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actorIdentity.PlayerActorId}'.");
                 }
 
-                records.Add(new PlayerActorParticipationExitRecord(actorIdentity, exited: true));
+                records.Add(new PlayerActorParticipationExitRecord(actorIdentity, true));
             }
 
             return records;
@@ -170,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 participation.MarkActiveInActivity(activeIdentity);
-                records.Add(new PlayerActorParticipationEnterRecord(actorIdentity, entered: true));
+                records.Add(new PlayerActorParticipationEnterRecord(actorIdentity, true));
             }
 
             return records;
@@ -185,10 +185,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         private static bool IsRejected(PermissionOutcomeKind outcomeKind)
         {
             return outcomeKind == PermissionOutcomeKind.RejectedInvalidCommand ||
-                   outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
-                   outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
-                   outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
-                   outcomeKind == PermissionOutcomeKind.Failed;
+                outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
+                outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
+                outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
+                outcomeKind == PermissionOutcomeKind.Failed;
         }
 
         private static bool TryResolveHandle(ActivityPlayerActorRegistry registry, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
@@ -224,8 +224,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             if (!isRetainedAcrossActivity &&
                 (!string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
-                 identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
-                 identity.EntrySequence != activeIdentity.EntrySequence))
+                    identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
+                    identity.EntrySequence != activeIdentity.EntrySequence))
             {
                 throw new InvalidOperationException(
                     $"stale_or_foreign_player_actor_activity_context: playerActorId='{expected.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}' does not match bound identity context.");

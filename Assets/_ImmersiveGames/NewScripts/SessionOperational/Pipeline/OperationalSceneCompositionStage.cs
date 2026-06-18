@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsValid =>
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(ActiveSceneName);
-}
+    }
 
     // Etapa 2 (canonização Command/Result/Fact): removed local OperationalSceneCompositionStageResult wrapper.
     // Stage now returns the canonical OperationalSceneCompositionResult directly from Contracts.
@@ -99,5 +99,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneCompositionPort;
         }
-}
+    }
 }

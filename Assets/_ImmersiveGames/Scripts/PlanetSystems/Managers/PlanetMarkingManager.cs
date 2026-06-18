@@ -129,4 +129,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
         }
     }
 }
-

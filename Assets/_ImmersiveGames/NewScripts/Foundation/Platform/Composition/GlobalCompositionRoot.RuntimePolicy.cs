@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             {
                 if (!provider.TryGetGlobal<RuntimeModeConfig>(out var existingConfig) || existingConfig == null)
                 {
-                    provider.RegisterGlobal(config, allowOverride: false);
+                    provider.RegisterGlobal(config, false);
 
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                         $"[RuntimePolicy] RuntimeModeConfig carregado (asset='{config.name}').",
@@ -80,4 +80,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
     }
 }
-

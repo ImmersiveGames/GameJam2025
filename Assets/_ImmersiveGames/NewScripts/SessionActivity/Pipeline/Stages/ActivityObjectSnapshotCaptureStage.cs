@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(SnapshotSchemaId) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     internal readonly struct ActivityObjectSnapshotCaptureStageResult
     {
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public bool HasTransformPayload { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     internal static class ActivityObjectSnapshotCaptureStage
     {
@@ -115,8 +115,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     default,
-                    captureFailed: false,
-                    failureDetail: string.Empty,
+                    false,
+                    string.Empty,
                     definition.ActivityId,
                     entrySequence,
                     "ActivityObjectSnapshotCaptureStage",
@@ -156,12 +156,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='0'.");
                 return new ActivityObjectSnapshotCaptureStageResult(
-                    completed: true,
-                    identity: completedIdentity,
-                    capturedCount: 0,
-                    failedCount: 0,
-                    hasTransformPayload: false,
-                    reason: "no_discovery_result");
+                    true,
+                    completedIdentity,
+                    0,
+                    0,
+                    false,
+                    "no_discovery_result");
             }
 
             int capturedCount = 0;
@@ -390,8 +390,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     DebugUtility.Colors.Info);
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     payload,
-                    captureFailed: false,
-                    failureDetail: string.Empty,
+                    false,
+                    string.Empty,
                     definition.ActivityId,
                     entrySequence,
                     "ActivityObjectSnapshotCaptureStage",
@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 bool captureFailed = failedCount > 0;
                 string failureDetail = failedCount > 0
-                    ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : captureFailureDetail.TrimToEmpty())
+                    ? string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : captureFailureDetail.TrimToEmpty()
                     : string.Empty;
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     default,
@@ -437,12 +437,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");
 
             return new ActivityObjectSnapshotCaptureStageResult(
-                completed: true,
-                identity: captureIdentity,
-                capturedCount: capturedCount,
-                failedCount: failedCount,
-                hasTransformPayload: hasTransformPayload,
-                reason: failedCount > 0 ? "completed_with_failures" : "completed");
+                true,
+                captureIdentity,
+                capturedCount,
+                failedCount,
+                hasTransformPayload,
+                failedCount > 0 ? "completed_with_failures" : "completed");
         }
 
         private static string BuildOwnerKindsLabel(IReadOnlyList<ActivityCapabilitySnapshotRecord> records)
@@ -657,7 +657,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (result.IsCaptured)
             {
                 return result.Snapshot.IsValid &&
-                       string.Equals(result.Command.TargetId, result.Snapshot.TargetId, StringComparison.Ordinal);
+                    string.Equals(result.Command.TargetId, result.Snapshot.TargetId, StringComparison.Ordinal);
             }
 
             return true;
@@ -692,5 +692,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ? "local_transform"
                 : "world_transform";
         }
-}
+    }
 }

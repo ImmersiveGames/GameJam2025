@@ -49,13 +49,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public bool Equals(ActivityCapabilityPermissionReceiverIdentity other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                   EntrySequence == other.EntrySequence &&
-                   ActorId == other.ActorId &&
-                   ActorInstanceRuntimeId == other.ActorInstanceRuntimeId &&
-                   PlayerActorId == other.PlayerActorId &&
-                   PlayerSlotId == other.PlayerSlotId;
+                string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                EntrySequence == other.EntrySequence &&
+                ActorId == other.ActorId &&
+                ActorInstanceRuntimeId == other.ActorInstanceRuntimeId &&
+                PlayerActorId == other.PlayerActorId &&
+                PlayerSlotId == other.PlayerSlotId;
         }
 
         public override bool Equals(object obj)
@@ -80,5 +80,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', entrySequence='{EntrySequence}', actorId='{ActorId}', actorInstanceRuntimeId='{ActorInstanceRuntimeId}', playerActorId='{PlayerActorId}', playerSlotId='{PlayerSlotId}'";
         }
-}
+    }
 }

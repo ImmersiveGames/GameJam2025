@@ -37,14 +37,21 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Editor
                     }
                     EditorGUILayout.EndHorizontal();
 
-                    if (sensorConfig == null) continue;
+                    if (sensorConfig == null)
+                    {
+                        continue;
+                    }
                     EditorGUILayout.LabelField("DetectionType", sensorConfig.DetectionType != null ? sensorConfig.DetectionType.name : "⚠️ NONE");
 
                     if (sensorConfig.Radius <= 0)
+                    {
                         EditorGUILayout.HelpBox("⚠️ Raio do sensor é zero ou negativo!", MessageType.Warning);
+                    }
 
                     if (sensorConfig.TargetLayer == 0)
+                    {
                         EditorGUILayout.HelpBox("⚠️ Nenhuma Layer definida para detecção!", MessageType.Warning);
+                    }
                 }
             }
 

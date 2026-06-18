@@ -14,17 +14,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             IReadOnlyList<string> bootstrapDependencies)
             : this(
                 id,
-                installerEntry: string.Empty,
-                runtimeComposerEntry: string.Empty,
-                installerDependencies: installerDependencies,
-                bootstrapDependencies: bootstrapDependencies,
-                installer: installer,
-                bootstrap: bootstrap,
-                optional: false,
-                installerOnly: installer != null && bootstrap == null,
-                description: null)
-        {
-        }
+                string.Empty,
+                string.Empty,
+                installerDependencies,
+                bootstrapDependencies,
+                installer,
+                bootstrap,
+                false,
+                installer != null && bootstrap == null,
+                null) { }
 
         public CompositionPipelineStep(
             string id,
@@ -46,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             Installer = installer;
             Bootstrap = bootstrap;
             Optional = optional;
-            InstallerOnly = installerOnly || (installer != null && bootstrap == null);
+            InstallerOnly = installerOnly || installer != null && bootstrap == null;
             Description = description;
 
             if (!Optional && Installer == null && Bootstrap == null)
@@ -119,18 +117,18 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             var plan = ResolvePhasePlan(
                 steps,
-                phaseLabel: "Fase 1",
-                getDependencies: step => step.InstallerDependencies,
-                shouldSkip: step => step.IsOptionalSkip);
+                "Fase 1",
+                step => step.InstallerDependencies,
+                step => step.IsOptionalSkip);
 
             LogPhasePlan("Fase 1", plan);
 
             var summary = ExecutePhase(
                 plan,
                 runtimeModeConfig,
-                phaseLabel: "Fase 1",
-                phaseKind: CompositionPhase.Installer,
-                getAction: step => step.Installer);
+                "Fase 1",
+                CompositionPhase.Installer,
+                step => step.Installer);
 
             _installerPhaseCompleted = true;
             DebugUtility.LogVerbose(typeof(CompositionPipelineExecutor),
@@ -147,9 +145,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             var plan = ResolvePhasePlan(
                 steps,
-                phaseLabel: "Fase 2",
-                getDependencies: step => step.BootstrapDependencies,
-                shouldSkip: step => step.IsOptionalSkip);
+                "Fase 2",
+                step => step.BootstrapDependencies,
+                step => step.IsOptionalSkip);
 
             LogPhasePlan("Fase 2", plan);
 
@@ -160,9 +158,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 summary = ExecutePhase(
                     plan,
                     runtimeModeConfig,
-                    phaseLabel: "Fase 2",
-                    phaseKind: CompositionPhase.Bootstrap,
-                    getAction: step => step.Bootstrap);
+                    "Fase 2",
+                    CompositionPhase.Bootstrap,
+                    step => step.Bootstrap);
             }
             finally
             {
@@ -205,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             foreach (var step in plan.OrderedSteps)
             {
-                var action = getAction(step);
+                Action<RuntimeModeConfig> action = getAction(step);
                 if (action == null)
                 {
                     string skipReason = GetSkipReason(step, phaseKind);
@@ -273,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             var indexById = new Dictionary<string, int>(StringComparer.Ordinal);
-            var indegree = new int[activeSteps.Count];
+            int[] indegree = new int[activeSteps.Count];
             var outgoing = new List<int>[activeSteps.Count];
             for (int i = 0; i < activeSteps.Count; i++)
             {
@@ -292,7 +290,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             for (int i = 0; i < activeSteps.Count; i++)
             {
                 var step = activeSteps[i];
-                var dependencies = getDependencies(step);
+                IReadOnlyList<string> dependencies = getDependencies(step);
                 if (dependencies == null)
                 {
                     continue;
@@ -351,7 +349,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 available.Remove(nextIndex);
                 ordered.Add(activeSteps[nextIndex]);
 
-                var nextOutgoing = outgoing[nextIndex];
+                List<int> nextOutgoing = outgoing[nextIndex];
                 for (int i = 0; i < nextOutgoing.Count; i++)
                 {
                     int targetIndex = nextOutgoing[i];
@@ -443,7 +441,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private enum CompositionPhase
         {
             Installer,
-            Bootstrap,
+            Bootstrap
         }
 
         private sealed class CompositionPipelinePhasePlan
@@ -475,4 +473,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
-

@@ -57,5 +57,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}'.",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

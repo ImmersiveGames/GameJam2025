@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             slotKind != ActorPresentationSlotKind.Unknown &&
             !string.IsNullOrWhiteSpace(SlotId) &&
             requiredness != ActorPresentationRequiredness.Unknown;
-}
+    }
 
     [Serializable]
     public struct ActorPresentationSlotBinding
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             slotKind != ActorPresentationSlotKind.Unknown &&
             !string.IsNullOrWhiteSpace(SlotId) &&
             container != null;
-}
+    }
 
     public readonly struct ActorPresentationResolvedPlan
     {
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
 
             return false;
         }
-}
+    }
 
     public readonly struct ActorPresentationRuntimeHandle
     {
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             ResolvedPlan.IsValid &&
             PresentationInstance != null &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorPresentationMaterializationCommand
     {
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Reason { get; }
 
         public bool IsValid => ResolvedPlan.IsValid && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorPresentationReadyFact
     {
@@ -270,7 +270,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public bool IsValid =>
             RuntimeHandle.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorPresentationReleaseCommand
     {
@@ -290,7 +290,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Reason { get; }
 
         public bool IsValid => RuntimeHandle.IsValid && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorPresentationReleasedFact
     {
@@ -310,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Reason { get; }
 
         public bool IsValid => RuntimeHandle.ResolvedPlan.IsValid && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorPresentationResult
     {
@@ -355,8 +355,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
                 readyFact,
                 default,
                 default,
-                reasonCode: string.Empty,
-                message: message);
+                string.Empty,
+                message);
         }
 
         public static ActorPresentationResult Released(ActorPresentationReleasedFact releasedFact, string message)
@@ -366,8 +366,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
                 default,
                 releasedFact,
                 default,
-                reasonCode: string.Empty,
-                message: message);
+                string.Empty,
+                message);
         }
 
         public static ActorPresentationResult SkippedOptional(ActorPresentationResolvedPlan plan, string reasonCode, string message)
@@ -391,5 +391,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
                 reasonCode,
                 message);
         }
-}
+    }
 }

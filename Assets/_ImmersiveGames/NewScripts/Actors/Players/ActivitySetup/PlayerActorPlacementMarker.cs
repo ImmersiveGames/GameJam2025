@@ -12,5 +12,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public Vector3 Position => transform.position;
         public Quaternion Rotation => transform.rotation;
         public bool IsValid => !string.IsNullOrWhiteSpace(PlacementId);
-}
+    }
 }

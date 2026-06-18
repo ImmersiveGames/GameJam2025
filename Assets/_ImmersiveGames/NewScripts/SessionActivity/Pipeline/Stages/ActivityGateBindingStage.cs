@@ -66,11 +66,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{command.ActivityId}' gate binding skipped because no permission receiver contributions were discovered.");
                 return new ActivityEntryPermissionTargetPreparationResult(
-                    completed: true,
+                    true,
                     startedIdentity,
-                    receiverCount: 0,
-                    skipped: true,
-                    reason: "no_permission_receiver_contributions");
+                    0,
+                    true,
+                    "no_permission_receiver_contributions");
             }
 
             List<ActivityCapabilityPermissionReceiverReference> receivers = new(command.PermissionReceiverContributions.Count);
@@ -139,11 +139,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.ActivityId}' gate binding completed receivers='{receivers.Count}' registered='{command.RegisterReceivers}'.");
 
             return new ActivityEntryPermissionTargetPreparationResult(
-                completed: true,
+                true,
                 startedIdentity,
-                receiverCount: receivers.Count,
-                skipped: false,
-                reason: command.RegisterReceivers ? "receivers_registered" : "receivers_resolved");
+                receivers.Count,
+                false,
+                command.RegisterReceivers ? "receivers_registered" : "receivers_resolved");
         }
 
         private static SessionActivityIdentity BuildIdentity(
@@ -165,11 +165,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityCapabilityPermissionReceiverIdentity receiverIdentity)
         {
             return identity.IsValid &&
-                   receiverIdentity.IsValid &&
-                   string.Equals(identity.PipelineId, receiverIdentity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(identity.SessionId, receiverIdentity.SessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(identity.ActivityId, receiverIdentity.ActivityId, StringComparison.Ordinal) &&
-                   identity.EntrySequence == receiverIdentity.EntrySequence;
+                receiverIdentity.IsValid &&
+                string.Equals(identity.PipelineId, receiverIdentity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(identity.SessionId, receiverIdentity.SessionStateId, StringComparison.Ordinal) &&
+                string.Equals(identity.ActivityId, receiverIdentity.ActivityId, StringComparison.Ordinal) &&
+                identity.EntrySequence == receiverIdentity.EntrySequence;
         }
     }
 }

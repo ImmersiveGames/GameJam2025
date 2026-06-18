@@ -38,14 +38,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             EntrySequence > 0 &&
             InventoryFeed.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public enum ActorParticipationExitActorOutcome
     {
         Unknown = 0,
         Exited = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct ActorParticipationExitActorResult
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Instance.IsValid &&
             Participation.IsValid &&
             !string.IsNullOrWhiteSpace(ReasonCode);
-}
+    }
 
     public readonly struct ActorParticipationExitResult
     {
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && Total >= 0 && Exited >= 0 && Skipped >= 0 && Failed >= 0;
-}
+    }
 
     public sealed class ActorParticipationExitStageExecutor
     {
@@ -359,5 +359,5 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return false;
         }
-}
+    }
 }

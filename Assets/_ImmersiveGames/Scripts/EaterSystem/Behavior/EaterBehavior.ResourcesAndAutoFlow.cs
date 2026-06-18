@@ -128,7 +128,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             return paused;
         }
 
-         private bool TryEnsureAutoFlowBridge()
+        private bool TryEnsureAutoFlowBridge()
         {
             if (_autoFlowBridge != null)
             {
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                     ref _missingAutoFlowBridgeLogged);
 
 
-            return false;
+                return false;
             }
 
             if (!_autoFlowBridge.HasAutoFlowService)

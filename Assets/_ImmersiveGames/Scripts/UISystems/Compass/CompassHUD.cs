@@ -41,10 +41,10 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
 
         [Header("Performance & Responsividade")]
         [Tooltip("Intervalo em segundos entre atualizações da bússola.\n" +
-                 "Valores recomendados:\n" +
-                 "• 0.016 → 60 FPS (muito fluido)\n" +
-                 "• 0.033 → 30 FPS (equilíbrio)\n" +
-                 "• 0.066 → 15 FPS (leve, mas perceptível)")]
+            "Valores recomendados:\n" +
+            "• 0.016 → 60 FPS (muito fluido)\n" +
+            "• 0.033 → 30 FPS (equilíbrio)\n" +
+            "• 0.066 → 15 FPS (leve, mas perceptível)")]
         [Range(0.008f, 0.2f)]
         public float updateInterval = 0.016f; // ~60 FPS por padrão → super suave
 
@@ -84,10 +84,13 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
             State = AttributeCanvasInitializationState.Ready;
             InjectionState = DependencyInjectionState.Ready;
 
-            DebugUtility.Log<CompassHUD>($"CompassHUD registrado com sucesso (Update: {1f/updateInterval:F1} FPS)");
+            DebugUtility.Log<CompassHUD>($"CompassHUD registrado com sucesso (Update: {1f / updateInterval:F1} FPS)");
         }
 
-        public string GetObjectId() => CanvasId;
+        public string GetObjectId()
+        {
+            return CanvasId;
+        }
 
         private void OnDestroy()
         {
@@ -262,7 +265,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         {
             if (autoGenerateCanvasId)
             {
-                CanvasId = _idFactory?.GenerateId(gameObject, prefix: "CompassHUD") ?? gameObject.name;
+                CanvasId = _idFactory?.GenerateId(gameObject, "CompassHUD") ?? gameObject.name;
             }
             else
             {
@@ -302,8 +305,14 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
 
         // IAttributeCanvasBinder
         public void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data) { }
-        public bool CanAcceptBinds() => State == AttributeCanvasInitializationState.Ready;
-        public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots() => EmptyActorSlots;
+        public bool CanAcceptBinds()
+        {
+            return State == AttributeCanvasInitializationState.Ready;
+        }
+        public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots()
+        {
+            return EmptyActorSlots;
+        }
 
         private static bool TryResolveRuntimeService(out ICompassRuntimeService runtimeService)
         {
@@ -317,4 +326,3 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         }
     }
 }
-

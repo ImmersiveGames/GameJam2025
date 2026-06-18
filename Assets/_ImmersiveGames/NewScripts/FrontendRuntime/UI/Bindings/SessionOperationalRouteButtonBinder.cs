@@ -154,5 +154,5 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             resolvedRouteDefinition = routeDefinition;
             return true;
         }
-}
+    }
 }

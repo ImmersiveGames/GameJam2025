@@ -10,4 +10,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
         void Clear();
     }
 }
-

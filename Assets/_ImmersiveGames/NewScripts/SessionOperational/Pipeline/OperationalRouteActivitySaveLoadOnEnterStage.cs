@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalRouteActivitySaveLoadOnEnterCommand
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig != null &&
             RouteCommand.IsValid &&
             RouteActivitySavePlan.IsValid;
-}
+    }
 
     public readonly struct OperationalRouteActivitySaveLoadOnEnterResult
     {
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
         public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
         public bool IsCompleted => Kind == OperationalRouteActivitySaveLoadOnEnterResultKind.Completed;
-}
+    }
 
     public sealed class OperationalRouteActivitySaveLoadOnEnterStage
     {
@@ -269,5 +269,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return ownerIds.Count == 0 ? "<none>" : string.Join(",", ownerIds);
         }
-}
+    }
 }

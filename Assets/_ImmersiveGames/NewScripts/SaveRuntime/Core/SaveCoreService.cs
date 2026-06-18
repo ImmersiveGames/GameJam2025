@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Core
             }
 
             var identity = new SaveIdentity(profileId, address.SlotId);
-            if (!TryLoadByIdentity(identity, shouldUpdateCurrentState: ShouldUpdateCurrentState(address), out var record, out reason) || record == null)
+            if (!TryLoadByIdentity(identity, ShouldUpdateCurrentState(address), out var record, out reason) || record == null)
             {
                 result = new SaveResult(SaveResultKind.Failed, reason);
                 return false;
@@ -89,13 +89,13 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Core
 
             Dictionary<string, string> entries = BuildEntriesWithAddressMetadata(request, profileId);
             SaveRecord record = new(
-                identity: new SaveIdentity(profileId, request.Address.SlotId),
-                schemaVersion: request.Address.SchemaVersion,
-                revision: request.Revision,
-                savedAtUtc: request.SavedAtUtc,
-                entries: entries);
+                new SaveIdentity(profileId, request.Address.SlotId),
+                request.Address.SchemaVersion,
+                request.Revision,
+                request.SavedAtUtc,
+                entries);
 
-            bool saved = TrySaveRecord(record, shouldUpdateCurrentState: ShouldUpdateCurrentState(request.Address), out reason);
+            bool saved = TrySaveRecord(record, ShouldUpdateCurrentState(request.Address), out reason);
             result = saved
                 ? BuildResult(SaveResultKind.Saved, reason, record)
                 : new SaveResult(SaveResultKind.Failed, reason);

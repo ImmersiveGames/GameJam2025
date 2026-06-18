@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsValid =>
             Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryCommand
     {
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ResetIntent != ActivityResetIntent.Unknown &&
             StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public enum ActivityEntryPreparationResultKind
     {
@@ -100,9 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             bool prepared,
             SessionActivityIdentity identity,
             string reason)
-            : this(prepared ? ActivityEntryPreparationResultKind.Prepared : ActivityEntryPreparationResultKind.Failed, identity, reason)
-        {
-        }
+            : this(prepared ? ActivityEntryPreparationResultKind.Prepared : ActivityEntryPreparationResultKind.Failed, identity, reason) { }
 
         public ActivityEntryPreparationResult(
             ActivityEntryPreparationResultKind kind,
@@ -120,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Kind != ActivityEntryPreparationResultKind.Unknown && Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public enum ActivityEntrySetupReadinessResultKind
     {
@@ -162,17 +160,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 completed ? ActivityEntrySetupReadinessResultKind.Completed : ActivityEntrySetupReadinessResultKind.Failed,
                 identity,
                 reason,
-                ActivityObjectExitCorrelationBundle.Empty)
-        {
-        }
+                ActivityObjectExitCorrelationBundle.Empty) { }
 
         public ActivityEntrySetupReadinessResult(
             ActivityEntrySetupReadinessResultKind kind,
             SessionActivityIdentity identity,
             string reason)
-            : this(kind, identity, reason, ActivityObjectExitCorrelationBundle.Empty)
-        {
-        }
+            : this(kind, identity, reason, ActivityObjectExitCorrelationBundle.Empty) { }
 
         public ActivityEntrySetupReadinessResult(
             ActivityEntrySetupReadinessResultKind kind,
@@ -194,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityObjectExitCorrelationBundle ExitCorrelation { get; }
 
         public bool IsValid => Kind != ActivityEntrySetupReadinessResultKind.Unknown && Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActivityEntryContentLoadCommand
     {
@@ -247,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(ActiveIdentity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             ActiveIdentity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryContentLoadFailureCommand
     {
@@ -284,7 +278,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(ActiveIdentity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             ActiveIdentity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryContentLoadResult
     {
@@ -302,7 +296,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool PendingOperationIssued { get; }
         public string Reason { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActivityObjectSetupInventoryPlan
     {
@@ -335,7 +329,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryObjectSetupCommand
     {
@@ -401,7 +395,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryObjectSetupResult
     {
@@ -420,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActivityEntryObjectSnapshotRestorePayloadContext
     {
@@ -458,7 +452,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             PresentationSetupContributions != null &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryActorPresentationSetupResult
     {
@@ -492,7 +486,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActivityEntryActorAttributeSetupCommand
     {
@@ -525,7 +519,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ResetIntent != ActivityResetIntent.Unknown &&
             StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryActorAttributeSetupResult
     {
@@ -559,7 +553,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
 
     public readonly struct ActivityEntryActorParticipationEnterCommand
@@ -591,7 +585,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryActorParticipationEnterResult
     {
@@ -622,7 +616,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
 
     public readonly struct ActivityEntryPlayerInputBindingReference
@@ -648,7 +642,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
             ParticipantBinding.IsValid;
-}
+    }
 
     public readonly struct ActivityEntryPlayerInputBindingCommand
     {
@@ -682,7 +676,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.ActivityOrdinal == ActivityOrdinal &&
             ParticipantBindings != null &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryPlayerInputBindingResult
     {
@@ -713,7 +707,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
 
     public readonly struct ActivityEntryPermissionTargetPreparationCommand
@@ -725,9 +719,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             bool registerReceivers,
             string source,
             string reason)
-            : this(identity, activityId, activityOrdinal, requireReceivers: false, registerReceivers, Array.Empty<ActivityPermissionReceiverContribution>(), source, reason)
-        {
-        }
+            : this(identity, activityId, activityOrdinal, false, registerReceivers, Array.Empty<ActivityPermissionReceiverContribution>(), source, reason) { }
 
         public ActivityEntryPermissionTargetPreparationCommand(
             SessionActivityIdentity identity,
@@ -764,7 +756,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.ActivityId == ActivityId &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryPermissionTargetPreparationResult
     {
@@ -789,7 +781,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActivityEntryMovementBindingReference
     {
@@ -814,7 +806,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
             ParticipantBinding.IsValid;
-}
+    }
 
     public readonly struct ActivityEntryMovementBindingCommand
     {
@@ -848,7 +840,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.ActivityOrdinal == ActivityOrdinal &&
             ParticipantBindings != null &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryMovementBindingResult
     {
@@ -885,7 +877,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActivityEntryCameraBindingCommand
     {
@@ -919,7 +911,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.ActivityId == ActivityId &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryCameraBindingResult
     {
@@ -947,7 +939,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public interface IActivityEntryIdentityRuntimeBridge : IActivityEntryPipelineBoundary
     {
@@ -1005,9 +997,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         IActivityEntryIdentityRuntimeBridge,
         IActivityEntryFactRuntimeBridge,
         IActivityEntryContentPendingOperationRuntimeBridge,
-        IActivityEntryPreparationRuntimeBridge
-    {
-    }
+        IActivityEntryPreparationRuntimeBridge { }
 
     public interface IActivityEntryActorParticipationRuntimeBridge
     {
@@ -1015,9 +1005,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             ActorInstanceRecord instance);
     }
-
-
-
 
 
     public readonly struct ActivityParticipantBindingPlan
@@ -1048,7 +1035,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityEntryParticipantBindingCommand
     {
@@ -1089,7 +1076,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
             ParticipantBinding.IsValid;
-}
+    }
 
     public readonly struct ActivityEntryParticipantBindingResult
     {

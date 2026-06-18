@@ -99,40 +99,40 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         {
             ApplyMovementTransientStateProfile(
                 context,
-                movementProfileKind: nameof(ActivityResetStateProfileKind.InitialState),
-                movementProfileSource: "entry_initialize_transient_clear");
+                nameof(ActivityResetStateProfileKind.InitialState),
+                "entry_initialize_transient_clear");
         }
 
         public void ApplyRuntimeLocalReset(ActorResetContext context)
         {
             ApplyMovementTransientStateProfile(
                 context,
-                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
-                movementProfileSource: "runtime_local_transient_clear");
+                nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                "runtime_local_transient_clear");
         }
 
         public void ApplyRuntimeActivityReset(ActorResetContext context)
         {
             ApplyMovementTransientStateProfile(
                 context,
-                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                movementProfileSource: "runtime_activity_transient_clear");
+                nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                "runtime_activity_transient_clear");
         }
 
         public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
         {
             ApplyMovementTransientStateProfile(
                 context,
-                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
-                movementProfileSource: "runtime_activity_transition_transient_clear");
+                nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
+                "runtime_activity_transition_transient_clear");
         }
 
         public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
         {
             ApplyMovementTransientStateProfile(
                 context,
-                movementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
-                movementProfileSource: "runtime_route_transition_transient_clear");
+                nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
+                "runtime_route_transition_transient_clear");
         }
 
 
@@ -143,17 +143,19 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         {
             EnsureMovementResetContext(context, movementProfileKind);
 
-            Vector2 inputBefore = _moveInput;
-            Vector3 velocityBefore = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
-            Vector3 angularVelocityBefore = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
+            var inputBefore = _moveInput;
+            var velocityBefore = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
+            var angularVelocityBefore = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
             bool movementEnabledBefore = _movementEnabled;
 
             ClearMovementState();
 
-            Vector3 velocityAfter = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
-            Vector3 angularVelocityAfter = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
+            var velocityAfter = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
+            var angularVelocityAfter = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
 
-            DebugUtility.LogVerbose(typeof(PlayerMovementController), $"event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{_movementEnabled}' hasRigidbody='{(_rigidbody != null)}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
+            DebugUtility.LogVerbose(typeof(PlayerMovementController),
+                $"event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{_movementEnabled}' hasRigidbody='{_rigidbody != null}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info, this);
         }
 
         private static void EnsureMovementResetContext(ActorResetContext context, string operation)
@@ -174,8 +176,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
             if (command.CommandId != ActorCommandId.Move ||
                 command.Value.ValueKind != ActorCommandValueKind.Vector2 ||
-                (command.Value.TriggerKind != ActorCommandTriggerKind.Continuous &&
-                    command.Value.TriggerKind != ActorCommandTriggerKind.ValueChanged))
+                command.Value.TriggerKind != ActorCommandTriggerKind.Continuous &&
+                command.Value.TriggerKind != ActorCommandTriggerKind.ValueChanged)
             {
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(
                     $"movement_endpoint_has_no_sink_for_command='{command.CommandId}' valueKind='{command.Value.ValueKind}' trigger='{command.Value.TriggerKind}'.");
@@ -198,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            Vector2 input = _moveInput;
+            var input = _moveInput;
             if (input == Vector2.zero)
             {
                 HaltHorizontalVelocity();
@@ -236,8 +238,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
             if (_rigidbody != null)
             {
-                Vector3 current = _rigidbody.linearVelocity;
-                Vector3 target = direction * moveSpeed;
+                var current = _rigidbody.linearVelocity;
+                var target = direction * moveSpeed;
                 _rigidbody.linearVelocity = new Vector3(target.x, current.y, target.z);
                 return;
             }
@@ -252,7 +254,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
         }
 
@@ -263,7 +265,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            Vector3 current = _rigidbody.linearVelocity;
+            var current = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
             _rigidbody.angularVelocity = Vector3.zero;
         }

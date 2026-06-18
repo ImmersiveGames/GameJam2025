@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
@@ -27,13 +28,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void ExecuteInstallerPipeline(RuntimeModeConfig runtimeModeConfig)
         {
-            var steps = GetCompositionPipelineSteps(runtimeModeConfig);
+            IReadOnlyList<CompositionPipelineStep> steps = GetCompositionPipelineSteps(runtimeModeConfig);
             CompositionPipelineExecutor.ExecuteInstallers(steps, runtimeModeConfig);
         }
 
         private static void ExecuteBootstrapPipeline(RuntimeModeConfig runtimeModeConfig)
         {
-            var steps = GetCompositionPipelineSteps(runtimeModeConfig);
+            IReadOnlyList<CompositionPipelineStep> steps = GetCompositionPipelineSteps(runtimeModeConfig);
             CompositionPipelineExecutor.ExecuteBootstraps(steps, runtimeModeConfig);
         }
 
@@ -50,9 +51,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             RegisterIfMissing<IPoolService>(
                 () => new PoolService(),
-                alreadyRegisteredMessage: "[BOOT][Pooling] IPoolService already registered in global DI.",
-                registeredMessage: "[BOOT][Pooling] Registered IPoolService in global DI (Package B).");
+                "[BOOT][Pooling] IPoolService already registered in global DI.",
+                "[BOOT][Pooling] Registered IPoolService in global DI (Package B).");
         }
     }
 }
-

@@ -49,9 +49,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
             var composer = new CameraPresentationRuntimeComposer();
 
             if (!composer.TryCompose(
-                    registry,
-                    out var result,
-                    out string reason))
+                registry,
+                out var result,
+                out string reason))
             {
                 throw new InvalidOperationException(
                     $"[FATAL][CameraPresentation][Composer] compose failed reason='{reason}' resultReason='{result?.Reason}' directorRegistered='{result?.DirectorRegistered}' preparationExecutorRegistered='{result?.PreparationExecutorRegistered}' routeDirectorRegistered='{result?.RouteDirectorRegistered}' routePreparationExecutorRegistered='{result?.RoutePreparationExecutorRegistered}'.");

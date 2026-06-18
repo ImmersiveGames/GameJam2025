@@ -53,5 +53,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             Identity.IsValid &&
             ReceiverId.IsValid &&
             Receiver != null;
-}
+    }
 }

@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Accepted = 1,
         Completed = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     internal readonly struct OperationalRouteCompletionCommand
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     internal readonly struct OperationalRouteCompletionResult
     {
@@ -66,12 +66,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsAccepted => Kind == OperationalRouteCompletionResultKind.Accepted;
         public bool IsCompleted => Kind == OperationalRouteCompletionResultKind.Completed;
 
-        public static OperationalRouteCompletionResult Accepted(string reason) =>
-            new(OperationalRouteCompletionResultKind.Accepted, reason, string.Empty, default, default);
+        public static OperationalRouteCompletionResult Accepted(string reason)
+        {
+            return new OperationalRouteCompletionResult(OperationalRouteCompletionResultKind.Accepted, reason, string.Empty, default, default);
+        }
 
-        public static OperationalRouteCompletionResult Failed(string reason, string detail) =>
-            new(OperationalRouteCompletionResultKind.Failed, reason, detail, default, default);
-}
+        public static OperationalRouteCompletionResult Failed(string reason, string detail)
+        {
+            return new OperationalRouteCompletionResult(OperationalRouteCompletionResultKind.Failed, reason, detail, default, default);
+        }
+    }
 
     internal sealed class OperationalRouteCompletionStage
     {
@@ -196,5 +200,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             ActiveSceneKey != null &&
             RouteOwnedLoadedSceneKeys != null;
-}
+    }
 }

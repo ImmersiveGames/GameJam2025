@@ -25,7 +25,10 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 
         public event Action<Animator> OnAnimatorChanged;
 
-        public Animator GetAnimator() => _cachedAnimator ??= ResolveAnimator();
+        public Animator GetAnimator()
+        {
+            return _cachedAnimator ??= ResolveAnimator();
+        }
 
         private void Awake()
         {
@@ -182,4 +185,3 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
         }
     }
 }
-

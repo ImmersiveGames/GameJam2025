@@ -30,8 +30,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
             for (int index = 0; index < bindingRequests.Count; index++)
             {
-                ActorAttributeUiBindingRequestAuthoringEntry bindingRequest = bindingRequests[index];
-                if (!TryBuildEntry(bindingRequest, index, out ActorAttributeUiBindingRequestEntry request))
+                var bindingRequest = bindingRequests[index];
+                if (!TryBuildEntry(bindingRequest, index, out var request))
                 {
                     rejectedCount += 1;
                     continue;
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                     return false;
             }
 
-            ActorAttributeUiBindingRequest runtimeRequest = new ActorAttributeUiBindingRequest(selector, bindingRequest.AttributeId);
+            var runtimeRequest = new ActorAttributeUiBindingRequest(selector, bindingRequest.AttributeId);
             request = new ActorAttributeUiBindingRequestEntry(runtimeRequest, bindingRequest.ImageFillSink);
 
             DebugUtility.LogVerbose(
@@ -148,5 +148,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 typeof(SceneActorAttributeUiBindingRequestProvider),
                 $"event='ActorAttributeUiSceneRequestProviderEntryRejected' provider='{name}' scene='{gameObject.scene.name}' entryIndex='{index}' selectorKind='{selectorKind.TrimToEmpty()}' attributeId='{attributeId.TrimToEmpty()}' sinkType='{sinkType.TrimToEmpty()}' failureReason='{reason.TrimToEmpty()}'");
         }
-}
+    }
 }

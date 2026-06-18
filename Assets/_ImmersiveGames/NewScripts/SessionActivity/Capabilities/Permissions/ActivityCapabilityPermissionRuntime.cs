@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                     continue;
                 }
 
-                ActivityCapabilityPermissionReceiverId receiverId = reference.ReceiverId;
+                var receiverId = reference.ReceiverId;
                 if (!receiverId.IsValid || _receivers.ContainsKey(receiverId))
                 {
                     continue;
@@ -133,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 command.PermissionId,
                 command.Scope,
                 command.State,
-                receiverId: ActivityCapabilityPermissionReceiverId.RuntimeUnbound,
+                ActivityCapabilityPermissionReceiverId.RuntimeUnbound,
                 command.ActorId,
                 command.ActorInstanceRuntimeId,
                 command.PlayerActorId,
@@ -167,7 +167,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
         private static void LogOutcome(string eventName, ActivityCapabilityPermissionFact fact)
         {
-            string message = $"event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='{ActivityCapabilityPermissionReceiverId.RuntimeUnbound}' actorId='{fact.Command.ActorId}' actorInstanceRuntimeId='{fact.Command.ActorInstanceRuntimeId}' playerActorId='{fact.Command.PlayerActorId}' playerSlotId='{fact.Command.PlayerSlotId}' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'";
+            string message =
+                $"event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='{ActivityCapabilityPermissionReceiverId.RuntimeUnbound}' actorId='{fact.Command.ActorId}' actorInstanceRuntimeId='{fact.Command.ActorInstanceRuntimeId}' playerActorId='{fact.Command.PlayerActorId}' playerSlotId='{fact.Command.PlayerSlotId}' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'";
 
             if (string.Equals(eventName, "ActivityCapabilityPermissionApplied", StringComparison.Ordinal))
             {
@@ -200,9 +201,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         private bool MatchesActiveIdentity(ActivityCapabilityPermissionCommand command)
         {
             return string.Equals(command.PipelineId, _activePipelineId, StringComparison.Ordinal) &&
-                   string.Equals(command.SessionStateId, _activeSessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(command.ActivityId, _activeActivityId, StringComparison.Ordinal) &&
-                   command.EntrySequence == _activeEntrySequence;
+                string.Equals(command.SessionStateId, _activeSessionStateId, StringComparison.Ordinal) &&
+                string.Equals(command.ActivityId, _activeActivityId, StringComparison.Ordinal) &&
+                command.EntrySequence == _activeEntrySequence;
         }
 
         private IReadOnlyList<ActivityCapabilityPermissionBinding> BuildBindingsSnapshot()
@@ -220,7 +221,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             return list;
         }
-private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermissionCommand command)
+        private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermissionCommand command)
         {
             return command is { State: ActivityCapabilityPermissionState.Allowed, PermissionId: ActivityCapabilityPermissionId.ActivityGameplayControl };
         }
@@ -228,10 +229,10 @@ private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermi
         private bool MatchesActiveIdentity(ActivityCapabilityPermissionReceiverIdentity identity)
         {
             return identity.IsValid &&
-                   string.Equals(identity.PipelineId, _activePipelineId, StringComparison.Ordinal) &&
-                   string.Equals(identity.SessionStateId, _activeSessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(identity.ActivityId, _activeActivityId, StringComparison.Ordinal) &&
-                   identity.EntrySequence == _activeEntrySequence;
+                string.Equals(identity.PipelineId, _activePipelineId, StringComparison.Ordinal) &&
+                string.Equals(identity.SessionStateId, _activeSessionStateId, StringComparison.Ordinal) &&
+                string.Equals(identity.ActivityId, _activeActivityId, StringComparison.Ordinal) &&
+                identity.EntrySequence == _activeEntrySequence;
         }
 
         private readonly struct PermissionKey : IEquatable<PermissionKey>
@@ -261,8 +262,8 @@ private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermi
             public bool Equals(PermissionKey other)
             {
                 return PermissionId == other.PermissionId &&
-                       Scope == other.Scope &&
-                       ActorInstanceRuntimeId == other.ActorInstanceRuntimeId;
+                    Scope == other.Scope &&
+                    ActorInstanceRuntimeId == other.ActorInstanceRuntimeId;
             }
 
             public override bool Equals(object obj)

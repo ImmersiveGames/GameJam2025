@@ -68,11 +68,15 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             }
         }
 
-        public bool HasLink(string actorId, RuntimeAttributeType src) =>
-            _links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.ContainsKey(src);
+        public bool HasLink(string actorId, RuntimeAttributeType src)
+        {
+            return _links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.ContainsKey(src);
+        }
 
-        public RuntimeAttributeLinkConfig GetLink(string actorId, RuntimeAttributeType src) =>
-            _links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.TryGetValue(src, out var cfg) ? cfg : null;
+        public RuntimeAttributeLinkConfig GetLink(string actorId, RuntimeAttributeType src)
+        {
+            return _links.TryGetValue(actorId, out Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig> dict) && dict.TryGetValue(src, out var cfg) ? cfg : null;
+        }
 
         public float ProcessLinkedDrain(string actorId, RuntimeAttributeType type, float desired, RuntimeAttributeContext sys, RuntimeAttributeChangeSource source = RuntimeAttributeChangeSource.Manual)
         {
@@ -141,4 +145,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
     }
 }
-

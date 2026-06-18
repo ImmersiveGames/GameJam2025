@@ -106,7 +106,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationEnterSkipped);
                     factBridge.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterSkipped, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='{actorResult.ReasonCode}'.");
                     factBridge.EmitSnapshot(snapshots, "actor_participation_enter_skipped", command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+                    DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage),
+                        $"event='ActorParticipationEnterSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' skipKind='{actorResult.SkipKind}' skipReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Warning);
                     continue;
                 }
 
@@ -116,7 +118,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationEnterFailed);
                     factBridge.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation failed actorId='{instance.ActorId}' actorRole='{instance.Role}' reason='{actorResult.ReasonCode}'.");
                     factBridge.EmitSnapshot(snapshots, "actor_participation_enter_failed", command.Source, command.Reason, $"'{command.ActivityId}' actor participation failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
-                    DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterFailed' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{actorResult.SkipKind}' failureReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Error);
+                    DebugUtility.Log(typeof(ActivityEntryActorParticipationStage),
+                        $"event='ActorParticipationEnterFailed' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' failureKind='{actorResult.SkipKind}' failureReason='{actorResult.ReasonCode}' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Error);
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorParticipationStage][ActorParticipationEnter] readiness failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
                 }
 
@@ -133,11 +137,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 runtimeState.StoreActiveActorParticipation(actorInstanceRuntimeId, command.ActivityId, entrySequence, "ActivityEntryActorParticipationStage", "store_active_actor_participation");
                 factBridge.EmitFact(facts, SessionActivityFactKind.ActorParticipationEntered, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation entered actorId='{instance.ActorId}' actorRole='{instance.Role}' actorScope='{instance.Scope}'.");
                 factBridge.EmitSnapshot(snapshots, "actor_participation_entered", command.Source, command.Reason, $"'{command.ActivityId}' actor participation entered actorId='{instance.ActorId}'.");
-                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEntered' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage),
+                    $"event='ActorParticipationEntered' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
                 factBridge.EmitFact(facts, SessionActivityFactKind.ActorReady, startedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor ready actorId='{instance.ActorId}' actorRole='{instance.Role}'.");
                 factBridge.EmitSnapshot(snapshots, "actor_ready", command.Source, command.Reason, $"'{command.ActivityId}' actor ready actorId='{instance.ActorId}'.");
-                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorReady' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                DebugUtility.Log(typeof(ActivityEntryActorParticipationStage),
+                    $"event='ActorReady' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
             }
 
             if (entered == 0)
@@ -147,7 +153,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorParticipationEnterSkipped);
                 factBridge.EmitFact(facts, SessionActivityFactKind.ActorParticipationEnterSkipped, skippedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped reason='no_entered_actors'.");
                 factBridge.EmitSnapshot(snapshots, "actor_participation_enter_skipped", command.Source, command.Reason, $"'{command.ActivityId}' actor participation skipped reason='no_entered_actors'.");
-                DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_entered_actors' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Warning);
+                DebugUtility.LogVerbose(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' actorId='<none>' actorInstanceRuntimeId='<none>' skipKind='aggregate' skipReason='no_entered_actors' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
             }
 
             var completedIdentity = BuildIdentity(command.Identity, SessionActivityStage.ActorParticipationEnterCompleted, command.Source);
@@ -156,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             factBridge.EmitSnapshot(snapshots, "actor_participation_enter_completed", command.Source, command.Reason, $"'{command.ActivityId}' actor participation enter completed total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}'.");
             DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"event='ActorParticipationEnterCompleted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryActorParticipationStage' entryPipelineOwner='ActivityEntryPipeline' total='{total}' entered='{entered}' skipped='{skipped}' failed='{failed}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
             return new ActivityEntryActorParticipationEnterResult(
-                completed: true,
+                true,
                 completedIdentity,
                 total,
                 entered,
@@ -183,12 +190,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
         {
             return left.IsValid &&
-                   right.IsValid &&
-                   string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
-                   left.ActivityOrdinal == right.ActivityOrdinal &&
-                   left.EntrySequence == right.EntrySequence;
+                right.IsValid &&
+                string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
+                string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
+                left.ActivityOrdinal == right.ActivityOrdinal &&
+                left.EntrySequence == right.EntrySequence;
         }
     }
 }

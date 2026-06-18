@@ -33,8 +33,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             string local = targetId.TrimToEmpty();
             string requested = requestedTargetId.TrimToEmpty();
             return !string.IsNullOrWhiteSpace(local) &&
-                   !string.IsNullOrWhiteSpace(requested) &&
-                   string.Equals(local, requested, StringComparison.Ordinal);
+                !string.IsNullOrWhiteSpace(requested) &&
+                string.Equals(local, requested, StringComparison.Ordinal);
         }
 
         public ActivityObjectSnapshotCaptureResult CaptureSnapshot(ActivityObjectSnapshotCaptureCommand command)
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 ActivityObjectSnapshotCaptureResultKind.Captured,
                 command,
                 snapshot,
-                hasTransformPayload: true,
+                true,
                 command.Source,
                 command.Reason,
                 $"captured_transform targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' providerPath='{BuildTransformPath(transform)}' targetTransformPath='{BuildTransformPath(targetTransform)}' coordinateSpace='world_transform' capturedPosition='({position.x:0.###},{position.y:0.###},{position.z:0.###})' position='{position}' rotation='{rotation}' scale='{scale}'");
@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         {
             targetId = targetId.TrimToEmpty();
         }
-private static string BuildTransformPath(Transform current)
+        private static string BuildTransformPath(Transform current)
         {
             if (current == null)
             {

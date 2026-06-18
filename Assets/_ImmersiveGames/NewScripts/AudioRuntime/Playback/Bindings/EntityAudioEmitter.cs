@@ -63,12 +63,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
 
         public AudioPlaybackContext CreateLocalContext(string reason = null)
         {
-            return CreateContext(useSpatial: true, reason);
+            return CreateContext(true, reason);
         }
 
         public AudioPlaybackContext CreateGlobalContext(string reason = null)
         {
-            return CreateContext(useSpatial: false, reason);
+            return CreateContext(false, reason);
         }
 
         public AudioPlaybackContext ApplyEmitterDefaults(AudioPlaybackContext context)
@@ -106,16 +106,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
             {
                 var anchor = ResolveSpatialAnchor();
                 return AudioPlaybackContext.Spatial(
-                    worldPosition: anchor.position,
-                    followTarget: anchor,
-                    reason: reason,
-                    volumeScale: 1f,
-                    voiceProfile: null);
+                    anchor.position,
+                    anchor,
+                    reason,
+                    1f,
+                    null);
             }
 
             return AudioPlaybackContext.Global(
-                reason: reason,
-                volumeScale: 1f);
+                reason,
+                1f);
         }
 
         private bool TryPreparePlayback(
@@ -180,4 +180,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
         }
     }
 }
-

@@ -57,7 +57,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         [SerializeField] private SoundData hitSound;
         [SerializeField] private SoundData deathSound;
         [SerializeField] private SoundData reviveSound;*/
-
         [Inject] private IGameManager _gameManager;
 
         private void Awake()
@@ -216,7 +215,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             }
         }
 
-        public string GetReceiverId() => _receiverId;
+        public string GetReceiverId()
+        {
+            return _receiverId;
+        }
 
         public void UndoLastDamage()
         {
@@ -310,7 +312,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }*/
 
-            var soundFlags = GetSoundFlags();
+            (bool hasHit, bool hasDeath, bool hasRevive)? soundFlags = GetSoundFlags();
 
             //PlayHitSoundIfApplicable(notification, soundFlags);
 
@@ -356,14 +358,14 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             {
                 if (flags.hasDeath)
                 {
-                   // audioEmitter.Play(deathSound, deathCtx);
+                    // audioEmitter.Play(deathSound, deathCtx);
                 }
 
                 ExecuteDeathReturn();
             }
             else if (flags.hasRevive)
             {
-               // audioEmitter.Play(reviveSound, deathCtx);
+                // audioEmitter.Play(reviveSound, deathCtx);
             }
         }
 
@@ -470,4 +472,3 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
     }
 }
-

@@ -3,7 +3,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
     public enum ActivityCapabilityPermissionId
     {
         Unknown = 0,
-        ActivityGameplayControl = 1,
+        ActivityGameplayControl = 1
     }
 
     public static class ActivityCapabilityPermissionIds
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             return permissionId switch
             {
                 ActivityCapabilityPermissionId.ActivityGameplayControl => ActivityGameplayControl,
-                _ => string.Empty,
+                _ => string.Empty
             };
         }
     }

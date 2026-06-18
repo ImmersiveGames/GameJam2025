@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         NotConfigured = 1,
         AcceptedNoSpawn = 2,
         Spawned = 3,
-        Failed = 4,
+        Failed = 4
     }
 
     public readonly struct ActorProjectileSpawnAdapterResult
@@ -57,10 +57,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             return new ActorProjectileSpawnAdapterResult(
                 ActorProjectileSpawnAdapterResultKind.NotConfigured,
                 command,
-                spawnExecuted: false,
-                poolCalled: false,
-                spawnedInstance: null,
-                spawnedActor: null,
+                false,
+                false,
+                null,
+                null,
                 reason,
                 message);
         }
@@ -73,10 +73,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             return new ActorProjectileSpawnAdapterResult(
                 ActorProjectileSpawnAdapterResultKind.AcceptedNoSpawn,
                 command,
-                spawnExecuted: false,
-                poolCalled: false,
-                spawnedInstance: null,
-                spawnedActor: null,
+                false,
+                false,
+                null,
+                null,
                 reason,
                 message);
         }
@@ -91,8 +91,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             return new ActorProjectileSpawnAdapterResult(
                 ActorProjectileSpawnAdapterResultKind.Spawned,
                 command,
-                spawnExecuted: true,
-                poolCalled: true,
+                true,
+                true,
                 spawnedInstance,
                 spawnedActor,
                 reason,
@@ -106,9 +106,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         {
             return Failed(
                 command,
-                poolCalled: false,
-                spawnedInstance: null,
-                spawnedActor: null,
+                false,
+                null,
+                null,
                 reason,
                 message);
         }
@@ -124,14 +124,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             return new ActorProjectileSpawnAdapterResult(
                 ActorProjectileSpawnAdapterResultKind.Failed,
                 command,
-                spawnExecuted: false,
-                poolCalled: poolCalled,
-                spawnedInstance: spawnedInstance,
-                spawnedActor: spawnedActor,
+                false,
+                poolCalled,
+                spawnedInstance,
+                spawnedActor,
                 reason,
                 message);
         }
-}
+    }
 
     public interface IActorProjectileSpawnAdapter
     {

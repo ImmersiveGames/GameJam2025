@@ -45,5 +45,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             return string.Compare(left.ScannerId, right.ScannerId, StringComparison.Ordinal);
         }
-}
+    }
 }

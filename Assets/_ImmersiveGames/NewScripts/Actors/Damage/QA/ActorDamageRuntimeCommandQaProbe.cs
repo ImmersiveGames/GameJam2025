@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
         [ContextMenu("QA/Damage/Apply Damage Sequence To Depleted")]
         public void QaApplyDamageSequenceToDepleted()
         {
-            SessionActivityHost resolvedHost = RequireHost();
+            var resolvedHost = RequireHost();
             string normalizedActorId = targetActorId.TrimToEmpty();
             int appliedCount = 0;
             int rejectedCount = 0;
@@ -102,5 +102,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
                 typeof(ActorDamageRuntimeCommandQaProbe),
                 $"event='ActorDamageQaProbeReset' sourceActorId='{sourceActorId.TrimToEmpty()}' targetActorId='{targetActorId.TrimToEmpty()}' damageAmount='{damageAmount:0.###}' damageSequenceStepCount='{damageSequenceStepCount}' reason='component_reset_defaults'.");
         }
-}
+    }
 }

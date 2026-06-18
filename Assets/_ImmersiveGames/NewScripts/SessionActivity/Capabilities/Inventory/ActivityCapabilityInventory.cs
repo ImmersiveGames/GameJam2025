@@ -87,5 +87,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"id='{Id}', owners='{OwnerCount}', capabilities='{CapabilityCount}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 }

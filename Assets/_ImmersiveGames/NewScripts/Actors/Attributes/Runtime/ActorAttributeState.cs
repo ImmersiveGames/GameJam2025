@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             }
 
             var copy = new ActorAttributeThresholdDefinition[thresholdDefinitions.Count];
-            for (var i = 0; i < thresholdDefinitions.Count; i++)
+            for (int i = 0; i < thresholdDefinitions.Count; i++)
             {
                 copy[i] = thresholdDefinitions[i];
             }

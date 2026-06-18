@@ -58,16 +58,46 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 return false;
             }
 
-            if (!TryValidateActionReference(uiActionsAsset, uiPoint, "uiPoint", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiLeftClick, "uiLeftClick", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiRightClick, "uiRightClick", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiMiddleClick, "uiMiddleClick", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiScrollWheel, "uiScrollWheel", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiMove, "uiMove", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiSubmit, "uiSubmit", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiCancel, "uiCancel", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiTrackedDevicePosition, "uiTrackedDevicePosition", out errorMessage)) return false;
-            if (!TryValidateActionReference(uiActionsAsset, uiTrackedDeviceOrientation, "uiTrackedDeviceOrientation", out errorMessage)) return false;
+            if (!TryValidateActionReference(uiActionsAsset, uiPoint, "uiPoint", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiLeftClick, "uiLeftClick", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiRightClick, "uiRightClick", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiMiddleClick, "uiMiddleClick", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiScrollWheel, "uiScrollWheel", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiMove, "uiMove", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiSubmit, "uiSubmit", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiCancel, "uiCancel", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiTrackedDevicePosition, "uiTrackedDevicePosition", out errorMessage))
+            {
+                return false;
+            }
+            if (!TryValidateActionReference(uiActionsAsset, uiTrackedDeviceOrientation, "uiTrackedDeviceOrientation", out errorMessage))
+            {
+                return false;
+            }
 
             errorMessage = string.Empty;
             return true;
@@ -101,5 +131,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             errorMessage = string.Empty;
             return true;
         }
-}
+    }
 }

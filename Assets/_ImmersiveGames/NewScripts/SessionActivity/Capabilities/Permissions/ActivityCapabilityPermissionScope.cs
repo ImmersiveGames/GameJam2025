@@ -5,6 +5,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         Unknown = 0,
         Session = 1,
         Activity = 2,
-        Actor = 3,
+        Actor = 3
     }
 }

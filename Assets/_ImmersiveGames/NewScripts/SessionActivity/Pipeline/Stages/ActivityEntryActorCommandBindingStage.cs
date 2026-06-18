@@ -39,13 +39,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorCommandBindingSkippedNoRequiredCapability);
                 return new ActorCommandBindingResult(
                     skippedIdentity,
-                    totalRequirements: 0,
-                    requiredRequirements: 0,
-                    requiredBoundCount: 0,
-                    totalBoundCount: 0,
-                    skippedCount: 0,
-                    skipped: true,
-                    reason: "no_actor_command_requirements");
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    true,
+                    "no_actor_command_requirements");
             }
 
             IReadOnlyList<ActorCommandBindingRecord> records = adapter.Execute(command, command.PipelineIdentity, registry);
@@ -103,9 +103,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 requiredCount,
                 requiredBoundCount,
                 totalBoundCount,
-                skippedCount: skippedCount,
-                skipped: skippedCount > 0,
-                reason: "resolved");
+                skippedCount,
+                skippedCount > 0,
+                "resolved");
         }
 
         private static SessionActivityIdentity BuildIdentity(

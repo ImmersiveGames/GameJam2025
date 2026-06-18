@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalHandoffExitCommand
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct OperationalHandoffExitResult
     {
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsSkipped => Kind == OperationalHandoffExitResultKind.Skipped;
         public bool IsFailed => Kind == OperationalHandoffExitResultKind.Failed;
         public bool IsAccepted => IsCompleted || IsSkipped;
-}
+    }
 
     public sealed class RouteRequestBlockedByOperationalHandoffException : Exception
     {
@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public string BlockedReason { get; }
         public string BlockedDetail { get; }
-}
+    }
 
     public sealed class OperationalHandoffExitStage
     {
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             var handoffExitPort = ResolveHandoffExitPortOrFail();
-            OperationalRouteHandoffExitPreflightResult result = handoffExitPort.EvaluatePreflight(new OperationalRouteHandoffExitPreflightRequest(
+            var result = handoffExitPort.EvaluatePreflight(new OperationalRouteHandoffExitPreflightRequest(
                 routeIdentity,
                 previousRouteIdentity,
                 handoffIdentity,
@@ -170,7 +170,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var routeCommand = command.RouteCommand;
             if (!ShouldRequireOperationalRouteHandoffExit(command))
             {
-                string skippedMsg = $"OperationalHandoffExitSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' skipReason='not_required' source='{command.Source}' reason='{command.Reason}'.";
+                string skippedMsg =
+                    $"OperationalHandoffExitSkipped routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' skipReason='not_required' source='{command.Source}' reason='{command.Reason}'.";
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.HandoffExit, command.Source, command.Reason, skippedMsg, typeof(OperationalHandoffExitStage), DebugUtility.Colors.Info);
 
                 return new OperationalHandoffExitResult(
@@ -216,7 +217,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (exitResult.IsCompleted)
             {
-                string completedMsg = $"OperationalHandoffExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' exitResult='{exitResult}' source='{command.Source}' reason='{command.Reason}'.";
+                string completedMsg =
+                    $"OperationalHandoffExitCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' exitResult='{exitResult}' source='{command.Source}' reason='{command.Reason}'.";
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.HandoffExit, command.Source, command.Reason, completedMsg, typeof(OperationalHandoffExitStage), DebugUtility.Colors.Success);
 
                 return new OperationalHandoffExitResult(

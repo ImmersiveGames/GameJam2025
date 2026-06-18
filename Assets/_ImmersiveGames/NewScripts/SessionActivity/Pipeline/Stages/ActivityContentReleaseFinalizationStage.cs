@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             !string.IsNullOrWhiteSpace(CompletionKind) &&
             !string.IsNullOrWhiteSpace(Status) &&
             !string.IsNullOrWhiteSpace(ContinuationKind);
-}
+    }
 
     internal readonly struct ActivityContentReleaseFinalizationStageResult
     {
@@ -158,8 +158,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 completedIdentity,
                 command.Source,
                 command.Reason,
-                completed: true,
-                detail: $"phase='dematerialization' scenes='{command.ReleasedSceneCount}' status='{command.Status}' skippedNoContent='{ToLowerInvariant(command.SkippedNoContent)}'");
+                true,
+                $"phase='dematerialization' scenes='{command.ReleasedSceneCount}' status='{command.Status}' skippedNoContent='{ToLowerInvariant(command.SkippedNoContent)}'");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_content_release_completed",
@@ -168,10 +168,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
 
             return new ActivityContentReleaseFinalizationStageResult(
-                completed: true,
-                identity: completedIdentity,
-                continuationKind: command.ContinuationKind,
-                reason: "finalized");
+                true,
+                completedIdentity,
+                command.ContinuationKind,
+                "finalized");
         }
 
         private static SessionActivityIdentity BuildIdentity(

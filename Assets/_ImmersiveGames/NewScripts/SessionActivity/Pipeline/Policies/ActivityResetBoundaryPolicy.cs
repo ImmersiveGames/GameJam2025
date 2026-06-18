@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 ActivityResetBoundaryKind.Activity => ActivityResetTargetScope.CurrentActivity,
                 ActivityResetBoundaryKind.ActivityTransition => ActivityResetTargetScope.CurrentActivity,
                 ActivityResetBoundaryKind.RouteTransition => ActivityResetTargetScope.CurrentRoute,
-                _ => ActivityResetTargetScope.Unknown,
+                _ => ActivityResetTargetScope.Unknown
             };
         }
 
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 ActivityResetBoundaryKind.Activity => "activity_boundary_eligibility_policy_resolved",
                 ActivityResetBoundaryKind.ActivityTransition => "activity_transition_boundary_eligibility_policy_resolved",
                 ActivityResetBoundaryKind.RouteTransition => "route_transition_boundary_eligibility_policy_resolved",
-                _ => "unknown_boundary_eligibility_policy_rejected",
+                _ => "unknown_boundary_eligibility_policy_rejected"
             };
         }
 
@@ -90,9 +90,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 return true;
             }
 
-            ActivityResetBoundaryEligibility requiredEligibility = ResolveEligibility(resetScopePlan.BoundaryKind);
+            var requiredEligibility = ResolveEligibility(resetScopePlan.BoundaryKind);
             return requiredEligibility != ActivityResetBoundaryEligibility.None &&
-                   (eligibility & requiredEligibility) == requiredEligibility;
+                (eligibility & requiredEligibility) == requiredEligibility;
         }
 
         internal static ActivityResetBoundaryEligibility ResolveEligibility(ActivityResetBoundaryKind boundaryKind)
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 ActivityResetBoundaryKind.Activity => ActivityResetBoundaryEligibility.Activity,
                 ActivityResetBoundaryKind.ActivityTransition => ActivityResetBoundaryEligibility.ActivityTransition,
                 ActivityResetBoundaryKind.RouteTransition => ActivityResetBoundaryEligibility.RouteTransition,
-                _ => ActivityResetBoundaryEligibility.None,
+                _ => ActivityResetBoundaryEligibility.None
             };
         }
 
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
             List<ActorCapabilityResetEndpointReference> filtered = new(references.Count);
             for (int referenceIndex = 0; referenceIndex < references.Count; referenceIndex++)
             {
-                ActorCapabilityResetEndpointReference reference = references[referenceIndex];
+                var reference = references[referenceIndex];
                 if (reference == null || !reference.IsValid)
                 {
                     throw new InvalidOperationException(
@@ -153,11 +153,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
             string outcome,
             string outcomeReason)
         {
-            SessionActivityIdentity identity = plan.Identity;
+            var identity = plan.Identity;
             DebugUtility.LogVerbose(
                 typeof(ActivityResetBoundaryPolicy),
                 $"event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' resetIntent='{plan.ResetIntent}' resetStateProfile='{plan.StateProfileKind}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{outcome.TrimToEmpty()}' outcomeReason='{outcomeReason.TrimToEmpty()}' behaviorMode='ResetIntentStateProfilePolicy' pipelineId='{identity.PipelineId.TrimToEmpty()}' sessionStateId='{identity.SessionId.TrimToEmpty()}' activityId='{identity.ActivityId.TrimToEmpty()}' entrySequence='{identity.EntrySequence}' source='{plan.Source.TrimToEmpty()}' reason='{plan.Reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

@@ -125,14 +125,32 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
 
 
         // Compatibilidade: métodos existentes
-        public Task FadeInAsync() => FadeInAsync("no-signature");
-        public Task FadeOutAsync() => FadeOutAsync("no-signature");
+        public Task FadeInAsync()
+        {
+            return FadeInAsync("no-signature");
+        }
+        public Task FadeOutAsync()
+        {
+            return FadeOutAsync("no-signature");
+        }
 
         // Novas assinaturas com contextSignature (propagação)
-        public Task FadeInAsync(string? contextSignature) => FadeToAsync(1f, contextSignature);
-        public Task FadeOutAsync(string? contextSignature) => FadeToAsync(0f, contextSignature);
-        public void FadeInImmediate(string? contextSignature) => FadeImmediate(1f, contextSignature);
-        public void FadeOutImmediate(string? contextSignature) => FadeImmediate(0f, contextSignature);
+        public Task FadeInAsync(string? contextSignature)
+        {
+            return FadeToAsync(1f, contextSignature);
+        }
+        public Task FadeOutAsync(string? contextSignature)
+        {
+            return FadeToAsync(0f, contextSignature);
+        }
+        public void FadeInImmediate(string? contextSignature)
+        {
+            FadeImmediate(1f, contextSignature);
+        }
+        public void FadeOutImmediate(string? contextSignature)
+        {
+            FadeImmediate(0f, contextSignature);
+        }
 
         private async Task FadeToAsync(float targetAlpha, string? contextSignature)
         {
@@ -249,9 +267,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
             {
                 handler(signature);
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         private string ResolveContextSignature(string? contextSignature)
@@ -282,4 +298,3 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
         }
     }
 }
-

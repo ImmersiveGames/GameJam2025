@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
             return true;
         }
-}
+    }
 
     [Serializable]
     public sealed class RuntimePersistentSceneEntry
@@ -205,7 +205,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         Loading = 2,
         DebugOverlay = 3,
         ServiceHost = 4,
-        Other = 5,
+        Other = 5
     }
 }
-

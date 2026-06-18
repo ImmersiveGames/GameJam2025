@@ -60,11 +60,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             if (!_spawnRuntimeState.TryReturnSpawnedRuntimeObject(
-                    _spawnedActor,
-                    normalizedSource,
-                    normalizedReason,
-                    "impact_registered",
-                    out outcomeReason))
+                _spawnedActor,
+                normalizedSource,
+                normalizedReason,
+                "impact_registered",
+                out outcomeReason))
             {
                 LogRejected(impactResult, outcomeReason, normalizedSource, normalizedReason);
                 return false;
@@ -98,5 +98,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return _spawnedActor == null ? string.Empty : _spawnedActor.RuntimeActorInstanceId.ToString();
         }
-}
+    }
 }

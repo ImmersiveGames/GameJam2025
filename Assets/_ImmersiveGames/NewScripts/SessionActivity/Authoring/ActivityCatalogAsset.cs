@@ -29,20 +29,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 var current = activities[index];
                 string nextActivityId = current.HasNextActivity ? current.NextActivityId : string.Empty;
                 definitions.Add(new SessionActivityDefinition(
-                    activityId: current.ActivityId,
-                    displayName: current.DisplayName,
-                    activityOrdinal: index + 1,
-                    activityContentMode: current.ActivityContentMode,
-                    activityContentProfile: current.ActivityContentProfile,
-                    activationWindowMode: current.ActivationWindowMode,
-                    activationWindowAdditiveSceneKey: current.ActivationWindowAdditiveSceneKey,
-                    deactivationWindowMode: current.DeactivationWindowMode,
-                    deactivationWindowAdditiveSceneKey: current.DeactivationWindowAdditiveSceneKey,
-                    nextActivityTransitionProfileSource: current.NextActivityTransitionProfileSource,
-                    nextActivityTransitionContinuePolicy: current.NextActivityTransitionContinuePolicy,
-                    nextActivityTransitionProfileOverride: current.NextActivityTransitionProfileOverride,
-                    nextActivityId: nextActivityId,
-                    source: source));
+                    current.ActivityId,
+                    current.DisplayName,
+                    index + 1,
+                    current.ActivityContentMode,
+                    current.ActivityContentProfile,
+                    current.ActivationWindowMode,
+                    current.ActivationWindowAdditiveSceneKey,
+                    current.DeactivationWindowMode,
+                    current.DeactivationWindowAdditiveSceneKey,
+                    current.NextActivityTransitionProfileSource,
+                    current.NextActivityTransitionContinuePolicy,
+                    current.NextActivityTransitionProfileOverride,
+                    nextActivityId,
+                    source));
             }
 
             return new SessionActivityCatalog(definitions, advanceAtEndMode);
@@ -97,5 +97,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 }
             }
         }
-}
+    }
 }

@@ -7,6 +7,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Core
         [SerializeField] private string typeName = "NewDetection";
         public string TypeName => typeName;
 
-        public override string ToString() => typeName;
+        public override string ToString()
+        {
+            return typeName;
+        }
     }
 }

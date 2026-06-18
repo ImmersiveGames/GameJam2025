@@ -15,9 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private bool _desiresSuspended;
         private EventBinding<PlanetMarkingChangedEvent> _planetMarkingChangedBinding;
 
-        public EaterHungryState() : base("Hungry")
-        {
-        }
+        public EaterHungryState() : base("Hungry") { }
 
         public override void OnEnter()
         {
@@ -116,8 +114,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.LogVerbose(
                 $"Nova direção faminta: {direction} | velocidade={speed:F2}",
                 DebugUtility.Colors.CrucialInfo,
-                context: Behavior,
-                instance: this);
+                Behavior,
+                this);
         }
 
         private void HandleDesireChanged(EaterDesireInfo info)
@@ -139,8 +137,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.LogVerbose(
                 $"Novo desejo selecionado: {resource} ({availability}, planetas={info.AvailableCount}, duração={info.Duration:F2}s)",
                 DebugUtility.Colors.CrucialInfo,
-                context: Behavior,
-                instance: this);
+                Behavior,
+                this);
         }
 
         internal bool ConsumeChasingTransitionRequest()
@@ -199,8 +197,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.LogVerbose(
                 $"Desejo ativo ({resourceLabel}) alinhado a planeta marcado ({planetName}). Solicitando transição para perseguição ({reason}).",
                 DebugUtility.Colors.CrucialInfo,
-                context: Behavior,
-                instance: this);
+                Behavior,
+                this);
         }
 
         private void SubscribeToMarkedPlanets()
@@ -255,4 +253,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-

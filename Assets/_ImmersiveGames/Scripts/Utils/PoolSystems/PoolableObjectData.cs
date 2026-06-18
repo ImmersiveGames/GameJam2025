@@ -6,7 +6,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     {
         [SerializeField] private string objectName;
         [SerializeField] private GameObject prefab;
-        [SerializeField, Min(0)] private float lifetime = 5f;
+        [SerializeField] [Min(0)] private float lifetime = 5f;
 
         public string ObjectName => objectName;
         public GameObject Prefab => prefab;

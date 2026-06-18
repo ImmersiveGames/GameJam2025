@@ -52,4 +52,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
         }
     }
 }
-

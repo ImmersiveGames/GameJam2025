@@ -19,4 +19,3 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public string Reason { get; }
     }
 }
-

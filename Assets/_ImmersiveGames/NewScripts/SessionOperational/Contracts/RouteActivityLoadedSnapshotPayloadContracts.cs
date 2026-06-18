@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string.Equals(SessionStateId, CapabilitySnapshotEnvelope.SessionStateId, System.StringComparison.Ordinal) &&
             string.Equals(ActivityId, CapabilitySnapshotEnvelope.ActivityId, System.StringComparison.Ordinal) &&
             SourceEntrySequence > 0;
-}
+    }
 
     public interface IRouteActivityLoadedSnapshotPayloadProvider
     {

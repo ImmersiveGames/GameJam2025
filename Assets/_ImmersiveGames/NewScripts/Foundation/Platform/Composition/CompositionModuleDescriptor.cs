@@ -76,4 +76,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         public Action<RuntimeModeConfig> Bootstrap { get; }
     }
 }
-

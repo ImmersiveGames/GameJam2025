@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 
         [Header("3D QA")]
         [SerializeField] private Transform spatialFollowTarget;
-        [SerializeField] private Vector3 spatialProbePosition = new Vector3(0f, 1.5f, 2f);
+        [SerializeField] private Vector3 spatialProbePosition = new(0f, 1.5f, 2f);
 
         [Header("Pooled Diagnostics")]
         [SerializeField] [Min(0.01f)] private float pooledRetriggerInterruptDelaySeconds = 0.15f;
@@ -75,10 +75,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var effective3D = ResolveEffectiveProfile(pooled3DCue, null, out string source3D);
             var effectivePool = effective3D != null && effective3D.PooledVoicePoolDefinition != null
                 ? effective3D.PooledVoicePoolDefinition
-                : (effective2D != null ? effective2D.PooledVoicePoolDefinition : null);
+                : effective2D != null ? effective2D.PooledVoicePoolDefinition : null;
 
             LogInfo("ValidatePooledSetup",
-                $"ok pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2D)}' source2d='{source2D}' effective3d='{SafeName(effective3D)}' source3d='{source3D}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3D != null ? effective3D.AllowDirectFallback : (effective2D != null && effective2D.AllowDirectFallback))}");
+                $"ok pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2D)}' source2d='{source2D}' effective3d='{SafeName(effective3D)}' source3d='{source3D}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3D != null ? effective3D.AllowDirectFallback : effective2D != null && effective2D.AllowDirectFallback)}");
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Play 2D")]
@@ -90,8 +90,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             var context = BuildDefaultPooledContext(
-                cue: pooled2DCue,
-                context: AudioPlaybackContext.Global(reason: "qa_pooled_play_2d"));
+                pooled2DCue,
+                AudioPlaybackContext.Global(reason: "qa_pooled_play_2d"));
             PlayAndLog(pooled2DCue, context, "PlayPooled2d");
         }
 
@@ -104,11 +104,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             var context = BuildDefaultPooledContext(
-                cue: pooled3DCue,
-                context: AudioPlaybackContext.Spatial(
-                    worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                    followTarget: spatialFollowTarget,
-                    reason: "qa_pooled_play_3d"));
+                pooled3DCue,
+                AudioPlaybackContext.Spatial(
+                    spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                    spatialFollowTarget,
+                    "qa_pooled_play_3d"));
             PlayAndLog(pooled3DCue, context, "PlayPooled3d");
         }
 
@@ -169,16 +169,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             var forcedFallbackProfile = CreateRuntimeVoiceProfileClone(
-                sourceProfile: baseEffectiveProfile,
-                poolDefinition: null,
-                allowDirectFallback: true,
-                defaultVoiceBudget: Mathf.Max(1, baseEffectiveProfile.DefaultVoiceBudget),
-                releaseGraceSeconds: baseEffectiveProfile.ReleaseGraceSeconds);
+                baseEffectiveProfile,
+                null,
+                true,
+                Mathf.Max(1, baseEffectiveProfile.DefaultVoiceBudget),
+                baseEffectiveProfile.ReleaseGraceSeconds);
 
             var context = BuildContextWithForcedProfile(
-                cue: pooled2DCue,
-                context: AudioPlaybackContext.Global(reason: "qa_sfx_probe_pooled_fallback_forced"),
-                forcedProfile: forcedFallbackProfile);
+                pooled2DCue,
+                AudioPlaybackContext.Global(reason: "qa_sfx_probe_pooled_fallback_forced"),
+                forcedFallbackProfile);
             var handle = _globalAudioService.Play(pooled2DCue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
@@ -259,8 +259,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 $"start cue='{pooled2DCue.name}' delay={delay:0.###} repeatCount={repeats} profileDefault='{SafeName(pooledVoiceProfile)}'");
 
             var firstContext = BuildDefaultPooledContext(
-                cue: pooled2DCue,
-                context: AudioPlaybackContext.Global(reason: "qa_pooled_restart_first"));
+                pooled2DCue,
+                AudioPlaybackContext.Global(reason: "qa_pooled_restart_first"));
             var first = _globalAudioService.Play(pooled2DCue, firstContext);
             _lastHandle = first ?? NullAudioPlaybackHandle.Instance;
 
@@ -269,8 +269,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 yield return new WaitForSeconds(delay);
 
                 var nextContext = BuildDefaultPooledContext(
-                    cue: pooled2DCue,
-                    context: AudioPlaybackContext.Global(reason: $"qa_pooled_restart_repeat_{i + 1}"));
+                    pooled2DCue,
+                    AudioPlaybackContext.Global(reason: $"qa_pooled_restart_repeat_{i + 1}"));
                 var next = _globalAudioService.Play(pooled2DCue, nextContext);
                 _lastHandle = next ?? NullAudioPlaybackHandle.Instance;
 
@@ -297,22 +297,22 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             var forcedBudgetProfile = CreateRuntimeVoiceProfileClone(
-                sourceProfile: baseEffectiveProfile,
-                poolDefinition: baseEffectiveProfile.PooledVoicePoolDefinition,
-                allowDirectFallback: false,
-                defaultVoiceBudget: 1,
-                releaseGraceSeconds: baseEffectiveProfile.ReleaseGraceSeconds);
+                baseEffectiveProfile,
+                baseEffectiveProfile.PooledVoicePoolDefinition,
+                false,
+                1,
+                baseEffectiveProfile.ReleaseGraceSeconds);
 
             LogInfo("ProbePooledBudgetForced",
                 $"start cue='{cue.name}' attempts={attempts} stepDelay={stepDelay:0.###} expectedPolicy='block_budget' effectiveProfile='context:{forcedBudgetProfile.name}' source='{source}'");
 
             var firstContext = BuildContextWithForcedProfile(
-                cue: cue,
-                context: AudioPlaybackContext.Spatial(
-                    worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                    followTarget: spatialFollowTarget,
-                    reason: "qa_pooled_budget_forced_first"),
-                forcedProfile: forcedBudgetProfile);
+                cue,
+                AudioPlaybackContext.Spatial(
+                    spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                    spatialFollowTarget,
+                    "qa_pooled_budget_forced_first"),
+                forcedBudgetProfile);
             var firstHandle = _globalAudioService.Play(cue, firstContext);
             _lastHandle = firstHandle ?? NullAudioPlaybackHandle.Instance;
             bool firstValid = firstHandle is { IsValid: true };
@@ -320,12 +320,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             yield return null;
 
             var secondContext = BuildContextWithForcedProfile(
-                cue: cue,
-                context: AudioPlaybackContext.Spatial(
-                    worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                    followTarget: spatialFollowTarget,
-                    reason: "qa_pooled_budget_forced_second"),
-                forcedProfile: forcedBudgetProfile);
+                cue,
+                AudioPlaybackContext.Spatial(
+                    spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                    spatialFollowTarget,
+                    "qa_pooled_budget_forced_second"),
+                forcedBudgetProfile);
             var secondHandle = _globalAudioService.Play(cue, secondContext);
             bool secondValid = secondHandle is { IsValid: true };
             if (secondValid)
@@ -339,12 +339,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             for (int i = 0; i < additionalAttempts; i++)
             {
                 var context = BuildContextWithForcedProfile(
-                    cue: cue,
-                    context: AudioPlaybackContext.Spatial(
-                        worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                        followTarget: spatialFollowTarget,
-                        reason: $"qa_pooled_budget_forced_extra_{i + 1}"),
-                    forcedProfile: forcedBudgetProfile);
+                    cue,
+                    AudioPlaybackContext.Spatial(
+                        spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                        spatialFollowTarget,
+                        $"qa_pooled_budget_forced_extra_{i + 1}"),
+                    forcedBudgetProfile);
 
                 var handle = _globalAudioService.Play(cue, context);
                 if (handle is { IsValid: true })
@@ -398,20 +398,20 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                     selectedClipLengthSeconds > 0f ? selectedClipLengthSeconds + profileReleaseGrace + 0.5f : pooledSequenceWaitTimeoutSeconds));
 
             LogInfo("ProbePooledSequenceReuse",
-                $"start cue='{cue.name}' sequenceCueSource='{sequenceCueSource}' probeCue='{sequenceProbeCue.name}' selectedClipLength={selectedClipLengthSeconds:0.###} sourceClipCount={sourceClipCount} count={count} stepDelay={stepDelay:0.###} waitTimeout={waitTimeout:0.###} effectiveProfile='{SafeName(sequenceEffectiveProfile)}' profileSource='{sequenceProfileSource}' pool='{SafeName(sequencePool)}' poolInitial={(sequencePool != null ? sequencePool.InitialSize : 0)} poolCanExpand={(sequencePool != null && sequencePool.CanExpand)} poolMax={(sequencePool != null ? sequencePool.MaxSize : 0)} poolAutoReturn={(sequencePool != null ? sequencePool.AutoReturnSeconds : 0f):0.###} expected='rent_play_complete_return_cycles'");
+                $"start cue='{cue.name}' sequenceCueSource='{sequenceCueSource}' probeCue='{sequenceProbeCue.name}' selectedClipLength={selectedClipLengthSeconds:0.###} sourceClipCount={sourceClipCount} count={count} stepDelay={stepDelay:0.###} waitTimeout={waitTimeout:0.###} effectiveProfile='{SafeName(sequenceEffectiveProfile)}' profileSource='{sequenceProfileSource}' pool='{SafeName(sequencePool)}' poolInitial={(sequencePool != null ? sequencePool.InitialSize : 0)} poolCanExpand={sequencePool != null && sequencePool.CanExpand} poolMax={(sequencePool != null ? sequencePool.MaxSize : 0)} poolAutoReturn={(sequencePool != null ? sequencePool.AutoReturnSeconds : 0f):0.###} expected='rent_play_complete_return_cycles'");
 
             for (int i = 0; i < count; i++)
             {
                 var context = IsCueSpatial(sequenceProbeCue)
                     ? BuildDefaultPooledContext(
-                        cue: sequenceProbeCue,
-                        context: AudioPlaybackContext.Spatial(
-                            worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
-                            followTarget: spatialFollowTarget,
-                            reason: $"qa_pooled_sequence_{i + 1}"))
+                        sequenceProbeCue,
+                        AudioPlaybackContext.Spatial(
+                            spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
+                            spatialFollowTarget,
+                            $"qa_pooled_sequence_{i + 1}"))
                     : BuildDefaultPooledContext(
-                        cue: sequenceProbeCue,
-                        context: AudioPlaybackContext.Global(reason: $"qa_pooled_sequence_{i + 1}"));
+                        sequenceProbeCue,
+                        AudioPlaybackContext.Global(reason: $"qa_pooled_sequence_{i + 1}"));
 
                 var handle = _globalAudioService.Play(sequenceProbeCue, context);
                 if (handle is { IsValid: true })
@@ -570,10 +570,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         private static bool IsCueConfiguredForPooled(AudioSfxCueAsset cue)
         {
             return cue != null &&
-                   cue.EmissionProfile != null &&
-                   cue.ExecutionProfile != null &&
-                   cue.ExecutionProfile.ExecutionMode == AudioSfxExecutionMode.PooledOneShot &&
-                   cue.ExecutionProfile.PooledVoiceProfile != null;
+                cue.EmissionProfile != null &&
+                cue.ExecutionProfile != null &&
+                cue.ExecutionProfile.ExecutionMode == AudioSfxExecutionMode.PooledOneShot &&
+                cue.ExecutionProfile.PooledVoiceProfile != null;
         }
 
         private static string InferPathFromHandle(IAudioPlaybackHandle handle)
@@ -596,8 +596,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         private static bool IsCueSpatial(AudioSfxCueAsset cue)
         {
             return cue != null &&
-                   cue.EmissionProfile != null &&
-                   cue.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
+                cue.EmissionProfile != null &&
+                cue.EmissionProfile.EmissionMode == AudioSfxPlaybackMode.Spatial;
         }
 
         private static AudioSfxCueAsset CreateSequenceProbeCue(
@@ -708,4 +708,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         }
     }
 }
-

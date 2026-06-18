@@ -25,4 +25,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public bool IsStrict => Current == RuntimeMode.Strict;
     }
 }
-

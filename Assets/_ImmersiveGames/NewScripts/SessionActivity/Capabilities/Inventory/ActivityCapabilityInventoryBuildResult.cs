@@ -54,5 +54,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Inventory.IsValid;
-}
+    }
 }

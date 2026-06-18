@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 return default;
             }
 
-            PlayerActorId playerActorId = BuildPlayerActorId(identity, participantBinding.ActorId);
+            var playerActorId = BuildPlayerActorId(identity, participantBinding.ActorId);
             if (!playerActorId.IsValid)
             {
                 return default;
@@ -158,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Entries != null;
-}
+    }
 
     public readonly struct PlayerActorMaterializationRecord
     {
@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && Actors != null;
-}
+    }
 
     public readonly struct PlayerActorParticipationExitRecord
     {
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && Actors != null;
-}
+    }
 
     public readonly struct PlayerActorParticipationEnterRecord
     {
@@ -299,7 +299,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct PlayerInputBindingCommand
     {
@@ -321,7 +321,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Requirements != null && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct PlayerInputBindingRecord
     {
@@ -342,7 +342,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool Bound { get; }
         public string ObservedInputId { get; }
         public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedInputId);
-}
+    }
 
     public interface IPlayerInputBindingAdapter
     {
@@ -375,7 +375,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
             ParticipantBinding.IsValid;
-}
+    }
 
     public enum ActorCommandBindingState
     {
@@ -408,7 +408,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Bindings != null && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorCommandBindingRecord
     {
@@ -438,7 +438,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             State == ActorCommandBindingState.Executable;
         public bool IsExecutable => State == ActorCommandBindingState.Executable;
         public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint) && State != ActorCommandBindingState.Unknown;
-}
+    }
 
     public interface IActorCommandBindingAdapter
     {
@@ -487,7 +487,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             RequiredBoundCount <= RequiredRequirements &&
             TotalBoundCount >= 0 &&
             SkippedCount >= 0;
-}
+    }
 
     public readonly struct MovementBindingRequirement
     {
@@ -524,7 +524,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct MovementBindingCommand
     {
@@ -546,7 +546,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Requirements != null && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct MovementBindingRecord
     {
@@ -567,7 +567,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool Bound { get; }
         public string ObservedEndpoint { get; }
         public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedEndpoint);
-}
+    }
 
     public interface IMovementBindingAdapter
     {
@@ -599,7 +599,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && Actors != null && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct MovementControlRecord
     {
@@ -617,7 +617,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool Enabled { get; }
         public string ObservedEndpoint { get; }
         public bool IsValid => ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint);
-}
+    }
 
     public interface IPlayerMovementControlAdapter
     {

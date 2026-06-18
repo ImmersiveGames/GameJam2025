@@ -8,6 +8,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         SnapshotProvider = 5,
         SnapshotRestoreEndpoint = 6,
         ReleaseEndpoint = 7,
-        Custom = 99,
+        Custom = 99
     }
 }

@@ -100,8 +100,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             // Ordem: Objeto → Cena (da instância) → Global
             return ResolveFromObjectScope(serviceType, objectId, target.GetType())
-                   ?? ResolveFromSceneScope(serviceType, target)
-                   ?? ResolveFromGlobalScope(serviceType, target.GetType());
+                ?? ResolveFromSceneScope(serviceType, target)
+                ?? ResolveFromGlobalScope(serviceType, target.GetType());
         }
 
         private object ResolveFromObjectScope(Type serviceType, string objectId, Type targetType)
@@ -216,4 +216,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     [AttributeUsage(AttributeTargets.Field)]
     public class InjectAttribute : Attribute { }
 }
-

@@ -9,4 +9,3 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
         RunEnded
     }
 }
-

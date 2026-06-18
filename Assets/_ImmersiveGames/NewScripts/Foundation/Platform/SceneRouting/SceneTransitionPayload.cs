@@ -19,9 +19,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
     /// </summary>
     public sealed class SceneTransitionPayload
     {
-        public static SceneTransitionPayload Empty { get; } = new SceneTransitionPayload(SceneTransitionGameplayEntryKind.None);
-        public static SceneTransitionPayload GameplayInitialEntry { get; } = new SceneTransitionPayload(SceneTransitionGameplayEntryKind.InitialEntry);
-        public static SceneTransitionPayload GameplayReentry { get; } = new SceneTransitionPayload(SceneTransitionGameplayEntryKind.Reentry);
+        public static SceneTransitionPayload Empty { get; } = new(SceneTransitionGameplayEntryKind.None);
+        public static SceneTransitionPayload GameplayInitialEntry { get; } = new(SceneTransitionGameplayEntryKind.InitialEntry);
+        public static SceneTransitionPayload GameplayReentry { get; } = new(SceneTransitionGameplayEntryKind.Reentry);
 
         public SceneTransitionGameplayEntryKind GameplayEntryKind { get; }
         public bool IsGameplayInitialEntry => GameplayEntryKind == SceneTransitionGameplayEntryKind.InitialEntry;

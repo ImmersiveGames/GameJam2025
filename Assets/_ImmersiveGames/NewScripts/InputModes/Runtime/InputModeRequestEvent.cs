@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         FrontendMenu = 1,
         Gameplay = 2,
         PauseOverlay = 3,
-        InputLocked = 4,
+        InputLocked = 4
     }
     public readonly struct InputModeRequestEvent
     {
@@ -43,4 +43,3 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         }
     }
 }
-

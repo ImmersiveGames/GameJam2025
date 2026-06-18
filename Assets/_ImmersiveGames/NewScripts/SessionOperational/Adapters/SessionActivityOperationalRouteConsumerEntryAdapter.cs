@@ -187,5 +187,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             return matchedParticipant;
         }
-}
+    }
 }

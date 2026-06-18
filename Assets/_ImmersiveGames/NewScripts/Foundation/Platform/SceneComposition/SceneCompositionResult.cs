@@ -29,5 +29,3 @@
         public string ActiveScene { get; }
     }
 }
-
-

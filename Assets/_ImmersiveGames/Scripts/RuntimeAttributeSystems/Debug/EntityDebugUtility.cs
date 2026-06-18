@@ -53,7 +53,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         private EventBinding<RuntimeAttributeEventHub.ActorRegisteredEvent> _actorRegisteredBinding;
 
         public DependencyInjectionState InjectionState { get; set; }
-        public string GetObjectId() => _actor?.ActorId ?? gameObject.name;
+        public string GetObjectId()
+        {
+            return _actor?.ActorId ?? gameObject.name;
+        }
 
         private void Awake()
         {
@@ -105,7 +108,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
         }
 
         [ContextMenu(TestsMenuRoot + "Run Test Routine")]
-        public void RunTestRoutine() => StartCoroutine(DelayedTestRoutine());
+        public void RunTestRoutine()
+        {
+            StartCoroutine(DelayedTestRoutine());
+        }
 
         private IEnumerator DelayedTestRoutine()
         {
@@ -969,4 +975,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 
     }
 }
-

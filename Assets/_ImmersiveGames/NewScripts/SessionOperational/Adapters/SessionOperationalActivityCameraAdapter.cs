@@ -19,9 +19,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             ActivityCameraPresentationRequirementResolver requirementResolver,
             IActivityCameraAnchorHostResolver anchorHostResolver)
         {
-            this._activityCameraExecutor = activityCameraExecutor;
-            this._requirementResolver = requirementResolver;
-            this._anchorHostResolver = anchorHostResolver;
+            _activityCameraExecutor = activityCameraExecutor;
+            _requirementResolver = requirementResolver;
+            _anchorHostResolver = anchorHostResolver;
         }
 
         public bool TryPrepareActivityCamera(
@@ -62,10 +62,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             if (!_requirementResolver.TryResolve(
-                    profile,
-                    anchorHost,
-                    out var requirement,
-                    out reason))
+                profile,
+                anchorHost,
+                out var requirement,
+                out reason))
             {
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
@@ -88,9 +88,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 DebugUtility.Colors.Info);
 
             if (!_activityCameraExecutor.TryPrepare(
-                    bindingCommand,
-                    out var preparationResult,
-                    out reason))
+                bindingCommand,
+                out var preparationResult,
+                out reason))
             {
                 var failureFact = preparationResult?.FailureFact;
 
@@ -167,9 +167,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 DebugUtility.Colors.Info);
 
             if (!_activityCameraExecutor.TryRelease(
-                    releaseCommand,
-                    out var releaseResult,
-                    out reason))
+                releaseCommand,
+                out var releaseResult,
+                out reason))
             {
                 var failureFact = releaseResult?.FailureFact;
 

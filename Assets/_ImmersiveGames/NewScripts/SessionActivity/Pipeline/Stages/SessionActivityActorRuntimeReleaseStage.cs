@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
 
             IReadOnlyList<SessionActorRuntimeEntry> entries = sessionActorRuntimeStore.GetEntriesForSession(identity);
-            ReleaseSessionScopedActors(identity, entries, sessionActorRuntimeStore, runtimeState, facts, source, reason, emitFacts: true);
+            ReleaseSessionScopedActors(identity, entries, sessionActorRuntimeStore, runtimeState, facts, source, reason, true);
         }
 
         public static void ReleaseAllSessionScopedActors(
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             sessionActorRuntimeStore = sessionActorRuntimeStore ?? throw new ArgumentNullException(nameof(sessionActorRuntimeStore));
 
             IReadOnlyList<SessionActorRuntimeEntry> entries = sessionActorRuntimeStore.GetAllEntries();
-            ReleaseSessionScopedActors(identity, entries, sessionActorRuntimeStore, null, null, source, reason, emitFacts: false);
+            ReleaseSessionScopedActors(identity, entries, sessionActorRuntimeStore, null, null, source, reason, false);
         }
 
         public static void ReleaseIndexedRouteScopedPlayerActors(
@@ -177,5 +177,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             runtimeState.AppendFact(fact);
             runtimeState.AppendTrace($"fact='{fact.Kind}' stage='{fact.Identity.Stage}' entrySequence='{fact.Identity.EntrySequence}' activity='{fact.Identity.ActivityId}' executionState='{runtimeState.CurrentExecutionState}' message=\"{fact.Message}\"");
         }
-}
+    }
 }

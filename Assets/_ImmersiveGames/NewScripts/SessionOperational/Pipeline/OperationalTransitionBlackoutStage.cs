@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalTransitionBlackoutCommand
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Reason { get; }
 
         public bool IsValid => RouteCommand.IsValid;
-}
+    }
 
     public readonly struct OperationalTransitionBlackoutResult
     {
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Detail { get; }
         public bool IsCompleted => Kind == OperationalTransitionBlackoutResultKind.Completed;
         public bool IsSkipped => Kind == OperationalTransitionBlackoutResultKind.Skipped;
-}
+    }
 
     public sealed class OperationalTransitionBlackoutStage
     {
@@ -141,5 +141,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalTransitionBlackoutCommand is invalid.");
             }
         }
-}
+    }
 }

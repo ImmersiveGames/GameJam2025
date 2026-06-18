@@ -121,8 +121,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                         : "activity_scoped_previous_entry",
                     activeScopeIdentity,
                     expectedScopeIdentity,
-                    default(ActorId),
-                    default(ActorInstanceRuntimeId),
+                    default,
+                    default,
                     actorScope,
                     source,
                     reason);
@@ -247,5 +247,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 $"event='{eventName}' owner='{Owner}' decisionKind='{decisionKind.TrimToEmpty()}' outcome='{outcome.TrimToEmpty()}' outcomeReason='{outcomeReason.TrimToEmpty()}' activePipelineId='{activeIdentity.PipelineId.TrimToEmpty()}' activeSessionId='{activeIdentity.SessionId.TrimToEmpty()}' activeActivityId='{activeIdentity.ActivityId.TrimToEmpty()}' activeEntrySequence='{activeIdentity.EntrySequence}' targetPipelineId='{targetIdentity.PipelineId.TrimToEmpty()}' targetSessionId='{targetIdentity.SessionId.TrimToEmpty()}' targetActivityId='{targetIdentity.ActivityId.TrimToEmpty()}' targetEntrySequence='{targetIdentity.EntrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorScope='{actorScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

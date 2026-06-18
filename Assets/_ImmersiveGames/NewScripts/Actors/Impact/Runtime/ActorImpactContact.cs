@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return None;
             }
 
-            ContactPoint contactPoint = collision.GetContact(0);
+            var contactPoint = collision.GetContact(0);
             return new ActorImpactContact(
                 true,
                 contactPoint.point,

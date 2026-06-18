@@ -17,5 +17,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"{Key}={Value}";
         }
-}
+    }
 }

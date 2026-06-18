@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Binding;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -14,13 +13,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public ActorCommandBindingAdapter(
             IPoolService poolService,
-            IGlobalAudioService globalAudioService,
-            IActorAttributeEventStream actorAttributeEventStream)
+            IGlobalAudioService globalAudioService)
         {
             _projectileFireCommandBindingExecutor = new ActorProjectileFireCommandBindingExecutor(
                 poolService ?? throw new ArgumentNullException(nameof(poolService)),
-                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)),
-                actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream)));
+                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)));
         }
 
         public IReadOnlyList<ActorCommandBindingRecord> Execute(
@@ -78,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     command.Source,
                     command.Reason);
 
-                ActorProjectileFireCommandBindingResult projectileBinding = _projectileFireCommandBindingExecutor.Execute(
+                var projectileBinding = _projectileFireCommandBindingExecutor.Execute(
                     bindingContext,
                     commandHub,
                     projectileFireEndpoint);
@@ -88,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' projectile binding returned invalid result.");
                 }
 
-                ActorCommandBindingState bindingState = projectileBinding.IsExecutable
+                var bindingState = projectileBinding.IsExecutable
                     ? ActorCommandBindingState.Executable
                     : ActorCommandBindingState.SkippedOptional;
 
@@ -96,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     requirement,
                     actorHandle.ActorIdentity,
                     bindingState,
-                    observedEndpoint: projectileBinding.ObservedEndpoint));
+                    projectileBinding.ObservedEndpoint));
             }
 
             return records;

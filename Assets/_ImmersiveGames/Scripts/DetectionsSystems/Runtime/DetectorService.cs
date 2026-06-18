@@ -35,6 +35,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             }
         }
 
-        public IReadOnlyList<Sensor> GetSensors() => _sensors;
+        public IReadOnlyList<Sensor> GetSensors()
+        {
+            return _sensors;
+        }
     }
 }

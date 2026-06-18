@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 _ => new OperationalRouteHandoffExitPreflightResult(
                     OperationalRouteHandoffExitPreflightKind.Failed,
                     "handoff_exit_preflight_unknown_result",
-                    $"session_activity_route_exit_teardown_preflight_unknown_kind kind='{preflight.Kind}'"),
+                    $"session_activity_route_exit_teardown_preflight_unknown_kind kind='{preflight.Kind}'")
             };
         }
 

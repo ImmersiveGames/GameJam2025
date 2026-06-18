@@ -172,9 +172,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void SaveCapturedActivitySnapshotEnvelope()
         {
             EnsureHost();
-            if (!TryResolveOperationalPipeline(out SessionOperationalPipeline operationalPipeline, out string failureReason))
+            if (!TryResolveOperationalPipeline(out var operationalPipeline, out string failureReason))
             {
-                DebugUtility.LogWarning(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogWarning(typeof(SessionActivityDebugPanel),
                     $"event='RouteActivitySaveQaRejected' reason='{failureReason}' activityId='{host.State.CurrentDefinition.ActivityId}' entrySequence='{host.State.CurrentEntrySequence}' stage='{host.State.CurrentStage}'.");
                 return;
             }
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     ? "Saved"
                     : "Failed";
 
-            DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+            DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                 $"event='RouteActivitySaveQaSubmitted' outcomeKind='{outcomeKind}' reason='{outcomeReason}' saveOwnerActivityIdentity='{host.State.SessionId}' payloadActivityIdentity='{host.State.CurrentDefinition.ActivityId}' entrySequence='{host.State.CurrentEntrySequence}' stage='{host.State.CurrentStage}'.");
         }
 
@@ -204,14 +204,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             bool captured = host.QaCaptureCurrentActivitySnapshotPayload();
             if (!captured && host.State.CurrentDefinition.HasGameplayContent)
             {
-                DebugUtility.LogWarning(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogWarning(typeof(SessionActivityDebugPanel),
                     $"event='RouteActivitySaveQaRejected' reason='snapshot_capture_not_completed' activityId='{host.State.CurrentDefinition.ActivityId}' entrySequence='{host.State.CurrentEntrySequence}' stage='{host.State.CurrentStage}'.");
                 return;
             }
 
             if (!captured)
             {
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"event='RouteActivitySaveQaContinuedAfterNoContentCapture' reason='no_content_capture_should_be_classified_by_save_qa' activityId='{host.State.CurrentDefinition.ActivityId}' entrySequence='{host.State.CurrentEntrySequence}' stage='{host.State.CurrentStage}'.");
             }
 
@@ -552,8 +552,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentIdentity.IsValid &&
-                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+                host.State.CurrentIdentity.IsValid &&
+                host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private bool CanCompleteActivationWindow()
@@ -564,7 +564,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentStage == SessionActivityStage.ActivationWindowReady;
+                host.State.CurrentStage == SessionActivityStage.ActivationWindowReady;
         }
 
         private bool CanCompleteCurrentActivity()
@@ -575,7 +575,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+                host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private bool CanRestartCurrentActivity()
@@ -586,7 +586,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+                host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private bool CanCompleteDeactivationWindow()
@@ -597,7 +597,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentStage == SessionActivityStage.DeactivationWindowReady;
+                host.State.CurrentStage == SessionActivityStage.DeactivationWindowReady;
         }
 
         private bool CanContinueToNextActivity()
@@ -608,9 +608,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentHandoff.IsValid &&
-                   ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue &&
-                   host.State.CurrentStage == SessionActivityStage.NextActivitySetupCompleted;
+                host.State.CurrentHandoff.IsValid &&
+                ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue &&
+                host.State.CurrentStage == SessionActivityStage.NextActivitySetupCompleted;
         }
 
         private bool IsHostStateAvailable()
@@ -627,7 +627,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string GetNextExpectedQaAction()
         {
-            SessionActivityStage stage = host.State.CurrentStage;
+            var stage = host.State.CurrentStage;
             bool hasPendingHandoff = host.State.CurrentHandoff.IsValid;
 
             if (stage == SessionActivityStage.ActivityContentProfileResolved ||
@@ -682,7 +682,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivityCommand BuildStaleFirstActivityCommand()
         {
             EnsureActiveIdentityOrFail("SendStaleFirstActivityCommand");
-            if (!host.Catalog.TryGetFirst(out SessionActivityDefinition firstDefinition) || !firstDefinition.IsValid)
+            if (!host.Catalog.TryGetFirst(out var firstDefinition) || !firstDefinition.IsValid)
             {
                 throw new InvalidOperationException("Stale command requires a valid first activity in runtime catalog.");
             }
@@ -706,7 +706,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivityCommand BuildForeignSessionCommand()
         {
             EnsureActiveIdentityOrFail("SendForeignSessionCommand");
-            SessionActivityIdentity current = host.State.CurrentIdentity;
+            var current = host.State.CurrentIdentity;
             SessionActivityIdentity identity = new(
                 host.State.PipelineId,
                 "ForeignSessionState",
@@ -726,7 +726,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivityCommand BuildForeignPipelineCommand()
         {
             EnsureActiveIdentityOrFail("SendForeignPipelineCommand");
-            SessionActivityIdentity current = host.State.CurrentIdentity;
+            var current = host.State.CurrentIdentity;
             SessionActivityIdentity identity = new(
                 "ForeignPipeline",
                 host.State.SessionId,
@@ -762,21 +762,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 padding = new RectOffset(18, 18, 18, 18),
                 fontSize = 16,
-                richText = false,
+                richText = false
             };
 
             GUIStyle baseLabel = new(GUI.skin.label)
             {
                 fontSize = 20,
                 wordWrap = true,
-                richText = false,
+                richText = false
             };
 
             GUIStyle baseButton = new(GUI.skin.button)
             {
                 fontSize = 22,
                 fixedHeight = ButtonHeight,
-                alignment = TextAnchor.MiddleCenter,
+                alignment = TextAnchor.MiddleCenter
             };
 
             GUIStyle baseTextArea = new(GUI.skin.textArea)
@@ -785,7 +785,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 wordWrap = true,
                 richText = false,
                 padding = new RectOffset(10, 10, 10, 10),
-                alignment = TextAnchor.UpperLeft,
+                alignment = TextAnchor.UpperLeft
             };
 
             _windowStyle = baseWindow;
@@ -793,7 +793,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 fontSize = 28,
                 fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft,
+                alignment = TextAnchor.MiddleLeft
             };
             _labelStyle = baseLabel;
             _buttonStyle = baseButton;
@@ -833,7 +833,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private bool TryEmitRouteExitBackToMenuCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (!TryResolveLatestRouteExitContext(out string activityId, out int entrySequence))
             {
                 return false;
@@ -853,7 +853,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -903,7 +903,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             bool releaseCompletedWithValidStatus =
                 releaseCompleted &&
                 (string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) ||
-                 string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal));
+                    string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal));
 
             string checkpointStatus = "Waiting";
             string failedCriterion = "<none>";
@@ -926,9 +926,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 failedCriterion = "releaseSceneIsLoadedAfterRelease";
             }
             else if (releaseCompletedWithValidStatus &&
-                     closedForRouteExit &&
-                     routeExitTeardownCompleted &&
-                     menuRouteApplied)
+                closedForRouteExit &&
+                routeExitTeardownCompleted &&
+                menuRouteApplied)
             {
                 checkpointStatus = "Passed";
             }
@@ -938,7 +938,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (!string.Equals(token, _lastRouteExitBackToMenuCheckpointToken, StringComparison.Ordinal))
             {
                 _lastRouteExitBackToMenuCheckpointToken = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='RouteExitBackToMenu' checkpointStatus='{checkpointStatus}' failedCriterion='{failedCriterion}' " +
                     $"activityId='{activityId}' entrySequence='{entrySequence}' " +
                     $"releaseStarted='{releaseStarted.ToString().ToLowerInvariant()}' releaseCompleted='{releaseCompleted.ToString().ToLowerInvariant()}' " +
@@ -958,7 +958,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private bool TryEmitRestartCurrentActivityCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (!TryResolveLatestRestartAccepted(out string fromActivity, out int fromEntrySequence, out int toEntrySequence))
             {
                 return false;
@@ -996,7 +996,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -1063,9 +1063,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             bool releaseSceneIsLoadedAfterRelease = false;
             bool shouldEvaluateReleaseScene = releaseCompleted &&
-                                              !newEntryStarted &&
-                                              !_activeRestartCheckpointReleaseSceneSafeLatched &&
-                                              state.CurrentEntrySequence <= toEntrySequence;
+                !newEntryStarted &&
+                !_activeRestartCheckpointReleaseSceneSafeLatched &&
+                state.CurrentEntrySequence <= toEntrySequence;
             if (shouldEvaluateReleaseScene)
             {
                 releaseSceneIsLoadedAfterRelease = ResolveSceneLoaded("ActivityScene01");
@@ -1081,22 +1081,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             bool hasReleasePath = releaseStarted ||
-                                  releaseCompleted ||
-                                  !string.Equals(releaseSceneName, "<none>", StringComparison.Ordinal) ||
-                                  !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal);
+                releaseCompleted ||
+                !string.Equals(releaseSceneName, "<none>", StringComparison.Ordinal) ||
+                !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal);
             bool releasePass = releaseCompleted &&
-                               string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal) &&
-                               string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
-                               !releaseSceneIsLoadedAfterRelease;
+                string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal) &&
+                string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
+                !releaseSceneIsLoadedAfterRelease;
             bool entryPass = string.Equals(toActivity, fromActivity, StringComparison.Ordinal) &&
-                             toEntrySequence == fromEntrySequence + 1;
+                toEntrySequence == fromEntrySequence + 1;
             bool readyOrRunning = newEntryReachedActivationWindowReady || newEntryReachedActivityRunning;
-            bool noContentPass = (releaseSkippedNoContent || (!releaseStarted && !releaseCompleted)) &&
-                                 newEntryStarted &&
-                                 newEntryReachedActivityRunning;
+            bool noContentPass = (releaseSkippedNoContent || !releaseStarted && !releaseCompleted) &&
+                newEntryStarted &&
+                newEntryReachedActivityRunning;
 
             bool checkpointPassed = entryPass && (
-                (hasReleasePath && releasePass && newEntryStarted && readyOrRunning) ||
+                hasReleasePath && releasePass && newEntryStarted && readyOrRunning ||
                 noContentPass);
 
             string checkpointStatus = checkpointPassed ? "Passed" : "Waiting";
@@ -1131,7 +1131,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (!string.Equals(token, _lastRestartCurrentActivityCheckpointToken, StringComparison.Ordinal))
             {
                 _lastRestartCurrentActivityCheckpointToken = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='{checkpointName}' checkpointStatus='{checkpointStatus}' failedCriterion='{failedCriterion}' " +
                     $"fromActivity='{fromActivity}' toActivity='{toActivity}' fromEntrySequence='{fromEntrySequence}' toEntrySequence='{toEntrySequence}' " +
                     $"releaseStarted='{releaseStarted.ToString().ToLowerInvariant()}' releaseCompleted='{releaseCompleted.ToString().ToLowerInvariant()}' " +
@@ -1145,7 +1145,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void TryEmitActivityObjectContributorDiscoveryCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state == null || state.Facts == null || state.Facts.Count == 0)
             {
                 return;
@@ -1154,7 +1154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Dictionary<string, ActivityObjectContributorDiscoveryCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -1170,7 +1170,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectContributorDiscoveryCheckpointAggregation aggregation))
+                if (!byEntry.TryGetValue(key, out var aggregation))
                 {
                     aggregation = new ActivityObjectContributorDiscoveryCheckpointAggregation(
                         fact.Identity.ActivityId,
@@ -1221,7 +1221,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             foreach (KeyValuePair<string, ActivityObjectContributorDiscoveryCheckpointAggregation> pair in byEntry)
             {
-                ActivityObjectContributorDiscoveryCheckpointAggregation aggregation = pair.Value;
+                var aggregation = pair.Value;
                 string checkpointStatus = ResolveActivityObjectContributorDiscoveryCheckpointStatus(aggregation);
                 string targetIds = JoinValues(aggregation.TargetIds);
                 string roleIds = JoinValues(aggregation.RoleIds);
@@ -1237,7 +1237,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 _lastActivityObjectContributorDiscoveryCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='ActivityObjectContributorDiscovery' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' discoveryStarted='{aggregation.DiscoveryStarted.ToString().ToLowerInvariant()}' " +
                     $"discoveredCount='{aggregation.DiscoveredCount}' targetIds='{targetIds}' roleIds='{roleIds}' contributorKinds='{contributorKinds}' " +
@@ -1255,7 +1255,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (string.Equals(aggregation.ActivityId, "activity_01", StringComparison.Ordinal))
             {
-                return aggregation.DiscoveryCompleted && aggregation.DiscoveredCount >= 1
+                return aggregation is { DiscoveryCompleted: true, DiscoveredCount: >= 1 }
                     ? "Passed"
                     : "Waiting";
             }
@@ -1267,7 +1267,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     : "Waiting";
             }
 
-            if (aggregation.DiscoveryCompleted && aggregation.DiscoveredCount >= 1)
+            if (aggregation is { DiscoveryCompleted: true, DiscoveredCount: >= 1 })
             {
                 return "Passed";
             }
@@ -1292,7 +1292,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void TryEmitActivityObjectResetCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state == null || state.Facts == null || state.Facts.Count == 0)
             {
                 return;
@@ -1301,7 +1301,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Dictionary<string, ActivityObjectResetCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -1318,7 +1318,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectResetCheckpointAggregation aggregation))
+                if (!byEntry.TryGetValue(key, out var aggregation))
                 {
                     aggregation = new ActivityObjectResetCheckpointAggregation(
                         fact.Identity.ActivityId,
@@ -1401,7 +1401,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             foreach (KeyValuePair<string, ActivityObjectResetCheckpointAggregation> pair in byEntry)
             {
-                ActivityObjectResetCheckpointAggregation aggregation = pair.Value;
+                var aggregation = pair.Value;
                 string targetIds = JoinValues(aggregation.TargetIds);
                 string resetDescriptors = JoinValues(aggregation.ResetDescriptors);
                 string checkpointStatus = ResolveActivityObjectResetCheckpointStatus(aggregation);
@@ -1418,7 +1418,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 _lastActivityObjectResetCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='ActivityObjectReset' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' resetStarted='{aggregation.ResetStarted.ToString().ToLowerInvariant()}' " +
                     $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
@@ -1435,8 +1435,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !host.State.CurrentPendingOperation.IsValid &&
-                   host.State.CurrentIdentity.IsValid &&
-                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+                host.State.CurrentIdentity.IsValid &&
+                host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private static string ResolveActivityObjectResetCheckpointStatus(ActivityObjectResetCheckpointAggregation aggregation)
@@ -1464,8 +1464,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 if (string.Equals(aggregation.CompletionKind, "NoCommands", StringComparison.Ordinal) &&
-                    aggregation.CommandCount == 0 &&
-                    aggregation.FailedCount == 0)
+                    aggregation is { CommandCount: 0, FailedCount: 0 })
                 {
                     return "PassedNoCommands";
                 }
@@ -1483,7 +1482,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void TryEmitActivityObjectReleaseCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state == null || state.Facts == null || state.Facts.Count == 0)
             {
                 return;
@@ -1492,7 +1491,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Dictionary<string, ActivityObjectReleaseCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -1509,7 +1508,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectReleaseCheckpointAggregation aggregation))
+                if (!byEntry.TryGetValue(key, out var aggregation))
                 {
                     aggregation = new ActivityObjectReleaseCheckpointAggregation(
                         fact.Identity.ActivityId,
@@ -1590,7 +1589,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             foreach (KeyValuePair<string, ActivityObjectReleaseCheckpointAggregation> pair in byEntry)
             {
-                ActivityObjectReleaseCheckpointAggregation aggregation = pair.Value;
+                var aggregation = pair.Value;
                 string targetIds = JoinValues(aggregation.TargetIds);
                 string releaseKinds = JoinValues(aggregation.ReleaseKinds);
                 string checkpointStatus = ResolveActivityObjectReleaseCheckpointStatus(aggregation);
@@ -1605,7 +1604,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 _lastActivityObjectReleaseCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='ActivityObjectRelease' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' releaseStarted='{aggregation.ReleaseStarted.ToString().ToLowerInvariant()}' " +
                     $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
@@ -1615,7 +1614,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void TryEmitActivityObjectSnapshotCaptureCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state == null || state.Facts == null || state.Facts.Count == 0)
             {
                 return;
@@ -1624,7 +1623,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Dictionary<string, ActivityObjectSnapshotCaptureCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -1640,7 +1639,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectSnapshotCaptureCheckpointAggregation aggregation))
+                if (!byEntry.TryGetValue(key, out var aggregation))
                 {
                     aggregation = new ActivityObjectSnapshotCaptureCheckpointAggregation(
                         fact.Identity.ActivityId,
@@ -1722,7 +1721,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             foreach (KeyValuePair<string, ActivityObjectSnapshotCaptureCheckpointAggregation> pair in byEntry)
             {
-                ActivityObjectSnapshotCaptureCheckpointAggregation aggregation = pair.Value;
+                var aggregation = pair.Value;
                 string targetIds = JoinValues(aggregation.TargetIds);
                 string ownerKinds = JoinValues(aggregation.OwnerKinds);
                 string checkpointStatus = ResolveActivityObjectSnapshotCaptureCheckpointStatus(aggregation);
@@ -1737,7 +1736,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 _lastActivityObjectSnapshotCaptureCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='CapabilitySnapshotEnvelopeCapture' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' captureStarted='{aggregation.CaptureStarted.ToString().ToLowerInvariant()}' " +
                     $"capturedCount='{aggregation.CapturedCount}' recordCount='{aggregation.RecordCount}' failedCount='{aggregation.FailedCount}' " +
@@ -1753,7 +1752,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "Failed";
             }
 
-            if (aggregation.CaptureCompleted && aggregation.RecordCount > 0)
+            if (aggregation is { CaptureCompleted: true, RecordCount: > 0 })
             {
                 return "Passed";
             }
@@ -1768,7 +1767,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void TryEmitActivityObjectSnapshotRestoreCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state == null || state.Facts == null || state.Facts.Count == 0)
             {
                 return;
@@ -1777,7 +1776,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Dictionary<string, ActivityObjectSnapshotRestoreCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -1796,7 +1795,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectSnapshotRestoreCheckpointAggregation aggregation))
+                if (!byEntry.TryGetValue(key, out var aggregation))
                 {
                     aggregation = new ActivityObjectSnapshotRestoreCheckpointAggregation(
                         fact.Identity.ActivityId,
@@ -1916,7 +1915,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             foreach (KeyValuePair<string, ActivityObjectSnapshotRestoreCheckpointAggregation> pair in byEntry)
             {
-                ActivityObjectSnapshotRestoreCheckpointAggregation aggregation = pair.Value;
+                var aggregation = pair.Value;
                 foreach (KeyValuePair<string, string> capturePair in aggregation.CaptureTargetTransformPathByTargetId)
                 {
                     if (!aggregation.RestoreTargetTransformPathByTargetId.TryGetValue(capturePair.Key, out string restoredPath))
@@ -1955,7 +1954,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 _lastActivityObjectSnapshotRestoreCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.Log(typeof(SessionActivityDebugPanel), 
+                DebugUtility.Log(typeof(SessionActivityDebugPanel),
                     $"checkpoint='ActivityObjectSnapshotRestore' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' payloadAvailable='{aggregation.PayloadAvailable.ToString().ToLowerInvariant()}' " +
                     $"recordCount='{aggregation.RecordCount}' matchedTargetCount='{aggregation.MatchedTargetCount}' restoredCount='{aggregation.RestoredCount}' " +
@@ -1969,7 +1968,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static string ResolveActivityObjectSnapshotRestoreCheckpointStatus(ActivityObjectSnapshotRestoreCheckpointAggregation aggregation)
         {
-            if (aggregation.RestoredCount > 0 && !aggregation.RestoreVerified)
+            if (aggregation is { RestoredCount: > 0, RestoreVerified: false })
             {
                 return "Failed";
             }
@@ -2036,7 +2035,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void TryEmitActivityObjectContributorUnregisterCheckpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state == null || state.Facts == null || state.Facts.Count == 0)
             {
                 return;
@@ -2045,7 +2044,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Dictionary<string, ActivityObjectContributorUnregisterCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -2061,7 +2060,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
-                if (!byEntry.TryGetValue(key, out ActivityObjectContributorUnregisterCheckpointAggregation aggregation))
+                if (!byEntry.TryGetValue(key, out var aggregation))
                 {
                     aggregation = new ActivityObjectContributorUnregisterCheckpointAggregation(
                         fact.Identity.ActivityId,
@@ -2099,7 +2098,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             foreach (KeyValuePair<string, ActivityObjectContributorUnregisterCheckpointAggregation> pair in byEntry)
             {
-                ActivityObjectContributorUnregisterCheckpointAggregation aggregation = pair.Value;
+                var aggregation = pair.Value;
                 string targetIds = JoinValues(aggregation.TargetIds);
                 string checkpointStatus = ResolveActivityObjectContributorUnregisterCheckpointStatus(aggregation);
 
@@ -2113,7 +2112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 _lastActivityObjectContributorUnregisterCheckpointTokenByEntry[pair.Key] = token;
-                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+                DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                     $"checkpoint='ActivityObjectContributorUnregister' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' unregisterStarted='{aggregation.UnregisterStarted.ToString().ToLowerInvariant()}' " +
                     $"unregisteredCount='{aggregation.UnregisteredCount}' skippedNoContributors='{aggregation.SkippedNoContributors.ToString().ToLowerInvariant()}' " +
@@ -2337,7 +2336,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private bool TryRunSmokeStep(string smokeName, string stepName, SessionActivityStage? expectedStage, Action action)
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             if (state.CurrentPendingOperation.IsValid)
             {
                 LogSmokeStepBlocked(smokeName, stepName, expectedStage, "pending_operation_active");
@@ -2356,14 +2355,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void LogSmokeStepBlocked(string smokeName, string stepName, SessionActivityStage? expectedStage, string reason)
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             string expectedStageValue = expectedStage.HasValue ? expectedStage.Value.ToString() : "<any>";
             DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), $"SmokeStepBlocked smokeName='{smokeName}' stepName='{stepName}' expectedStage='{expectedStageValue}' actualStage='{state.CurrentStage}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' reason='{reason}'");
         }
 
         private void TryEmitActivity01ToActivity02Checkpoint()
         {
-            SessionActivityRuntimeState state = host.State;
+            var state = host.State;
             const string checkpointName = "Activity01ToActivity02";
             int latestFromEntrySequence = ResolveLatestEntrySequenceForActivity("activity_01");
             if (latestFromEntrySequence <= 0)
@@ -2409,7 +2408,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int i = 0; i < state.Facts.Count; i++)
             {
-                SessionActivityFact fact = state.Facts[i];
+                var fact = state.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -2452,14 +2451,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     activity02ReachedRunning = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements ||
-                         fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements)
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements)
                 {
                     activity02SkipNoRequirementsObserved = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityParticipantCommandPlanReady ||
-                         fact.Kind == SessionActivityFactKind.ActivityParticipantBindCommandIssued ||
-                         fact.Kind == SessionActivityFactKind.ActivityParticipantMaterializationCommandIssued ||
-                         fact.Kind == SessionActivityFactKind.ActivityParticipantResetCommandIssued)
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantBindCommandIssued ||
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantMaterializationCommandIssued ||
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantResetCommandIssued)
                 {
                     participantCommandsForActivity02Observed = true;
                 }
@@ -2467,22 +2466,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             bool releaseSceneIsLoadedAfterRelease = false;
             bool shouldEvaluateSceneLoadedForActiveScope = releaseCompleted &&
-                                                           toEntrySequence > 0 &&
-                                                           !_activeCheckpointObservedActivity02Running &&
-                                                           state.CurrentEntrySequence <= toEntrySequence;
+                toEntrySequence > 0 &&
+                !_activeCheckpointObservedActivity02Running &&
+                state.CurrentEntrySequence <= toEntrySequence;
             if (shouldEvaluateSceneLoadedForActiveScope)
             {
                 releaseSceneIsLoadedAfterRelease = ResolveSceneLoaded("ActivityScene01");
             }
 
             bool complete = releaseStarted &&
-                            releaseCompleted &&
-                            string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal) &&
-                            string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
-                            !releaseSceneIsLoadedAfterRelease &&
-                            activity02ReachedRunning &&
-                            activity02SkipNoRequirementsObserved &&
-                            !participantCommandsForActivity02Observed;
+                releaseCompleted &&
+                string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal) &&
+                string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
+                !releaseSceneIsLoadedAfterRelease &&
+                activity02ReachedRunning &&
+                activity02SkipNoRequirementsObserved &&
+                !participantCommandsForActivity02Observed;
 
             string checkpointStatus = complete ? "Passed" : "Waiting";
             string failedCriterion = "<none>";
@@ -2499,8 +2498,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 failedCriterion = "releaseSceneIsLoadedAfterRelease";
             }
             else if (releaseCompleted &&
-                     !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) &&
-                     !string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal))
+                !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) &&
+                !string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal))
             {
                 checkpointStatus = "Failed";
                 failedCriterion = "releaseStatus";
@@ -2530,7 +2529,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _lastActivity01ToActivity02CheckpointToken = token;
-            DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel), 
+            DebugUtility.LogVerbose(typeof(SessionActivityDebugPanel),
                 $"checkpoint='{checkpointName}' checkpointStatus='{checkpointStatus}' failedCriterion='{failedCriterion}' " +
                 $"fromActivity='activity_01' toActivity='activity_02' fromEntrySequence='{fromEntrySequence}' toEntrySequence='{toEntrySequence}' " +
                 $"releaseStarted='{releaseStarted.ToString().ToLowerInvariant()}' releaseCompleted='{releaseCompleted.ToString().ToLowerInvariant()}' " +
@@ -2544,7 +2543,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int latest = 0;
             for (int i = 0; i < host.State.Facts.Count; i++)
             {
-                SessionActivityFact fact = host.State.Facts[i];
+                var fact = host.State.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -2576,7 +2575,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int i = host.State.Facts.Count - 1; i >= 0; i--)
             {
-                SessionActivityFact fact = host.State.Facts[i];
+                var fact = host.State.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -2608,7 +2607,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int i = host.State.Facts.Count - 1; i >= 0; i--)
             {
-                SessionActivityFact fact = host.State.Facts[i];
+                var fact = host.State.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -2658,7 +2657,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int candidate = 0;
             for (int i = 0; i < host.State.Facts.Count; i++)
             {
-                SessionActivityFact fact = host.State.Facts[i];
+                var fact = host.State.Facts[i];
                 if (!fact.IsValid || !fact.Identity.IsValid)
                 {
                     continue;
@@ -2743,7 +2742,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName.Trim());
+            var scene = SceneManager.GetSceneByName(sceneName.Trim());
             return scene.IsValid() && scene.isLoaded;
         }
 
@@ -2755,7 +2754,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             string normalizedSceneName = sceneName.Trim();
-            Scene activeScene = SceneManager.GetActiveScene();
+            var activeScene = SceneManager.GetActiveScene();
             if (activeScene.IsValid() && string.Equals(activeScene.name, normalizedSceneName, StringComparison.Ordinal))
             {
                 return true;
@@ -2766,7 +2765,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
         {
-            SessionActivityDefinition current = host.State.CurrentDefinition;
+            var current = host.State.CurrentDefinition;
             return current.IsValid
                 ? current.NextActivityTransitionContinuePolicy
                 : ActivityTransitionContinuePolicy.Unknown;
@@ -2779,7 +2778,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "<none>";
             }
 
-            ActivitySetupInventory inventory = host.GetCurrentActivitySetupInventory();
+            var inventory = host.GetCurrentActivitySetupInventory();
             if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
             {
                 return "<none>";

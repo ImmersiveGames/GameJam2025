@@ -58,16 +58,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             var address = new SaveAddress(
                 SaveScope.Progression,
                 SaveGroup.RouteActivity,
-                ownerId: normalizedActivityIdentity,
-                recordId: slotContext.SnapshotId.Value,
-                slotId: slotContext.SlotId.Value,
-                schemaId: "progression.route_activity",
-                schemaVersion: saveConfig.SchemaVersion);
+                normalizedActivityIdentity,
+                slotContext.SnapshotId.Value,
+                slotContext.SlotId.Value,
+                "progression.route_activity",
+                saveConfig.SchemaVersion);
             var request = new SaveRequest(
                 address,
                 new Dictionary<string, string>(StringComparer.Ordinal),
-                revision: 0,
-                savedAtUtc: DateTime.UtcNow.ToString("O"));
+                0,
+                DateTime.UtcNow.ToString("O"));
 
             bool loaded = _saveService.TryLoad(address, out var loadResult, out string loadReason);
             if (!loaded || loadResult == null || !loadResult.IsSuccess)
@@ -160,22 +160,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
             Dictionary<string, string> entries = new(StringComparer.Ordinal)
             {
-                [activitySaveKey] = normalizedPayload,
+                [activitySaveKey] = normalizedPayload
             };
             var address = new SaveAddress(
                 SaveScope.Progression,
                 SaveGroup.RouteActivity,
-                ownerId: normalizedActivityIdentity,
-                recordId: slotContext.SnapshotId.Value,
-                slotId: slotContext.SlotId.Value,
-                schemaId: "progression.route_activity",
-                schemaVersion: saveConfig.SchemaVersion);
+                normalizedActivityIdentity,
+                slotContext.SnapshotId.Value,
+                slotContext.SlotId.Value,
+                "progression.route_activity",
+                saveConfig.SchemaVersion);
             var request = new SaveRequest(
                 address,
                 entries,
-                revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                savedAtUtc: DateTime.UtcNow.ToString("O"),
-                profileId: slotContext.ProfileId);
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                DateTime.UtcNow.ToString("O"),
+                slotContext.ProfileId);
             bool saved = _saveService.TrySave(request, out var saveResult, out string saveReason);
             if (!saved || saveResult == null || !saveResult.IsSuccess)
             {
@@ -217,5 +217,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string normalized = activityIdentity.TrimToEmpty();
             return string.IsNullOrWhiteSpace(normalized) ? string.Empty : $"activity:{normalized}";
         }
-}
+    }
 }

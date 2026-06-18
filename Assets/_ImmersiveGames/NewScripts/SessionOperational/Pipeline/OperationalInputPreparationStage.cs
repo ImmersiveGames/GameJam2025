@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalInputPreparationResult
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public sealed class OperationalInputPreparationStage
     {
@@ -121,19 +121,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             LogInputCapabilityPrepared(command, initialInputMode);
 
             if (!RecordInputStageOrReject(
-                    command,
-                    SessionOperationalStage.InputCapabilityPrepared,
-                    initialInputMode,
-                    "Input capability prepared."))
+                command,
+                SessionOperationalStage.InputCapabilityPrepared,
+                initialInputMode,
+                "Input capability prepared."))
             {
                 throw new InvalidOperationException(BuildMissingInputCapabilityPreparedMessage(command, initialInputMode));
             }
 
             if (!RecordInputStageOrReject(
-                    command,
-                    SessionOperationalStage.InitialInputModePrepared,
-                    initialInputMode,
-                    "Initial input mode prepared."))
+                command,
+                SessionOperationalStage.InitialInputModePrepared,
+                initialInputMode,
+                "Initial input mode prepared."))
             {
                 throw new InvalidOperationException(BuildMissingInitialInputModePreparedMessage(command, initialInputMode));
             }
@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 SessionOperationalInputPolicy.OverlayNavigation => SessionOperationalInputModeKind.PauseOverlay,
                 SessionOperationalInputPolicy.InputLocked => SessionOperationalInputModeKind.InputLocked,
                 _ => throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionOperationalInputCapability] inputPolicy invalida routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' inputPolicy='{command.InputPolicy}' source='{command.Source}' reason='{command.Reason}'."),
+                    $"[FATAL][Config][SessionOperationalInputCapability] inputPolicy invalida routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' inputPolicy='{command.InputPolicy}' source='{command.Source}' reason='{command.Reason}'.")
             };
         }
 
@@ -270,14 +270,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalInputPreparationCommand command,
             SessionOperationalInputModeKind initialInputMode)
         {
-            return $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{command.RoutePlan.OperationalSurfaceKind}' inputPolicy='{command.InputPolicy}' resolvedInputMode='{initialInputMode}' source='{command.Source}' reason='{command.Reason}'.";
+            return
+                $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{command.RoutePlan.OperationalSurfaceKind}' inputPolicy='{command.InputPolicy}' resolvedInputMode='{initialInputMode}' source='{command.Source}' reason='{command.Reason}'.";
         }
 
         private static string BuildMissingInitialInputModePreparedMessage(
             OperationalInputPreparationCommand command,
             SessionOperationalInputModeKind initialInputMode)
         {
-            return $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{command.RoutePlan.OperationalSurfaceKind}' inputPolicy='{command.InputPolicy}' resolvedInputMode='{initialInputMode}' source='{command.Source}' reason='{command.Reason}'.";
+            return
+                $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{command.RoutePlan.OperationalSurfaceKind}' inputPolicy='{command.InputPolicy}' resolvedInputMode='{initialInputMode}' source='{command.Source}' reason='{command.Reason}'.";
         }
     }
 }

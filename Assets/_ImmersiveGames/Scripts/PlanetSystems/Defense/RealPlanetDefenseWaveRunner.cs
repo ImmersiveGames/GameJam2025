@@ -49,7 +49,10 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 
         public DependencyInjectionState InjectionState { get; set; }
 
-        public string GetObjectId() => nameof(RealPlanetDefenseWaveRunner);
+        public string GetObjectId()
+        {
+            return nameof(RealPlanetDefenseWaveRunner);
+        }
 
         public void OnDependenciesInjected()
         {
@@ -161,7 +164,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         $"Target=({loop.primaryTarget?.name ?? "null"}), Label='{loop.primaryTargetLabel}', Role={loop.primaryTargetRole}.");
                 }
 
-                loop.timerHandler = () => {
+                loop.timerHandler = () =>
+                {
                     if (!loop.isActive)
                     {
                         return;
@@ -492,8 +496,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             var roleProfile = context?.MinionBehaviorProfile;
 
             var selectedProfile = strategy?.SelectMinionProfile(role, waveProfile, roleProfile)
-                                   ?? waveProfile
-                                   ?? roleProfile;
+                ?? waveProfile
+                ?? roleProfile;
 
             controller.ApplyProfile(selectedProfile);
 

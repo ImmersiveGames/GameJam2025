@@ -139,5 +139,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 default,
                 reason);
         }
-}
+    }
 }

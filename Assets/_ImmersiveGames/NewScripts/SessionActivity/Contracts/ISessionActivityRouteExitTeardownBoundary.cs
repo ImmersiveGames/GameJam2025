@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Started = 2,
         InProgress = 3,
         Completed = 4,
-        Failed = 5,
+        Failed = 5
     }
 
     public readonly struct SessionActivityRouteExitTeardownResult
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', activityId='{ActivityId}', hasPendingHandoff='{HasPendingHandoff}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
 
     public enum SessionActivitySessionResetKind
@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         NotRequired = 1,
         Completed = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct SessionActivitySessionResetResult
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', activityId='{ActivityId}', sessionActorCountBefore='{SessionActorCountBefore}', sessionActorCountAfter='{SessionActorCountAfter}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
 
     public enum SessionActivityRouteExitTeardownPreflightKind
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Accepted = 1,
         NotRequired = 2,
         RejectedByPolicy = 3,
-        Failed = 4,
+        Failed = 4
     }
 
     public readonly struct SessionActivityRouteExitTeardownPreflightResult
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', railKind='{RailKind}', activityId='{ActivityId}', hasPendingOperation='{HasPendingOperation}', reason='{Reason}', detail='{Detail}'";
         }
-}
+    }
 
     public interface ISessionActivityRouteExitTeardownBoundary
     {

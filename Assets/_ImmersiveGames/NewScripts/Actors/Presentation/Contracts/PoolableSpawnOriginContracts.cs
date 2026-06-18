@@ -14,16 +14,33 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(PoolableSpawnOriginId other) =>
-            string.Equals(Value, other.Value, StringComparison.Ordinal);
+        public bool Equals(PoolableSpawnOriginId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
 
-        public override bool Equals(object obj) => obj is PoolableSpawnOriginId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public override bool Equals(object obj)
+        {
+            return obj is PoolableSpawnOriginId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(PoolableSpawnOriginId left, PoolableSpawnOriginId right) => left.Equals(right);
-        public static bool operator !=(PoolableSpawnOriginId left, PoolableSpawnOriginId right) => !left.Equals(right);
-}
+        public static bool operator ==(PoolableSpawnOriginId left, PoolableSpawnOriginId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(PoolableSpawnOriginId left, PoolableSpawnOriginId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public enum PoolableSpawnOriginKind
     {
@@ -81,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
 
         public Vector3 Position => OriginTransform != null ? OriginTransform.position : default;
         public Vector3 Direction => OriginTransform != null ? OriginTransform.forward : Vector3.forward;
-}
+    }
 
     public interface IPoolableSpawnOriginSurface
     {

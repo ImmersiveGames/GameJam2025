@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
-    [DefaultExecutionOrder(-10), DebugLevel(DebugLevel.Warning)]
+    [DefaultExecutionOrder(-10)] [DebugLevel(DebugLevel.Warning)]
     public class ActorMaster : MonoBehaviour, IActor, IHasSkin, IResettable
     {
         [Header("Actor Identity")]
@@ -130,11 +130,10 @@ namespace _ImmersiveGames.Scripts.ActorSystems
         protected virtual void OnDestroy()
         {
             // Desregistrar bindings individuais para evitar leaks
-            FilteredEventBus<string,DeathEvent>.Unregister(ActorId,_deathBinding);
-            FilteredEventBus<string,DamageEvent>.Unregister(ActorId,_damageBinding);
-            FilteredEventBus<string,ReviveEvent>.Unregister(ActorId, _reviveBinding);
-            FilteredEventBus<string, ResetEvent>.Unregister(ActorId,_resetBinding);
+            FilteredEventBus<string, DeathEvent>.Unregister(ActorId, _deathBinding);
+            FilteredEventBus<string, DamageEvent>.Unregister(ActorId, _damageBinding);
+            FilteredEventBus<string, ReviveEvent>.Unregister(ActorId, _reviveBinding);
+            FilteredEventBus<string, ResetEvent>.Unregister(ActorId, _resetBinding);
         }
     }
 }
-

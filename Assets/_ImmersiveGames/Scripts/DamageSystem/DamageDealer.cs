@@ -141,7 +141,6 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
 
 
-
         public void DealDamage(IDamageReceiver target, DamageContext ctx)
         {
             target.ReceiveDamage(ctx);
@@ -153,4 +152,3 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         }
     }
 }
-

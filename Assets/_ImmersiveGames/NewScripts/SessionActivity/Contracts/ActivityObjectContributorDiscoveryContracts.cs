@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unknown = 0,
         SceneObject = 1,
         RuntimeObject = 2,
-        AdapterProxy = 3,
+        AdapterProxy = 3
     }
 
     public readonly struct ActivityObjectContributionReport
@@ -85,9 +85,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{SceneName}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(ResetBoundaryEligibility)}', resetDescriptor='endpoint_inventory', descriptorMode='endpoint_inventory', releaseKinds='{SupportedReleaseKinds.Count}', source='{Source}', reason='{Reason}'";
+            return
+                $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{SceneName}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(ResetBoundaryEligibility)}', resetDescriptor='endpoint_inventory', descriptorMode='endpoint_inventory', releaseKinds='{SupportedReleaseKinds.Count}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityObjectContributorDiscoveryResult
     {
@@ -124,5 +125,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', reports='{Reports.Count}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 }

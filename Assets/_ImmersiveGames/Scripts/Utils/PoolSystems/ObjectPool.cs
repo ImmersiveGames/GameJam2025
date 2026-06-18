@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (!ValidatePool())
             {
-                return new();
+                return new List<IPoolable>();
             }
 
             var result = new List<IPoolable>();

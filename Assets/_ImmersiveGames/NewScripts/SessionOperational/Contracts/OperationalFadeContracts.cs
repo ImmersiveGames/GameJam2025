@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
     {
         Unknown = 0,
         CloseCurtain = 1,
-        OpenCurtain = 2,
+        OpenCurtain = 2
     }
 
     public enum OperationalFadeResultKind
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public interface IOperationalFadePort
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Reason { get; }
 
         public bool IsValid => RouteCommand.IsValid && Direction != OperationalFadeDirection.Unknown;
-}
+    }
 
     public readonly struct OperationalFadeResult
     {
@@ -105,5 +105,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 reason,
                 detail);
         }
-}
+    }
 }

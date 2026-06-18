@@ -127,7 +127,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             if (sourceChanged || targetChanged)
             {
                 DebugUtility.LogVerbose<RuntimeAttributeContext>($"Link transfer: {type} -> {linkConfig.targetRuntimeAttribute}, " +
-                                                       $"Source: -{sourceReduction}, Target: -{remainingReduction}");
+                    $"Source: -{sourceReduction}, Target: -{remainingReduction}");
             }
         }
 
@@ -211,8 +211,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
             }
         }
 
-        public IRuntimeAttributeValue Get(RuntimeAttributeType type) => _resources.GetValueOrDefault(type);
-        public IReadOnlyDictionary<RuntimeAttributeType, IRuntimeAttributeValue> GetAll() => _resources;
+        public IRuntimeAttributeValue Get(RuntimeAttributeType type)
+        {
+            return _resources.GetValueOrDefault(type);
+        }
+        public IReadOnlyDictionary<RuntimeAttributeType, IRuntimeAttributeValue> GetAll()
+        {
+            return _resources;
+        }
 
         public RuntimeAttributeInstanceConfig GetInstanceConfig(RuntimeAttributeType runtimeAttributeType)
         {
@@ -308,4 +314,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         External = 3
     }
 }
-

@@ -19,20 +19,20 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 
         [Header("Entrada / Ã“rbita")]
         [Tooltip("DuraÃ§Ã£o da animaÃ§Ã£o de saÃ­da do centro do planeta atÃ© a Ã³rbita.")]
-        [SerializeField, Min(0.1f)]
+        [SerializeField] [Min(0.1f)]
         private float entryDurationSeconds = 0.75f;
 
         [Tooltip("Fator de escala inicial ao surgir no centro do planeta (0..1).")]
-        [SerializeField, Range(0.05f, 1f)]
+        [SerializeField] [Range(0.05f, 1f)]
         private float initialScaleFactor = 0.2f;
 
         [Tooltip("Tempo parado em Ã³rbita antes de iniciar a perseguiÃ§Ã£o (Entry -> OrbitWait -> Chase).")]
-        [SerializeField, Min(0f)]
+        [SerializeField] [Min(0f)]
         private float orbitIdleSeconds = 0.75f;
 
         [Header("PerseguiÃ§Ã£o bÃ¡sica")]
         [Tooltip("Velocidade base da perseguiÃ§Ã£o do minion.")]
-        [SerializeField, Min(0.1f)]
+        [SerializeField] [Min(0.1f)]
         private float chaseSpeed = 3f;
 
         [Header("RotaÃ§Ã£o na perseguiÃ§Ã£o")]
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
         private bool snapFacingOnChaseStart = true;
 
         [Tooltip("Fator de interpolaÃ§Ã£o da rotaÃ§Ã£o durante a perseguiÃ§Ã£o (0 = nÃ£o gira, 1 = vira instantaneamente).")]
-        [SerializeField, Range(0f, 1f)]
+        [SerializeField] [Range(0f, 1f)]
         private float chaseRotationLerpFactor = 0.2f;
 
         [Header("EstratÃ©gias")]

@@ -4,7 +4,7 @@ namespace Starfield_Skybox.Demo.Script
     public class LookCamera : MonoBehaviour
     {
         public float speedNormal = 10.0f;
-        public float speedFast   = 50.0f;
+        public float speedFast = 50.0f;
 
         public float mouseSensitivityX = 5.0f;
         public float mouseSensitivityY = 5.0f;

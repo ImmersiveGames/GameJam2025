@@ -7,5 +7,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
         Task<SceneCompositionResult> ApplyAsync(SceneCompositionRequest request, CancellationToken ct = default);
     }
 }
-
-

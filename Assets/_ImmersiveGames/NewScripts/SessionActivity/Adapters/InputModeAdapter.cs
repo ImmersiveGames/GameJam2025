@@ -9,9 +9,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         {
             SessionActivityInputModeObservation observation = new(
                 command,
-                fact: "InputModeObserved",
-                snapshot: "input_mode_observed",
-                outcome: "observed_noop");
+                "InputModeObserved",
+                "input_mode_observed",
+                "observed_noop");
 
             if (!observation.IsValid)
             {
@@ -30,4 +30,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         }
     }
 }
-

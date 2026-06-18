@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalRouteMaterializationBoundaryResult
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0;
-}
+    }
 
     public sealed class OperationalRouteMaterializationBoundary
     {
@@ -123,5 +123,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"OperationalRouteMaterializationCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
         }
-}
+    }
 }

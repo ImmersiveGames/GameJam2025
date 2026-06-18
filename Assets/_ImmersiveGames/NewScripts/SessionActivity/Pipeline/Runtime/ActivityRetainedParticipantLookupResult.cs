@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         Resolved = 1,
         Missed = 2,
         RejectedStale = 3,
-        RejectedForeign = 4,
+        RejectedForeign = 4
     }
 
     public enum ActivityRetainedParticipantLookupSourceKind
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         None = 1,
         ActiveRegistry = 2,
         RouteRegistry = 3,
-        SessionActorStore = 4,
+        SessionActorStore = 4
     }
 
     public readonly struct ActivityRetainedParticipantLookupResult
@@ -63,5 +63,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             OutcomeKind == ActivityRetainedParticipantLookupOutcomeKind.RejectedForeign;
 
         public bool ShouldMaterializeNew => OutcomeKind == ActivityRetainedParticipantLookupOutcomeKind.Missed;
-}
+    }
 }

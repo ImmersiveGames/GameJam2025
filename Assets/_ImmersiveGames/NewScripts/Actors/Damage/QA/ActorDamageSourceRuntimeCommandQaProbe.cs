@@ -54,5 +54,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
                 typeof(ActorDamageSourceRuntimeCommandQaProbe),
                 $"event='ActorDamageSourceQaProbeReset' sourceActorId='{sourceActorId.TrimToEmpty()}' targetActorId='{targetActorId.TrimToEmpty()}' damageAmount='{damageAmount:0.###}' reason='component_reset_defaults'.");
         }
-}
+    }
 }

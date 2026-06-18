@@ -91,8 +91,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 if (!commandHub.HasBinding(
-                    ActorCommandId.Move,
-                    ActorCommandTriggerKind.Continuous) &&
+                        ActorCommandId.Move,
+                        ActorCommandTriggerKind.Continuous) &&
                     !commandHub.HasBinding(
                         ActorCommandId.Move,
                         ActorCommandTriggerKind.ValueChanged))
@@ -113,13 +113,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity,
                     requirement.PlayerSlotId,
                     playerActorId,
-                    bindEndpointType: movementEndpoint.GetType().Name);
+                    movementEndpoint.GetType().Name);
 
                 records.Add(new MovementBindingRecord(
                     requirement,
                     actorHandle.ActorIdentity,
-                    bound: true,
-                    observedEndpoint: $"{movementEndpoint.GetType().Name}|hub={commandHub.GetType().Name}|hubPrepared={commandHub.IsPrepared}|hubBound=true|controlEnabled=false"));
+                    true,
+                    $"{movementEndpoint.GetType().Name}|hub={commandHub.GetType().Name}|hubPrepared={commandHub.IsPrepared}|hubBound=true|controlEnabled=false"));
             }
 
             return records;

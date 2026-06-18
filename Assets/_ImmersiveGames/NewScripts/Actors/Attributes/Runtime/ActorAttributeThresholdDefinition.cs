@@ -11,13 +11,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
         [SerializeField] private ActorAttributeThresholdPresetKind presetKind = ActorAttributeThresholdPresetKind.Custom;
         [SerializeField] private ActorAttributeThresholdId thresholdId;
-        [SerializeField, Range(0f, 1f)] private float normalizedValue;
+        [SerializeField] [Range(0f, 1f)] private float normalizedValue;
         [SerializeField] private ActorAttributeThresholdDirection direction = ActorAttributeThresholdDirection.Descending;
         [SerializeField] private bool emitOnInitialState;
 
-        public ActorAttributeThresholdDefinition()
-        {
-        }
+        public ActorAttributeThresholdDefinition() { }
 
         public ActorAttributeThresholdDefinition(
             ActorAttributeThresholdId thresholdId,
@@ -29,9 +27,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 thresholdId,
                 normalizedValue,
                 direction,
-                emitOnInitialState)
-        {
-        }
+                emitOnInitialState) { }
 
         public ActorAttributeThresholdDefinition(
             ActorAttributeThresholdPresetKind presetKind,
@@ -128,14 +124,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         public static bool IsKnownDirection(ActorAttributeThresholdDirection candidate)
         {
             return candidate == ActorAttributeThresholdDirection.Descending ||
-                   candidate == ActorAttributeThresholdDirection.Ascending;
+                candidate == ActorAttributeThresholdDirection.Ascending;
         }
 
         public static bool IsKnownPresetKind(ActorAttributeThresholdPresetKind candidate)
         {
             return candidate == ActorAttributeThresholdPresetKind.Custom ||
-                   candidate == ActorAttributeThresholdPresetKind.Depleted ||
-                   candidate == ActorAttributeThresholdPresetKind.Full;
+                candidate == ActorAttributeThresholdPresetKind.Depleted ||
+                candidate == ActorAttributeThresholdPresetKind.Full;
         }
 
         private bool IsPresetShapeValid()
@@ -146,10 +142,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                     return true;
                 case ActorAttributeThresholdPresetKind.Depleted:
                     return direction == ActorAttributeThresholdDirection.Descending &&
-                           NearlyEquals(normalizedValue, DepletedNormalizedValue);
+                        NearlyEquals(normalizedValue, DepletedNormalizedValue);
                 case ActorAttributeThresholdPresetKind.Full:
                     return direction == ActorAttributeThresholdDirection.Ascending &&
-                           NearlyEquals(normalizedValue, FullNormalizedValue);
+                        NearlyEquals(normalizedValue, FullNormalizedValue);
                 default:
                     return false;
             }
@@ -185,9 +181,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         private static bool IsValidNormalizedValue(float value)
         {
             return !float.IsNaN(value) &&
-                   !float.IsInfinity(value) &&
-                   value >= 0f &&
-                   value <= 1f;
+                !float.IsInfinity(value) &&
+                value is >= 0f and <= 1f;
         }
 
         private static float Clamp01(float value)

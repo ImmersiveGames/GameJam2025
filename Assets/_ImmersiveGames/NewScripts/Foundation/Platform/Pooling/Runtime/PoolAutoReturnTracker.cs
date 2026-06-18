@@ -143,9 +143,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             return instance != null ? instance.name : "null";
         }
 
-        private sealed class AutoReturnCoroutineHost : MonoBehaviour
-        {
-        }
+        private sealed class AutoReturnCoroutineHost : MonoBehaviour { }
     }
 }
-

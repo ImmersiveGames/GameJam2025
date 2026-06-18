@@ -20,51 +20,51 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
         public sealed class FireModeAuthoring
         {
             [Header("Modo de disparo")]
-            [SerializeField, InspectorName("Nome interno do modo"), Tooltip("Identificador técnico do modo de disparo. Ex.: fire.primary.single. Usado por logs, binding e seleção de fire mode.")]
+            [SerializeField] [InspectorName("Nome interno do modo")] [Tooltip("Identificador técnico do modo de disparo. Ex.: fire.primary.single. Usado por logs, binding e seleção de fire mode.")]
             private string fireModeId;
 
             [Header("Projétil disparado")]
-            [SerializeField, InspectorName("Perfil de spawn do projétil"), Tooltip("Define o que nasce quando este modo dispara: pool, role/scope e policies do actor spawnado. Não coloque prefab/pool direto no FireProfile.")]
+            [SerializeField] [InspectorName("Perfil de spawn do projétil")] [Tooltip("Define o que nasce quando este modo dispara: pool, role/scope e policies do actor spawnado. Não coloque prefab/pool direto no FireProfile.")]
             private ActorProjectileSpawnProfileAsset projectileSpawnProfile;
 
             [Header("Layer do spawn")]
-            [SerializeField, InspectorName("Modo de layer"), Tooltip("Layer do projectile runtime-spawned. None não altera o layer; Override aplica o layer resolvido no RuntimeSpawnedActor.")]
+            [SerializeField] [InspectorName("Modo de layer")] [Tooltip("Layer do projectile runtime-spawned. None não altera o layer; Override aplica o layer resolvido no RuntimeSpawnedActor.")]
             private ActorProjectileSpawnLayerModeKind spawnLayerMode = ActorProjectileSpawnLayerModeKind.None;
-            [SerializeField, InspectorName("LayerMask do spawn"), Tooltip("LayerMask opcional usado quando o modo é Override. Mask vazio significa não aplicar override.")]
+            [SerializeField] [InspectorName("LayerMask do spawn")] [Tooltip("LayerMask opcional usado quando o modo é Override. Mask vazio significa não aplicar override.")]
             private LayerMask spawnLayerMask;
-            [SerializeField, InspectorName("Aplicar em children"), Tooltip("Quando ligado, o override de layer é aplicado também nos filhos do spawned actor.")]
+            [SerializeField] [InspectorName("Aplicar em children")] [Tooltip("Quando ligado, o override de layer é aplicado também nos filhos do spawned actor.")]
             private bool applyLayerToChildren;
 
             [Header("Movimento")]
-            [SerializeField, InspectorName("Estratégia de movimento"), Tooltip("Estratégia de movimento deste fire mode. Este corte aceita apenas Linear.")]
+            [SerializeField] [InspectorName("Estratégia de movimento")] [Tooltip("Estratégia de movimento deste fire mode. Este corte aceita apenas Linear.")]
             private ActorProjectileMotionStrategyKind motionStrategy = ActorProjectileMotionStrategyKind.Linear;
-            [SerializeField, Min(0f), InspectorName("Velocidade linear"), Tooltip("Velocidade linear aplicada ao projectile runtime-spawned quando este fire mode dispara.")]
+            [SerializeField] [Min(0f)] [InspectorName("Velocidade linear")] [Tooltip("Velocidade linear aplicada ao projectile runtime-spawned quando este fire mode dispara.")]
             private float linearSpeed = 18f;
 
             [Header("Áudio do disparo")]
-            [SerializeField, InspectorName("Cue de SFX"), Tooltip("Cue de áudio tocado quando este modo de disparo gera o projectile com sucesso. O cue decide clips/perfil; o pool de vozes pertence ao AudioRuntime global.")]
+            [SerializeField] [InspectorName("Cue de SFX")] [Tooltip("Cue de áudio tocado quando este modo de disparo gera o projectile com sucesso. O cue decide clips/perfil; o pool de vozes pertence ao AudioRuntime global.")]
             private AudioSfxCueAsset fireAudioCue;
-            [SerializeField, Min(0f), InspectorName("Volume do SFX"), Tooltip("Multiplicador de volume aplicado somente ao áudio deste modo de disparo. Pode ser maior que 1 para compensar áudio espacial baixo sem alterar o volume global nem o pool de vozes.")]
+            [SerializeField] [Min(0f)] [InspectorName("Volume do SFX")] [Tooltip("Multiplicador de volume aplicado somente ao áudio deste modo de disparo. Pode ser maior que 1 para compensar áudio espacial baixo sem alterar o volume global nem o pool de vozes.")]
             private float fireAudioVolumeScale = 1f;
 
             [Header("Runtime ativo")]
-            [SerializeField, InspectorName("Origem/direção do disparo"), Tooltip("Política de origem/direção do disparo. ActorForward está ativo no MVP; NamedMuzzleSocket fica reservado até existir resolução de muzzle socket.")]
+            [SerializeField] [InspectorName("Origem/direção do disparo")] [Tooltip("Política de origem/direção do disparo. ActorForward está ativo no MVP; NamedMuzzleSocket fica reservado até existir resolução de muzzle socket.")]
             private ActorProjectileMuzzlePolicyKind muzzlePolicy = ActorProjectileMuzzlePolicyKind.Unknown;
-            [SerializeField, Min(0f), InspectorName("Tempo entre disparos (s)"), Tooltip("Cooldown mínimo entre disparos deste modo, em segundos. 0 permite disparo sem cooldown local.")]
+            [SerializeField] [Min(0f)] [InspectorName("Tempo entre disparos (s)")] [Tooltip("Cooldown mínimo entre disparos deste modo, em segundos. 0 permite disparo sem cooldown local.")]
             private float cooldownSeconds;
-            [SerializeField, InspectorName("ID da origem de spawn"), Tooltip("ID da origem materializada na presentation usada para resolver o origin/direction do disparo. Deve corresponder a um PoolableSpawnOriginAnchor quando existir anchor typed.")]
+            [SerializeField] [InspectorName("ID da origem de spawn")] [Tooltip("ID da origem materializada na presentation usada para resolver o origin/direction do disparo. Deve corresponder a um PoolableSpawnOriginAnchor quando existir anchor typed.")]
             private string spawnOriginId = "actor.player.primary.origin";
-            [SerializeField, InspectorName("Modo de resolução da origem"), Tooltip("Define se o disparo exige anchor typed ou se pode usar fallback explícito para o root/emitter materializado quando o anchor não existir.")]
+            [SerializeField] [InspectorName("Modo de resolução da origem")] [Tooltip("Define se o disparo exige anchor typed ou se pode usar fallback explícito para o root/emitter materializado quando o anchor não existir.")]
             private PoolableSpawnOriginResolutionMode spawnOriginResolutionMode = PoolableSpawnOriginResolutionMode.PreferTypedOriginUseEmitterRoot;
 
             [Header("Planejado / sem efeito runtime completo no MVP atual")]
-            [SerializeField, InspectorName("Padrão do disparo"), Tooltip("Single é o caminho runtime validado. LinearBurst e RadialArc permanecem como authoring planejado, mas ainda não geram múltiplos spawns no MVP atual.")]
+            [SerializeField] [InspectorName("Padrão do disparo")] [Tooltip("Single é o caminho runtime validado. LinearBurst e RadialArc permanecem como authoring planejado, mas ainda não geram múltiplos spawns no MVP atual.")]
             private ActorProjectileSpawnPatternKind spawnPattern = ActorProjectileSpawnPatternKind.Single;
-            [SerializeField, InspectorName("Variação de mira"), Tooltip("None é o caminho runtime validado. FixedAngle e RandomRange permanecem visíveis para desenho futuro, mas ainda não alteram a direção no MVP atual.")]
+            [SerializeField] [InspectorName("Variação de mira")] [Tooltip("None é o caminho runtime validado. FixedAngle e RandomRange permanecem visíveis para desenho futuro, mas ainda não alteram a direção no MVP atual.")]
             private ActorProjectileSpreadPolicyKind spreadPolicy = ActorProjectileSpreadPolicyKind.None;
-            [SerializeField, Min(1), InspectorName("Quantidade de projéteis"), Tooltip("Usado por LinearBurst/RadialArc planejados. No MVP atual, Single força 1 e o adapter executa um spawn.")]
+            [SerializeField] [Min(1)] [InspectorName("Quantidade de projéteis")] [Tooltip("Usado por LinearBurst/RadialArc planejados. No MVP atual, Single força 1 e o adapter executa um spawn.")]
             private int projectileCount = 1;
-            [SerializeField, Min(0f), InspectorName("Arco radial (graus)"), Tooltip("Usado por RadialArc planejado. Sem efeito runtime completo enquanto o plano de múltiplos spawns não existir.")]
+            [SerializeField] [Min(0f)] [InspectorName("Arco radial (graus)")] [Tooltip("Usado por RadialArc planejado. Sem efeito runtime completo enquanto o plano de múltiplos spawns não existir.")]
             private float radialArcDegrees;
 
             public string FireModeId => fireModeId.TrimToEmpty();
@@ -214,19 +214,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     ActorProjectileSpawnPatternKind.Single => new ActorProjectileSpawnPattern(spawnPattern, 1, 0f),
                     ActorProjectileSpawnPatternKind.LinearBurst => new ActorProjectileSpawnPattern(spawnPattern, Math.Max(2, ProjectileCount), 0f),
                     ActorProjectileSpawnPatternKind.RadialArc => new ActorProjectileSpawnPattern(spawnPattern, Math.Max(2, ProjectileCount), Math.Max(0.01f, RadialArcDegrees)),
-                    _ => default,
+                    _ => default
                 };
             }
         }
 
         [Header("Perfil de disparo")]
-        [SerializeField, InspectorName("Nome interno do perfil"), Tooltip("Identificador técnico do perfil de disparo. O asset é authoring data e não executa spawn por conta própria.")]
+        [SerializeField] [InspectorName("Nome interno do perfil")] [Tooltip("Identificador técnico do perfil de disparo. O asset é authoring data e não executa spawn por conta própria.")]
         private string profileId;
-        [SerializeField, InspectorName("Modo padrão"), Tooltip("Modo de disparo usado pelo endpoint quando o binding não especifica outro modo. Deve existir na lista de modos.")]
+        [SerializeField] [InspectorName("Modo padrão")] [Tooltip("Modo de disparo usado pelo endpoint quando o binding não especifica outro modo. Deve existir na lista de modos.")]
         private string defaultFireModeId;
 
         [Header("Modos de disparo")]
-        [SerializeField, InspectorName("Modos"), Tooltip("Lista de modos de disparo. Cada modo escolhe um perfil de spawn e agrupa opções ativas e planejadas do disparo.")]
+        [SerializeField] [InspectorName("Modos")] [Tooltip("Lista de modos de disparo. Cada modo escolhe um perfil de spawn e agrupa opções ativas e planejadas do disparo.")]
         private FireModeAuthoring[] fireModes = Array.Empty<FireModeAuthoring>();
 
         public ActorProjectileProfileId ProfileId => new(profileId.TrimToEmpty());
@@ -256,13 +256,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     throw new InvalidOperationException($"ActorProjectileFireProfileAsset invalid fire mode='{fireMode.FireModeId}' at index='{index}'. reason='{reason}' asset='{name}'.");
                 }
 
-                PoolDefinitionAsset poolDefinition = builtFireMode.PoolDefinition;
+                var poolDefinition = builtFireMode.PoolDefinition;
                 if (poolDefinition == null)
                 {
                     continue;
                 }
 
-                EntityId poolDefinitionId = poolDefinition.GetEntityId();
+                var poolDefinitionId = poolDefinition.GetEntityId();
                 if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
                 {
                     continue;
@@ -389,5 +389,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             }
         }
 #endif
-}
+    }
 }

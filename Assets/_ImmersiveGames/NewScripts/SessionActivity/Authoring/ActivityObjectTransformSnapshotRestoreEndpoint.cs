@@ -34,8 +34,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             string local = targetId.TrimToEmpty();
             string requested = requestedTargetId.TrimToEmpty();
             return !string.IsNullOrWhiteSpace(local) &&
-                   !string.IsNullOrWhiteSpace(requested) &&
-                   string.Equals(local, requested, StringComparison.Ordinal);
+                !string.IsNullOrWhiteSpace(requested) &&
+                string.Equals(local, requested, StringComparison.Ordinal);
         }
 
         public ActivityObjectSnapshotRestoreResult ApplyRestore(ActivityObjectSnapshotRestoreCommand command)
@@ -51,13 +51,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
                     command,
-                    restoreVerified: false,
-                    beforePositionX: selfPosition.x,
-                    beforePositionY: selfPosition.y,
-                    beforePositionZ: selfPosition.z,
-                    afterPositionX: selfPosition.x,
-                    afterPositionY: selfPosition.y,
-                    afterPositionZ: selfPosition.z,
+                    false,
+                    selfPosition.x,
+                    selfPosition.y,
+                    selfPosition.z,
+                    selfPosition.x,
+                    selfPosition.y,
+                    selfPosition.z,
                     command.Source,
                     command.Reason,
                     $"target_not_supported targetId='{command.TargetId}' endpointTargetId='{targetId.TrimToEmpty()}'");
@@ -69,13 +69,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.Failed,
                     command,
-                    restoreVerified: false,
-                    beforePositionX: selfPosition.x,
-                    beforePositionY: selfPosition.y,
-                    beforePositionZ: selfPosition.z,
-                    afterPositionX: selfPosition.x,
-                    afterPositionY: selfPosition.y,
-                    afterPositionZ: selfPosition.z,
+                    false,
+                    selfPosition.x,
+                    selfPosition.y,
+                    selfPosition.z,
+                    selfPosition.x,
+                    selfPosition.y,
+                    selfPosition.z,
                     command.Source,
                     command.Reason,
                     $"target_transform_missing targetId='{command.TargetId}' contributorPath='{BuildTransformPath(transform)}' restoreEndpointPath='{BuildTransformPath(transform)}' targetTransformPath='<null>'");
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 return new ActivityObjectSnapshotRestoreResult(
                     ActivityObjectSnapshotRestoreResultKind.Failed,
                     command,
-                    restoreVerified: false,
+                    false,
                     beforePosition.x,
                     beforePosition.y,
                     beforePosition.z,
@@ -151,19 +151,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         {
             targetId = targetId.TrimToEmpty();
         }
-private static bool IsNearlyEqual(Vector3 left, Vector3 right, float tolerance)
+        private static bool IsNearlyEqual(Vector3 left, Vector3 right, float tolerance)
         {
             return Mathf.Abs(left.x - right.x) <= tolerance &&
-                   Mathf.Abs(left.y - right.y) <= tolerance &&
-                   Mathf.Abs(left.z - right.z) <= tolerance;
+                Mathf.Abs(left.y - right.y) <= tolerance &&
+                Mathf.Abs(left.z - right.z) <= tolerance;
         }
 
         private static bool IsNearlyEqual(Quaternion left, Quaternion right, float tolerance)
         {
             return Mathf.Abs(left.x - right.x) <= tolerance &&
-                   Mathf.Abs(left.y - right.y) <= tolerance &&
-                   Mathf.Abs(left.z - right.z) <= tolerance &&
-                   Mathf.Abs(left.w - right.w) <= tolerance;
+                Mathf.Abs(left.y - right.y) <= tolerance &&
+                Mathf.Abs(left.z - right.z) <= tolerance &&
+                Mathf.Abs(left.w - right.w) <= tolerance;
         }
 
         private static string BuildTransformPath(Transform target)

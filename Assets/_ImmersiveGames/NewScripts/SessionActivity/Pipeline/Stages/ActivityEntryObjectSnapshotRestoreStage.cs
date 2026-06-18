@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity restoreIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
+            var restoreIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             endpoint.SetCurrentIdentity(restoreIdentity, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
                 facts,
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return;
             }
 
-            LoadedRouteActivitySnapshotPayload loadedPayload = loadedSnapshotPayloadContext.Payload;
+            var loadedPayload = loadedSnapshotPayloadContext.Payload;
 
             if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, command.Identity.SessionId, command.ActivityId))
             {
@@ -74,11 +74,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             if (!TryBuildActivityObjectTransformPayloadByTargetId(
-                    loadedPayload.CapabilitySnapshotEnvelope,
-                    out Dictionary<string, ActivityObjectTransformSnapshotPayload> payloadByTargetId,
-                    out int matchedRecordCount,
-                    out string failureReason,
-                    out string failureDetail))
+                loadedPayload.CapabilitySnapshotEnvelope,
+                out Dictionary<string, ActivityObjectTransformSnapshotPayload> payloadByTargetId,
+                out int matchedRecordCount,
+                out string failureReason,
+                out string failureDetail))
             {
                 endpoint.EmitFact(
                     facts,
@@ -156,13 +156,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                var report = discoveryResult.Reports[reportIndex];
                 if (!IsReportForCurrentEntryForIdentity(report, restoreIdentity, entrySequence, restoreIdentity))
                 {
                     continue;
                 }
 
-                if (!payloadByTargetId.TryGetValue(report.TargetId, out ActivityObjectTransformSnapshotPayload payloadObject) || !payloadObject.IsValid)
+                if (!payloadByTargetId.TryGetValue(report.TargetId, out var payloadObject) || !payloadObject.IsValid)
                 {
                     continue;
                 }
@@ -187,7 +187,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Source,
                     command.Reason);
 
-                ActivityObjectSnapshotRestoreResult result = ExecuteObjectSnapshotRestoreCommand(restoreCommand, endpoints, report);
+                var result = ExecuteObjectSnapshotRestoreCommand(restoreCommand, endpoints, report);
                 if (!IsObjectSnapshotRestoreResultForCurrentEntry(result, restoreIdentity, entrySequence, restoreIdentity))
                 {
                     endpoint.EmitFact(
@@ -264,10 +264,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string activityId)
         {
             return loadedPayload.IsValid &&
-                   string.Equals(loadedPayload.SchemaId, RouteActivitySnapshotSchemaId, StringComparison.Ordinal) &&
-                   string.Equals(loadedPayload.SessionStateId, sessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedPayload.ActivityId, activityId, StringComparison.Ordinal) &&
-                   loadedPayload.SourceEntrySequence > 0;
+                string.Equals(loadedPayload.SchemaId, RouteActivitySnapshotSchemaId, StringComparison.Ordinal) &&
+                string.Equals(loadedPayload.SessionStateId, sessionId, StringComparison.Ordinal) &&
+                string.Equals(loadedPayload.ActivityId, activityId, StringComparison.Ordinal) &&
+                loadedPayload.SourceEntrySequence > 0;
         }
 
         private static bool TryBuildActivityObjectTransformPayloadByTargetId(
@@ -291,7 +291,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < envelope.Records.Count; index++)
             {
-                ActivityCapabilitySnapshotRecord record = envelope.Records[index];
+                var record = envelope.Records[index];
                 if (!IsActivityObjectTransformRecord(record))
                 {
                     continue;
@@ -371,11 +371,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             return record.OwnerKind == ActivityCapabilitySnapshotOwnerKind.ActivityObject &&
                 string.Equals(record.PayloadSchemaId, TransformSnapshotSchemaId, StringComparison.Ordinal) &&
-                record.PayloadSchemaVersion > 0 &&
-                record.PayloadFormat == ActivityCapabilitySnapshotPayloadFormat.Json &&
+                record is { PayloadSchemaVersion: > 0, PayloadFormat: ActivityCapabilitySnapshotPayloadFormat.Json } &&
                 !string.IsNullOrWhiteSpace(record.Payload);
         }
-private readonly struct ActivityObjectTransformSnapshotPayload
+        private readonly struct ActivityObjectTransformSnapshotPayload
         {
             public ActivityObjectTransformSnapshotPayload(
                 string targetId,

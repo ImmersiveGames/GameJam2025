@@ -40,9 +40,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         RuntimeLoadingProfileAsset DefaultLoadingProfile { get; }
     }
 
-    public interface IAudioRuntimeConfigGroupReadOnly
-    {
-    }
+    public interface IAudioRuntimeConfigGroupReadOnly { }
 
     public interface IPreferencesRuntimeConfigGroupReadOnly
     {

@@ -14,14 +14,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(RuntimeSpawnProfileId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is RuntimeSpawnProfileId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(RuntimeSpawnProfileId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is RuntimeSpawnProfileId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(RuntimeSpawnProfileId left, RuntimeSpawnProfileId right) => left.Equals(right);
-        public static bool operator !=(RuntimeSpawnProfileId left, RuntimeSpawnProfileId right) => !left.Equals(right);
-}
+        public static bool operator ==(RuntimeSpawnProfileId left, RuntimeSpawnProfileId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(RuntimeSpawnProfileId left, RuntimeSpawnProfileId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct RuntimeSpawnOriginMetadata
     {
@@ -58,5 +76,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             PoolDefinition != null;
 
         public string PoolDefinitionName => PoolDefinition == null ? string.Empty : PoolDefinition.name;
-}
+    }
 }

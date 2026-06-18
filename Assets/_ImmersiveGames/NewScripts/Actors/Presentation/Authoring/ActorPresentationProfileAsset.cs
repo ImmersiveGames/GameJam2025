@@ -130,5 +130,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Authoring
             primarySlotId = primarySlotId.TrimToEmpty();
             slotRequirements ??= new List<ActorPresentationSlotRequirement>();
         }
-}
+    }
 }

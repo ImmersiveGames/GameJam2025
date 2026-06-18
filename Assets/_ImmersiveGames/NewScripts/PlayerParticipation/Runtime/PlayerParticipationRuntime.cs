@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
         Unknown = 0,
         Created = 1,
         Reused = 2,
-        ReplacedInvalid = 3,
+        ReplacedInvalid = 3
     }
 
     public readonly struct PlayerParticipationRuntimeContextResult
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
             !string.IsNullOrWhiteSpace(SessionId) &&
             Revision > 0 &&
             Context is { IsValid: true };
-}
+    }
 
     public interface IPlayerParticipationRuntime
     {
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
 
             return normalized;
         }
-private sealed class PlayerParticipationRuntimeState
+        private sealed class PlayerParticipationRuntimeState
         {
             public PlayerParticipationRuntimeState(
                 string sessionId,

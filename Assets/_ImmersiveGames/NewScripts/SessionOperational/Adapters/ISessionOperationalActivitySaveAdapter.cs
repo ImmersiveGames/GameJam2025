@@ -25,14 +25,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         NoSaveContributors = 15,
         SnapshotPayloadExpectedButMissing = 16,
         SnapshotPayloadResolved = 17,
-        Unknown = 18,
+        Unknown = 18
     }
 
     public enum RouteActivitySaveLoadOutcomeKind
     {
         Unknown = 0,
         Loaded = 1,
-        Skipped = 2,
+        Skipped = 2
     }
 
     public enum RouteActivitySaveSnapshotFailureKind
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         NoSaveContributors = 13,
         SnapshotPayloadExpectedButMissing = 14,
         SnapshotPayloadResolved = 15,
-        UnknownFailure = 16,
+        UnknownFailure = 16
     }
 
     public readonly struct RouteActivitySaveLoadResult
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
     {
         Unknown = 0,
         Saved = 1,
-        Skipped = 2,
+        Skipped = 2
     }
 
     public readonly struct RouteActivitySaveSaveResult
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 RouteActivitySaveSkipKind.SnapshotPayloadExpectedButMissing => "snapshot_payload_expected_but_missing",
                 RouteActivitySaveSkipKind.SnapshotPayloadResolved => "snapshot_payload_resolved",
                 RouteActivitySaveSkipKind.None => "none",
-                _ => "unknown",
+                _ => "unknown"
             };
         }
     }

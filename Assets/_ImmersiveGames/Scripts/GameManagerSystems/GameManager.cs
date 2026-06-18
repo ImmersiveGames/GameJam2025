@@ -183,7 +183,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         #region Internal helpers & DI
 
-
         private void ConfigureDebug()
         {
             var manager = ResolveDebugManager();
@@ -198,11 +197,11 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         {
             var provider = DependencyManager.Provider;
 
-            provider.RegisterGlobal<IGameManager>(this, allowOverride: true);
+            provider.RegisterGlobal<IGameManager>(this, true);
 
             if (gameConfig != null)
             {
-                provider.RegisterGlobal(gameConfig, allowOverride: true);
+                provider.RegisterGlobal(gameConfig, true);
             }
 
         }
@@ -232,5 +231,3 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         #endregion
     }
 }
-
-

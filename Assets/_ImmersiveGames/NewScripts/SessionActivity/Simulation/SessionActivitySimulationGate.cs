@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 ActivityExecutionBlockingCommandKind.ReleaseActivityExecution => ExecuteReleaseActivity(command),
                 ActivityExecutionBlockingCommandKind.BlockSessionSimulation => ExecuteBlockSession(command),
                 ActivityExecutionBlockingCommandKind.ReleaseSessionSimulation => ExecuteReleaseSession(command),
-                _ => Reject(command, "unsupported_gate_command", $"Unsupported gate command '{command.Kind}'."),
+                _ => Reject(command, "unsupported_gate_command", $"Unsupported gate command '{command.Kind}'.")
             };
         }
 
@@ -134,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             var snapshot = BuildSnapshot(command, fact, message);
             UpdateDiagnostics(fact, snapshot);
-            LogResult(command, fact, snapshot, accepted: true);
+            LogResult(command, fact, snapshot, true);
 
             return new ActivityExecutionBlockingResult(command, new[] { fact }, snapshot, "accepted");
         }
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             var snapshot = BuildSnapshot(command, fact, message);
             UpdateDiagnostics(fact, snapshot);
-            LogResult(command, fact, snapshot, accepted: false);
+            LogResult(command, fact, snapshot, false);
 
             return new ActivityExecutionBlockingResult(command, new[] { fact }, snapshot, rejectionReason);
         }
@@ -205,4 +205,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         }
     }
 }
-

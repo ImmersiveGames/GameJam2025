@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 SessionOperationalInputModeKind.PauseOverlay => InputModeRequestKind.PauseOverlay,
                 SessionOperationalInputModeKind.InputLocked => InputModeRequestKind.InputLocked,
                 _ => throw new InvalidOperationException(
-                    $"[FATAL][H1][InputModes] Unsupported SessionOperationalInputModeKind '{initialInputMode}' contextSignature='{contextSignature}'."),
+                    $"[FATAL][H1][InputModes] Unsupported SessionOperationalInputModeKind '{initialInputMode}' contextSignature='{contextSignature}'.")
             };
         }
     }

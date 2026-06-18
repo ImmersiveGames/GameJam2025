@@ -33,8 +33,14 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
             return StringComparer.Ordinal.GetHashCode(Value ?? string.Empty);
         }
 
-        public static bool operator ==(SaveSlotId left, SaveSlotId right) => left.Equals(right);
-        public static bool operator !=(SaveSlotId left, SaveSlotId right) => !left.Equals(right);
+        public static bool operator ==(SaveSlotId left, SaveSlotId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SaveSlotId left, SaveSlotId right)
+        {
+            return !left.Equals(right);
+        }
 
         private static string NormalizeRequired(string value, string paramName)
         {

@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Config
             new Vector2Int(1366, 768),
             new Vector2Int(1600, 900),
             new Vector2Int(1920, 1080),
-            new Vector2Int(2560, 1440),
+            new Vector2Int(2560, 1440)
         };
 
         public int DefaultResolutionWidth => defaultResolutionWidth;
@@ -85,4 +85,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Config
         }
     }
 }
-

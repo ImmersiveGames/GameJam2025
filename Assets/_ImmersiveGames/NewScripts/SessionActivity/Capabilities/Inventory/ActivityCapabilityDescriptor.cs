@@ -55,5 +55,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"capabilityId='{CapabilityId}', capabilityKind='{CapabilityKind}', moduleId='{ModuleId}', ownerId='{OwnerId}', componentPath='{ComponentPath}', componentType='{ComponentType}', required='{Required}', priority='{Priority}'";
         }
-}
+    }
 }

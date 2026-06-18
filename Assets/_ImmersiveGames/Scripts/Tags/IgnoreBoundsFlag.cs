@@ -1,8 +1,5 @@
 ﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.Tags
 {
-    public class IgnoreBoundsFlag : MonoBehaviour
-    {
-        
-    }
+    public class IgnoreBoundsFlag : MonoBehaviour { }
 }

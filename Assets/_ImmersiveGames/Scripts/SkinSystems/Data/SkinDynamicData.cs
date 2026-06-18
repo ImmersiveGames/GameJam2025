@@ -9,13 +9,22 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
         public Color colorModifier;
         public float progressValue;
         public string stateName;
-        
+
         // Métodos de factory para casos comuns
-        public static SkinDynamicData CreateProgressData(float progress) => new()
-            { progressValue = progress };
-        public static SkinDynamicData CreateColorData(Color color) => new()
-            { colorModifier = color };
-        public static SkinDynamicData CreateScaleData(Vector3 scale) => new()
-            { scaleModifier = scale };
+        public static SkinDynamicData CreateProgressData(float progress)
+        {
+            return new SkinDynamicData
+                { progressValue = progress };
+        }
+        public static SkinDynamicData CreateColorData(Color color)
+        {
+            return new SkinDynamicData
+                { colorModifier = color };
+        }
+        public static SkinDynamicData CreateScaleData(Vector3 scale)
+        {
+            return new SkinDynamicData
+                { scaleModifier = scale };
+        }
     }
 }

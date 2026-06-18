@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.Scripts.SkinSystems.Data;
+﻿using System.Collections.Generic;
+using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEditor;
 using UnityEngine;
 
@@ -50,7 +51,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Editor
                         // não faz sentido exigir prefab. Validamos áudio em vez disso.
                         if (skinConfig is ISkinAudioConfig audioConfig)
                         {
-                            var entries = audioConfig.AudioEntries;
+                            IReadOnlyList<SkinAudioEntry> entries = audioConfig.AudioEntries;
                             int count = entries != null ? entries.Count : 0;
 
                             if (count == 0)

@@ -76,4 +76,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
     }
 }
-

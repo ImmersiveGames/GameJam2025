@@ -62,7 +62,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         }
 
         [ContextMenu("🔔 Force Threshold Check")]
-        private void Force() => _service?.ForceCheck();
+        private void Force()
+        {
+            _service?.ForceCheck();
+        }
     }
 }
-

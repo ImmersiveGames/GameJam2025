@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public CinemachineActivityCameraDirector(IOperationalCameraProvider operationalCameraProvider)
         {
-            this._operationalCameraProvider = operationalCameraProvider;
+            _operationalCameraProvider = operationalCameraProvider;
         }
 
         public bool TryPrepareActivityCamera(

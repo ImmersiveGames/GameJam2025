@@ -61,16 +61,22 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Events
         }
     }
 
-    public struct ReviveEvent: IEvent
+    public struct ReviveEvent : IEvent
     {
         public readonly string entityId;
-        public ReviveEvent(string id) => entityId = id;
+        public ReviveEvent(string id)
+        {
+            entityId = id;
+        }
     }
 
-    public struct ResetEvent: IEvent
+    public struct ResetEvent : IEvent
     {
         public readonly string entityId;
-        public ResetEvent(string id) => entityId = id;
+        public ResetEvent(string id)
+        {
+            entityId = id;
+        }
     }
 
     public struct DamagePipelineStarted : IEvent
@@ -153,4 +159,3 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Events
         }
     }
 }
-

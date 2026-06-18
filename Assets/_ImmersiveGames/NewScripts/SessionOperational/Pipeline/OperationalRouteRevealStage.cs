@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalRouteRevealResult
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "completed",
                 string.Empty);
         }
-}
+    }
 
     public sealed class OperationalRouteRevealCommand
     {
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return true;
             }
         }
-}
+    }
 
     public sealed class OperationalRouteRevealStage
     {

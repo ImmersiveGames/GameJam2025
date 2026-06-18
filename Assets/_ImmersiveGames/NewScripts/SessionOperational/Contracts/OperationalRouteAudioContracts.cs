@@ -21,14 +21,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => RouteCommand.IsValid;
-}
+    }
 
     public enum OperationalRouteAudioResultKind
     {
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalRouteAudioResult
@@ -74,5 +74,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 reason,
                 detail);
         }
-}
+    }
 }

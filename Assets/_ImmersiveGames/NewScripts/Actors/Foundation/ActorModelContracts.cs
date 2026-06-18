@@ -17,14 +17,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorDefinitionId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorDefinitionId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorDefinitionId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorDefinitionId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorDefinitionId left, ActorDefinitionId right) => left.Equals(right);
-        public static bool operator !=(ActorDefinitionId left, ActorDefinitionId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorDefinitionId left, ActorDefinitionId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorDefinitionId left, ActorDefinitionId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct ActorDefinitionRef
     {
@@ -40,13 +58,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string SourceAssetPath { get; }
         public bool HasDefinitionId => DefinitionId.IsValid;
         public bool IsValid => DefinitionId.IsValid || !string.IsNullOrWhiteSpace(SourceAssetName);
-}
+    }
 
     public enum ActorKind
     {
         Unknown = 0,
         Player = 1,
-        Actor = 3,
+        Actor = 3
     }
 
     public enum ActorRole
@@ -55,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         PrimaryPlayer = 1,
         SupportingPlayer = 2,
         SceneActor = 3,
-        RuntimeSpawnedActor = 4,
+        RuntimeSpawnedActor = 4
     }
 
     public enum ActorScope
@@ -63,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Unknown = 0,
         ActivityScoped = 1,
         RouteScoped = 2,
-        SessionScoped = 3,
+        SessionScoped = 3
     }
 
     public enum ActorLifetimeTrigger
@@ -71,14 +89,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Unknown = 0,
         ActivityExit = 1,
         RouteExit = 2,
-        SessionReset = 3,
+        SessionReset = 3
     }
 
     public enum ActorLifetimeDecision
     {
         Unknown = 0,
         Retain = 1,
-        Release = 2,
+        Release = 2
     }
 
     public static class ActorLifetimePolicyRuntime
@@ -102,17 +120,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
                     ActorScope.ActivityScoped => ActorLifetimeDecision.Release,
                     ActorScope.RouteScoped => ActorLifetimeDecision.Retain,
                     ActorScope.SessionScoped => ActorLifetimeDecision.Retain,
-                    _ => throw new InvalidOperationException($"Unsupported ActorScope='{actorScope}' for trigger='{trigger}'."),
+                    _ => throw new InvalidOperationException($"Unsupported ActorScope='{actorScope}' for trigger='{trigger}'.")
                 },
                 ActorLifetimeTrigger.RouteExit => actorScope switch
                 {
                     ActorScope.ActivityScoped => ActorLifetimeDecision.Release,
                     ActorScope.RouteScoped => ActorLifetimeDecision.Release,
                     ActorScope.SessionScoped => ActorLifetimeDecision.Retain,
-                    _ => throw new InvalidOperationException($"Unsupported ActorScope='{actorScope}' for trigger='{trigger}'."),
+                    _ => throw new InvalidOperationException($"Unsupported ActorScope='{actorScope}' for trigger='{trigger}'.")
                 },
                 ActorLifetimeTrigger.SessionReset => ActorLifetimeDecision.Release,
-                _ => throw new InvalidOperationException($"Unsupported ActorLifetimeTrigger='{trigger}'."),
+                _ => throw new InvalidOperationException($"Unsupported ActorLifetimeTrigger='{trigger}'.")
             };
         }
 
@@ -127,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Unknown = 0,
         PlayerParticipation = 1,
         ActivityContent = 2,
-        RouteScene = 3,
+        RouteScene = 3
     }
 
     public readonly struct ActorInstanceRecord
@@ -198,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SourceKind != ActorSourceKind.Unknown &&
             !string.IsNullOrWhiteSpace(ParticipationPolicy) &&
             ActorRoot != null;
-}
+    }
 
     public readonly struct ActorEntryRecord
     {
@@ -222,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && ActorInstance.IsValid && EntryOrder >= 0 && !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActorParticipationRecord
     {
@@ -230,7 +248,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         {
             None = 0,
             AllActivitiesInRoute = 1,
-            ExplicitActivityIds = 2,
+            ExplicitActivityIds = 2
         }
 
         public ActorParticipationRecord(
@@ -285,5 +303,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
             return true;
         }
-}
+    }
 }

@@ -39,8 +39,14 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
         public Image IconImage => iconImage;
         public GameObject RootPanel => rootPanel;
 
-        public float GetCurrentFill() => _currentFill;
-        public RuntimeAttributeUIStyle GetCurrentStyle() => _currentStyle;
+        public float GetCurrentFill()
+        {
+            return _currentFill;
+        }
+        public RuntimeAttributeUIStyle GetCurrentStyle()
+        {
+            return _currentStyle;
+        }
 
         private void Awake()
         {
@@ -294,4 +300,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI
         }
     }
 }
-

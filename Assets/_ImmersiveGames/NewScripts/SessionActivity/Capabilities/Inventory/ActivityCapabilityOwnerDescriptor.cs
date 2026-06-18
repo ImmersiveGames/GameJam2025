@@ -37,5 +37,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"ownerKind='{OwnerKind}', ownerId='{OwnerId}', ownerPath='{OwnerPath}', sourceScene='{SourceScene}', sourceContent='{SourceContent}'";
         }
-}
+    }
 }

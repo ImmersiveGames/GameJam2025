@@ -13,27 +13,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
     public sealed class ActorProjectileSpawnProfileAsset : ScriptableObject
     {
         [Header("Perfil de spawn")]
-        [SerializeField, InspectorName("Nome interno do spawn"), Tooltip("Identificador técnico do perfil de spawn. Ex.: actor.projectile.spawn.primary. Não é nome visual do prefab.")]
+        [SerializeField] [InspectorName("Nome interno do spawn")] [Tooltip("Identificador técnico do perfil de spawn. Ex.: actor.projectile.spawn.primary. Não é nome visual do prefab.")]
         private string profileId;
 
         [Header("Pool usado pelo projétil")]
-        [SerializeField, InspectorName("Pool usado pelo projétil"), Tooltip("Definição de pool canônica usada pelo adapter técnico para materializar/reutilizar o projectile.")]
+        [SerializeField] [InspectorName("Pool usado pelo projétil")] [Tooltip("Definição de pool canônica usada pelo adapter técnico para materializar/reutilizar o projectile.")]
         private PoolDefinitionAsset poolDefinition;
 
         [Header("Actor gerado")]
-        [SerializeField, InspectorName("Como o projétil nasce"), Tooltip("Projectiles do MVP devem nascer como RuntimeSpawned via pool. Outros modos ficam fora deste corte.")]
+        [SerializeField] [InspectorName("Como o projétil nasce")] [Tooltip("Projectiles do MVP devem nascer como RuntimeSpawned via pool. Outros modos ficam fora deste corte.")]
         private ActorMaterializationKind materializationKind = ActorMaterializationKind.RuntimeSpawned;
-        [SerializeField, InspectorName("Classificação do actor gerado"), Tooltip("Role aplicado ao actor spawnado no rent. O prefab não deve carregar role fixa para este trilho.")]
+        [SerializeField] [InspectorName("Classificação do actor gerado")] [Tooltip("Role aplicado ao actor spawnado no rent. O prefab não deve carregar role fixa para este trilho.")]
         private ActorRole spawnedActorRole = ActorRole.RuntimeSpawnedActor;
-        [SerializeField, InspectorName("Escopo do actor gerado"), Tooltip("Scope aplicado ao actor spawnado no rent. ActivityScoped é o padrão atual para projectile runtime.")]
+        [SerializeField] [InspectorName("Escopo do actor gerado")] [Tooltip("Scope aplicado ao actor spawnado no rent. ActivityScoped é o padrão atual para projectile runtime.")]
         private ActorScope spawnedActorScope = ActorScope.ActivityScoped;
 
         [Header("Lifecycle")]
-        [SerializeField, InspectorName("Tempo de vida lógico"), Tooltip("Policy autoral do lifetime do actor spawnado. A execução real de lifetime/return continua fora deste corte de organização.")]
+        [SerializeField] [InspectorName("Tempo de vida lógico")] [Tooltip("Policy autoral do lifetime do actor spawnado. A execução real de lifetime/return continua fora deste corte de organização.")]
         private ActorLifetimePolicy.PolicyKind lifetimePolicy = ActorLifetimePolicy.PolicyKind.RuntimeTransient;
-        [SerializeField, InspectorName("Comportamento no reset"), Tooltip("Reset do spawned projectile. ReturnToOriginPool é o contrato validado do MVP.")]
+        [SerializeField] [InspectorName("Comportamento no reset")] [Tooltip("Reset do spawned projectile. ReturnToOriginPool é o contrato validado do MVP.")]
         private ActorSpawnedResetPolicy resetPolicy = ActorSpawnedResetPolicy.ReturnToOriginPool;
-        [SerializeField, InspectorName("Salvar em snapshot?"), Tooltip("Policy de snapshot. Projectiles runtime transient normalmente usam SkipRuntimeTransient.")]
+        [SerializeField] [InspectorName("Salvar em snapshot?")] [Tooltip("Policy de snapshot. Projectiles runtime transient normalmente usam SkipRuntimeTransient.")]
         private ActorSnapshotPolicy snapshotPolicy = ActorSnapshotPolicy.SkipRuntimeTransient;
 
         public ActorProjectileSpawnProfileId ProfileId => new(profileId.TrimToEmpty());
@@ -112,5 +112,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             profileId = profileId.TrimToEmpty();
         }
 #endif
-}
+    }
 }

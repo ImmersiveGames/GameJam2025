@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 $"showStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' source='{command.Source}' reason='{command.Reason}' scene='{command.LoadingSceneName}' stage='{fact.Stage}' showImmediately='{command.ShowImmediately}' contextSignature='{signature}'.",
                 DebugUtility.Colors.Info);
 
-            ApplySnapshot(controller, fact, showIfNeeded: command.ShowImmediately);
+            ApplySnapshot(controller, fact, command.ShowImmediately);
 
             lock (_sync)
             {
@@ -249,7 +249,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             LoadingProgressSnapshot snapshot,
             string signature)
         {
-            ApplySnapshot(controller, fact, showIfNeeded: true);
+            ApplySnapshot(controller, fact, true);
 
             await controller.ApplyProgressAndSettleAsync(snapshot, signature);
 
@@ -346,5 +346,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         }
     }
 }
-
-

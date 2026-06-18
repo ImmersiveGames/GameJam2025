@@ -57,7 +57,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
         }
 
         public SceneTransitionContext WithRouteDelegationDecision(bool requiresResetDelegation, string decisionSource, string decisionReason)
-            => new(
+        {
+            return new SceneTransitionContext(
                 ScenesToLoad,
                 ScenesToUnload,
                 TargetActiveScene,
@@ -70,6 +71,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
                 decisionReason,
                 ContextSignature,
                 Payload);
+        }
 
         private static string ComputeSignature(
             IReadOnlyList<string> scenesToLoad,
@@ -112,23 +114,28 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
         public override string ToString()
         {
             return $"Route='{RouteId}', Reason='{Reason}', " +
-                   $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], " +
-                   $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}', " +
-                   $"RequiresResetDelegation={RequiresResetDelegation}, DecisionSource='{ResetDecisionSource}', DecisionReason='{ResetDecisionReason}', " +
-                   $"GameplayEntryKind='{GameplayEntryKind}'";
+                $"Load=[{string.Join(", ", ScenesToLoad)}], Unload=[{string.Join(", ", ScenesToUnload)}], " +
+                $"Active='{TargetActiveScene}', UseFade={UseFade}, Profile='{TransitionProfileName}', " +
+                $"RequiresResetDelegation={RequiresResetDelegation}, DecisionSource='{ResetDecisionSource}', DecisionReason='{ResetDecisionReason}', " +
+                $"GameplayEntryKind='{GameplayEntryKind}'";
         }
 
         public bool Equals(SceneTransitionContext other)
-            => Equals(ScenesToLoad, other.ScenesToLoad) &&
-               Equals(ScenesToUnload, other.ScenesToUnload) &&
-               TargetActiveScene == other.TargetActiveScene &&
-               UseFade == other.UseFade &&
-               RouteId.Equals(other.RouteId) &&
-               Reason == other.Reason &&
-               Equals(TransitionProfile, other.TransitionProfile) &&
-               GameplayEntryKind == other.GameplayEntryKind;
+        {
+            return Equals(ScenesToLoad, other.ScenesToLoad) &&
+                Equals(ScenesToUnload, other.ScenesToUnload) &&
+                TargetActiveScene == other.TargetActiveScene &&
+                UseFade == other.UseFade &&
+                RouteId.Equals(other.RouteId) &&
+                Reason == other.Reason &&
+                Equals(TransitionProfile, other.TransitionProfile) &&
+                GameplayEntryKind == other.GameplayEntryKind;
+        }
 
-        public override bool Equals(object obj) => obj is SceneTransitionContext other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is SceneTransitionContext other && Equals(other);
+        }
 
         public override int GetHashCode()
         {
@@ -157,9 +164,29 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
         }
     }
 
-    public readonly struct SceneTransitionStartedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionStartedEvent(SceneTransitionContext context) { this.context = context; } }
-    public readonly struct SceneTransitionFadeInCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionFadeInCompletedEvent(SceneTransitionContext context) { this.context = context; } }
-    public readonly struct SceneTransitionScenesReadyEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionScenesReadyEvent(SceneTransitionContext context) { this.context = context; } }
-    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { this.context = context; } }
-    public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { this.context = context; } }
+    public readonly struct SceneTransitionStartedEvent : IEvent
+    {
+        public readonly SceneTransitionContext context;
+        public SceneTransitionStartedEvent(SceneTransitionContext context) { this.context = context; }
+    }
+    public readonly struct SceneTransitionFadeInCompletedEvent : IEvent
+    {
+        public readonly SceneTransitionContext context;
+        public SceneTransitionFadeInCompletedEvent(SceneTransitionContext context) { this.context = context; }
+    }
+    public readonly struct SceneTransitionScenesReadyEvent : IEvent
+    {
+        public readonly SceneTransitionContext context;
+        public SceneTransitionScenesReadyEvent(SceneTransitionContext context) { this.context = context; }
+    }
+    public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent
+    {
+        public readonly SceneTransitionContext context;
+        public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { this.context = context; }
+    }
+    public readonly struct SceneTransitionCompletedEvent : IEvent
+    {
+        public readonly SceneTransitionContext context;
+        public SceneTransitionCompletedEvent(SceneTransitionContext context) { this.context = context; }
+    }
 }

@@ -41,7 +41,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Commands
             PreviousCalculatedDamage = CalculatedDamage;
         }
 
-        public bool HasValidResourceSystem() => RuntimeAttributeContext != null;
+        public bool HasValidResourceSystem()
+        {
+            return RuntimeAttributeContext != null;
+        }
 
         public void CaptureResourceSnapshot()
         {

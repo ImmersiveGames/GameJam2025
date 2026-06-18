@@ -15,8 +15,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Header("Behavior")]
         [SerializeField] private bool showImmediately = true;
         [SerializeField] private bool hideAfterCompletion = true;
-        [SerializeField, Min(0f)] private float minimumVisibleSeconds;
-        [SerializeField, Min(0f)] private float finalProgressHoldSeconds;
+        [SerializeField] [Min(0f)] private float minimumVisibleSeconds;
+        [SerializeField] [Min(0f)] private float finalProgressHoldSeconds;
 
         public string ProfileId => profileId.TrimToEmpty();
         public bool ShowImmediately => showImmediately;
@@ -64,5 +64,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             errorMessage = string.Empty;
             return true;
         }
-}
+    }
 }

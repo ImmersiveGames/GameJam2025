@@ -31,8 +31,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             _ = UnityOperationalCameraRuntimeAdapter.EnsureOperationalCameraOrFail(
                 runtimeModeConfig,
-                source: "OperationalCameraRuntimeComposition",
-                reason: "composition_bootstrap");
+                "OperationalCameraRuntimeComposition",
+                "composition_bootstrap");
             EnsureOperationalCameraProviderRegisteredOrFail();
 
             _runtimeComposed = true;
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             IOperationalCameraProvider provider = new UnityOperationalCameraProvider();
-            dependencyManager.RegisterGlobal<IOperationalCameraProvider>(provider, allowOverride: false);
+            dependencyManager.RegisterGlobal<IOperationalCameraProvider>(provider, false);
 
             DebugUtility.Log(typeof(OperationalCameraRuntimeComposition),
                 "provider='UnityOperationalCameraProvider' registered contract='IOperationalCameraProvider'.",

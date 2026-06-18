@@ -133,41 +133,69 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         }
 
         #region Configuracoes
+
         public static bool IsGlobalDebugEnabled => _globalDebugEnabled;
         public static bool IsVerboseLoggingEnabled => _verboseLoggingEnabled;
         public static bool IsFallbacksEnabled => _logFallbacks;
         public static bool IsRepeatedCallVerboseEnabled => _repeatedCallVerboseEnabled;
         public static DebugLevel DefaultDebugLevel => _defaultDebugLevel;
 
-        public static void SetGlobalDebugState(bool enabled) => _globalDebugEnabled = enabled;
-        public static void SetVerboseLogging(bool enabled) => _verboseLoggingEnabled = enabled;
-        public static void SetLogFallbacks(bool enabled) => _logFallbacks = enabled;
-        public static void SetRepeatedCallVerbose(bool enabled) => _repeatedCallVerboseEnabled = enabled;
-        public static bool GetRepeatedCallVerbose() => _repeatedCallVerboseEnabled;
+        public static void SetGlobalDebugState(bool enabled)
+        {
+            _globalDebugEnabled = enabled;
+        }
+        public static void SetVerboseLogging(bool enabled)
+        {
+            _verboseLoggingEnabled = enabled;
+        }
+        public static void SetLogFallbacks(bool enabled)
+        {
+            _logFallbacks = enabled;
+        }
+        public static void SetRepeatedCallVerbose(bool enabled)
+        {
+            _repeatedCallVerboseEnabled = enabled;
+        }
+        public static bool GetRepeatedCallVerbose()
+        {
+            return _repeatedCallVerboseEnabled;
+        }
 
-        public static void DisableVerboseForType(Type type) => _disabledVerboseTypes.Add(type);
-        public static void EnableVerboseForType(Type type) => _disabledVerboseTypes.Remove(type);
+        public static void DisableVerboseForType(Type type)
+        {
+            _disabledVerboseTypes.Add(type);
+        }
+        public static void EnableVerboseForType(Type type)
+        {
+            _disabledVerboseTypes.Remove(type);
+        }
 
-        public static void SetDefaultDebugLevel(DebugLevel level) => _defaultDebugLevel = level;
+        public static void SetDefaultDebugLevel(DebugLevel level)
+        {
+            _defaultDebugLevel = level;
+        }
         public static void RegisterScriptDebugLevel(Type type, DebugLevel level)
         {
             _scriptDebugLevels[type] = level;
             InvalidateResolvedCaches("type_runtime_override_updated");
         }
 
-        public static void SetLocalDebugLevel(object instance, DebugLevel level) => _localLevels[instance] = level;
+        public static void SetLocalDebugLevel(object instance, DebugLevel level)
+        {
+            _localLevels[instance] = level;
+        }
 
         public static void ApplyEarlyDefaultPolicy()
         {
             ApplyLoggingPolicyInternal(
-                globalDebugEnabled: true,
-                verboseEnabled: false,
-                fallbacksEnabled: false,
-                repeatedVerboseEnabled: false,
-                defaultLevel: DebugLevel.Logs,
-                source: "EarlyDefault",
-                namespaceRules: null,
-                isEarlyDefault: true);
+                true,
+                false,
+                false,
+                false,
+                DebugLevel.Logs,
+                "EarlyDefault",
+                null,
+                true);
         }
 
         public static void ApplyLoggingPolicyFromAsset(LoggingConfigAsset config, string source)
@@ -180,14 +208,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             List<NamespaceRuleEntry> entries = BuildNamespaceRules(config.Rules);
             ApplyLoggingPolicyInternal(
-                globalDebugEnabled: config.GlobalEnabled,
-                verboseEnabled: config.VerboseEnabled,
-                fallbacksEnabled: config.FallbacksEnabled,
-                repeatedVerboseEnabled: config.RepeatedVerboseEnabled,
-                defaultLevel: config.DefaultLevel,
-                source: source,
-                namespaceRules: entries,
-                isEarlyDefault: false);
+                config.GlobalEnabled,
+                config.VerboseEnabled,
+                config.FallbacksEnabled,
+                config.RepeatedVerboseEnabled,
+                config.DefaultLevel,
+                source,
+                entries,
+                false);
         }
 
         public static void ApplyLoggingPolicyFromBootstrap(
@@ -205,8 +233,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 repeatedVerboseEnabled,
                 defaultLevel,
                 source,
-                namespaceRules: null,
-                isEarlyDefault: false);
+                null,
+                false);
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -241,9 +269,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 _lastAppliedEarlyDefault);
         }
 #endif
+
         #endregion
 
         #region Log estatico por Type
+
         public static void Log(Type type, string message, string color = null, Object context = null)
         {
             if (!ShouldLog(type, null, DebugLevel.Logs))
@@ -278,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         {
             lock (_verboseLogLock)
             {
-                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, null, DebugLevel.Verbose))
+                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !_logFallbacks || !ShouldLog(type, null, DebugLevel.Verbose))
                 {
                     return;
                 }
@@ -291,9 +321,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
             }
         }
+
         #endregion
 
         #region Log generico por tipo (T)
+
         public static void Log<T>(string message, string color = null, Object context = null, T instance = null) where T : class
         {
             var type = typeof(T);
@@ -332,7 +364,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             var type = typeof(T);
             lock (_verboseLogLock)
             {
-                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || (isFallback && !_logFallbacks) || !ShouldLog(type, instance, DebugLevel.Verbose))
+                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !_logFallbacks || !ShouldLog(type, instance, DebugLevel.Verbose))
                 {
                     return;
                 }
@@ -345,9 +377,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 Debug.Log(ApplyColor(GetPooledMessage(type, message, isFallback), color), context);
             }
         }
+
         #endregion
 
         #region Helpers internos
+
         private static bool ShouldLog(Type type, object instance, DebugLevel messageLevel)
         {
             if (!_globalDebugEnabled)
@@ -727,7 +761,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             }
 
             string typeName = type?.Name ?? nameof(DebugUtility);
-            EntityId contextId = context != null ? context.GetEntityId() : EntityId.None;
+            var contextId = context != null ? context.GetEntityId() : EntityId.None;
             string key = $"{typeName}:{message}:ctx={contextId}";
             var trackerKey = (key, frame);
 
@@ -796,7 +830,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             return message.Contains("RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                 message.Contains("RouteResolvedVia=AssetRef", StringComparison.Ordinal);
         }
+
         #endregion
     }
 }
-

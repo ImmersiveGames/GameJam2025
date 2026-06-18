@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public RouteCameraPreparationExecutor(IRouteCameraDirector director)
         {
-            this._director = director;
+            _director = director;
         }
 
         public bool TryPrepare(
@@ -62,9 +62,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             }
 
             if (!_director.TryPrepareRouteCamera(
-                    command,
-                    out var bindingResult,
-                    out string directorReason))
+                command,
+                out var bindingResult,
+                out string directorReason))
             {
                 reason = directorReason;
                 result = BuildPrepareFailure(command, reason);
@@ -141,8 +141,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             }
 
             if (!_director.TryReleaseRouteCamera(
-                    _activeBinding,
-                    out string directorReason))
+                _activeBinding,
+                out string directorReason))
             {
                 reason = directorReason;
                 result = BuildReleaseFailure(command, reason);

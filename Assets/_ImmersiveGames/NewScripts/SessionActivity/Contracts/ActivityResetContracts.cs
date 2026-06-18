@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         RuntimeLocalReset = 2,
         RuntimeActivityReset = 3,
         RuntimeActivityTransitionReset = 4,
-        RuntimeRouteTransitionReset = 5,
+        RuntimeRouteTransitionReset = 5
     }
 
     public enum ActivityResetStateProfileKind
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         RuntimeLocalState = 2,
         RuntimeActivityState = 3,
         RuntimeActivityTransitionState = 4,
-        RuntimeRouteTransitionState = 5,
+        RuntimeRouteTransitionState = 5
     }
 
     public static class ActivityResetIntentProfileDefaults
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 ActivityResetBoundaryKind.Activity => ActivityResetIntent.RuntimeActivityReset,
                 ActivityResetBoundaryKind.ActivityTransition => ActivityResetIntent.RuntimeActivityTransitionReset,
                 ActivityResetBoundaryKind.RouteTransition => ActivityResetIntent.RuntimeRouteTransitionReset,
-                _ => ActivityResetIntent.Unknown,
+                _ => ActivityResetIntent.Unknown
             };
         }
 
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 ActivityResetIntent.RuntimeActivityReset => ActivityResetStateProfileKind.RuntimeActivityState,
                 ActivityResetIntent.RuntimeActivityTransitionReset => ActivityResetStateProfileKind.RuntimeActivityTransitionState,
                 ActivityResetIntent.RuntimeRouteTransitionReset => ActivityResetStateProfileKind.RuntimeRouteTransitionState,
-                _ => ActivityResetStateProfileKind.Unknown,
+                _ => ActivityResetStateProfileKind.Unknown
             };
         }
     }
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Local = 1,
         Activity = 2,
         ActivityTransition = 3,
-        RouteTransition = 4,
+        RouteTransition = 4
     }
 
     [Flags]
@@ -70,16 +70,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Activity = 1 << 1,
         ActivityTransition = 1 << 2,
         RouteTransition = 1 << 3,
-        RuntimeAll = Local | Activity | ActivityTransition | RouteTransition,
+        RuntimeAll = Local | Activity | ActivityTransition | RouteTransition
     }
-
 
 
     public static class ActivityResetBoundaryEligibilityFormatter
     {
         public static string Format(ActivityResetBoundaryEligibility eligibility)
         {
-            ActivityResetBoundaryEligibility canonical = eligibility & ActivityResetBoundaryEligibility.RuntimeAll;
+            var canonical = eligibility & ActivityResetBoundaryEligibility.RuntimeAll;
             if (canonical == ActivityResetBoundaryEligibility.None)
             {
                 return "None";
@@ -101,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         CurrentActivityEntry = 2,
         CurrentActivity = 3,
         CurrentRoute = 4,
-        CurrentSession = 5,
+        CurrentSession = 5
     }
 
     public readonly struct ActivityResetScopePlan
@@ -121,9 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 ActivityResetIntentProfileDefaults.ResolveStateProfile(ActivityResetIntentProfileDefaults.ResolveRuntimeIntentForBoundary(boundaryKind)),
                 policyId,
                 source,
-                reason)
-        {
-        }
+                reason) { }
 
         public ActivityResetScopePlan(
             SessionActivityIdentity identity,
@@ -164,7 +161,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(PolicyId) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityResetActivityReference
     {
@@ -186,9 +183,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             ActivityOrdinal > 0 &&
-            string.Equals(Identity.ActivityId, ActivityId, System.StringComparison.Ordinal) &&
+            string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal;
-}
+    }
 
     public enum ActivityResetCompletionKind
     {
@@ -198,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         SkippedOptional = 3,
         NoApplicableGroups = 4,
         InventoryInvalidOrStale = 5,
-        Failed = 6,
+        Failed = 6
     }
 
     public readonly struct ActivityResetCommand
@@ -223,7 +220,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsValid =>
             Activity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityResetContext
     {
@@ -265,5 +262,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int FailedCount { get; }
 
         public bool IsValid => CompletionKind != ActivityResetCompletionKind.Unknown;
-}
+    }
 }

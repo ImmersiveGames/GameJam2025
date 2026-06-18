@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             return Value;
         }
-}
+    }
 
     [Serializable]
     public readonly struct ActorCommandSourceIdentity
@@ -67,36 +67,36 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             return Value;
         }
-}
+    }
 
     [Serializable]
     public sealed class ActorCommandInputBinding
     {
-        [SerializeField, FormerlySerializedAs("BindingId")]
+        [SerializeField] [FormerlySerializedAs("BindingId")]
         private string bindingId = string.Empty;
 
-        [SerializeField, FormerlySerializedAs("Enabled")]
+        [SerializeField] [FormerlySerializedAs("Enabled")]
         private bool enabled = true;
 
-        [SerializeField, FormerlySerializedAs("Required")]
+        [SerializeField] [FormerlySerializedAs("Required")]
         private bool required = false;
 
-        [SerializeField, FormerlySerializedAs("CommandKind")]
+        [SerializeField] [FormerlySerializedAs("CommandKind")]
         private ActorCommandKind commandKind = ActorCommandKind.Move;
 
-        [SerializeField, FormerlySerializedAs("ValueKind")]
+        [SerializeField] [FormerlySerializedAs("ValueKind")]
         private ActorCommandValueKind valueKind = ActorCommandValueKind.Vector2;
 
-        [SerializeField, FormerlySerializedAs("TriggerKind")]
+        [SerializeField] [FormerlySerializedAs("TriggerKind")]
         private ActorCommandTriggerKind triggerKind = ActorCommandTriggerKind.Continuous;
 
-        [SerializeField, FormerlySerializedAs("ActionReference")]
+        [SerializeField] [FormerlySerializedAs("ActionReference")]
         private InputActionReference actionReference;
 
-        [SerializeField, HideInInspector, FormerlySerializedAs("ActionMapName")]
+        [SerializeField] [HideInInspector] [FormerlySerializedAs("ActionMapName")]
         private string legacyActionMapName = string.Empty;
 
-        [SerializeField, HideInInspector, FormerlySerializedAs("ActionName")]
+        [SerializeField] [HideInInspector] [FormerlySerializedAs("ActionName")]
         private string legacyActionName = string.Empty;
 
         public string BindingId => bindingId.TrimToEmpty();
@@ -176,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 _ => default
             };
         }
-internal static bool IsCommandValueCompatible(
+        internal static bool IsCommandValueCompatible(
             ActorCommandId commandId,
             ActorCommandValueKind valueKind,
             ActorCommandTriggerKind triggerKind)
@@ -233,19 +233,19 @@ internal static bool IsCommandValueCompatible(
 
         public static ActorCommandValue CreateMove(Vector2 value, ActorCommandTriggerKind triggerKind = ActorCommandTriggerKind.Continuous)
         {
-            return new ActorCommandValue(ActorCommandValueKind.Vector2, triggerKind, value, boolValue: false, floatValue: 0f);
+            return new ActorCommandValue(ActorCommandValueKind.Vector2, triggerKind, value, false, 0f);
         }
 
         public static ActorCommandValue CreateFirePrimary(bool pressed, ActorCommandTriggerKind triggerKind = ActorCommandTriggerKind.Pressed)
         {
-            return new ActorCommandValue(ActorCommandValueKind.Button, triggerKind, Vector2.zero, pressed, floatValue: 0f);
+            return new ActorCommandValue(ActorCommandValueKind.Button, triggerKind, Vector2.zero, pressed, 0f);
         }
 
         public static ActorCommandValue CreateButton(
             ActorCommandTriggerKind triggerKind,
             bool pressed)
         {
-            return new ActorCommandValue(ActorCommandValueKind.Button, triggerKind, Vector2.zero, pressed, floatValue: 0f);
+            return new ActorCommandValue(ActorCommandValueKind.Button, triggerKind, Vector2.zero, pressed, 0f);
         }
     }
 
@@ -263,12 +263,27 @@ internal static bool IsCommandValueCompatible(
         public static ActorCommandId Move => new(ActorCommandKind.Move);
         public static ActorCommandId FirePrimary => new(ActorCommandKind.FirePrimary);
 
-        public bool Equals(ActorCommandId other) => Kind == other.Kind;
-        public override bool Equals(object obj) => obj is ActorCommandId other && Equals(other);
-        public override int GetHashCode() => Kind.GetHashCode();
+        public bool Equals(ActorCommandId other)
+        {
+            return Kind == other.Kind;
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorCommandId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Kind.GetHashCode();
+        }
 
-        public static bool operator ==(ActorCommandId left, ActorCommandId right) => left.Equals(right);
-        public static bool operator !=(ActorCommandId left, ActorCommandId right) => !left.Equals(right);
+        public static bool operator ==(ActorCommandId left, ActorCommandId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorCommandId left, ActorCommandId right)
+        {
+            return !left.Equals(right);
+        }
 
         public override string ToString()
         {
@@ -319,7 +334,7 @@ internal static bool IsCommandValueCompatible(
             Value.IsValid &&
             ActorCommandInputBinding.IsCommandValueCompatible(CommandId, Value.ValueKind, Value.TriggerKind) &&
             Sequence >= 0;
-}
+    }
 
     public enum ActorCommandDispatchStatus
     {
@@ -359,7 +374,7 @@ internal static bool IsCommandValueCompatible(
         {
             return new ActorCommandDispatchResult(ActorCommandDispatchStatus.RejectedInactive, reason);
         }
-}
+    }
 
     public interface IActorCommandSink
     {

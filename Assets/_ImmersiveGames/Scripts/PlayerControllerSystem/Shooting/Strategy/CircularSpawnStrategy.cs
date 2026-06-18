@@ -8,13 +8,13 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy
     public class CircularSpawnStrategy : ISpawnStrategy
     {
         [Header("Spawn Config")]
-        [SerializeField, Min(1)] private int count = 5;
-        [SerializeField, Min(0.01f)] private float radius = 1f;
-        [SerializeField, Range(0f, 360f)] private float arcAngle = 360f;
+        [SerializeField] [Min(1)] private int count = 5;
+        [SerializeField] [Min(0.01f)] private float radius = 1f;
+        [SerializeField] [Range(0f, 360f)] private float arcAngle = 360f;
 
         [Header("Fuzzy Config")]
-        [SerializeField, Range(0f, 1f)] private float fuzzyPercent;
-        [SerializeField, Range(0f, 30f)] private float fuzzyAngle;
+        [SerializeField] [Range(0f, 1f)] private float fuzzyPercent;
+        [SerializeField] [Range(0f, 30f)] private float fuzzyAngle;
         private int? _randomSeed = null;
 
         [Header("Audio")]

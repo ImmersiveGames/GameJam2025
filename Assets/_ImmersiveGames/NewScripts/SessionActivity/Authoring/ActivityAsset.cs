@@ -151,5 +151,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 activityContentProfile.ValidateOrThrow($"ActivityAsset:{name}:ActivityContentProfile");
             }
         }
-}
+    }
 }

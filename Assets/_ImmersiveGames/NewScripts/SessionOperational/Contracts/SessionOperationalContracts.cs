@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Loading = 26,
         TransitionBlackout = 27,
         RouteReveal = 28,
-        RouteSetup = 29,
+        RouteSetup = 29
     }
 
     public readonly struct SessionOperationalRouteKey : IEquatable<SessionOperationalRouteKey>
@@ -74,11 +74,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public bool Equals(SessionOperationalRouteKey other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(RouteIdentity, other.RouteIdentity, StringComparison.Ordinal) &&
-                   string.Equals(RouteOperationId, other.RouteOperationId, StringComparison.Ordinal) &&
-                   string.Equals(RouteId, other.RouteId, StringComparison.Ordinal) &&
-                   string.Equals(RouteProfileId, other.RouteProfileId, StringComparison.Ordinal) &&
-                   RouteSequence == other.RouteSequence;
+                string.Equals(RouteIdentity, other.RouteIdentity, StringComparison.Ordinal) &&
+                string.Equals(RouteOperationId, other.RouteOperationId, StringComparison.Ordinal) &&
+                string.Equals(RouteId, other.RouteId, StringComparison.Ordinal) &&
+                string.Equals(RouteProfileId, other.RouteProfileId, StringComparison.Ordinal) &&
+                RouteSequence == other.RouteSequence;
         }
 
         public override bool Equals(object obj)
@@ -100,9 +100,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             }
         }
 
-        public static bool operator ==(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => left.Equals(right);
-        public static bool operator !=(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => !left.Equals(right);
-}
+        public static bool operator ==(SessionOperationalRouteKey left, SessionOperationalRouteKey right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionOperationalRouteKey left, SessionOperationalRouteKey right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct SessionOperationalTransitionKey : IEquatable<SessionOperationalTransitionKey>
     {
@@ -119,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public bool Equals(SessionOperationalTransitionKey other)
         {
             return RouteKey.Equals(other.RouteKey) &&
-                   string.Equals(TransitionId, other.TransitionId, StringComparison.Ordinal);
+                string.Equals(TransitionId, other.TransitionId, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj)
@@ -135,9 +141,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             }
         }
 
-        public static bool operator ==(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => left.Equals(right);
-        public static bool operator !=(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => !left.Equals(right);
-}
+        public static bool operator ==(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct SessionOperationalStageKey : IEquatable<SessionOperationalStageKey>
     {
@@ -169,8 +181,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             }
         }
 
-        public static bool operator ==(SessionOperationalStageKey left, SessionOperationalStageKey right) => left.Equals(right);
-        public static bool operator !=(SessionOperationalStageKey left, SessionOperationalStageKey right) => !left.Equals(right);
+        public static bool operator ==(SessionOperationalStageKey left, SessionOperationalStageKey right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionOperationalStageKey left, SessionOperationalStageKey right)
+        {
+            return !left.Equals(right);
+        }
     }
 
     public readonly struct SessionOperationalIdentity : IEquatable<SessionOperationalIdentity>
@@ -264,8 +282,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 : "<none>";
         }
 
-        public static bool operator ==(SessionOperationalIdentity left, SessionOperationalIdentity right) => left.Equals(right);
-        public static bool operator !=(SessionOperationalIdentity left, SessionOperationalIdentity right) => !left.Equals(right);
+        public static bool operator ==(SessionOperationalIdentity left, SessionOperationalIdentity right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionOperationalIdentity left, SessionOperationalIdentity right)
+        {
+            return !left.Equals(right);
+        }
 
         private static string BuildCycleSignature(
             string sessionOperationalPipelineId,
@@ -281,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"{sessionOperationalPipelineId}|{routeIdentity}|{routeOperationId}|{transitionId}|{transitionSequence}|{routeId}|{routeProfileId}|{source}|{reason}|{stage}";
         }
-}
+    }
 
     public enum SessionOperationalFactKind
     {
@@ -316,7 +340,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Loading = 27,
         TransitionBlackout = 28,
         RouteReveal = 29,
-        RouteSetup = 30,
+        RouteSetup = 30
     }
 
     public enum SessionOperationalInputModeKind
@@ -325,7 +349,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         FrontendMenu = 1,
         ActivityDefault = 2,
         PauseOverlay = 3,
-        InputLocked = 4,
+        InputLocked = 4
     }
 
     public enum SessionOperationalInputPolicy
@@ -334,7 +358,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         MenuNavigation = 1,
         ActivityGameplay = 2,
         OverlayNavigation = 3,
-        InputLocked = 4,
+        InputLocked = 4
     }
 
     public readonly struct SessionOperationalFact
@@ -368,14 +392,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public enum SessionOperationalResultKind
     {
         Unknown = 0,
         Accepted = 1,
         Rejected = 2,
-        Completed = 3,
+        Completed = 3
     }
 
     public readonly struct SessionOperationalResult
@@ -409,5 +433,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', reason='{Reason}', factsCount='{Facts.Count}'";
         }
-}
+    }
 }

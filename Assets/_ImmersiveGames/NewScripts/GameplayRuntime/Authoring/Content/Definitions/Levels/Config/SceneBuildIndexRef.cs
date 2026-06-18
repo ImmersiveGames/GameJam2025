@@ -35,4 +35,3 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Content.Definitio
         }
     }
 }
-

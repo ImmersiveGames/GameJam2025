@@ -96,5 +96,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 $"event='ActorAttributeUiBindingDisposed' actorId='{_target.ActorId}' actorInstanceRuntimeId='{_target.ActorInstanceRuntimeId}' attributeId='{_target.AttributeId}' sinkType='{_sinkType}' source='{_source}' reason='{_reason}'",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalRouteSetupCommand
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig != null &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct OperationalRouteSetupResult
     {
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string TransitionId => RouteCommand.TransitionId;
         public int RouteSequence => RouteCommand.RouteSequence;
         public bool IsCompleted => Kind == OperationalRouteSetupResultKind.Completed;
-}
+    }
 
     /// <summary>
     /// Resolve o setup puro da rota operacional: command, loading plan, audio plan e RouteActivitySave plan.
@@ -367,5 +367,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneKey.SceneName.Trim();
         }
-}
+    }
 }

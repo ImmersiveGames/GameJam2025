@@ -20,14 +20,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorProjectileFireModeId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorProjectileFireModeId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorProjectileFireModeId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorProjectileFireModeId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorProjectileFireModeId left, ActorProjectileFireModeId right) => left.Equals(right);
-        public static bool operator !=(ActorProjectileFireModeId left, ActorProjectileFireModeId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorProjectileFireModeId left, ActorProjectileFireModeId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorProjectileFireModeId left, ActorProjectileFireModeId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct ActorProjectileProfileId : IEquatable<ActorProjectileProfileId>
     {
@@ -39,14 +57,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorProjectileProfileId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorProjectileProfileId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorProjectileProfileId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorProjectileProfileId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorProjectileProfileId left, ActorProjectileProfileId right) => left.Equals(right);
-        public static bool operator !=(ActorProjectileProfileId left, ActorProjectileProfileId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorProjectileProfileId left, ActorProjectileProfileId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorProjectileProfileId left, ActorProjectileProfileId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct ActorProjectileSpawnProfileId : IEquatable<ActorProjectileSpawnProfileId>
     {
@@ -58,14 +94,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActorProjectileSpawnProfileId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorProjectileSpawnProfileId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActorProjectileSpawnProfileId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActorProjectileSpawnProfileId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right) => left.Equals(right);
-        public static bool operator !=(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public enum ActorProjectileSpawnPatternKind
     {
@@ -76,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         [InspectorName("Sequência linear (planejado)")]
         LinearBurst = 2,
         [InspectorName("Arco radial (planejado)")]
-        RadialArc = 3,
+        RadialArc = 3
     }
 
     public enum ActorProjectileMuzzlePolicyKind
@@ -86,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         [InspectorName("Forward do Actor (ativo)")]
         ActorForward = 1,
         [InspectorName("Socket nomeado (planejado)")]
-        NamedMuzzleSocket = 2,
+        NamedMuzzleSocket = 2
     }
 
     public enum ActorProjectileSpreadPolicyKind
@@ -98,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         [InspectorName("Ângulo fixo (planejado)")]
         FixedAngle = 2,
         [InspectorName("Faixa aleatória (planejado)")]
-        RandomRange = 3,
+        RandomRange = 3
     }
 
     public enum ActorProjectileFireBlockedReasonKind
@@ -110,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         MissingPoolDefinition = 4,
         MissingMuzzle = 5,
         CooldownActive = 6,
-        NotExecutable = 7,
+        NotExecutable = 7
     }
 
     public enum ActorProjectileFireResultKind
@@ -118,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         Unknown = 0,
         Accepted = 1,
         Blocked = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct ActorProjectileSpawnPattern
@@ -141,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorProjectileSpawnPatternKind.Single => ProjectileCount == 1,
             ActorProjectileSpawnPatternKind.LinearBurst => ProjectileCount > 1,
             ActorProjectileSpawnPatternKind.RadialArc => ProjectileCount > 1 && RadialArcDegrees > 0f,
-            _ => false,
+            _ => false
         };
     }
 
@@ -150,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         [InspectorName("Não definido")]
         Unknown = 0,
         [InspectorName("Linear")]
-        Linear = 1,
+        Linear = 1
     }
 
     public enum ActorProjectileSpawnLayerModeKind
@@ -158,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         [InspectorName("None")]
         None = 0,
         [InspectorName("Override")]
-        Override = 1,
+        Override = 1
     }
 
     public readonly struct ActorProjectileLayerBootstrap
@@ -187,8 +241,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public bool ApplyLayerToChildren { get; }
         public bool IsValid =>
             Mode == ActorProjectileSpawnLayerModeKind.None ||
-            (Mode == ActorProjectileSpawnLayerModeKind.Override && LayerIndex >= 0 && LayerIndex <= 31 && !string.IsNullOrWhiteSpace(LayerName));
-}
+            Mode == ActorProjectileSpawnLayerModeKind.Override && LayerIndex is >= 0 and <= 31 && !string.IsNullOrWhiteSpace(LayerName);
+    }
 
     public readonly struct ActorProjectileMotionBootstrap
     {
@@ -217,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Speed > 0f &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActorProjectileFireMode
     {
@@ -301,7 +355,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             MotionStrategy == ActorProjectileMotionStrategyKind.Linear &&
             LinearSpeed > 0f &&
             SpawnOriginId.IsValid;
-}
+    }
 
     public readonly struct ActorProjectileFireCommand
     {
@@ -367,7 +421,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             LayerBootstrap.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct ActorProjectileFireResult
     {
@@ -400,5 +454,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public bool IsAccepted => Kind == ActorProjectileFireResultKind.Accepted;
         public bool IsBlocked => Kind == ActorProjectileFireResultKind.Blocked;
         public bool IsFailed => Kind == ActorProjectileFireResultKind.Failed;
-}
+    }
 }

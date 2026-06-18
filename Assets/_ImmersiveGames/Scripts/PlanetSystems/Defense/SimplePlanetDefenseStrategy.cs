@@ -118,7 +118,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 DefenseTargetMode.PlayerOrEater => DefenseRole.Unknown,
                 DefenseTargetMode.PreferPlayer => DefenseRole.Player,
                 DefenseTargetMode.PreferEater => DefenseRole.Eater,
-                _ => DefenseRole.Unknown,
+                _ => DefenseRole.Unknown
             };
         }
 
@@ -144,4 +144,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         }
     }
 }
-

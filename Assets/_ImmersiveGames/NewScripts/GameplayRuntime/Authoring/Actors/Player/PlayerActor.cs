@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
 
-            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out ActorProjectileFireEndpoint projectileFireEndpoint))
+            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out var projectileFireEndpoint))
             {
                 projectileFireEndpoint.ValidateLocalConfigurationOrThrow($"{origin}/{nameof(ActorCapabilitySurface)}.{nameof(ActorCapabilitySurface.ActorProjectileFireEndpoint)}");
             }
@@ -107,9 +107,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
         {
             ApplyPlacementFromCommandContext(
                 context,
-                placementProfileKind: nameof(ActivityResetStateProfileKind.InitialState),
-                captureInitialStateProfile: true,
-                captureRuntimeActivityProfile: true);
+                nameof(ActivityResetStateProfileKind.InitialState),
+                true,
+                true);
         }
 
         public void ApplyRuntimeLocalReset(ActorResetContext context)
@@ -122,9 +122,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                     context,
                     _initialStatePlacementPosition,
                     _initialStatePlacementEulerAngles,
-                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
-                    placementProfileSource: nameof(ActivityResetStateProfileKind.InitialState),
-                    placementApplied: true);
+                    nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                    nameof(ActivityResetStateProfileKind.InitialState),
+                    true);
                 return;
             }
 
@@ -136,9 +136,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
 
             LogPlacementProfileSkipped(
                 context,
-                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeLocalState),
-                placementProfileSource: "missing_initial_state_profile",
-                reason: "runtime_local_reset_has_no_cached_placement_profile");
+                nameof(ActivityResetStateProfileKind.RuntimeLocalState),
+                "missing_initial_state_profile",
+                "runtime_local_reset_has_no_cached_placement_profile");
         }
 
         public void ApplyRuntimeActivityReset(ActorResetContext context)
@@ -147,9 +147,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             {
                 ApplyPlacementFromCommandContext(
                     context,
-                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                    captureInitialStateProfile: false,
-                    captureRuntimeActivityProfile: true);
+                    nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    false,
+                    true);
                 return;
             }
 
@@ -159,9 +159,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                     context,
                     _runtimeActivityStatePlacementPosition,
                     _runtimeActivityStatePlacementEulerAngles,
-                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                    placementProfileSource: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                    placementApplied: true);
+                    nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    true);
                 return;
             }
 
@@ -171,17 +171,17 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                     context,
                     _initialStatePlacementPosition,
                     _initialStatePlacementEulerAngles,
-                    placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                    placementProfileSource: nameof(ActivityResetStateProfileKind.InitialState),
-                    placementApplied: true);
+                    nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                    nameof(ActivityResetStateProfileKind.InitialState),
+                    true);
                 return;
             }
 
             ApplyPlacementFromCommandContext(
                 context,
-                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityState),
-                captureInitialStateProfile: false,
-                captureRuntimeActivityProfile: true);
+                nameof(ActivityResetStateProfileKind.RuntimeActivityState),
+                false,
+                true);
         }
 
         public void ApplyRuntimeActivityTransitionReset(ActorResetContext context)
@@ -189,9 +189,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             EnsurePlacementContext(context, nameof(ApplyRuntimeActivityTransitionReset));
             LogPlacementProfileSkipped(
                 context,
-                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
-                placementProfileSource: "transition_profile_no_placement",
-                reason: "runtime_activity_transition_does_not_apply_player_placement");
+                nameof(ActivityResetStateProfileKind.RuntimeActivityTransitionState),
+                "transition_profile_no_placement",
+                "runtime_activity_transition_does_not_apply_player_placement");
         }
 
         public void ApplyRuntimeRouteTransitionReset(ActorResetContext context)
@@ -199,9 +199,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             EnsurePlacementContext(context, nameof(ApplyRuntimeRouteTransitionReset));
             LogPlacementProfileSkipped(
                 context,
-                placementProfileKind: nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
-                placementProfileSource: "route_transition_profile_no_placement",
-                reason: "runtime_route_transition_does_not_apply_player_placement");
+                nameof(ActivityResetStateProfileKind.RuntimeRouteTransitionState),
+                "route_transition_profile_no_placement",
+                "runtime_route_transition_does_not_apply_player_placement");
         }
 
         private void ApplyPlacementFromCommandContext(
@@ -223,8 +223,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 LogPlacementProfileSkipped(
                     context,
                     placementProfileKind,
-                    placementProfileSource: "command_context_missing_placement",
-                    reason: "placement_context_not_available");
+                    "command_context_missing_placement",
+                    "placement_context_not_available");
                 return;
             }
 
@@ -233,8 +233,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 context.PlacementPosition,
                 context.PlacementEulerAngles,
                 placementProfileKind,
-                placementProfileSource: "command_context",
-                placementApplied: true);
+                "command_context",
+                true);
 
             if (captureInitialStateProfile)
             {
@@ -264,7 +264,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             transform.localPosition = placementPosition;
             transform.localRotation = Quaternion.Euler(placementEulerAngles);
 
-            DebugUtility.LogVerbose(typeof(PlayerActor), $"event='PlacementStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='{placementApplied}' placementPosition='{placementPosition}' placementEulerAngles='{placementEulerAngles}' source='{context.Source}' reason='{context.Reason}'.", DebugUtility.Colors.Info, this);
+            DebugUtility.LogVerbose(typeof(PlayerActor),
+                $"event='PlacementStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='{placementApplied}' placementPosition='{placementPosition}' placementEulerAngles='{placementEulerAngles}' source='{context.Source}' reason='{context.Reason}'.",
+                DebugUtility.Colors.Info, this);
         }
 
         private void LogPlacementProfileSkipped(
@@ -274,7 +276,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             string reason)
         {
             EnsurePlacementContext(context, placementProfileKind);
-            DebugUtility.LogVerbose(typeof(PlayerActor), $"event='PlacementStateProfileSkipped' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='False' reason='{reason}' source='{context.Source}' reasonDetail='{context.Reason}'.", DebugUtility.Colors.Info, this);
+            DebugUtility.LogVerbose(typeof(PlayerActor),
+                $"event='PlacementStateProfileSkipped' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' placementProfileKind='{placementProfileKind}' placementProfileSource='{placementProfileSource}' placementApplied='False' reason='{reason}' source='{context.Source}' reasonDetail='{context.Reason}'.",
+                DebugUtility.Colors.Info, this);
         }
 
         private static void EnsurePlacementContext(ActorResetContext context, string operation)

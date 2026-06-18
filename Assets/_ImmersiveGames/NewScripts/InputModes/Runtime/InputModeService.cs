@@ -32,10 +32,22 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
         }
 
-        public void SetFrontendMenu(string reason) => HandleRequest(InputModeRequestKind.FrontendMenu, reason);
-        public void SetGameplay(string reason) => HandleRequest(InputModeRequestKind.Gameplay, reason);
-        public void SetPauseOverlay(string reason) => HandleRequest(InputModeRequestKind.PauseOverlay, reason);
-        public void SetInputLocked(string reason) => HandleRequest(InputModeRequestKind.InputLocked, reason);
+        public void SetFrontendMenu(string reason)
+        {
+            HandleRequest(InputModeRequestKind.FrontendMenu, reason);
+        }
+        public void SetGameplay(string reason)
+        {
+            HandleRequest(InputModeRequestKind.Gameplay, reason);
+        }
+        public void SetPauseOverlay(string reason)
+        {
+            HandleRequest(InputModeRequestKind.PauseOverlay, reason);
+        }
+        public void SetInputLocked(string reason)
+        {
+            HandleRequest(InputModeRequestKind.InputLocked, reason);
+        }
 
         public void ApplyCurrentModeToPlayerInput(PlayerInput playerInput, string reason)
         {
@@ -126,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 return;
             }
 
-            if (playerInput.actions.FindActionMap(actionMapName, throwIfNotFound: false) == null)
+            if (playerInput.actions.FindActionMap(actionMapName, false) == null)
             {
                 HardFailFastH1.Trigger(typeof(InputModeService),
                     $"[FATAL][Config][InputModes] ActionMap ausente no PlayerInput. playerInput='{playerInput.name}' inputMode='{mode}' actionMap='{actionMapName}' reason='{reason}'.");
@@ -162,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                         continue;
                     }
 
-                    if (playerInput.actions.FindActionMap(actionMapName, throwIfNotFound: false) == null)
+                    if (playerInput.actions.FindActionMap(actionMapName, false) == null)
                     {
                         HardFailFastH1.Trigger(typeof(InputModeService),
                             $"[FATAL][Config][InputModes] ActionMap ausente no PlayerInput. playerInput='{playerInput.name}' inputMode='{mode}' actionMap='{actionMapName}' reason='{reason}'.");
@@ -181,4 +193,3 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         }
     }
 }
-

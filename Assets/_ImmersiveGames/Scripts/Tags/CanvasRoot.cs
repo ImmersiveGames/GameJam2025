@@ -1,8 +1,5 @@
 ﻿using UnityEngine;
 namespace _ImmersiveGames.Scripts.Tags
 {
-    public class CanvasRoot : MonoBehaviour
-    {
-        
-    }
+    public class CanvasRoot : MonoBehaviour { }
 }

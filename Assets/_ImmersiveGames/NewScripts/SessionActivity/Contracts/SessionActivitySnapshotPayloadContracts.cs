@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityOrdinal > 0 &&
             EntrySequence > 0 &&
             HasCapabilitySnapshotEnvelope;
-}
+    }
 
     public interface ISessionActivitySnapshotPayloadProvider
     {

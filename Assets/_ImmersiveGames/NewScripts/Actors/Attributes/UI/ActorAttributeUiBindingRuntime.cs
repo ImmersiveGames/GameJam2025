@@ -88,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 $"event='ActorAttributeUiBindingStarted' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId}' attributeId='{target.AttributeId}' sinkType='{sink.GetType().Name}' source='{normalizedSource}' reason='{normalizedReason}'",
                 DebugUtility.Colors.Info);
 
-            if (!_stateReader.TryRead(target, out ActorAttributeUiValue readValue, out string failureReason))
+            if (!_stateReader.TryRead(target, out var readValue, out string failureReason))
             {
                 return Reject(
                     ActorAttributeUiBindingResultKind.RejectedStateMissing,
@@ -189,5 +189,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
             return ActorAttributeUiBindingResult.Rejected(kind, normalizedFailureReason);
         }
-}
+    }
 }

@@ -31,22 +31,22 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 ?? throw new InvalidOperationException($"[FATAL][Save] backend asset '{backendAsset.name}' retornou backend nulo.");
 
             RegisterIfMissing<ISaveBackend>(
-                factory: () => backend,
-                alreadyRegisteredMessage: "[Save][BOOT] ISaveBackend already registered.",
-                registeredMessage: $"[Save][BOOT] ISaveBackend registered ({backend.BackendId}).");
+                () => backend,
+                "[Save][BOOT] ISaveBackend already registered.",
+                $"[Save][BOOT] ISaveBackend registered ({backend.BackendId}).");
 
             var coreService = ResolveOrCreateSaveCoreService(backend);
             EnsureCurrentStateInitializedOrFail(coreService, saveConfig);
 
             RegisterIfMissing<ISaveService>(
-                factory: () => coreService,
-                alreadyRegisteredMessage: "[Save][BOOT] ISaveService already registered.",
-                registeredMessage: "[Save][BOOT] ISaveService registered (SaveCoreService).");
+                () => coreService,
+                "[Save][BOOT] ISaveService already registered.",
+                "[Save][BOOT] ISaveService registered (SaveCoreService).");
 
             RegisterIfMissing<ISaveStateService>(
-                factory: () => coreService,
-                alreadyRegisteredMessage: "[Save][BOOT] ISaveStateService already registered.",
-                registeredMessage: "[Save][BOOT] ISaveStateService registered (SaveCoreService).");
+                () => coreService,
+                "[Save][BOOT] ISaveStateService already registered.",
+                "[Save][BOOT] ISaveStateService registered (SaveCoreService).");
 
             _installed = true;
 

@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
     {
         [SerializeField] private string endpointId = "actor.presentation.endpoint";
         [SerializeField] private ActorPresentationProfileAsset profile;
-        [SerializeField] private List<ActorPresentationContainer> containers = new List<ActorPresentationContainer>();
+        [SerializeField] private List<ActorPresentationContainer> containers = new();
 
         private readonly Dictionary<string, PoolableSpawnOriginAnchor> _poolableSpawnOriginAnchorsById = new(StringComparer.Ordinal);
 
@@ -84,9 +84,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 LogPoolableSpawnOriginMissing(
                     originId,
                     resolutionMode,
-                    usedFallback: false,
-                    reason: "poolable_spawn_origin_id_missing",
-                    message: $"{nameof(ActorPresentationEndpoint)} requires non-empty originId.");
+                    false,
+                    "poolable_spawn_origin_id_missing",
+                    $"{nameof(ActorPresentationEndpoint)} requires non-empty originId.");
                 return false;
             }
 
@@ -97,8 +97,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                     anchor.OriginKind,
                     anchor.OriginTransform,
                     resolutionMode,
-                    usedFallback: false,
-                    reason: "poolable_spawn_origin_resolved");
+                    false,
+                    "poolable_spawn_origin_resolved");
                 LogPoolableSpawnOriginResolved(resolved);
                 return true;
             }
@@ -108,37 +108,37 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 LogPoolableSpawnOriginMissing(
                     originId,
                     resolutionMode,
-                    usedFallback: false,
-                    reason: "poolable_spawn_origin_missing",
-                    message: $"Typed origin '{originId}' was not found on {nameof(ActorPresentationEndpoint)}.");
+                    false,
+                    "poolable_spawn_origin_missing",
+                    $"Typed origin '{originId}' was not found on {nameof(ActorPresentationEndpoint)}.");
                 return false;
             }
 
-            if (!TryGetVisualRootFallback(out var fallbackTransform, out var fallbackSource))
+            if (!TryGetVisualRootFallback(out var fallbackTransform, out string fallbackSource))
             {
                 LogPoolableSpawnOriginMissing(
                     originId,
                     resolutionMode,
-                    usedFallback: false,
-                    reason: "poolable_spawn_origin_fallback_missing",
-                    message: $"Typed origin '{originId}' was not found and visual-root fallback is unavailable.");
+                    false,
+                    "poolable_spawn_origin_fallback_missing",
+                    $"Typed origin '{originId}' was not found and visual-root fallback is unavailable.");
                 return false;
             }
 
             LogPoolableSpawnOriginMissing(
                 originId,
                 resolutionMode,
-                usedFallback: true,
-                reason: "poolable_spawn_origin_typed_missing",
-                message: $"Typed origin '{originId}' was not found; visual-root fallback will be applied.");
+                true,
+                "poolable_spawn_origin_typed_missing",
+                $"Typed origin '{originId}' was not found; visual-root fallback will be applied.");
 
             resolved = BuildResolved(
                 originId,
                 PoolableSpawnOriginKind.EmitterRoot,
                 fallbackTransform,
                 resolutionMode,
-                usedFallback: true,
-                reason: "poolable_spawn_origin_fallback_applied");
+                true,
+                "poolable_spawn_origin_fallback_applied");
 
             LogPoolableSpawnOriginFallbackApplied(resolved, fallbackSource);
             LogPoolableSpawnOriginResolved(resolved);
@@ -171,9 +171,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                         LogPoolableSpawnOriginMissing(
                             default,
                             PoolableSpawnOriginResolutionMode.RequireTypedOrigin,
-                            usedFallback: false,
-                            reason: "poolable_spawn_origin_anchor_invalid",
-                            message: $"{origin} found invalid PoolableSpawnOriginAnchor at index '{index}'.");
+                            false,
+                            "poolable_spawn_origin_anchor_invalid",
+                            $"{origin} found invalid PoolableSpawnOriginAnchor at index '{index}'.");
                         continue;
                     }
 
@@ -350,5 +350,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             return $"{slotKind}:{slotId.TrimToEmpty()}";
         }
-}
+    }
 }

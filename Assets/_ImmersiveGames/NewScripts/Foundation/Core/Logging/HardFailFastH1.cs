@@ -39,4 +39,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         static partial void RequestEditorStopPlayMode();
     }
 }
-

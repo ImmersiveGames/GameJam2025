@@ -52,4 +52,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems
         }
     }
 }
-

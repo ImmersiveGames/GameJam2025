@@ -5,14 +5,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
     /// </summary>
     public sealed class NullAudioPlaybackHandle : IAudioPlaybackHandle
     {
-        public static readonly NullAudioPlaybackHandle Instance = new NullAudioPlaybackHandle();
+        public static readonly NullAudioPlaybackHandle Instance = new();
 
         public bool IsValid => false;
         public bool IsPlaying => false;
 
-        public void Stop(float fadeOutSeconds = 0f)
-        {
-        }
+        public void Stop(float fadeOutSeconds = 0f) { }
     }
 }
-

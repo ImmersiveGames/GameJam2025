@@ -39,6 +39,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
 
         #region Unity Lifecycle
+
         protected override void Start()
         {
             base.Start();
@@ -52,6 +53,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 DebugUtility.LogVerbose<RandomTransformSkin>("Initialized");
             }
         }
+
         #endregion
 
         #region SkinConfigurable Implementation
@@ -87,9 +89,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 ApplyCurrentTransformToInstances();
             }
         }
+
         #endregion
 
         #region Core Functionality
+
         private void CacheOriginalTransforms(List<GameObject> instances)
         {
             foreach (var instance in instances.Where(instance => instance != null))
@@ -228,9 +232,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             var randomRotation = Quaternion.Euler(_currentRandomRotation);
             instance.transform.localRotation = originalRotation * randomRotation;
         }
+
         #endregion
 
         #region Public API
+
         /// <summary>
         /// Gera e aplica uma nova transforma��o aleat�ria
         /// </summary>
@@ -314,9 +320,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 rotation = _currentRandomRotation
             };
         }
+
         #endregion
 
         #region Utility Methods
+
         private void ApplyScaleToInstances()
         {
             List<GameObject> instances = GetSkinInstances();
@@ -344,9 +352,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 ApplyRotationToInstance(instance);
             }
         }
+
         #endregion
 
         #region Editor Helpers
+
         #if UNITY_EDITOR
         [ContextMenu("Log Current State")]
         private void EditorLogState()
@@ -355,6 +365,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             DebugUtility.LogVerbose<RandomTransformSkin>($"Scale: {state.scale}, Rotation: {state.rotation}");
         }
         #endif
+
         #endregion
     }
 

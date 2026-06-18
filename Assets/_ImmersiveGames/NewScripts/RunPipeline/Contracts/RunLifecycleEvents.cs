@@ -81,11 +81,11 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
             }
 
             return MatchesField(PhaseEntryIdentity, other.PhaseEntryIdentity) &&
-                   MatchesField(SessionSignature, other.SessionSignature) &&
-                   MatchesField(EntrySignature, other.EntrySignature) &&
-                   MatchesField(CycleSignature, other.CycleSignature) &&
-                   MatchesField(RouteKind, other.RouteKind) &&
-                   MatchesField(TargetScene, other.TargetScene);
+                MatchesField(SessionSignature, other.SessionSignature) &&
+                MatchesField(EntrySignature, other.EntrySignature) &&
+                MatchesField(CycleSignature, other.CycleSignature) &&
+                MatchesField(RouteKind, other.RouteKind) &&
+                MatchesField(TargetScene, other.TargetScene);
         }
 
         public string Describe()
@@ -93,7 +93,10 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
             return $"phaseEntry='{Format(PhaseEntryIdentity)}' session='{Format(SessionSignature)}' entry='{Format(EntrySignature)}' cycle='{Format(CycleSignature)}' reason='{Format(Reason)}' source='{Format(Source)}' handshake='{Format(Handshake)}' routeKind='{Format(RouteKind)}' targetScene='{Format(TargetScene)}' technicalInternal='{IsTechnicalInternal.ToString().ToLowerInvariant()}'";
         }
 
-        public override string ToString() => Describe();
+        public override string ToString()
+        {
+            return Describe();
+        }
 
         public bool Equals(RunLifecycleSignalIdentity other)
         {
@@ -103,18 +106,21 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
             }
 
             return string.Equals(PhaseEntryIdentity, other.PhaseEntryIdentity, StringComparison.Ordinal) &&
-                   string.Equals(SessionSignature, other.SessionSignature, StringComparison.Ordinal) &&
-                   string.Equals(EntrySignature, other.EntrySignature, StringComparison.Ordinal) &&
-                   string.Equals(CycleSignature, other.CycleSignature, StringComparison.Ordinal) &&
-                   string.Equals(Reason, other.Reason, StringComparison.Ordinal) &&
-                   string.Equals(Source, other.Source, StringComparison.Ordinal) &&
-                   string.Equals(Handshake, other.Handshake, StringComparison.Ordinal) &&
-                   string.Equals(RouteKind, other.RouteKind, StringComparison.Ordinal) &&
-                   string.Equals(TargetScene, other.TargetScene, StringComparison.Ordinal) &&
-                   _technicalInternal == other._technicalInternal;
+                string.Equals(SessionSignature, other.SessionSignature, StringComparison.Ordinal) &&
+                string.Equals(EntrySignature, other.EntrySignature, StringComparison.Ordinal) &&
+                string.Equals(CycleSignature, other.CycleSignature, StringComparison.Ordinal) &&
+                string.Equals(Reason, other.Reason, StringComparison.Ordinal) &&
+                string.Equals(Source, other.Source, StringComparison.Ordinal) &&
+                string.Equals(Handshake, other.Handshake, StringComparison.Ordinal) &&
+                string.Equals(RouteKind, other.RouteKind, StringComparison.Ordinal) &&
+                string.Equals(TargetScene, other.TargetScene, StringComparison.Ordinal) &&
+                _technicalInternal == other._technicalInternal;
         }
 
-        public override bool Equals(object obj) => obj is RunLifecycleSignalIdentity other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is RunLifecycleSignalIdentity other && Equals(other);
+        }
 
         public override int GetHashCode()
         {
@@ -131,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
             hash.Add(_technicalInternal);
             return hash.ToHashCode();
         }
-private static string Format(string value)
+        private static string Format(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "<null>" : value;
         }
@@ -165,7 +171,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
                 nameof(RunActivationRequestedEvent),
-                handshake: nameof(RunActivationRequestedEvent));
+                nameof(RunActivationRequestedEvent));
         }
 
         public string Reason { get; }
@@ -184,7 +190,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
                 nameof(RunPauseCommandEvent),
-                handshake: nameof(RunPauseCommandEvent));
+                nameof(RunPauseCommandEvent));
         }
 
         public bool IsPaused { get; }
@@ -197,7 +203,10 @@ private static string Format(string value)
     /// </summary>
     public sealed class PauseWillEnterEvent : IEvent
     {
-        public PauseWillEnterEvent(string reason = null) => Reason = reason;
+        public PauseWillEnterEvent(string reason = null)
+        {
+            Reason = reason;
+        }
         public string Reason { get; }
     }
 
@@ -206,7 +215,10 @@ private static string Format(string value)
     /// </summary>
     public sealed class PauseWillExitEvent : IEvent
     {
-        public PauseWillExitEvent(string reason = null) => Reason = reason;
+        public PauseWillExitEvent(string reason = null)
+        {
+            Reason = reason;
+        }
         public string Reason { get; }
     }
 
@@ -221,7 +233,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 isPaused ? "pause_entered" : "pause_exited",
                 nameof(RunPauseStateChangedEvent),
-                handshake: nameof(RunPauseStateChangedEvent));
+                nameof(RunPauseStateChangedEvent));
         }
 
         public bool IsPaused { get; }
@@ -235,7 +247,7 @@ private static string Format(string value)
     {
         Unknown = 0,
         Victory = 1,
-        Defeat = 2,
+        Defeat = 2
     }
 
     /// <summary>
@@ -254,7 +266,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
                 nameof(RunDeactivationRequestedEvent),
-                handshake: nameof(RunDeactivationRequestedEvent));
+                nameof(RunDeactivationRequestedEvent));
         }
 
         public RunOutcomeKind OutcomeKind { get; }
@@ -274,7 +286,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
                 nameof(RunDeactivationCompletedEvent),
-                handshake: nameof(RunDeactivationCompletedEvent));
+                nameof(RunDeactivationCompletedEvent));
         }
 
         /// <summary>
@@ -324,7 +336,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 stateId.ToString(),
                 nameof(RunStartEvent),
-                handshake: nameof(RunStartEvent));
+                nameof(RunStartEvent));
         }
 
         /// <summary>
@@ -346,7 +358,7 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
                 nameof(GameResumeRequestedEvent),
-                handshake: nameof(GameResumeRequestedEvent));
+                nameof(GameResumeRequestedEvent));
         }
 
         public string Reason { get; }
@@ -364,11 +376,10 @@ private static string Format(string value)
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 Reason,
                 nameof(GameResetRequestedEvent),
-                handshake: nameof(GameResetRequestedEvent));
+                nameof(GameResetRequestedEvent));
         }
 
         public string Reason { get; }
         public RunLifecycleSignalIdentity Identity { get; }
     }
 }
-

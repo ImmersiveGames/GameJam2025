@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
             for (int sceneIndex = 0; sceneIndex < SceneManager.sceneCount; sceneIndex++)
             {
-                Scene scene = SceneManager.GetSceneAt(sceneIndex);
+                var scene = SceneManager.GetSceneAt(sceneIndex);
                 if (!scene.IsValid() || !scene.isLoaded)
                 {
                     continue;
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 bool sceneHadProvider = false;
                 for (int rootIndex = 0; rootIndex < rootObjects.Length; rootIndex++)
                 {
-                    GameObject root = rootObjects[rootIndex];
+                    var root = rootObjects[rootIndex];
                     if (root == null)
                     {
                         continue;
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                     sceneHadProvider = true;
                     for (int providerIndex = 0; providerIndex < providers.Length; providerIndex++)
                     {
-                        SceneActorAttributeUiBindingRequestProvider provider = providers[providerIndex];
+                        var provider = providers[providerIndex];
                         if (provider == null)
                         {
                             continue;

@@ -10,7 +10,7 @@ using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Animations
 {
 
-    public class EaterAnimationController : AnimationControllerBase, IActorAnimationController,IExecutionToggleIgnored
+    public class EaterAnimationController : AnimationControllerBase, IActorAnimationController, IExecutionToggleIgnored
     {
         private EaterAnimationConfig EaterAnimationConfig => animationConfig as EaterAnimationConfig;
         private EventBinding<DamageEvent> _damageBinding;
@@ -80,7 +80,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         protected int MadHash => EaterAnimationConfig?.MadHash ?? Animator.StringToHash("Mad");
 
 
-
         private void UnregisterDamageListeners()
         {
             if (!_listenersRegistered || Actor == null || string.IsNullOrEmpty(Actor.ActorId))
@@ -139,10 +138,22 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
             PlayRevive();
         }
 
-        public void PlayHit() => PlayHash(HitHash);
-        public void PlayDeath() => PlayHash(DeathHash);
-        public void PlayRevive() => PlayHash(ReviveHash);
-        public void PlayIdle() => PlayHash(IdleHash);
+        public void PlayHit()
+        {
+            PlayHash(HitHash);
+        }
+        public void PlayDeath()
+        {
+            PlayHash(DeathHash);
+        }
+        public void PlayRevive()
+        {
+            PlayHash(ReviveHash);
+        }
+        public void PlayIdle()
+        {
+            PlayHash(IdleHash);
+        }
 
         public void SetEating(bool isEating)
         {
@@ -196,4 +207,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Animations
         }
     }
 }
-

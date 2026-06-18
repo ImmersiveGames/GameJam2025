@@ -93,5 +93,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"event='ActivityContentUnloadCompletionTechnicalCompleted' owner='{Owner}' pipelineId='{unloadedIdentity.PipelineId}' sessionStateId='{unloadedIdentity.SessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' operationId='{operation.OperationId}' unloadKind='{command.UnloadKind}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}' pendingOperationCleared='true'.",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

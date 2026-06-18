@@ -135,15 +135,9 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             _rigidbody.angularVelocity = Vector3.zero;
         }
 
-        private void DisposePredicates()
-        {
+        private void DisposePredicates() { }
 
-        }
-
-        private void ResetStateMachineCache()
-        {
-
-        }
+        private void ResetStateMachineCache() { }
 
         private void ResetDependencyCaches()
         {

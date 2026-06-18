@@ -8,15 +8,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
     [DisallowMultipleComponent]
     public sealed class PlayerActorInputBindingState : MonoBehaviour
     {
-        [SerializeField, HideInInspector] private string pipelineId;
-        [SerializeField, HideInInspector] private string sessionId;
-        [SerializeField, HideInInspector] private string activityId;
-        [SerializeField, HideInInspector] private int entrySequence;
-        [SerializeField, HideInInspector] private string playerSlotId;
-        [SerializeField, HideInInspector] private string playerActorId;
-        [SerializeField, HideInInspector] private EntityId playerInputInstanceId;
-        [SerializeField, HideInInspector] private int playerInputIndex;
-        [SerializeField, HideInInspector] private string playerInputName;
+        [SerializeField] [HideInInspector] private string pipelineId;
+        [SerializeField] [HideInInspector] private string sessionId;
+        [SerializeField] [HideInInspector] private string activityId;
+        [SerializeField] [HideInInspector] private int entrySequence;
+        [SerializeField] [HideInInspector] private string playerSlotId;
+        [SerializeField] [HideInInspector] private string playerActorId;
+        [SerializeField] [HideInInspector] private EntityId playerInputInstanceId;
+        [SerializeField] [HideInInspector] private int playerInputIndex;
+        [SerializeField] [HideInInspector] private string playerInputName;
 
         public string PipelineId => pipelineId;
         public string SessionId => sessionId;
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             entrySequence > 0 &&
             PlayerSlotId.IsValid &&
             PlayerActorId.IsValid &&
-            playerInputInstanceId != 0 &&
+            playerInputInstanceId != EntityId.None &&
             playerInputIndex >= 0 &&
             !string.IsNullOrWhiteSpace(playerInputName);
 
@@ -72,9 +72,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             entrySequence = 0;
             playerSlotId = string.Empty;
             playerActorId = string.Empty;
-            playerInputInstanceId = 0;
+            playerInputInstanceId = EntityId.None;
             playerInputIndex = 0;
             playerInputName = string.Empty;
         }
-}
+    }
 }

@@ -36,14 +36,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return EmptyFacts;
             }
 
-            if (!TryNormalize(previousValue, minValue, maxValue, out var previousNormalizedValue) ||
-                !TryNormalize(currentValue, minValue, maxValue, out var currentNormalizedValue))
+            if (!TryNormalize(previousValue, minValue, maxValue, out float previousNormalizedValue) ||
+                !TryNormalize(currentValue, minValue, maxValue, out float currentNormalizedValue))
             {
                 return EmptyFacts;
             }
 
             var crossedFacts = new List<ActorAttributeThresholdCrossedFact>();
-            for (var i = 0; i < thresholdDefinitions.Count; i++)
+            for (int i = 0; i < thresholdDefinitions.Count; i++)
             {
                 var definition = thresholdDefinitions[i];
                 if (definition == null || !definition.IsValid)
@@ -95,8 +95,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return ActorAttributeThresholdEvaluationResult.Invalid("threshold_definition_invalid");
             }
 
-            if (!TryNormalize(previousValue, minValue, maxValue, out var previousNormalizedValue) ||
-                !TryNormalize(currentValue, minValue, maxValue, out var currentNormalizedValue))
+            if (!TryNormalize(previousValue, minValue, maxValue, out float previousNormalizedValue) ||
+                !TryNormalize(currentValue, minValue, maxValue, out float currentNormalizedValue))
             {
                 return ActorAttributeThresholdEvaluationResult.Invalid("attribute_range_invalid");
             }
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             float previousNormalizedValue,
             float currentNormalizedValue)
         {
-            var threshold = definition.NormalizedValue;
+            float threshold = definition.NormalizedValue;
             switch (definition.Direction)
             {
                 case ActorAttributeThresholdDirection.Descending:
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         private static bool TryNormalize(float value, float minValue, float maxValue, out float normalizedValue)
         {
             normalizedValue = 0f;
-            var denominator = maxValue - minValue;
+            float denominator = maxValue - minValue;
             if (float.IsNaN(value) ||
                 float.IsInfinity(value) ||
                 float.IsNaN(minValue) ||

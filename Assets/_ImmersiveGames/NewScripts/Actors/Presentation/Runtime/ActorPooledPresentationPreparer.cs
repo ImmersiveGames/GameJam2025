@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
             LogPreparationStarted();
 
-            if (!TryResolveEndpoint(out var endpoint, out var profile, out var failureReason, out var failureMessage))
+            if (!TryResolveEndpoint(out var endpoint, out var profile, out string failureReason, out string failureMessage))
             {
                 LogPreparationFailed(failureReason, failureMessage);
                 return;
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             string profileId = presentationEndpoint?.Profile?.ProfileId.TrimToEmpty();
             DebugUtility.Log(
                 typeof(ActorPooledPresentationPreparer),
-                $"event='ActorPooledPresentationPreparationStarted' presentationEndpointPresent='{(presentationEndpoint != null)}' presentationProfileId='{(string.IsNullOrWhiteSpace(profileId) ? "none" : profileId)}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(ActorPooledPresentationPreparer)}' reason='{PreparationReason}'.",
+                $"event='ActorPooledPresentationPreparationStarted' presentationEndpointPresent='{presentationEndpoint != null}' presentationProfileId='{(string.IsNullOrWhiteSpace(profileId) ? "none" : profileId)}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(ActorPooledPresentationPreparer)}' reason='{PreparationReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -263,7 +263,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             DebugUtility.LogError(
                 typeof(ActorPooledPresentationPreparer),
-                $"event='ActorPooledPresentationPreparationFailed' reasonCode='{reasonCode.TrimToEmpty()}' message='{message.TrimToEmpty()}' presentationEndpointPresent='{(presentationEndpoint != null)}' presentationProfileId='{presentationEndpoint?.Profile?.ProfileId.TrimToEmpty()}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(ActorPooledPresentationPreparer)}' reason='presentation_preparation_failed'.");
+                $"event='ActorPooledPresentationPreparationFailed' reasonCode='{reasonCode.TrimToEmpty()}' message='{message.TrimToEmpty()}' presentationEndpointPresent='{presentationEndpoint != null}' presentationProfileId='{presentationEndpoint?.Profile?.ProfileId.TrimToEmpty()}' visualContract='{VisualContractOptionalForRuntimeSpawn}' source='{nameof(ActorPooledPresentationPreparer)}' reason='presentation_preparation_failed'.");
         }
 
         private static PresentationObservation BuildVisualObservation(GameObject presentationInstance, ActorPresentationEndpoint endpoint)
@@ -287,7 +287,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 observation.PresentationVisualRootPresent = true;
             }
 
-            GameObject root = presentationInstance != null ? presentationInstance : endpoint?.gameObject;
+            var root = presentationInstance != null ? presentationInstance : endpoint?.gameObject;
             if (root == null)
             {
                 return observation;
@@ -350,7 +350,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             }
 
             System.Collections.Generic.Stack<string> segments = new();
-            Transform current = transform;
+            var current = transform;
 
             while (current != null)
             {
@@ -365,7 +365,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             return instance != null ? instance.name : string.Empty;
         }
-private struct PresentationObservation
+        private struct PresentationObservation
         {
             public bool PresentationEndpointPresent;
             public bool PresentationVisualRootPresent;

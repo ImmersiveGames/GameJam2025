@@ -50,10 +50,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 if (elapsed < cooldown)
                 {
                     return new AudioSfxDirectPolicyDecision(
-                        shouldBlock: true,
-                        blockPolicy: AudioSfxBlockPolicy.Cooldown,
-                        restartedExisting: false,
-                        previousHandleStopped: false);
+                        true,
+                        AudioSfxBlockPolicy.Cooldown,
+                        false,
+                        false);
                 }
             }
 
@@ -61,17 +61,17 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             if (!restartedExisting && activeInstances >= maxSimultaneous)
             {
                 return new AudioSfxDirectPolicyDecision(
-                    shouldBlock: true,
-                    blockPolicy: AudioSfxBlockPolicy.SimultaneousLimit,
-                    restartedExisting: false,
-                    previousHandleStopped: false);
+                    true,
+                    AudioSfxBlockPolicy.SimultaneousLimit,
+                    false,
+                    false);
             }
 
             return new AudioSfxDirectPolicyDecision(
-                shouldBlock: false,
-                blockPolicy: AudioSfxBlockPolicy.None,
-                restartedExisting: restartedExisting,
-                previousHandleStopped: restartedExisting && previousHandleStopped);
+                false,
+                AudioSfxBlockPolicy.None,
+                restartedExisting,
+                restartedExisting && previousHandleStopped);
         }
     }
 
@@ -154,4 +154,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         }
     }
 }
-

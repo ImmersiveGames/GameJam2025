@@ -24,13 +24,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => RouteCommand.IsValid;
-}
+    }
 
     public enum OperationalSceneCompositionResultKind
     {
         Unknown = 0,
         Completed = 1,
-        Failed = 2,
+        Failed = 2
     }
 
     public readonly struct OperationalSceneCompositionResult
@@ -70,5 +70,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 reason,
                 detail);
         }
-}
+    }
 }

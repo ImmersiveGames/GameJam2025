@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
     {
         RuntimeDefault = 0,
         None = 1,
-        Profile = 2,
+        Profile = 2
     }
 
     public enum SessionOperationalLoadingStage
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         FadeOutCompleted = 7,
         OperationalRouteCompleted = 8,
         LoadingCompleted = 9,
-        LoadingHidden = 10,
+        LoadingHidden = 10
     }
 
     public enum SessionOperationalLoadingOutcomeKind
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Completed = 6,
         Hidden = 7,
         Skipped = 8,
-        Failed = 9,
+        Failed = 9
     }
 
     public readonly struct SessionOperationalLoadingCommand
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 ? $"routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', loadingMode='{LoadingMode}', loadingProfileId='{LoadingProfileId}', loadingSceneName='{LoadingSceneName}', showImmediately='{ShowImmediately}', hideAfterCompletion='{HideAfterCompletion}', minimumVisibleSeconds='{MinimumVisibleSeconds:0.###}', finalProgressHoldSeconds='{FinalProgressHoldSeconds:0.###}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
-}
+    }
 
     public readonly struct SessionOperationalLoadingFact
     {
@@ -173,6 +173,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 ? $"routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', loadingProfileId='{LoadingProfileId}', stage='{Stage}', normalizedProgress='{NormalizedProgress:0.###}', stepLabel='{StepLabel}', message='{Message}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
+    }
 }
-}
-

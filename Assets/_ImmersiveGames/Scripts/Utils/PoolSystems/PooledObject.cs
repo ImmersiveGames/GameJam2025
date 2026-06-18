@@ -111,8 +111,14 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         protected abstract void OnReset();
         protected abstract void OnReconfigured(PoolableObjectData config);
 
-        public GameObject GetGameObject() => gameObject;
-        public T GetData<T>() where T : PoolableObjectData => _config as T;
+        public GameObject GetGameObject()
+        {
+            return gameObject;
+        }
+        public T GetData<T>() where T : PoolableObjectData
+        {
+            return _config as T;
+        }
         public ObjectPool GetPool => _pool;
     }
 }

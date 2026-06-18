@@ -61,5 +61,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 Registry.Remove(key);
             }
         }
-}
+    }
 }

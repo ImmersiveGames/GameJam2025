@@ -85,4 +85,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-

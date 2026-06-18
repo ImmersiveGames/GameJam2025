@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string reason,
             out ActorImpactTarget target)
         {
-            GameObject resolvedTargetObject = targetObject;
+            var resolvedTargetObject = targetObject;
             if (resolvedTargetObject == null && targetCollider != null)
             {
                 resolvedTargetObject = targetCollider.gameObject;
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return false;
             }
 
-            Actor targetActor = resolvedTargetObject.GetComponentInParent<Actor>();
+            var targetActor = resolvedTargetObject.GetComponentInParent<Actor>();
             if (targetActor == null || !targetActor.ActorIdValue.IsValid || !targetActor.RuntimeActorInstanceId.IsValid)
             {
                 target = ActorImpactTarget.Unresolved(resolvedTargetObject, targetCollider, "impact_target_actor_missing_or_invalid");
@@ -61,5 +61,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 $"event='ActorImpactTargetResolveSkipped' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' outcomeReason='{target.Reason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
-}
+    }
 }

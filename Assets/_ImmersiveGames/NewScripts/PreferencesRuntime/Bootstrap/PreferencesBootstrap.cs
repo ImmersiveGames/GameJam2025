@@ -53,4 +53,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
         }
     }
 }
-

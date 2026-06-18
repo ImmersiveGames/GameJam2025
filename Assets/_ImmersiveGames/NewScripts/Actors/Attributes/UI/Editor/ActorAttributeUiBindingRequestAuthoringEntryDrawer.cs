@@ -78,8 +78,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
         private static string BuildLabel(SerializedProperty property)
         {
-            SerializedProperty selectorKindProperty = property.FindPropertyRelative("selectorKind");
-            SerializedProperty attributeDefinitionProperty = property.FindPropertyRelative("attributeDefinition");
+            var selectorKindProperty = property.FindPropertyRelative("selectorKind");
+            var attributeDefinitionProperty = property.FindPropertyRelative("attributeDefinition");
             string selectorKind = selectorKindProperty != null && selectorKindProperty.propertyType == SerializedPropertyType.Enum
                 ? selectorKindProperty.enumDisplayNames[selectorKindProperty.enumValueIndex]
                 : "Attribute UI Binding Request";

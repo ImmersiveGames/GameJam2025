@@ -170,7 +170,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             {
                 DebugUtility.LogWarning<GameTimer>(
                     "Duração configurada inválida para o cronômetro; sessão não iniciada.",
-                    context: this);
+                    this);
                 StopSession(true, reason: "Duração inválida");
                 return;
             }
@@ -254,7 +254,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             var manager = ResolvedGameManager;
             if (manager == null || !manager.TryTriggerGameOver("Timer expired"))
             {
-                DebugUtility.LogWarning<GameTimer>("GameManager indisponível ou estado atual não permite GameOver.", context: this);
+                DebugUtility.LogWarning<GameTimer>("GameManager indisponível ou estado atual não permite GameOver.", this);
             }
         }
 
@@ -433,5 +433,3 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         }
     }
 }
-
-

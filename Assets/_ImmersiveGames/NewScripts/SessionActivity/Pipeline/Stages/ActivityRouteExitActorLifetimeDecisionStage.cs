@@ -31,20 +31,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             HashSet<ActorInstanceRuntimeId> resolvedRuntimeIds = alreadyResolvedRuntimeIds ?? new HashSet<ActorInstanceRuntimeId>();
             for (int index = 0; index < sessionActors.Count; index++)
             {
-                SessionActorRuntimeEntry entry = sessionActors[index];
+                var entry = sessionActors[index];
                 if (!entry.IsValid)
                 {
                     continue;
                 }
 
-                ActorInstanceRuntimeId runtimeId = entry.ActorInstanceRuntimeId;
+                var runtimeId = entry.ActorInstanceRuntimeId;
                 if (!runtimeId.IsValid || resolvedRuntimeIds.Contains(runtimeId))
                 {
                     continue;
                 }
 
-                ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, ActorLifetimeTrigger.RouteExit);
-                ActivityActorParticipationExitDecisionRecord lifetimeDecision = ActivityActorParticipationExitDecisionRecordFactory.Create(
+                var decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, ActorLifetimeTrigger.RouteExit);
+                var lifetimeDecision = ActivityActorParticipationExitDecisionRecordFactory.Create(
                     command,
                     identity,
                     entry,

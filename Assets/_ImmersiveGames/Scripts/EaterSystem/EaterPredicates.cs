@@ -105,8 +105,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         public void Dispose()
         {
             //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _actorId);
-           //FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _actorId);
-           // FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _actorId);
+            //FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _actorId);
+            // FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _actorId);
         }
 
         private void OnRevive(ReviveEvent reviveEvent)
@@ -272,4 +272,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     }
 
 }
-

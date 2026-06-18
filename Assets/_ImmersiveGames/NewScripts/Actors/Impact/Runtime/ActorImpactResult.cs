@@ -86,5 +86,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 target.HasTargetObject || target.HasTargetCollider || target.HasTargetActor,
                 reason);
         }
-}
+    }
 }

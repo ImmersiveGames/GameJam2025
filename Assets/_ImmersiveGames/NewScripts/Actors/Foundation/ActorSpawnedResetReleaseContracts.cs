@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Failed = 3,
         InvalidCommand = 4,
         MissingPoolOrigin = 5,
-        AlreadyReturned = 6,
+        AlreadyReturned = 6
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             HasPoolOrigin &&
             LifetimeState.IsValid &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct SpawnedActorReturnToPoolResult
     {
@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool IsSuccess => Kind == SpawnedActorReturnToPoolResultKind.Success;
         public bool IsSkipped => Kind == SpawnedActorReturnToPoolResultKind.Skipped;
         public bool IsFailed => Kind == SpawnedActorReturnToPoolResultKind.Failed;
-}
+    }
 
     public readonly struct SpawnedActorResetCommand
     {
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SnapshotPolicy != ActorSnapshotPolicy.Unknown &&
             LifetimeState.IsValid &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct SpawnedActorResetFactPayload
     {
@@ -147,5 +147,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SnapshotPolicy != ActorSnapshotPolicy.Unknown &&
             ResultKind != SpawnedActorReturnToPoolResultKind.Unknown &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 }

@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Reset = 1,
         Snapshot = 2,
         SnapshotRestore = 3,
-        Release = 4,
+        Release = 4
     }
 
     public readonly struct ActivityObjectLifecycleContributionContext
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ContributorKind != ActivityObjectContributorKind.Unknown &&
             Requiredness != ActivitySetupRequirementRequiredness.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public interface IActivityObjectLifecycleContribution
     {
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectResetEndpoint ResetEndpoint { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && ResetEndpoint != null;
-}
+    }
 
     public readonly struct ActivityObjectSnapshotContribution : IActivityObjectSnapshotContribution
     {
@@ -120,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectSnapshotProvider SnapshotProvider { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && SnapshotProvider != null;
-}
+    }
 
     public readonly struct ActivityObjectSnapshotRestoreContribution : IActivityObjectSnapshotRestoreContribution
     {
@@ -140,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectSnapshotRestoreEndpoint RestoreEndpoint { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && RestoreEndpoint != null;
-}
+    }
 
     public readonly struct ActivityObjectReleaseContribution : IActivityObjectReleaseContribution
     {
@@ -160,5 +160,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectReleaseEndpoint ReleaseEndpoint { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && ReleaseEndpoint != null;
-}
+    }
 }

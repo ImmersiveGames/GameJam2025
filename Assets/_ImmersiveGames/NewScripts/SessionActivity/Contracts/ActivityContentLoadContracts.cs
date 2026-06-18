@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         LoadedSetReady = 3,
         SkippedNoContent = 4,
         Rejected = 5,
-        Failed = 6,
+        Failed = 6
     }
 
     public enum ActivityContentUnloadResultKind
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Unloaded = 2,
         SkippedNoContent = 3,
         Rejected = 4,
-        Failed = 5,
+        Failed = 5
     }
 
     public readonly struct ActivityContentSceneRuntimeReference
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 sceneKey.name,
                 sceneKey.SceneName);
         }
-}
+    }
 
     public readonly struct ActivityContentSceneLoadCommand
     {
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityContentSceneLoadResult
     {
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public readonly struct ActivityContentSceneUnloadCommand
     {
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}', releaseSource='{ReleaseSource}', releaseReason='{ReleaseReason}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityContentSceneUnloadResult
     {
@@ -243,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public readonly struct ActivityContentLoadPlanScene
     {
@@ -361,7 +361,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int sceneCount = Scenes?.Count ?? 0;
             return $"identity='{Identity}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfileId='{(string.IsNullOrWhiteSpace(ActivityContentProfileId) ? "<none>" : ActivityContentProfileId)}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityContentLoadedSceneRecord
     {
@@ -414,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', operationId='{OperationId}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityContentLoadedSet
     {
@@ -479,7 +479,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int sceneCount = Scenes?.Count ?? 0;
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
         }
-}
+    }
 
     public readonly struct ActivityContentLoadFact
     {
@@ -519,7 +519,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', contentProfileId='{(string.IsNullOrWhiteSpace(ContentProfileId) ? "<none>" : ContentProfileId)}', loadedSet='{LoadedSet}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-}
+    }
 
     public interface IActivityContentSceneAdapter
     {

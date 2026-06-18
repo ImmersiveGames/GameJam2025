@@ -252,5 +252,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return requiredCount;
         }
-}
+    }
 }

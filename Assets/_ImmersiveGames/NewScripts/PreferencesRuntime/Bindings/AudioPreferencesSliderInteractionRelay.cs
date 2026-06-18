@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
     {
         Master,
         Bgm,
-        Sfx,
+        Sfx
     }
 
     /// <summary>
@@ -163,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 
             globalAudioService.Play(
                 _sfxPreviewCue,
-                AudioPlaybackContext.Global(reason: "Preferences/SfxPreview", volumeScale: 1f));
+                AudioPlaybackContext.Global("Preferences/SfxPreview", 1f));
         }
 
         private static bool TryResolveGlobalAudioService(out IGlobalAudioService globalAudioService)
@@ -231,4 +231,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
         }
     }
 }
-

@@ -16,24 +16,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public enum SessionOperationalRouteCompletionHandoffKind
     {
         NoHandoff = 0,
-        SessionActivityEntry = 1,
+        SessionActivityEntry = 1
     }
 
     public enum SessionOperationalRouteTransitionMode
     {
         None = 0,
-        Profile = 1,
+        Profile = 1
     }
 
     public enum SessionOperationalRouteAudioMode
     {
         None = 0,
-        Cue = 1,
+        Cue = 1
     }
 
     public enum SessionOperationalRouteAudioTiming
     {
-        BeforeFadeOut = 0,
+        BeforeFadeOut = 0
     }
 
     public enum OperationalSurfaceKind
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         FrontendMenu = 1,
         SessionActivity = 2,
         Overlay = 3,
-        LoadingOnly = 4,
+        LoadingOnly = 4
     }
 
     public enum RouteActivitySaveContributorScopePolicy
@@ -50,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         CurrentActivityObjectSnapshot = 1,
         CurrentRouteSaveContributors = 2,
-        RouteAndActivitySaveContributors = 3,
+        RouteAndActivitySaveContributors = 3
     }
 
     public readonly struct RouteActivitySavePolicy
@@ -63,9 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 saveActivityOnExit,
                 saveActivityOnExit
                     ? RouteActivitySaveContributorScopePolicy.CurrentActivityObjectSnapshot
-                    : RouteActivitySaveContributorScopePolicy.Unknown)
-        {
-        }
+                    : RouteActivitySaveContributorScopePolicy.Unknown) { }
 
         public RouteActivitySavePolicy(
             bool loadActivitySaveOnEnter,
@@ -170,13 +168,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string LoadingProfileLabel => loadingProfile != null && !string.IsNullOrWhiteSpace(loadingProfile.ProfileId) ? loadingProfile.ProfileId.Trim() : string.Empty;
         public string TransitionProfileLabel => transitionProfile != null && !string.IsNullOrWhiteSpace(transitionProfile.name) ? transitionProfile.name.Trim() : string.Empty;
 
-        public bool IsValid
-        {
-            get
-            {
-                return TryValidate(out _);
-            }
-        }
+        public bool IsValid => TryValidate(out _);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnValidate()
@@ -462,7 +454,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             errorMessage = string.Empty;
             return true;
         }
-private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName, out string sceneName, out string errorMessage)
+        private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName, out string sceneName, out string errorMessage)
         {
             sceneName = string.Empty;
             errorMessage = string.Empty;
@@ -637,7 +629,7 @@ private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName
 
             return sceneKey.SceneName.Trim();
         }
-}
+    }
 
     public readonly struct SessionOperationalRouteAudioCommand
     {
@@ -669,8 +661,8 @@ private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName
                 }
 
                 return RouteAudioMode == SessionOperationalRouteAudioMode.Cue &&
-                       RouteAudioCue != null &&
-                       RouteAudioTiming == SessionOperationalRouteAudioTiming.BeforeFadeOut;
+                    RouteAudioCue != null &&
+                    RouteAudioTiming == SessionOperationalRouteAudioTiming.BeforeFadeOut;
             }
         }
 
@@ -709,6 +701,6 @@ private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName
                 ? $"routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', correlationId='{CorrelationId}', message='{Message}'"
                 : "<none>";
         }
-}
+    }
 
 }

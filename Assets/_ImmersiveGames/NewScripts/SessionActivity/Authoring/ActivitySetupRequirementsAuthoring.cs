@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             int removed = 0;
             for (int index = objectEntryRequirements.Count - 1; index >= 0; index--)
             {
-                ActivityObjectEntryRequirementAuthoring entry = objectEntryRequirements[index];
+                var entry = objectEntryRequirements[index];
                 if (entry == null || string.IsNullOrWhiteSpace(entry.RequirementId))
                 {
                     objectEntryRequirements.RemoveAt(index);
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             for (int index = 0; index < entries.Count; index++)
             {
-                T entry = entries[index];
+                var entry = entries[index];
                 if (entry == null)
                 {
                     throw new InvalidOperationException($"{source}.{listName}[{index}] cannot be null.");
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         {
             return entries?.Count ?? 0;
         }
-}
+    }
 
     public interface IActivitySetupRequirementAuthoring
     {

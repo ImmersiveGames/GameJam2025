@@ -69,12 +69,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 }
 
                 if (!ActorPresentationSetupContributionBuilder.TryBuild(
-                        context.Identity,
-                        target,
-                        endpoint,
-                        context.Source,
-                        context.Reason,
-                        out var contribution))
+                    context.Identity,
+                    target,
+                    endpoint,
+                    context.Source,
+                    context.Reason,
+                    out var contribution))
                 {
                     continue;
                 }

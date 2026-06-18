@@ -63,18 +63,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             PipelineIdentity.IsValid &&
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
-            ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown &&
+            ActorKind != ActorKind.Unknown &&
             ResetIntent != ActivityResetIntent.Unknown &&
             StateProfileKind != ActivityResetStateProfileKind.Unknown;
-}
-
-    public interface IActorResetEndpoint
-    {
     }
 
-    public interface IActorPlacementResetEndpoint : IActorResetEndpoint
-    {
-    }
+    public interface IActorResetEndpoint { }
+
+    public interface IActorPlacementResetEndpoint : IActorResetEndpoint { }
 
     public interface IActorEntryInitializeResetEndpoint : IActorResetEndpoint
     {
@@ -112,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         public string CapabilityId { get; }
         public string ReasonCode { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && !string.IsNullOrWhiteSpace(ReasonCode);
-}
+    }
 
     public readonly struct ActorResetResult
     {
@@ -138,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         public int AppliedReferenceCount { get; }
         public int SkippedReferenceCount { get; }
         public IReadOnlyList<ActorResetSkippedReferenceReason> SkippedReferenceReasons { get; }
-        public bool IsValid => ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown && AppliedReferenceCount >= 0 && SkippedReferenceCount >= 0 && SkippedReferenceReasons != null;
+        public bool IsValid => ActorId.IsValid && ActorInstanceRuntimeId.IsValid && ActorKind != ActorKind.Unknown && AppliedReferenceCount >= 0 && SkippedReferenceCount >= 0 && SkippedReferenceReasons != null;
     }
 
     public interface IActorResetAdapter

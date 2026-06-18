@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             if (!cycle.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] Invalid materialization execution cycle. phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{(entrySignature.TrimToOrDefault("<none>"))}' source='{(source.TrimToOrDefault("<none>"))}'.");
+                    $"[FATAL][Config][ActorsExecution] Invalid materialization execution cycle. phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{entrySignature.TrimToOrDefault("<none>")}' source='{source.TrimToOrDefault("<none>")}'.");
             }
 
             return cycle;

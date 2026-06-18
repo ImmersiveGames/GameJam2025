@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         [SerializeField] private bool clearEventSystemSelectionOnEnable = true;
 
         [Tooltip("Quando true, desabilita o botão ao iniciar a ação. " +
-                 "Se a ação falhar para iniciar (ex.: serviço indisponível), o botão é reabilitado automaticamente.")]
+            "Se a ação falhar para iniciar (ex.: serviço indisponível), o botão é reabilitado automaticamente.")]
         [SerializeField] private bool disableButtonDuringAction;
 
         private float _ignoreClicksUntilUnscaledTime;
@@ -130,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             DebugUtility.LogVerbose<FrontendButtonBinderBase>(
                 $"[FrontendButton] Click-guard armado por {seconds:0.000}s (label='{label}', go='{gameObject.name}', btn='{buttonName}').",
                 DebugUtility.Colors.Info,
-                context: this);
+                this);
         }
 
         private void ArmClickGuardOncePerEnable(float seconds, string label)
@@ -177,4 +177,3 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         }
     }
 }
-

@@ -24,9 +24,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             SurfaceCameraPresentationRequirementResolver requirementResolver,
             IDependencyProvider dependencyProvider)
         {
-            this._routeCameraExecutor = routeCameraExecutor;
-            this._requirementResolver = requirementResolver;
-            this._dependencyProvider = dependencyProvider;
+            _routeCameraExecutor = routeCameraExecutor;
+            _requirementResolver = requirementResolver;
+            _dependencyProvider = dependencyProvider;
         }
 
         public bool TryPrepareRouteCamera(
@@ -38,8 +38,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 reason = "route_camera_prepare_command_invalid";
                 result = SessionOperationalRouteCameraPrepareResult.Failed(
-                    failureFact: null,
-                    reason: reason);
+                    null,
+                    reason);
                 return false;
             }
 

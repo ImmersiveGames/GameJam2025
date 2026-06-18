@@ -301,8 +301,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem
             {
                 DebugUtility.LogWarning(
                     "Não foi possível selecionar um desejo válido para o Eater.",
-                    context: _master,
-                    instance: this);
+                    _master,
+                    this);
                 _currentDesire = null;
                 _currentDesireAvailable = false;
                 _currentDuration = 0f;
@@ -703,4 +703,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem
         }
     }
 }
-

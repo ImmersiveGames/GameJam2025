@@ -47,5 +47,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"{phaseName} pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{source}' reason='{reason}'.{normalizedDetail}",
                 completed ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
-}
+    }
 }

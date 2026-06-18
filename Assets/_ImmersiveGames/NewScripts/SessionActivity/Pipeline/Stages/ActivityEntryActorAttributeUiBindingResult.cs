@@ -27,5 +27,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string Reason { get; }
 
         public bool HasBindings => !Skipped && BoundCount > 0;
-}
+    }
 }

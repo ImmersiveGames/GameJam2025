@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
             }
             else
             {
-                DependencyManager.Provider.RegisterGlobal(audioDefaults, allowOverride: false);
+                DependencyManager.Provider.RegisterGlobal(audioDefaults, false);
 
                 DebugUtility.LogVerbose(
                     typeof(PreferencesInstaller),
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
             }
             else
             {
-                DependencyManager.Provider.RegisterGlobal(videoDefaults, allowOverride: false);
+                DependencyManager.Provider.RegisterGlobal(videoDefaults, false);
 
                 DebugUtility.LogVerbose(
                     typeof(PreferencesInstaller),
@@ -103,9 +103,9 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 "Preferences/InstallerSeed");
 
             RegisterIfMissing<IPreferencesStateService>(
-                factory: () => service,
-                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesStateService already registered.",
-                registeredMessage: "[Preferences][BOOT] IPreferencesStateService registered.");
+                () => service,
+                "[Preferences][BOOT] IPreferencesStateService already registered.",
+                "[Preferences][BOOT] IPreferencesStateService registered.");
         }
 
         private static void RegisterPreferencesSaveAdapter(RuntimeModeConfig runtimeModeConfig)
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
             }
 
             RegisterIfMissing<IPreferencesSaveAdapter>(
-                factory: () =>
+                () =>
                 {
                     if (!DependencyManager.Provider.TryGetGlobal<ISaveService>(out var saveService) || saveService == null)
                     {
@@ -126,14 +126,14 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                     var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
                     return new PreferencesSaveAdapter(saveService, saveConfig.SchemaVersion);
                 },
-                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesSaveAdapter already registered.",
-                registeredMessage: "[Preferences][BOOT] IPreferencesSaveAdapter registered.");
+                "[Preferences][BOOT] IPreferencesSaveAdapter already registered.",
+                "[Preferences][BOOT] IPreferencesSaveAdapter registered.");
         }
 
         private static void RegisterPreferencesRuntimePipeline()
         {
             RegisterIfMissing<IPreferencesRuntimePipeline>(
-                factory: () =>
+                () =>
                 {
                     if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out var stateService) || stateService == null)
                     {
@@ -147,8 +147,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 
                     return new PreferencesRuntimePipeline(stateService, saveAdapter);
                 },
-                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesRuntimePipeline already registered.",
-                registeredMessage: "[Preferences][BOOT] IPreferencesRuntimePipeline registered.");
+                "[Preferences][BOOT] IPreferencesRuntimePipeline already registered.",
+                "[Preferences][BOOT] IPreferencesRuntimePipeline registered.");
         }
 
         private static void RegisterIfMissing<T>(
@@ -173,4 +173,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
         }
     }
 }
-

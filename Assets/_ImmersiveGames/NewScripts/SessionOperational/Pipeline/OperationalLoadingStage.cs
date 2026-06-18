@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     // Etapa 2 (canonização): Result local normalizado para o modelo canônico (IsCompleted/IsSkipped/IsAccepted + Kind).
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsCompleted => Kind == OperationalLoadingResultKind.Completed;
         public bool IsSkipped => Kind == OperationalLoadingResultKind.Skipped;
         public bool IsAccepted => IsCompleted || IsSkipped;
-}
+    }
 
     public readonly struct OperationalLoadingCommand
     {
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             LoadingCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
 
     public readonly struct OperationalLoadingCompletionState

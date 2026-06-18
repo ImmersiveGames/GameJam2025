@@ -13,14 +13,32 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(PlayerSlotId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is PlayerSlotId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(PlayerSlotId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is PlayerSlotId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(PlayerSlotId left, PlayerSlotId right) => left.Equals(right);
-        public static bool operator !=(PlayerSlotId left, PlayerSlotId right) => !left.Equals(right);
-}
+        public static bool operator ==(PlayerSlotId left, PlayerSlotId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(PlayerSlotId left, PlayerSlotId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct PlayerSelectionId : IEquatable<PlayerSelectionId>
     {
@@ -32,14 +50,32 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(PlayerSelectionId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is PlayerSelectionId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(PlayerSelectionId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is PlayerSelectionId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(PlayerSelectionId left, PlayerSelectionId right) => left.Equals(right);
-        public static bool operator !=(PlayerSelectionId left, PlayerSelectionId right) => !left.Equals(right);
-}
+        public static bool operator ==(PlayerSelectionId left, PlayerSelectionId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(PlayerSelectionId left, PlayerSelectionId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct SessionParticipantId : IEquatable<SessionParticipantId>
     {
@@ -51,13 +87,31 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(SessionParticipantId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is SessionParticipantId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(SessionParticipantId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is SessionParticipantId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(SessionParticipantId left, SessionParticipantId right) => left.Equals(right);
-        public static bool operator !=(SessionParticipantId left, SessionParticipantId right) => !left.Equals(right);
+        public static bool operator ==(SessionParticipantId left, SessionParticipantId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SessionParticipantId left, SessionParticipantId right)
+        {
+            return !left.Equals(right);
+        }
 
         public static SessionParticipantId FromPlayerSlotId(PlayerSlotId playerSlotId)
         {
@@ -68,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
             return new SessionParticipantId($"participant.{playerSlotId}");
         }
-}
+    }
 
     public readonly struct PlayerActorId : IEquatable<PlayerActorId>
     {
@@ -80,14 +134,32 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(PlayerActorId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is PlayerActorId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(PlayerActorId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is PlayerActorId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(PlayerActorId left, PlayerActorId right) => left.Equals(right);
-        public static bool operator !=(PlayerActorId left, PlayerActorId right) => !left.Equals(right);
-}
+        public static bool operator ==(PlayerActorId left, PlayerActorId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(PlayerActorId left, PlayerActorId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     public readonly struct ActivityParticipantRequirementId : IEquatable<ActivityParticipantRequirementId>
     {
@@ -99,12 +171,30 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActivityParticipantRequirementId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActivityParticipantRequirementId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActivityParticipantRequirementId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActivityParticipantRequirementId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActivityParticipantRequirementId left, ActivityParticipantRequirementId right) => left.Equals(right);
-        public static bool operator !=(ActivityParticipantRequirementId left, ActivityParticipantRequirementId right) => !left.Equals(right);
-}
+        public static bool operator ==(ActivityParticipantRequirementId left, ActivityParticipantRequirementId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActivityParticipantRequirementId left, ActivityParticipantRequirementId right)
+        {
+            return !left.Equals(right);
+        }
+    }
 }

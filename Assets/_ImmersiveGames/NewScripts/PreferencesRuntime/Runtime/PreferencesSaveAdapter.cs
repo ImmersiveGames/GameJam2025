@@ -162,16 +162,16 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 {
                     masterVolume = snapshot.MasterVolume,
                     bgmVolume = snapshot.BgmVolume,
-                    sfxVolume = snapshot.SfxVolume,
-                }),
+                    sfxVolume = snapshot.SfxVolume
+                })
             };
             var request = new SaveRequest(
                 address,
                 entries,
-                revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                savedAtUtc: DateTime.UtcNow.ToString("O"));
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                DateTime.UtcNow.ToString("O"));
 
-            return _saveService.TrySave(request, out var _, out reason);
+            return _saveService.TrySave(request, out _, out reason);
         }
 
         public bool TrySaveVideo(Contracts.VideoPreferencesSnapshot snapshot, out string reason)
@@ -195,16 +195,16 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 {
                     width = snapshot.ResolutionWidth,
                     height = snapshot.ResolutionHeight,
-                    fullscreen = snapshot.Fullscreen,
-                }),
+                    fullscreen = snapshot.Fullscreen
+                })
             };
             var request = new SaveRequest(
                 address,
                 entries,
-                revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                savedAtUtc: DateTime.UtcNow.ToString("O"));
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                DateTime.UtcNow.ToString("O"));
 
-            return _saveService.TrySave(request, out var _, out reason);
+            return _saveService.TrySave(request, out _, out reason);
         }
 
         private SaveAddress BuildAddress(
@@ -215,13 +215,13 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             string schemaId)
         {
             return new SaveAddress(
-                scope: SaveScope.Preferences,
-                group: group,
-                ownerId: ownerId,
-                recordId: recordId,
-                slotId: slotId,
-                schemaId: schemaId,
-                schemaVersion: _schemaVersion);
+                SaveScope.Preferences,
+                group,
+                ownerId,
+                recordId,
+                slotId,
+                schemaId,
+                _schemaVersion);
         }
 
         private static bool TryValidateAddressEntries(

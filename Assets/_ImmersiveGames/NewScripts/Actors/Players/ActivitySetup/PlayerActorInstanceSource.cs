@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     identity,
                     stableActorId,
                     actorScope,
-                    actorScopeDiscriminator: actorScope.ToString());
+                    actorScope.ToString());
                 if (!actorInstanceRuntimeId.IsValid)
                 {
                     throw new InvalidOperationException(
@@ -118,12 +118,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 actorParticipations.Add(new ActorParticipationRecord(
                     identity,
                     actorInstanceRuntimeId,
-                    participatesInCurrentEntry: true,
-                    policy: participationPolicy,
-                    explicitActivityIds: Array.Empty<string>(),
-                    policyMetadata: participationPolicy.ToString(),
-                    source: source,
-                    reason: reason));
+                    true,
+                    participationPolicy,
+                    Array.Empty<string>(),
+                    participationPolicy.ToString(),
+                    source,
+                    reason));
             }
 
             return new ActivityActorInstanceSourceResult(actorInstances, actorParticipations);
@@ -137,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             handle = default;
             if (_playerRegistry != null &&
                 (_playerRegistry.TryGetActiveHandleByParticipant(player.ParticipantId, out handle) ||
-                 _playerRegistry.TryGetRouteScopedHandleByParticipant(player.ParticipantId, out handle)) &&
+                    _playerRegistry.TryGetRouteScopedHandleByParticipant(player.ParticipantId, out handle)) &&
                 handle.IsValid)
             {
                 return true;

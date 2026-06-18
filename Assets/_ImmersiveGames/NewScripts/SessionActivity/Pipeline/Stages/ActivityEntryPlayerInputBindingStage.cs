@@ -81,13 +81,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{command.ActivityId}' player input binding completed with skip.");
                 return new ActivityEntryPlayerInputBindingResult(
-                    completed: true,
+                    true,
                     completedAfterSkipIdentity,
-                    requiredCount: 0,
-                    requiredBoundCount: 0,
-                    totalBoundCount: 0,
-                    skipped: true,
-                    reason: "no_required_controllable_participant");
+                    0,
+                    0,
+                    0,
+                    true,
+                    "no_required_controllable_participant");
             }
 
             for (int index = 0; index < requirements.Count; index++)
@@ -189,13 +189,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
 
             return new ActivityEntryPlayerInputBindingResult(
-                completed: true,
+                true,
                 completedIdentity,
                 requiredCount,
                 requiredBoundCount,
                 records.Count,
-                skipped: false,
-                reason: "resolved");
+                false,
+                "resolved");
         }
 
         private static List<PlayerInputBindingRequirement> BuildRequirements(

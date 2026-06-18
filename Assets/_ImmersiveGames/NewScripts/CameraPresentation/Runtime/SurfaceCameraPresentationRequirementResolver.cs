@@ -45,9 +45,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             }
 
             if (!anchorHost.TryResolve(
-                    profile.TrackingAnchorId,
-                    out var trackingTarget,
-                    out string trackingReason))
+                profile.TrackingAnchorId,
+                out var trackingTarget,
+                out string trackingReason))
             {
                 reason = trackingReason;
                 return false;
@@ -58,9 +58,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             if (!string.IsNullOrWhiteSpace(profile.LookAtAnchorId))
             {
                 if (!anchorHost.TryResolve(
-                        profile.LookAtAnchorId,
-                        out lookAtTarget,
-                        out string lookAtReason))
+                    profile.LookAtAnchorId,
+                    out lookAtTarget,
+                    out string lookAtReason))
                 {
                     reason = lookAtReason;
                     return false;

@@ -24,5 +24,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public bool IncludeChildrenForEndpointDiscovery { get; }
         public bool HasTargetObjectPath => !string.IsNullOrWhiteSpace(TargetObjectPath);
         public bool IsValid => Contribution.IsValid && TargetObject != null;
-}
+    }
 }

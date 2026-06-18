@@ -44,8 +44,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < resolvedDependencies.Count; index++)
             {
-                ResolvedPoolDependency dependency = resolvedDependencies[index];
-                PoolDefinitionAsset poolDefinition = dependency.PoolDefinition;
+                var dependency = resolvedDependencies[index];
+                var poolDefinition = dependency.PoolDefinition;
 
                 DebugUtility.LogVerbose(
                     typeof(ActivityEntryPoolPreparationStage),
@@ -90,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int actorIndex = 0; actorIndex < actorInstances.Count; actorIndex++)
             {
-                ActorInstanceRecord actorInstance = actorInstances[actorIndex];
+                var actorInstance = actorInstances[actorIndex];
                 if (!actorInstance.IsValid || actorInstance.CapabilitySurface == null)
                 {
                     continue;
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 for (int providerIndex = 0; providerIndex < providers.Count; providerIndex++)
                 {
-                    IActorRuntimePoolDependencyProvider provider = providers[providerIndex];
+                    var provider = providers[providerIndex];
                     if (provider == null)
                     {
                         continue;
@@ -122,14 +122,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     for (int poolIndex = 0; poolIndex < poolDefinitions.Count; poolIndex++)
                     {
-                        PoolDefinitionAsset poolDefinition = poolDefinitions[poolIndex];
+                        var poolDefinition = poolDefinitions[poolIndex];
                         if (poolDefinition == null)
                         {
                             throw new InvalidOperationException(
                                 $"ActivityEntryPoolPreparationStage provider returned null pool definition. providerType='{providerType}' actorId='{actorInstance.ActorId}' actorInstanceRuntimeId='{actorInstance.ActorInstanceRuntimeId}'.");
                         }
 
-                        EntityId poolDefinitionId = poolDefinition.GetEntityId();
+                        var poolDefinitionId = poolDefinition.GetEntityId();
                         if (!uniquePoolDefinitionIds.Add(poolDefinitionId))
                         {
                             continue;
@@ -142,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return dependencies;
         }
-private static int CountPrepared(IReadOnlyList<ResolvedPoolDependency> dependencies)
+        private static int CountPrepared(IReadOnlyList<ResolvedPoolDependency> dependencies)
         {
             int prepared = 0;
             for (int index = 0; index < dependencies.Count; index++)

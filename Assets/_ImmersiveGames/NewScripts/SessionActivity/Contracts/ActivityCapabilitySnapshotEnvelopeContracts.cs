@@ -8,14 +8,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         Unknown = 0,
         ActivityObject = 1,
-        Actor = 2,
+        Actor = 2
     }
 
     public enum ActivityCapabilitySnapshotPayloadFormat
     {
         Unknown = 0,
         Json = 1,
-        Text = 2,
+        Text = 2
     }
 
     public readonly struct ActivityCapabilitySnapshotRecord
@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             PayloadFormat != ActivityCapabilitySnapshotPayloadFormat.Unknown &&
             !string.IsNullOrWhiteSpace(Payload) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public readonly struct ActivityCapabilitySnapshotEnvelope
     {
@@ -117,5 +117,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             EntrySequence > 0 &&
             Records is { Count: > 0 } &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 }

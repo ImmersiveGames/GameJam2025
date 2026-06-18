@@ -20,10 +20,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 
         [Tooltip("Configuração de thresholds para este recurso")]
         public RuntimeAttributeThresholdConfig thresholdConfig;
-        
+
         [Tooltip("Se esta instância tem auto-flow habilitado")]
         public bool hasAutoFlow;
-        
+
         [Tooltip("Configuração de auto-flow específica para esta instância")]
         public RuntimeAttributeAutoFlowConfig autoFlowConfig;
 

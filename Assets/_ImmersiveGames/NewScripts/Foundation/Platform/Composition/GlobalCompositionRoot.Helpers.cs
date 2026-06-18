@@ -12,8 +12,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             RegisterIfMissing(
                 factory,
-                alreadyRegisteredMessage: $"Global service already present: {typeof(T).Name}.",
-                registeredMessage: $"Registered global service: {typeof(T).Name}.");
+                $"Global service already present: {typeof(T).Name}.",
+                $"Registered global service: {typeof(T).Name}.");
         }
 
         private static void RegisterIfMissing<T>(
@@ -47,4 +47,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
     }
 }
-

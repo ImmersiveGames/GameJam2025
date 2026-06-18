@@ -6,14 +6,13 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
     {
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
-                moduleId: "Preferences",
-                installerDependencies: new[] { "Audio", "Save" },
-                bootstrapDependencies: Array.Empty<string>(),
-                installer: runtimeModeConfig => PreferencesInstaller.Install(runtimeModeConfig),
-                bootstrap: runtimeModeConfig => PreferencesBootstrap.ComposeRuntime(runtimeModeConfig),
-                installerEntry: "PreferencesInstaller.Install",
-                runtimeComposerEntry: "PreferencesBootstrap.ComposeRuntime",
+                "Preferences",
+                new[] { "Audio", "Save" },
+                Array.Empty<string>(),
+                runtimeModeConfig => PreferencesInstaller.Install(runtimeModeConfig),
+                runtimeModeConfig => PreferencesBootstrap.ComposeRuntime(runtimeModeConfig),
+                "PreferencesInstaller.Install",
+                "PreferencesBootstrap.ComposeRuntime",
                 description: "Canonical audio/video preferences runtime state with persistence through PreferencesRuntimePipeline -> PreferencesSaveAdapter -> ISaveService/SaveRuntime.");
     }
 }
-

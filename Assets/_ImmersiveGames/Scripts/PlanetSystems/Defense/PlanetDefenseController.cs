@@ -83,8 +83,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                     detector,
                     detectionType,
                     targetRole,
-                    isFirstEngagement: activeCount == 1,
-                    activeDetectors: activeCount));
+                    activeCount == 1,
+                    activeCount));
         }
 
         /// <summary>
@@ -112,8 +112,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                         planetsMaster,
                         detector,
                         detectionType,
-                        isLastDisengagement: activeCount == 0,
-                        activeDetectors: activeCount));
+                        activeCount == 0,
+                        activeCount));
             }
         }
 

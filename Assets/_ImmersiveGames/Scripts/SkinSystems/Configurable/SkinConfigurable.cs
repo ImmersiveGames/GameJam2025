@@ -128,11 +128,26 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
 
         // Handlers de eventos
-        private void OnActorSkinAppliedHandler(ISkinConfig config) => OnSkinApplied(config);
-        private void OnActorSkinCollectionAppliedHandler(SkinCollectionData collection) => OnSkinCollectionApplied(collection);
-        private void OnActorSkinInstancesCreatedHandler(ModelType type, List<GameObject> instances) => OnSkinInstancesCreated(type, instances);
-        private void OnGlobalSkinUpdate(SkinEvents evt) => OnSkinApplied(evt.SkinConfig);
-        private void OnGlobalSkinInstancesCreated(SkinInstancesCreatedEvent evt) => OnSkinInstancesCreated(evt.ModelType, new List<GameObject>(evt.Instances));
+        private void OnActorSkinAppliedHandler(ISkinConfig config)
+        {
+            OnSkinApplied(config);
+        }
+        private void OnActorSkinCollectionAppliedHandler(SkinCollectionData collection)
+        {
+            OnSkinCollectionApplied(collection);
+        }
+        private void OnActorSkinInstancesCreatedHandler(ModelType type, List<GameObject> instances)
+        {
+            OnSkinInstancesCreated(type, instances);
+        }
+        private void OnGlobalSkinUpdate(SkinEvents evt)
+        {
+            OnSkinApplied(evt.SkinConfig);
+        }
+        private void OnGlobalSkinInstancesCreated(SkinInstancesCreatedEvent evt)
+        {
+            OnSkinInstancesCreated(evt.ModelType, new List<GameObject>(evt.Instances));
+        }
 
         // M�todos para override pelas classes derivadas
         protected virtual void OnSkinApplied(ISkinConfig config)
@@ -189,4 +204,3 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         }
     }
 }
-

@@ -6,6 +6,6 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         Current = 1,
         Auto = 2,
         Manual = 3,
-        Checkpoint = 4,
+        Checkpoint = 4
     }
 }

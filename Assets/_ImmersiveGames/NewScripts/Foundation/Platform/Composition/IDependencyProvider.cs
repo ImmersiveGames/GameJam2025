@@ -32,4 +32,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         List<Type> ListGlobalServices();
     }
 }
-

@@ -18,13 +18,30 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
             set => _onEventNoArgs = value ?? (() => { });
         }
 
-        public EventBinding(Action<T> onEvent) => _onEvent = onEvent ?? (_ => { });
-        public EventBinding(Action onEventNoArgs) => _onEventNoArgs = onEventNoArgs ?? (() => { });
+        public EventBinding(Action<T> onEvent)
+        {
+            _onEvent = onEvent ?? (_ => { });
+        }
+        public EventBinding(Action onEventNoArgs)
+        {
+            _onEventNoArgs = onEventNoArgs ?? (() => { });
+        }
 
-        public void Add(Action<T> onEvent) => _onEvent += onEvent;
-        public void Add(Action onEventNoArgs) => _onEventNoArgs += onEventNoArgs;
-        public void Remove(Action<T> onEvent) => _onEvent -= onEvent;
-        public void Remove(Action onEventNoArgs) => _onEventNoArgs -= onEventNoArgs;
+        public void Add(Action<T> onEvent)
+        {
+            _onEvent += onEvent;
+        }
+        public void Add(Action onEventNoArgs)
+        {
+            _onEventNoArgs += onEventNoArgs;
+        }
+        public void Remove(Action<T> onEvent)
+        {
+            _onEvent -= onEvent;
+        }
+        public void Remove(Action onEventNoArgs)
+        {
+            _onEventNoArgs -= onEventNoArgs;
+        }
     }
 }
-

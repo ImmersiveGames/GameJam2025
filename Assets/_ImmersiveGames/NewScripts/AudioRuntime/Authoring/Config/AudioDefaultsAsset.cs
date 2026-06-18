@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         /// Catálogo explícito de pools de vozes SFX que o AudioRuntime prepara no boot.
         /// </summary>
         [Header("SFX Voice Preload")]
-        [SerializeField, Tooltip("Lista explícita de PoolDefinitionAsset que o AudioRuntime prepara antes do primeiro playback pooled. Nao faz discovery automatico.")]
+        [SerializeField] [Tooltip("Lista explícita de PoolDefinitionAsset que o AudioRuntime prepara antes do primeiro playback pooled. Nao faz discovery automatico.")]
         private List<PoolDefinitionAsset> globalSfxVoicePoolDefinitions = new();
 
         public float MasterVolume => masterVolume;
@@ -65,4 +65,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         public IReadOnlyList<PoolDefinitionAsset> GlobalSfxVoicePoolDefinitions => globalSfxVoicePoolDefinitions;
     }
 }
-

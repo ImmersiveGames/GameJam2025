@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         Unknown = 0,
         Local = 1,
         Remote = 2,
-        AiReserved = 3,
+        AiReserved = 3
     }
 
     public enum PlayerSlotReservationSourceKind
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         RuntimeJoin = 3,
         SaveOrProfile = 4,
         ExternalSystem = 5,
-        RouteParticipantSetDefinition = 6,
+        RouteParticipantSetDefinition = 6
     }
 
     public enum PlayerSelectionSourceKind
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         CharacterSelectionRoute = 2,
         SaveOrProfile = 3,
         RuntimeJoinDefault = 4,
-        RouteParticipantSetDefinition = 5,
+        RouteParticipantSetDefinition = 5
     }
 
     public enum SessionParticipantRole
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         PrimaryPlayer = 1,
         SupportingPlayer = 2,
         RouteActor = 3,
-        SceneAuthoredActor = 4,
+        SceneAuthoredActor = 4
     }
 
     public enum RouteParticipationRequirementKind
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         None = 1,
         Optional = 2,
         RequiredDefaultable = 3,
-        RequiredExplicit = 4,
+        RequiredExplicit = 4
     }
 
     public enum RuntimePlayerJoinPolicyKind
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         Reject = 2,
         DeferUntilNextActivityEntry = 3,
         RequireSelection = 4,
-        MaterializeThroughActivityPipeline = 5,
+        MaterializeThroughActivityPipeline = 5
     }
 
     public enum ActorMaterializationPolicyKind
@@ -62,6 +62,6 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         Unknown = 0,
         MaterializeOnActivityEntry = 1,
         ReuseExistingIfAvailable = 3,
-        Unsupported = 4,
+        Unsupported = 4
     }
 }

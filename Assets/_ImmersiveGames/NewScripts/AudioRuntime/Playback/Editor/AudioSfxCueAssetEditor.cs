@@ -26,7 +26,7 @@ namespace ImmersiveGames.GameJam2025.Modules.Audio.Editor
             EditorGUILayout.Space(10f);
             EditorGUILayout.LabelField("Preview", EditorStyles.boldLabel);
 
-            AudioClip previewClip = ResolvePreviewClip();
+            var previewClip = ResolvePreviewClip();
             DrawPreviewInfo(previewClip);
             DrawPreviewControls(previewClip);
 
@@ -149,7 +149,7 @@ namespace ImmersiveGames.GameJam2025.Modules.Audio.Editor
             {
                 1 => new object[] { clip },
                 2 => new object[] { clip, 0 },
-                _ => new object[] { clip, 0, false },
+                _ => new object[] { clip, 0, false }
             };
 
             PlayPreviewClipMethod.Invoke(null, arguments);
@@ -163,7 +163,7 @@ namespace ImmersiveGames.GameJam2025.Modules.Audio.Editor
                 return null;
             }
 
-            var methods = AudioUtilType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            MethodInfo[] methods = AudioUtilType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
             foreach (var method in methods)
             {
                 if (!string.Equals(method.Name, methodName, StringComparison.Ordinal))
@@ -185,4 +185,3 @@ namespace ImmersiveGames.GameJam2025.Modules.Audio.Editor
         }
     }
 }
-

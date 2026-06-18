@@ -24,5 +24,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public string Outcome => OutcomeCode;
         public string Message { get; }
         public bool IsValid => Command.IsValid && OutcomeKind != PermissionOutcomeKind.Unknown && !string.IsNullOrWhiteSpace(OutcomeCode);
-}
+    }
 }

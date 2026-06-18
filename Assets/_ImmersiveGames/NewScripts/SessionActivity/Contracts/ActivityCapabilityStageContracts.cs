@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActorPresentation = 1,
         ActorAttributes = 3,
         ActivityObject = 4,
-        PlayerActor = 5,
+        PlayerActor = 5
     }
 
     public readonly struct ActivityCapabilityStageBoundaryContext
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(CapabilityId) &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
     public interface IActivityCapabilityStageBoundary
     {

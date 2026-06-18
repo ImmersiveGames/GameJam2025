@@ -86,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return true;
         }
-}
+    }
 
     public readonly struct SceneAuthoredActorRuntimeEntry
     {

@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: uiActionsAsset canonico obrigatorio ausente.");
             }
 
-            if (canonicalActionsAsset.FindActionMap(InputModesDefaults.PlayerActionMapName, throwIfNotFound: false) == null)
+            if (canonicalActionsAsset.FindActionMap(InputModesDefaults.PlayerActionMapName, false) == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: uiActionsAsset canonico sem ActionMap '{InputModesDefaults.PlayerActionMapName}'.");
             }

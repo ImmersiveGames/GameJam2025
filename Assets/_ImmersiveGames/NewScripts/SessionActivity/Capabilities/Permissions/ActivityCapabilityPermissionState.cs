@@ -5,6 +5,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         Unknown = 0,
         Unbound = 1,
         Blocked = 2,
-        Allowed = 3,
+        Allowed = 3
     }
 }

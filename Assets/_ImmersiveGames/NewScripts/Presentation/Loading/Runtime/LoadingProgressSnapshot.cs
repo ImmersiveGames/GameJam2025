@@ -28,5 +28,3 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Runtime
         }
     }
 }
-
-

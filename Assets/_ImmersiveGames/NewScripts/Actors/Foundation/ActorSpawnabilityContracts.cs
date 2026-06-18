@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Unknown = 0,
         SceneAuthored = 1,
         SessionParticipant = 2,
-        RuntimeSpawned = 3,
+        RuntimeSpawned = 3
     }
 
     public readonly struct ActorLifetimePolicy
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ActivityBound = 1,
             RouteBound = 2,
             SessionBound = 3,
-            RuntimeTransient = 4,
+            RuntimeTransient = 4
         }
 
         public ActorLifetimePolicy(PolicyKind kind)
@@ -30,7 +30,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool IsValid => Kind != PolicyKind.Unknown;
         public bool IsRuntimeTransient => Kind == PolicyKind.RuntimeTransient;
 
-        public override string ToString() => Kind.ToString();
+        public override string ToString()
+        {
+            return Kind.ToString();
+        }
     }
 
     public enum ActorSpawnedResetPolicy
@@ -39,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         ReturnToOriginPool = 1,
         ClearTransientState = 2,
         ClearLifetime = 3,
-        SkipExplicit = 4,
+        SkipExplicit = 4
     }
 
     public enum ActorSnapshotPolicy
@@ -48,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         SkipRuntimeTransient = 1,
         SaveIfMarked = 2,
         CheckpointRelevant = 3,
-        PersistUntilConsumed = 4,
+        PersistUntilConsumed = 4
     }
 
     public readonly struct SpawnedActorPoolOrigin
@@ -65,8 +68,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool HasPoolDefinitionId => !string.IsNullOrWhiteSpace(PoolDefinitionId);
         public bool IsValid => HasPoolOriginId || HasPoolDefinitionId;
 
-        public override string ToString() => HasPoolOriginId ? PoolOriginId : PoolDefinitionId;
-}
+        public override string ToString()
+        {
+            return HasPoolOriginId ? PoolOriginId : PoolDefinitionId;
+        }
+    }
 
     public readonly struct SpawnedActorLifetimeState
     {
@@ -84,7 +90,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool IsValid => LifetimeSeconds >= 0f && ElapsedSeconds >= 0f;
 
         // Estado puro/local: não executa reset nem retorna ao pool.
-        public SpawnedActorLifetimeState Clear() => default;
+        public SpawnedActorLifetimeState Clear()
+        {
+            return default;
+        }
 
         public SpawnedActorLifetimeState WithElapsedSeconds(float elapsedSeconds)
         {

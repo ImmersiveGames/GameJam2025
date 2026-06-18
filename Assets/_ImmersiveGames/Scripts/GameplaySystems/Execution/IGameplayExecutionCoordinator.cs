@@ -17,7 +17,5 @@
     ///
     /// Use para infra: AnimationControllers, registradores, binders, etc.
     /// </summary>
-    public interface IExecutionToggleIgnored
-    {
-    }
+    public interface IExecutionToggleIgnored { }
 }

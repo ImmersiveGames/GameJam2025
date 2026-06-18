@@ -15,9 +15,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         private float _currentSpeed;
         private CountdownTimer _directionTimer;
 
-        protected EaterMoveState(string stateName) : base(stateName)
-        {
-        }
+        protected EaterMoveState(string stateName) : base(stateName) { }
 
         protected virtual float DirectionInterval => Mathf.Max(Config?.DirectionChangeInterval ?? 1f, 0.1f);
 
@@ -68,8 +66,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             DebugUtility.LogVerbose(
                 $"Direção inicial configurada: {direction} com velocidade {speed:F2}",
                 DebugUtility.Colors.CrucialInfo,
-                context: Behavior,
-                instance: this);
+                Behavior,
+                this);
         }
 
         protected virtual void Move(float deltaTime)
@@ -161,4 +159,3 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
         }
     }
 }
-

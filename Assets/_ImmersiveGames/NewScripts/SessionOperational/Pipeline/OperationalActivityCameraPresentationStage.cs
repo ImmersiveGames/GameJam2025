@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         Unknown = 0,
         Completed = 1,
         Skipped = 2,
-        Failed = 3,
+        Failed = 3
     }
 
     public readonly struct OperationalActivityCameraPresentationCommand
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-}
+    }
 
     public readonly struct OperationalActivityCameraPresentationResult
     {
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason,
                 detail);
         }
-}
+    }
 
     public sealed class OperationalActivityCameraPresentationStage
     {
@@ -213,9 +213,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Reason);
 
             if (!_activityCameraAdapter.TryPrepareActivityCamera(
-                    prepareCommand,
-                    out var prepareResult,
-                    out string prepareReason))
+                prepareCommand,
+                out var prepareResult,
+                out string prepareReason))
             {
                 string failureReason = string.IsNullOrWhiteSpace(prepareReason)
                     ? prepareResult.Reason
@@ -275,5 +275,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "activity_camera_prepare_failed",
                 "activity_camera_prepare_failed");
         }
-}
+    }
 }

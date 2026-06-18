@@ -8,20 +8,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
     public sealed class ActorImpactDamageApplicationAdapter : IActorImpactDamageApplicationAdapter
     {
         private readonly IActorDamageSourceEndpoint _damageSourceEndpoint;
-        private readonly IActorAttributeEventStream _actorAttributeEventStream;
 
-        public ActorImpactDamageApplicationAdapter(
-            IActorDamageSourceEndpoint damageSourceEndpoint,
-            IActorAttributeEventStream actorAttributeEventStream)
+        public ActorImpactDamageApplicationAdapter(IActorDamageSourceEndpoint damageSourceEndpoint)
         {
             _damageSourceEndpoint = damageSourceEndpoint;
-            _actorAttributeEventStream = actorAttributeEventStream;
         }
 
         public bool IsConfigured =>
             _damageSourceEndpoint != null &&
-            _damageSourceEndpoint.IsConfigured &&
-            _actorAttributeEventStream != null;
+            _damageSourceEndpoint.IsConfigured;
 
         public bool TryApplyDamage(
             ActorImpactResult impactResult,
@@ -77,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return false;
             }
 
-            if (!TryResolveTargetDamageableEndpoint(impactResult.Target, out IActorDamageableEndpoint targetDamageableEndpoint, out string targetResolutionReason))
+            if (!TryResolveTargetDamageableEndpoint(impactResult.Target, out var targetDamageableEndpoint, out string targetResolutionReason))
             {
                 result = ActorDamageSourceResult.Reject(
                     impactResult.Intent.OwnerActorId,
@@ -125,35 +120,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return false;
             }
 
-            ActorAttributeApplyResult applyResult = result.DamageResult.MutationResult.ApplyResult;
-            if (!ActorAttributeApplyResultEventPublisher.TryPublish(
-                    _actorAttributeEventStream,
-                    result.TargetActorId,
-                    applyResult,
-                    normalizedSource,
-                    normalizedReason))
-            {
-                result = ActorDamageSourceResult.Fail(
-                    impactResult.Intent.OwnerActorId,
-                    impactResult.Intent.OwnerActorInstanceRuntimeId,
-                    impactResult.Intent.TargetActorId,
-                    impactResult.Intent.TargetActorInstanceRuntimeId,
-                    rawDamageAmount,
-                    "impact_damage_apply_result_publish_failed");
-                LogRejected(impactResult, rawDamageAmount, result.Reason, normalizedSource, normalizedReason);
-                return false;
-            }
-
-            ActorAttributeChangedFact fact = applyResult.Fact;
+            var applyResult = result.DamageResult.MutationResult.ApplyResult;
+            var fact = applyResult.Fact;
             DebugUtility.LogVerbose(
                 typeof(ActorImpactDamageApplicationAdapter),
                 $"event='ActorImpactDamageApplicationApplied' sourceActorId='{result.SourceActorId}' sourceActorInstanceRuntimeId='{result.SourceActorInstanceRuntimeId}' targetActorId='{result.TargetActorId}' targetActorInstanceRuntimeId='{result.TargetActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.DamageResult.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' thresholdFactCount='{applyResult.ThresholdFactCount}' source='{normalizedSource}' reason='{normalizedReason}'",
                 DebugUtility.Colors.Success);
 
-            DebugUtility.LogVerbose(
-                typeof(ActorImpactDamageApplicationAdapter),
-                $"event='ActorImpactDamageApplicationPublished' sourceActorId='{result.SourceActorId}' targetActorId='{result.TargetActorId}' targetAttributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' source='{normalizedSource}' reason='{normalizedReason}'",
-                DebugUtility.Colors.Success);
             return true;
         }
 
@@ -180,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 return true;
             }
 
-            ActorDamageableEndpoint localEndpoint = target.TargetActor.GetComponentInChildren<ActorDamageableEndpoint>(includeInactive: true);
+            var localEndpoint = target.TargetActor.GetComponentInChildren<ActorDamageableEndpoint>(includeInactive: true);
             if (localEndpoint != null && localEndpoint.IsConfigured)
             {
                 endpoint = localEndpoint;
@@ -203,5 +176,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 $"event='ActorImpactDamageApplicationRejected' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' outcomeReason='{rejectionReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Warning);
         }
-}
+
+    }
 }

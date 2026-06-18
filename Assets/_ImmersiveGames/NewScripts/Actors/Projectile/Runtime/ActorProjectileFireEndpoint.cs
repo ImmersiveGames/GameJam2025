@@ -22,13 +22,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     public sealed class ActorProjectileFireEndpoint : MonoBehaviour, IActorProjectileFireEndpoint, IActorRuntimePoolDependencyProvider, IActorEntryInitializeResetEndpoint, IActorRuntimeLocalResetEndpoint, IActorRuntimeActivityResetEndpoint, IActorRuntimeActivityTransitionResetEndpoint, IActorRuntimeRouteTransitionResetEndpoint, IActorResetContributionProvider, IActorReleaseContributionProvider, IActorCapabilityReleaseEndpoint
     {
         [Header("Projectile Fire Endpoint")]
-        [SerializeField, InspectorName("Nome interno do endpoint"), Tooltip("Identificador técnico do endpoint local de fire/projectile. Usado para logs, readiness e correlação interna; não é nome visual do projétil.")]
+        [SerializeField] [InspectorName("Nome interno do endpoint")] [Tooltip("Identificador técnico do endpoint local de fire/projectile. Usado para logs, readiness e correlação interna; não é nome visual do projétil.")]
         private string endpointId = "actor.projectile.fire.endpoint.primary";
-        [SerializeField, InspectorName("Perfil de disparo"), Tooltip("Perfil autoral da capability de disparo. O perfil define modos de disparo e aponta para o spawn profile do projectile.")]
+        [SerializeField] [InspectorName("Perfil de disparo")] [Tooltip("Perfil autoral da capability de disparo. O perfil define modos de disparo e aponta para o spawn profile do projectile.")]
         private ActorProjectileFireProfileAsset fireProfile;
 
         [Header("Readiness / temporário")]
-        [SerializeField, InspectorName("Obrigatório por padrão (temporário)"), Tooltip("Indica se este endpoint local bloqueia readiness quando o perfil está ausente. Preferir mover a obrigatoriedade para requirement/binding da Activity em corte futuro.")]
+        [SerializeField] [InspectorName("Obrigatório por padrão (temporário)")] [Tooltip("Indica se este endpoint local bloqueia readiness quando o perfil está ausente. Preferir mover a obrigatoriedade para requirement/binding da Activity em corte futuro.")]
         private bool required;
 
         [Header("Reset")]
@@ -177,12 +177,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             if (!TryResolveFireOrigin(
-                    command,
-                    fireMode,
-                    out var resolvedOrigin,
-                    out string originSource,
-                    out string originFailureReason,
-                    out string originFailureMessage))
+                command,
+                fireMode,
+                out var resolvedOrigin,
+                out string originSource,
+                out string originFailureReason,
+                out string originFailureMessage))
             {
                 LogFireOriginCommandRejected(
                     command,
@@ -696,7 +696,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 failureReason = "projectile_fire_presentation_endpoint_missing";
                 failureMessage = "ActorProjectileFireEndpoint requires ActorPresentationEndpoint on the owning Actor.";
-                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, "none");
                 return false;
             }
 
@@ -704,18 +704,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 failureReason = "projectile_fire_spawn_origin_id_missing";
                 failureMessage = "ActorProjectileFireEndpoint requires a valid spawnOriginId on the fire mode.";
-                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, "none");
                 return false;
             }
 
             if (!presentationEndpoint.TryResolve(
-                    fireMode.SpawnOriginId,
-                    fireMode.SpawnOriginResolutionMode,
-                    out resolvedOrigin))
+                fireMode.SpawnOriginId,
+                fireMode.SpawnOriginResolutionMode,
+                out resolvedOrigin))
             {
                 failureReason = "projectile_fire_origin_missing";
                 failureMessage = $"ActorPresentationEndpoint could not resolve originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}'.";
-                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, "none");
                 return false;
             }
 
@@ -723,7 +723,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 failureReason = "projectile_fire_origin_invalid";
                 failureMessage = $"Resolved projectile fire origin is invalid originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}'.";
-                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, "none");
                 return false;
             }
 
@@ -731,7 +731,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 failureReason = "projectile_fire_origin_direction_invalid";
                 failureMessage = $"Resolved projectile fire origin has invalid direction originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}'.";
-                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, originSource: "none");
+                LogFireOriginMissing(command, fireMode, failureReason, failureMessage, "none");
                 return false;
             }
 
@@ -889,7 +889,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             int configuredCount = 0;
             for (int index = 0; index < impactEndpoints.Length; index++)
             {
-                ActorImpactEndpoint impactEndpoint = impactEndpoints[index];
+                var impactEndpoint = impactEndpoints[index];
                 if (impactEndpoint == null)
                 {
                     continue;
@@ -983,7 +983,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 ActorProjectileFireEndpointReadinessKind.MissingProfile => ActorProjectileFireBlockedReasonKind.MissingSpawnProfile,
                 ActorProjectileFireEndpointReadinessKind.MissingMuzzle => ActorProjectileFireBlockedReasonKind.MissingMuzzle,
                 ActorProjectileFireEndpointReadinessKind.NotExecutable => ActorProjectileFireBlockedReasonKind.NotExecutable,
-                _ => ActorProjectileFireBlockedReasonKind.Unknown,
+                _ => ActorProjectileFireBlockedReasonKind.Unknown
             };
         }
 
@@ -1075,5 +1075,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
         }
-}
+    }
 }

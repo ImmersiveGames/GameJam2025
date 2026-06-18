@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
         public DependencyManagerCameraPresentationRuntimeRegistry(
             DependencyManager dependencyManager)
         {
-            this._dependencyManager = dependencyManager;
+            _dependencyManager = dependencyManager;
         }
 
         public bool TryRegister<TContract>(
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             _dependencyManager.RegisterGlobal<TContract>(
                 instance,
-                allowOverride: false);
+                false);
 
             reason = $"registered_global:{typeof(TContract).Name}";
             return true;

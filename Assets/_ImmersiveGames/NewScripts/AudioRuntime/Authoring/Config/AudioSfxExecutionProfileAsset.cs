@@ -23,4 +23,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
         public AudioSfxVoiceProfileAsset PooledVoiceProfile => pooledVoiceProfile;
     }
 }
-

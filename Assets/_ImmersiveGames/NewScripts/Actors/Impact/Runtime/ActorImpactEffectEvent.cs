@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string source,
             string reason)
         {
-            ActorImpactIntent intent = impactResult.Intent;
+            var intent = impactResult.Intent;
             ImpactActorId = intent.ImpactActorId;
             ImpactActorInstanceRuntimeId = intent.ImpactActorInstanceRuntimeId;
             OwnerActorId = intent.OwnerActorId;
@@ -61,5 +61,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             ImpactActorId.IsValid &&
             ImpactActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(ImpactKind);
-}
+    }
 }

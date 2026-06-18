@@ -20,9 +20,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
         private IActor _ownerActor;
 
         public DefaultSkinService()
-            : this(new SkinContainerService(), new SkinModelFactory(), new ISkinInstancePostProcessor[] { new DynamicCanvasBinderPostProcessor() })
-        {
-        }
+            : this(new SkinContainerService(), new SkinModelFactory(), new ISkinInstancePostProcessor[] { new DynamicCanvasBinderPostProcessor() }) { }
 
         private DefaultSkinService(SkinContainerService skinContainerService, SkinModelFactory skinModelFactory, IEnumerable<ISkinInstancePostProcessor> postProcessors)
         {
@@ -129,7 +127,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
             return _instances.TryGetValue(type, out List<GameObject> instanceList) && instanceList.Count > 0;
         }
 
-        public Transform GetContainer(ModelType type) => _skinContainerService.GetContainer(type);
+        public Transform GetContainer(ModelType type)
+        {
+            return _skinContainerService.GetContainer(type);
+        }
 
         private void RunPostProcessors(IEnumerable<GameObject> instances, ISkinConfig config, IActor owner)
         {

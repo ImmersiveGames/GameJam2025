@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             return _activeHandlesByParticipantId.TryGetValue(participantId, out var activeHandle) &&
-                   activeHandle.IsValid;
+                activeHandle.IsValid;
         }
 
         public bool TryGetRouteScopedHandleByParticipant(SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
@@ -440,5 +440,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("ActivityPlayerActorRegistry active scope is not initialized.");
             }
         }
-}
+    }
 }

@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         public bool Applied => Outcome == ActorAttributeApplyOutcome.Applied;
         public bool Rejected => Outcome == ActorAttributeApplyOutcome.Rejected;
         public bool Failed => Outcome == ActorAttributeApplyOutcome.Failed;
-        public bool HasThresholdFacts => ThresholdFacts != null && ThresholdFacts.Count > 0;
+        public bool HasThresholdFacts => ThresholdFacts is { Count: > 0 };
         public int ThresholdFactCount => ThresholdFacts == null ? 0 : ThresholdFacts.Count;
 
         private ActorAttributeApplyResult(

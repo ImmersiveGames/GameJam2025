@@ -87,11 +87,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             var result = await sceneCompositionExecutor.ApplyAsync(
                 new SceneCompositionRequest(
                     SceneCompositionScope.Local,
-                    reason: $"runtime_persistent_scenes:{persistentScenesPolicy.PolicyId}",
-                    correlationId: $"{persistentScenesPolicy.PolicyId}|persistent_scenes",
-                    scenesToLoad: persistentSceneNames,
-                    scenesToUnload: Array.Empty<string>(),
-                    activeScene: string.Empty));
+                    $"runtime_persistent_scenes:{persistentScenesPolicy.PolicyId}",
+                    $"{persistentScenesPolicy.PolicyId}|persistent_scenes",
+                    persistentSceneNames,
+                    Array.Empty<string>(),
+                    string.Empty));
 
             if (!result.Success)
             {
@@ -175,5 +175,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
-
-

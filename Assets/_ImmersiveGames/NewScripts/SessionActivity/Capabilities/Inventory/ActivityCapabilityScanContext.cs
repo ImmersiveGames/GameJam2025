@@ -25,9 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             SessionActivityIdentity identity,
             string source,
             string reason)
-            : this(identity, Array.Empty<ActivityObjectCapabilityScanTarget>(), Array.Empty<ActorScanTarget>(), source, reason)
-        {
-        }
+            : this(identity, Array.Empty<ActivityObjectCapabilityScanTarget>(), Array.Empty<ActorScanTarget>(), source, reason) { }
 
         public SessionActivityIdentity Identity { get; }
         public IReadOnlyList<ActivityObjectCapabilityScanTarget> ActivityObjectTargets { get; }
@@ -39,5 +37,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 }

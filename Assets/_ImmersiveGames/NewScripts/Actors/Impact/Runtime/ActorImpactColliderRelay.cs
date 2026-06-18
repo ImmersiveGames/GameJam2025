@@ -60,5 +60,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 nameof(ActorImpactColliderRelay),
                 "relay_collision_enter");
         }
-}
+    }
 }

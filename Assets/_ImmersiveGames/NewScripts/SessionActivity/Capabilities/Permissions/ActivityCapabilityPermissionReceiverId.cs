@@ -14,13 +14,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public string Value { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(Value);
 
-        public bool Equals(ActivityCapabilityPermissionReceiverId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActivityCapabilityPermissionReceiverId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
+        public bool Equals(ActivityCapabilityPermissionReceiverId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.Ordinal);
+        }
+        public override bool Equals(object obj)
+        {
+            return obj is ActivityCapabilityPermissionReceiverId other && Equals(other);
+        }
+        public override int GetHashCode()
+        {
+            return Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        }
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public static bool operator ==(ActivityCapabilityPermissionReceiverId left, ActivityCapabilityPermissionReceiverId right) => left.Equals(right);
-        public static bool operator !=(ActivityCapabilityPermissionReceiverId left, ActivityCapabilityPermissionReceiverId right) => !left.Equals(right);
+        public static bool operator ==(ActivityCapabilityPermissionReceiverId left, ActivityCapabilityPermissionReceiverId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(ActivityCapabilityPermissionReceiverId left, ActivityCapabilityPermissionReceiverId right)
+        {
+            return !left.Equals(right);
+        }
 
         public static ActivityCapabilityPermissionReceiverId RuntimeUnbound => new("runtime.unbound");
 
@@ -28,5 +46,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             return new ActivityCapabilityPermissionReceiverId(value);
         }
-}
+    }
 }

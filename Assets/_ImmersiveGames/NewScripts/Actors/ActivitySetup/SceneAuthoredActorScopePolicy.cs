@@ -30,5 +30,5 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         $"Scene-authored Actor uses unsupported ActorScope='{actorScope}' in v0. actorId='{normalizedActorId}' scene='{normalizedSceneName}'.");
             }
         }
-}
+    }
 }

@@ -87,10 +87,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"event='ActivityContentSceneUnloadDispatchCompletedNoMoreScenes' owner='ActivityContentSceneUnloadDispatchStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sceneCount='{loadedSet.Scenes.Count}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 return new ActivityContentSceneUnloadDispatchStageResult(
-                    dispatched: false,
-                    completedNoMoreScenes: true,
-                    pendingOperation: default,
-                    reason: "no_more_scenes");
+                    false,
+                    true,
+                    default,
+                    "no_more_scenes");
             }
 
             var record = loadedSet.Scenes[nextSceneIndex];
@@ -155,10 +155,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 unloadCommand,
                 pendingOperationCallback);
             return new ActivityContentSceneUnloadDispatchStageResult(
-                dispatched: true,
-                completedNoMoreScenes: false,
-                pendingOperation: pendingOperation,
-                reason: "dispatched");
+                true,
+                false,
+                pendingOperation,
+                "dispatched");
         }
 
         private static SessionActivityPendingOperation BuildActivityContentReleasePendingOperation(

@@ -11,6 +11,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         SceneContributor = 4,
         Unsupported = 5,
         Actor = 6,
-        RuntimeSpawnedActor = 7,
+        RuntimeSpawnedActor = 7
     }
 }

@@ -168,5 +168,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
 
             throw new InvalidOperationException("[FATAL][ActorAttributeRuntimeCommandQaProbe] SessionActivityHost reference is required.");
         }
-}
+    }
 }

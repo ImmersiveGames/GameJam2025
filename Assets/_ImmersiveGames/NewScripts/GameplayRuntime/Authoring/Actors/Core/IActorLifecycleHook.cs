@@ -16,4 +16,3 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core
         Task OnAfterActorSpawnAsync();
     }
 }
-

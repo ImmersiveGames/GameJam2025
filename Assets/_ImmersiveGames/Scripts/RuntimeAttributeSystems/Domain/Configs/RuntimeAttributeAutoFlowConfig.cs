@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
         public bool autoDrain;
 
         [Tooltip("Intervalo entre ticks em segundos")]
-        [Min(0.1f)] 
+        [Min(0.1f)]
         public float tickInterval = 1f;
 
         [Tooltip("Quantidade adicionada/removida por tick")]

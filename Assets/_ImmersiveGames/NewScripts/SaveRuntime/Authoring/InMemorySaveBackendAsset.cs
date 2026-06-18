@@ -17,4 +17,3 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
         }
     }
 }
-

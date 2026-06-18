@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera
                 return false;
             }
 
-            if (!TryResolvePlayerIdentity(target, out PlayerActorId playerActorId, out PlayerSlotId playerSlotId))
+            if (!TryResolvePlayerIdentity(target, out var playerActorId, out var playerSlotId))
             {
                 return false;
             }

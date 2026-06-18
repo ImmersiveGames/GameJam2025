@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 
         [Header("Arco")]
         [Tooltip("Quão forte o arco desvia lateralmente entre planeta e órbita (0.0 = quase reto).")]
-        [SerializeField, Range(0f, 1.5f)]
+        [SerializeField] [Range(0f, 1.5f)]
         private float arcStrength = 0.75f;
 
         public override Sequence BuildEntrySequence(
@@ -68,17 +68,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
             // 1) centro → ponto intermediário
             sequence.Append(
                 minion.DOMove(midPoint, halfDuration)
-                      .SetEase(moveEase));
+                    .SetEase(moveEase));
 
             // 2) intermediário → órbita
             sequence.Append(
                 minion.DOMove(orbitPosition, halfDuration)
-                      .SetEase(moveEase));
+                    .SetEase(moveEase));
 
             // Escala pequena → final durante TODO o percurso
             sequence.Join(
                 minion.DOScale(finalScale, entryDurationSeconds)
-                      .SetEase(scaleEase));
+                    .SetEase(scaleEase));
 
             // Idle em órbita
             if (orbitIdleDelaySeconds > 0f)

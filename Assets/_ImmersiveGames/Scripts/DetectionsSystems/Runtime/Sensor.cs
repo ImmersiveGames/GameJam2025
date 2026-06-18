@@ -222,8 +222,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             if (detectable is MonoBehaviour detectableMono && detector is MonoBehaviour detectorMono)
             {
                 return detectableMono.transform == detectorMono.transform ||
-                       detectableMono.transform.IsChildOf(detectorMono.transform) ||
-                       detectorMono.transform.IsChildOf(detectableMono.transform);
+                    detectableMono.transform.IsChildOf(detectorMono.transform) ||
+                    detectorMono.transform.IsChildOf(detectableMono.transform);
             }
             return detectable.Owner == detector.Owner;
         }
@@ -368,8 +368,14 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
             return (obj as MonoBehaviour)?.gameObject.name ?? obj.ToString();
         }
 
-        public bool IsDetectingObject(IDetectable detectable) => _detected.Contains(detectable);
-        public void ClearDetections() => _detected.Clear();
+        public bool IsDetectingObject(IDetectable detectable)
+        {
+            return _detected.Contains(detectable);
+        }
+        public void ClearDetections()
+        {
+            _detected.Clear();
+        }
 
         private Vector3 GetConeWorldDirection()
         {

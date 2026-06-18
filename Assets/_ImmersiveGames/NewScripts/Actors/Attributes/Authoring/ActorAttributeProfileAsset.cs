@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
             [SerializeField] private float maxValue = 100f;
             [SerializeField] private ActorAttributeBoundaryThresholdMode boundaryThresholdMode =
                 ActorAttributeBoundaryThresholdMode.IncludeDefaultBoundaryThresholds;
-            [SerializeField] private List<ActorAttributeThresholdDefinition> thresholds = new List<ActorAttributeThresholdDefinition>();
+            [SerializeField] private List<ActorAttributeThresholdDefinition> thresholds = new();
 
             public ActorAttributeDefinitionAsset Definition => definition;
             public float InitialValue => initialValue;
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                     return false;
                 }
 
-                if (!definition.TryValidate(out var definitionReason))
+                if (!definition.TryValidate(out string definitionReason))
                 {
                     reason = $"definition_invalid:{definitionReason}";
                     return false;
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                     return false;
                 }
 
-                if (!TryValidateThresholds(out var thresholdReason))
+                if (!TryValidateThresholds(out string thresholdReason))
                 {
                     reason = thresholdReason;
                     return false;
@@ -84,12 +84,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
 
             private IReadOnlyList<ActorAttributeThresholdDefinition> ResolveThresholdDefinitions()
             {
-                var explicitCount = thresholds == null ? 0 : thresholds.Count;
+                int explicitCount = thresholds == null ? 0 : thresholds.Count;
                 var resolved = new List<ActorAttributeThresholdDefinition>(explicitCount + 2);
 
                 if (explicitCount > 0)
                 {
-                    for (var i = 0; i < thresholds.Count; i++)
+                    for (int i = 0; i < thresholds.Count; i++)
                     {
                         var threshold = thresholds[i];
                         if (threshold != null)
@@ -119,9 +119,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                 var seenThresholds = new HashSet<string>(StringComparer.Ordinal);
                 var seenThresholdBoundaries = new HashSet<string>(StringComparer.Ordinal);
 
-                if (thresholds != null && thresholds.Count > 0)
+                if (thresholds is { Count: > 0 })
                 {
-                    for (var i = 0; i < thresholds.Count; i++)
+                    for (int i = 0; i < thresholds.Count; i++)
                     {
                         var threshold = thresholds[i];
                         if (threshold == null)
@@ -130,20 +130,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                             return false;
                         }
 
-                        if (!threshold.TryValidate(out var thresholdReason))
+                        if (!threshold.TryValidate(out string thresholdReason))
                         {
                             reason = $"threshold_invalid:index={i};reason={thresholdReason}";
                             return false;
                         }
 
-                        var identityKey = BuildThresholdIdentityKey(threshold.ThresholdId, threshold.Direction);
+                        string identityKey = BuildThresholdIdentityKey(threshold.ThresholdId, threshold.Direction);
                         if (!seenThresholds.Add(identityKey))
                         {
                             reason = $"duplicate_threshold:index={i};thresholdId={threshold.ThresholdId};direction={threshold.Direction}";
                             return false;
                         }
 
-                        var boundaryKey = BuildThresholdBoundaryKey(threshold.NormalizedValue, threshold.Direction);
+                        string boundaryKey = BuildThresholdBoundaryKey(threshold.NormalizedValue, threshold.Direction);
                         if (!seenThresholdBoundaries.Add(boundaryKey))
                         {
                             reason = $"duplicate_threshold_boundary:index={i};normalizedValue={threshold.NormalizedValue};direction={threshold.Direction}";
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                     return;
                 }
 
-                for (var i = 0; i < resolved.Count; i++)
+                for (int i = 0; i < resolved.Count; i++)
                 {
                     var existing = resolved[i];
                     if (existing == null)
@@ -192,14 +192,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                 }
 
                 return left.Direction == right.Direction &&
-                       BuildThresholdBoundaryKey(left.NormalizedValue, left.Direction) ==
-                       BuildThresholdBoundaryKey(right.NormalizedValue, right.Direction);
+                    BuildThresholdBoundaryKey(left.NormalizedValue, left.Direction) ==
+                    BuildThresholdBoundaryKey(right.NormalizedValue, right.Direction);
             }
 
             private static bool IsKnownBoundaryThresholdMode(ActorAttributeBoundaryThresholdMode candidate)
             {
                 return candidate == ActorAttributeBoundaryThresholdMode.IncludeDefaultBoundaryThresholds ||
-                       candidate == ActorAttributeBoundaryThresholdMode.ExplicitOnly;
+                    candidate == ActorAttributeBoundaryThresholdMode.ExplicitOnly;
             }
 
             private static string BuildThresholdIdentityKey(
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                 float normalizedValue,
                 ActorAttributeThresholdDirection direction)
             {
-                var scaledValue = (int)Math.Round(
+                int scaledValue = (int)Math.Round(
                     normalizedValue * ThresholdNormalizedKeyScale,
                     MidpointRounding.AwayFromZero);
                 return $"{scaledValue}|{(int)direction}";
@@ -233,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                     return;
                 }
 
-                for (var i = 0; i < thresholds.Count; i++)
+                for (int i = 0; i < thresholds.Count; i++)
                 {
                     thresholds[i]?.OnValidate();
                 }
@@ -242,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
         }
 
         [SerializeField] private string profileId = string.Empty;
-        [SerializeField] private List<Entry> entries = new List<Entry>();
+        [SerializeField] private List<Entry> entries = new();
 
         public string ProfileId => profileId;
         public IReadOnlyList<Entry> Entries => entries;
@@ -257,7 +257,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
 
             var seenAttributeIds = new HashSet<ActorAttributeId>();
 
-            for (var i = 0; i < entries.Count; i++)
+            for (int i = 0; i < entries.Count; i++)
             {
                 var entry = entries[i];
                 if (entry == null)
@@ -266,7 +266,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                     return false;
                 }
 
-                if (!entry.TryValidate(out var entryReason))
+                if (!entry.TryValidate(out string entryReason))
                 {
                     reason = $"entry_invalid:index={i};reason={entryReason}";
                     return false;
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
         {
             var states = new ActorAttributeState[entries.Count];
 
-            for (var i = 0; i < entries.Count; i++)
+            for (int i = 0; i < entries.Count; i++)
             {
                 states[i] = entries[i].CreateState(actorInstanceId);
             }
@@ -310,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Authoring
                 return;
             }
 
-            for (var i = 0; i < entries.Count; i++)
+            for (int i = 0; i < entries.Count; i++)
             {
                 entries[i]?.OnValidate();
             }

@@ -27,6 +27,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private bool _ringInitialized;
 
         #region Unity Lifecycle
+
         protected override void Start()
         {
             base.Start();
@@ -47,6 +48,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 DebugUtility.LogVerbose<RingActivationSkin>($"Initialized - HasRing: {_hasRing}");
             }
         }
+
         #endregion
 
         #region SkinConfigurable Implementation
@@ -90,9 +92,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 UpdateRingVisibility();
             }
         }
+
         #endregion
 
         #region Core Functionality
+
         private void UpdateRingVisibility()
         {
             if (ringObject != null)
@@ -131,9 +135,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 DebugUtility.LogVerbose<RingActivationSkin>($"Applied rotation: {_currentRotation}�");
             }
         }
+
         #endregion
 
         #region Public API - Para Controle Externo
+
         /// <summary>
         /// Ativa ou desativa o anel
         /// </summary>
@@ -220,9 +226,11 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 isVisible = ringObject != null && ringObject.activeSelf
             };
         }
+
         #endregion
 
         #region Editor Helpers
+
         #if UNITY_EDITOR
         [ContextMenu("Enable Ring")]
         private void EditorEnableRing()
@@ -242,6 +250,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             SetRingRotation(Random.Range(rotationRange.x, rotationRange.y));
         }
         #endif
+
         #endregion
     }
 

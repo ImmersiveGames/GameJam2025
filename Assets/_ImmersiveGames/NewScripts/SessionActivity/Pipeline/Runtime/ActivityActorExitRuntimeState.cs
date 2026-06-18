@@ -58,24 +58,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
         public static ActivityActorParticipationExitBindingResolutionResult Resolved(
             PlayerActivityParticipantBinding binding,
-            ActivityActorParticipationExitBindingResolutionSourceKind sourceKind) =>
-            new(ActivityActorParticipationExitBindingResolutionKind.Resolved, sourceKind, binding, string.Empty);
+            ActivityActorParticipationExitBindingResolutionSourceKind sourceKind)
+        {
+            return new ActivityActorParticipationExitBindingResolutionResult(ActivityActorParticipationExitBindingResolutionKind.Resolved, sourceKind, binding, string.Empty);
+        }
 
-        public static ActivityActorParticipationExitBindingResolutionResult Missed(string reason) =>
-            new(ActivityActorParticipationExitBindingResolutionKind.Missed, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        public static ActivityActorParticipationExitBindingResolutionResult Missed(string reason)
+        {
+            return new ActivityActorParticipationExitBindingResolutionResult(ActivityActorParticipationExitBindingResolutionKind.Missed, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        }
 
-        public static ActivityActorParticipationExitBindingResolutionResult RejectedInvalidIdentity(string reason) =>
-            new(ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidIdentity, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedInvalidIdentity(string reason)
+        {
+            return new ActivityActorParticipationExitBindingResolutionResult(ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidIdentity, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        }
 
-        public static ActivityActorParticipationExitBindingResolutionResult RejectedInvalidActor(string reason) =>
-            new(ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidActor, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedInvalidActor(string reason)
+        {
+            return new ActivityActorParticipationExitBindingResolutionResult(ActivityActorParticipationExitBindingResolutionKind.RejectedInvalidActor, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        }
 
-        public static ActivityActorParticipationExitBindingResolutionResult RejectedForeign(string reason) =>
-            new(ActivityActorParticipationExitBindingResolutionKind.RejectedForeign, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedForeign(string reason)
+        {
+            return new ActivityActorParticipationExitBindingResolutionResult(ActivityActorParticipationExitBindingResolutionKind.RejectedForeign, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        }
 
-        public static ActivityActorParticipationExitBindingResolutionResult RejectedStale(string reason) =>
-            new(ActivityActorParticipationExitBindingResolutionKind.RejectedStale, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
-}
+        public static ActivityActorParticipationExitBindingResolutionResult RejectedStale(string reason)
+        {
+            return new ActivityActorParticipationExitBindingResolutionResult(ActivityActorParticipationExitBindingResolutionKind.RejectedStale, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
+        }
+    }
 
     internal sealed class ActivityActorExitRuntimeState
     {
@@ -151,8 +163,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             state = default;
             return actorInstanceRuntimeId.IsValid &&
-                   _activeActorPresentationByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out state) &&
-                   state.IsValid;
+                _activeActorPresentationByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out state) &&
+                state.IsValid;
         }
 
         public void StoreActiveActorPresentation(
@@ -216,8 +228,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             state = default;
             return actorInstanceRuntimeId.IsValid &&
-                   _activeActorAttributeCapabilitiesByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out state) &&
-                   state.IsValid;
+                _activeActorAttributeCapabilitiesByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out state) &&
+                state.IsValid;
         }
 
         public bool TryGetActiveActorAttributeCapability(
@@ -382,7 +394,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return ActivityActorParticipationExitBindingResolutionResult.RejectedStale(reason);
             }
 
-            SessionActivityIdentity contextIdentity = _currentActivityParticipationContext.SessionActivityIdentity;
+            var contextIdentity = _currentActivityParticipationContext.SessionActivityIdentity;
             if (!IsSameActivityCycle(contextIdentity, expectedIdentity))
             {
                 if (IsSamePipelineSessionActivity(contextIdentity, expectedIdentity))
@@ -469,20 +481,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
         {
             return left.IsValid &&
-                   right.IsValid &&
-                   string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
-                   left.EntrySequence == right.EntrySequence;
+                right.IsValid &&
+                string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
+                string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
+                left.EntrySequence == right.EntrySequence;
         }
 
         private static bool IsSamePipelineSessionActivity(SessionActivityIdentity left, SessionActivityIdentity right)
         {
             return left.IsValid &&
-                   right.IsValid &&
-                   string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal);
+                right.IsValid &&
+                string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
+                string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal);
         }
-}
+    }
 }

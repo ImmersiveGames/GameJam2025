@@ -58,6 +58,9 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Services
             }
         }
 
-        public Transform GetContainer(ModelType type) => _containers.GetValueOrDefault(type);
+        public Transform GetContainer(ModelType type)
+        {
+            return _containers.GetValueOrDefault(type);
+        }
     }
 }

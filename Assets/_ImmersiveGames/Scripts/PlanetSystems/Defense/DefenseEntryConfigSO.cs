@@ -186,4 +186,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private Dictionary<DefenseRole, RoleDefenseConfig> _runtimeBindings = new();
     }
 }
-

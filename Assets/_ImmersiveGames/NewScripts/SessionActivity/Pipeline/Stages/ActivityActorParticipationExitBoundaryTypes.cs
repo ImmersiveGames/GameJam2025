@@ -107,6 +107,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             !string.IsNullOrWhiteSpace(ActorId) &&
             ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-}
+    }
 
 }

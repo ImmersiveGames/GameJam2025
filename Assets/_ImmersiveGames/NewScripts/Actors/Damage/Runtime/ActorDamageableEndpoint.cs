@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 throw new InvalidOperationException("ActorDamageableEndpoint requires a configured ActorAttributeMutationReceiverEndpoint.");
             }
 
-            ActorAttributeId targetAttributeId = ActorAttributeId.FromDefinition(targetAttributeDefinition);
+            var targetAttributeId = ActorAttributeId.FromDefinition(targetAttributeDefinition);
             if (!targetAttributeId.IsValid)
             {
                 throw new InvalidOperationException("ActorDamageableEndpoint requires targetAttributeDefinition with a valid ActorAttributeId.");
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 return false;
             }
 
-            ActorAttributeMutationIntent mutationIntent = ActorAttributeMutationIntent.Subtract(
+            var mutationIntent = ActorAttributeMutationIntent.Subtract(
                 intent.ActivityIdentity,
                 intent.TargetActorId,
                 intent.TargetActorInstanceRuntimeId,
@@ -137,7 +137,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 intent.Source,
                 intent.Reason);
 
-            if (!_mutationReceiver.TryReceiveMutationIntent(mutationIntent, out ActorAttributeMutationResult mutationResult) ||
+            if (!_mutationReceiver.TryReceiveMutationIntent(mutationIntent, out var mutationResult) ||
                 mutationResult.Rejected ||
                 mutationResult.Failed)
             {
@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             }
 
             return candidateIdentity.IsValid &&
-                   candidateIdentity.CycleKey == requiredIdentity.CycleKey;
+                candidateIdentity.CycleKey == requiredIdentity.CycleKey;
         }
-}
+    }
 }

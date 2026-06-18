@@ -18,5 +18,3 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
         IReadOnlyDictionary<int, Camera> AllCameras { get; }
     }
 }
-
-

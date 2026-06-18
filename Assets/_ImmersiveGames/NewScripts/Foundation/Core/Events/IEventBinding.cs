@@ -7,4 +7,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
         Action OnEventNoArgs { get; set; }
     }
 }
-

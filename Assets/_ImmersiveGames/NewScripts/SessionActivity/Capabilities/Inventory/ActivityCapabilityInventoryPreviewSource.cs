@@ -151,21 +151,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         private static bool IsLifecycleCapability(ActivityCapabilityKind kind)
         {
             return kind == ActivityCapabilityKind.ResetEndpoint ||
-                   kind == ActivityCapabilityKind.SnapshotProvider ||
-                   kind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
-                   kind == ActivityCapabilityKind.ReleaseEndpoint;
+                kind == ActivityCapabilityKind.SnapshotProvider ||
+                kind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
+                kind == ActivityCapabilityKind.ReleaseEndpoint;
         }
 
         private static bool IsActivityObjectLifecycleOwnerKind(ActivityCapabilityOwnerKind ownerKind)
         {
             return ownerKind == ActivityCapabilityOwnerKind.ActivityObject ||
-                   ownerKind == ActivityCapabilityOwnerKind.SceneContributor;
+                ownerKind == ActivityCapabilityOwnerKind.SceneContributor;
         }
 
         private static bool IsActorLifecycleOwnerKind(ActivityCapabilityOwnerKind ownerKind)
         {
             return ownerKind == ActivityCapabilityOwnerKind.Actor ||
-                   ownerKind == ActivityCapabilityOwnerKind.RuntimeSpawnedActor;
+                ownerKind == ActivityCapabilityOwnerKind.RuntimeSpawnedActor;
         }
 
         private static string FormatCapabilityKindsSummary(IReadOnlyList<ActivityCapabilityDescriptor> capabilities)

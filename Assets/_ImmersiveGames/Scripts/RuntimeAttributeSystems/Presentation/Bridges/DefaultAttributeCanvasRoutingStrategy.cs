@@ -1,6 +1,7 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
-namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges{
+namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
+{
     public interface IAttributeCanvasStrategy
     {
         string ResolveCanvasId(RuntimeAttributeInstanceConfig config, string actorId);
@@ -9,7 +10,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges{
     public class DefaultAttributeCanvasStrategy : IAttributeCanvasStrategy
     {
         private const string MainUICanvasId = "MainUI";
-    
+
         public string ResolveCanvasId(RuntimeAttributeInstanceConfig config, string actorId)
         {
             if (config == null)
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges{
             return config.attributeCanvasTargetMode switch
             {
                 AttributeCanvasTargetMode.ActorSpecific => $"{actorId}_Canvas",
-                AttributeCanvasTargetMode.Custom => string.IsNullOrEmpty(config.customCanvasId) ? 
+                AttributeCanvasTargetMode.Custom => string.IsNullOrEmpty(config.customCanvasId) ?
                     MainUICanvasId : config.customCanvasId,
                 _ => MainUICanvasId
             };

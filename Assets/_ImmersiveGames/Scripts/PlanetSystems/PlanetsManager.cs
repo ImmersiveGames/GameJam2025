@@ -14,7 +14,7 @@ using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
-    [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Verbose)]
+    [DefaultExecutionOrder(-80)] [DebugLevel(DebugLevel.Verbose)]
     public class PlanetsManager : Singleton<PlanetsManager>
     {
         [Header("Planet Setup")]
@@ -22,17 +22,17 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
         [SerializeField] private PlanetsMaster planetPrefab;
 
         [Tooltip("Quantidade de planetas que serão criados automaticamente.")]
-        [SerializeField, Min(0)] private int initialPlanetCount = 3;
+        [SerializeField] [Min(0)] private int initialPlanetCount = 3;
 
         [Tooltip("Transform que receberá os planetas criados. Quando vazio, usa o próprio manager.")]
         [SerializeField] private Transform planetsRoot;
 
         [Header("Orbit Setup")]
         [Tooltip("Raio mínimo da órbita mais interna.")]
-        [SerializeField, Min(0f)] private float initialOrbitRadius = 5f;
+        [SerializeField] [Min(0f)] private float initialOrbitRadius = 5f;
 
         [Tooltip("Distância mínima entre a superfície de um planeta e o próximo na órbita subsequente.")]
-        [SerializeField, Min(0f)] private float minimumOrbitSpacing = 2f;
+        [SerializeField] [Min(0f)] private float minimumOrbitSpacing = 2f;
 
         [Tooltip("Sorteia um ângulo inicial aleatório para cada planeta ao posicioná-lo.")]
         [SerializeField] private bool randomizeInitialAngle = true;
@@ -247,9 +247,18 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
         }
 
-        public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap() => _planetResourcesMap;
-        public IReadOnlyCollection<IPlanetActor> GetPlanetActors() => _planetResourcesMap.Keys;
-        public List<IDetectable> GetActivePlanets() => _activePlanetDetectables;
+        public IReadOnlyDictionary<IPlanetActor, PlanetResources> GetPlanetResourcesMap()
+        {
+            return _planetResourcesMap;
+        }
+        public IReadOnlyCollection<IPlanetActor> GetPlanetActors()
+        {
+            return _planetResourcesMap.Keys;
+        }
+        public List<IDetectable> GetActivePlanets()
+        {
+            return _activePlanetDetectables;
+        }
 
         /// <summary>
         /// Retorna o detectável associado ao planeta atualmente marcado,
@@ -307,7 +316,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
             }
 
             foreach (var candidate in _spawnedPlanetMasters.Where(candidate => candidate != null)
-                         .Where(candidate => candidate.ActorId == actorId))
+                .Where(candidate => candidate.ActorId == actorId))
             {
                 planet = candidate;
                 _planetsByActorId[actorId] = candidate;
@@ -328,8 +337,8 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 
             string actorId = planetActor.ActorId;
             foreach (var candidate in _activePlanetDetectables
-                         .Where(candidate => candidate?.Owner != null)
-                         .Where(candidate => candidate.Owner.ActorId == actorId))
+                .Where(candidate => candidate?.Owner != null)
+                .Where(candidate => candidate.Owner.ActorId == actorId))
             {
                 detectable = candidate;
                 return true;
@@ -509,4 +518,3 @@ namespace _ImmersiveGames.Scripts.PlanetSystems
 #endif
     }
 }
-

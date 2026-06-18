@@ -11,5 +11,3 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
         Task FadeOutAsync(string? contextSignature = null);
     }
 }
-
-

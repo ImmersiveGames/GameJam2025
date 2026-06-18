@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             None = 0,
             Bgm = 1,
-            Sfx = 2,
+            Sfx = 2
         }
 
         private readonly object _sync = new();
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] IAudioBgmService obrigatorio ausente para routeAudio cue do tipo BGM.");
             }
 
-            bgmService.Play(cue, fadeInSeconds: -1f, reason: BuildReason(command, cueType));
+            bgmService.Play(cue, -1f, BuildReason(command, cueType));
 
             if (!ReferenceEquals(bgmService.ActiveCue, cue))
             {

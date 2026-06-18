@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
         public CinemachineRouteCameraDirector(
             IOperationalCameraProvider operationalCameraProvider)
         {
-            this._operationalCameraProvider = operationalCameraProvider;
+            _operationalCameraProvider = operationalCameraProvider;
         }
 
         public bool TryPrepareRouteCamera(
@@ -47,8 +47,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             }
 
             if (!_operationalCameraProvider.TryGetCurrent(
-                    out var operationalCamera,
-                    out string providerReason))
+                out var operationalCamera,
+                out string providerReason))
             {
                 reason = providerReason;
                 result = RouteCameraBindingResult.Failed(command, reason);
@@ -87,9 +87,9 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             rigInstance.name = BuildRigInstanceName(command);
 
             if (!ValidatePresentationRig(
-                    rigInstance,
-                    out var cinemachineCamera,
-                    out reason))
+                rigInstance,
+                out var cinemachineCamera,
+                out reason))
             {
                 SafeDestroy(rigInstance);
                 result = RouteCameraBindingResult.Failed(command, reason);

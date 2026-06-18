@@ -2,7 +2,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Events
 {
-    public class PlayerDiedEvent: IEvent
+    public class PlayerDiedEvent : IEvent
     {
         public Vector3 Position { get; }
         public GameObject Eater { get; }

@@ -2,8 +2,8 @@ using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
@@ -105,7 +105,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            if (!attributeEndpoint.TryApplyCommand(intent.ToCommand(), out ActorAttributeApplyResult applyResult))
+            if (!attributeEndpoint.TryApplyCommand(intent.ToCommand(), out var applyResult))
             {
                 if (applyResult.Rejected)
                 {
@@ -120,9 +120,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             }
 
             result = ActorAttributeMutationResult.AppliedResult(intent, applyResult);
+            bool changed = applyResult.HasFact && applyResult.Fact.Changed;
             DebugUtility.LogVerbose(
                 typeof(ActorAttributeMutationReceiverEndpoint),
-                $"event='ActorAttributeMutationIntentApplied' actorId='{intent.ActorId}' actorInstanceRuntimeId='{intent.ActorInstanceRuntimeId}' attributeId='{intent.AttributeId}' operation='{intent.Operation}' changedFact='{applyResult.HasFact}' thresholdFactCount='{applyResult.ThresholdFactCount}' source='{intent.Source}' reason='{intent.Reason}'",
+                $"event='ActorAttributeMutationIntentApplied' actorId='{intent.ActorId}' actorInstanceRuntimeId='{intent.ActorInstanceRuntimeId}' attributeId='{intent.AttributeId}' operation='{intent.Operation}' changedFact='{changed}' thresholdFactCount='{applyResult.ThresholdFactCount}' attributeEventsPublished='{changed}' source='{intent.Source}' reason='{intent.Reason}'",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -152,7 +153,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             }
 
             return candidateIdentity.IsValid &&
-                   candidateIdentity.CycleKey == requiredIdentity.CycleKey;
+                candidateIdentity.CycleKey == requiredIdentity.CycleKey;
         }
-}
+
+    }
 }

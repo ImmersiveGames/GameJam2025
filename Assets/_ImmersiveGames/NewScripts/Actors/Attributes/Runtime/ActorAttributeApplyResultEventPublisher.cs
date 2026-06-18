@@ -18,7 +18,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            ActorAttributeChangedFact fact = result.Fact;
+            var fact = result.Fact;
+            if (!fact.Changed)
+            {
+                return true;
+            }
+
             eventStream.Publish(
                 new ActorAttributeChangedEvent(
                     actorId,
@@ -49,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
             for (int index = 0; index < thresholdFacts.Count; index++)
             {
-                ActorAttributeThresholdCrossedFact thresholdFact = thresholdFacts[index];
+                var thresholdFact = thresholdFacts[index];
                 if (!thresholdFact.IsValid)
                 {
                     continue;

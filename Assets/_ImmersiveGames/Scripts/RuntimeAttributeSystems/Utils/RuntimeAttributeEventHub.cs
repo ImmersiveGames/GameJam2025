@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
             }
 
             Dictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest> dict = _pendingBinds.GetValueOrDefault(request.targetCanvasId)
-                       ?? (_pendingBinds[request.targetCanvasId] = new());
+                ?? (_pendingBinds[request.targetCanvasId] = new Dictionary<(string actorId, RuntimeAttributeType resourceType), CanvasBindRequest>());
 
             dict[(request.actorId, request.runtimeAttributeType)] = request;
 
@@ -92,9 +92,30 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
 
         // --- EVENTOS ------------------------------------------------------------
 
-        public struct CanvasRegisteredEvent : IEvent { public readonly string canvasId; public CanvasRegisteredEvent(string id) => canvasId = id; }
-        private struct CanvasUnregisteredEvent : IEvent { public readonly string canvasId; public CanvasUnregisteredEvent(string id) => canvasId = id; }
-        public struct ActorRegisteredEvent : IEvent { public readonly string actorId; public ActorRegisteredEvent(string id) => actorId = id; }
+        public struct CanvasRegisteredEvent : IEvent
+        {
+            public readonly string canvasId;
+            public CanvasRegisteredEvent(string id)
+            {
+                canvasId = id;
+            }
+        }
+        private struct CanvasUnregisteredEvent : IEvent
+        {
+            public readonly string canvasId;
+            public CanvasUnregisteredEvent(string id)
+            {
+                canvasId = id;
+            }
+        }
+        public struct ActorRegisteredEvent : IEvent
+        {
+            public readonly string actorId;
+            public ActorRegisteredEvent(string id)
+            {
+                actorId = id;
+            }
+        }
 
         public struct CanvasBindRequest : IEvent
         {
@@ -115,4 +136,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils
         }
     }
 }
-

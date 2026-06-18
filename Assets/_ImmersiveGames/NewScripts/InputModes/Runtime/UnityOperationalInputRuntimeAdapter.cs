@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             if (eventSystems == null || eventSystems.Length == 0)
             {
                 var eventSystemGo = new GameObject("EventSystem");
-                eventSystemGo.transform.SetParent(persistentRoot, worldPositionStays: false);
+                eventSystemGo.transform.SetParent(persistentRoot, false);
                 var created = eventSystemGo.AddComponent<EventSystem>();
 
                 DebugUtility.Log(typeof(UnityOperationalInputRuntimeAdapter),

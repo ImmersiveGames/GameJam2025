@@ -25,6 +25,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public string ComponentPath { get; }
         public IActivityObjectResetEndpoint Endpoint { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && Endpoint != null;
-}
+    }
 
 }

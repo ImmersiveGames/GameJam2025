@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Reason { get; }
 
         public bool IsValid => SlotId.IsValid && SlotKind != PlayerSlotKind.Unknown && SourceKind != PlayerSlotReservationSourceKind.Unknown;
-}
+    }
 
     public readonly struct PlayerSelection
     {
@@ -66,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             SelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             SourceKind != PlayerSelectionSourceKind.Unknown;
-}
+    }
 
     public readonly struct SessionParticipantBinding
     {
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             ActorId.IsValid &&
             ActorScope != ActorScope.Unknown &&
             MaterializationPolicy != ActorMaterializationPolicyKind.Unknown;
-}
+    }
 
     public sealed class SessionParticipationContext
     {
@@ -148,9 +148,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
                 participants,
                 runtimeJoinPolicy,
                 source,
-                reason)
-        {
-        }
+                reason) { }
 
         public SessionParticipationContext(
             string sessionId,
@@ -278,5 +276,5 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
             return true;
         }
-}
+    }
 }

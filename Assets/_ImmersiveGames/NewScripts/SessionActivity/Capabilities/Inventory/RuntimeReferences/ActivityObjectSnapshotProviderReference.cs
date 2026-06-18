@@ -25,5 +25,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public string ComponentPath { get; }
         public IActivityObjectSnapshotProvider Provider { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && Provider != null;
-}
+    }
 }

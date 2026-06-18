@@ -38,14 +38,10 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
     }
 
     // Evento disparado para sinalizar o in�cio de um pipeline de reset
-    public class GameResetStartedEvent : IEvent
-    {
-    }
+    public class GameResetStartedEvent : IEvent { }
 
     // Evento disparado ap�s conclus�o do reset e recarga de cena
-    public class GameResetCompletedEvent : IEvent
-    {
-    }
+    public class GameResetCompletedEvent : IEvent { }
 
     // Evento disparado quando o jogo termina com derrota
     public class GameOverEvent : IEvent
@@ -75,7 +71,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
         public IActor Actor { get; }
 
 
-        public ActorDeathEvent( IActor actor, Vector3 position  )
+        public ActorDeathEvent(IActor actor, Vector3 position)
         {
             Actor = actor;
             Position = position;
@@ -87,7 +83,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
         public IActor Actor { get; }
 
 
-        public ActorReviveEvent( IActor actor, Vector3 position  )
+        public ActorReviveEvent(IActor actor, Vector3 position)
         {
             Actor = actor;
             Position = position;
@@ -102,7 +98,5 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
             IsActive = isActive;
         }
     }
-    public class GameReturnToMenuRequestedEvent : IEvent
-    {
-    }
+    public class GameReturnToMenuRequestedEvent : IEvent { }
 }

@@ -24,25 +24,49 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
             this.value = value.TrimToEmpty().ToLowerInvariant();
         }
 
-        public static SceneRouteId FromName(string name) => new(name);
+        public static SceneRouteId FromName(string name)
+        {
+            return new SceneRouteId(name);
+        }
 
-        public override string ToString() => Value;
+        public override string ToString()
+        {
+            return Value;
+        }
 
-        public bool Equals(SceneRouteId other) =>
-            string.Equals(Value, other.Value, StringComparison.OrdinalIgnoreCase);
+        public bool Equals(SceneRouteId other)
+        {
+            return string.Equals(Value, other.Value, StringComparison.OrdinalIgnoreCase);
+        }
 
-        public override bool Equals(object obj) => obj is SceneRouteId other && Equals(other);
+        public override bool Equals(object obj)
+        {
+            return obj is SceneRouteId other && Equals(other);
+        }
 
-        public override int GetHashCode() =>
-            (Value ?? string.Empty).ToLowerInvariant().GetHashCode();
+        public override int GetHashCode()
+        {
+            return (Value ?? string.Empty).ToLowerInvariant().GetHashCode();
+        }
 
-        public static bool operator ==(SceneRouteId left, SceneRouteId right) => left.Equals(right);
-        public static bool operator !=(SceneRouteId left, SceneRouteId right) => !left.Equals(right);
+        public static bool operator ==(SceneRouteId left, SceneRouteId right)
+        {
+            return left.Equals(right);
+        }
+        public static bool operator !=(SceneRouteId left, SceneRouteId right)
+        {
+            return !left.Equals(right);
+        }
 
-        public static implicit operator SceneRouteId(string value) => new(value);
-        public static implicit operator string(SceneRouteId id) => id.Value;
+        public static implicit operator SceneRouteId(string value)
+        {
+            return new SceneRouteId(value);
+        }
+        public static implicit operator string(SceneRouteId id)
+        {
+            return id.Value;
+        }
 
         public static SceneRouteId None => default;
     }
 }
-

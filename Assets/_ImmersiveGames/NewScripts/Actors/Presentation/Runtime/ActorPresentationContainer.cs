@@ -66,5 +66,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 containerTransform = transform;
             }
         }
-}
+    }
 }

@@ -52,7 +52,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
             }
         }
 
-        public void Clear() => _bindings.Clear();
+        public void Clear()
+        {
+            _bindings.Clear();
+        }
     }
 }
-

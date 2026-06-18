@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         [SerializeField] private bool showDetectionLines = true;
         [SerializeField] private bool showObjectMarkers = true;
         [SerializeField] private bool showLabels = true;
-        [SerializeField, Range(4, 12)] private int coneSegments = 6;
+        [SerializeField] [Range(4, 12)] private int coneSegments = 6;
 
         // Cache variables
         private Vector3[] _cachedConePoints;

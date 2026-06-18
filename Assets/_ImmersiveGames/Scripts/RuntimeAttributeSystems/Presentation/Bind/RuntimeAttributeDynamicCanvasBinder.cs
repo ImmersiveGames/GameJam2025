@@ -25,4 +25,3 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
         }
     }
 }
-

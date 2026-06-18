@@ -7,10 +7,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             RegisterIfMissing<ISceneCompositionExecutor>(
                 () => new SceneCompositionExecutor(),
-                alreadyRegisteredMessage: "ISceneCompositionExecutor ja registrado no DI global.",
-                registeredMessage: "ISceneCompositionExecutor registrado (SceneCompositionExecutor).");
+                "ISceneCompositionExecutor ja registrado no DI global.",
+                "ISceneCompositionExecutor registrado (SceneCompositionExecutor).");
         }
     }
 }
-
-
