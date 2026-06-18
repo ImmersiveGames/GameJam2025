@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   globalEnabled: 1
   verboseEnabled: 1
-  fallbacksEnabled: 1
-  repeatedVerboseEnabled: 1
+  fallbacksEnabled: 0
+  repeatedVerboseEnabled: 0
   defaultLevel: 2
   rules:
   - ruleId: logger.Session.operation
