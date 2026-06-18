@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         }
 
         protected abstract void ValidateSpecificOrThrow(string validationSource);
-        
+
     }
 
     [Serializable]

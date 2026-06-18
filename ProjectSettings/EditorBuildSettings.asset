@@ -54,5 +54,6 @@ EditorBuildSettings:
     path: Assets/_ImmersiveGames/Scenes/ActivityScene02.unity
     guid: 312eb0ad182094444a753034b6f04980
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings: {fileID: 11400000, guid: 108886296fc74d142975b35c76c1d56f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

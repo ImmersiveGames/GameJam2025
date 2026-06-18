@@ -162,7 +162,8 @@ MonoBehaviour:
   impactKind: generic
   targetLayerMask:
     serializedVersion: 2
-    m_Bits: 3584
+    m_Bits: 4294967295
+  requireTargetActorForRegisteredImpact: 1
   ignoreSelfActor: 1
   ignoreOwnerActor: 1
   registerSingleImpactUntilReconfigured: 1
