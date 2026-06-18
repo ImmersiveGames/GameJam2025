@@ -201,6 +201,46 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             return true;
         }
 
+        public bool TryReturnSpawnedRuntimeObject(
+            RuntimeSpawnedActor spawnedActor,
+            string source,
+            string reason,
+            string trigger,
+            out string outcomeReason)
+        {
+            outcomeReason = string.Empty;
+            PruneTrackedSpawns("single_return_prune_stale_entries");
+
+            if (spawnedActor == null)
+            {
+                outcomeReason = "spawned_actor_missing";
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileSpawnRuntimeState),
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='' actorInstanceRuntimeId='' spawnedActorId='' spawnedActorInstanceRuntimeId='' originPoolDefinition='' spawnProfileId='' commandSequence='0' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{outcomeReason}'.");
+                return false;
+            }
+
+            if (!TryGetTrackedSpawnedRuntimeObject(spawnedActor, out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject))
+            {
+                outcomeReason = "tracked_spawn_missing";
+                DebugUtility.LogWarning(
+                    typeof(ActorProjectileSpawnRuntimeState),
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturnSkipped' actorId='{spawnedActor.OwnerActorId}' actorInstanceRuntimeId='{spawnedActor.OwnerActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' originPoolDefinition='{(spawnedActor.OriginPoolDefinition == null ? string.Empty : spawnedActor.OriginPoolDefinition.name)}' spawnProfileId='{spawnedActor.SpawnProfileId}' commandSequence='{(spawnedActor.HasSpawnOrigin ? spawnedActor.SpawnOrigin.CommandSequence : 0)}' trackedCount='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{outcomeReason}'.");
+                return false;
+            }
+
+            bool returned = TryReturnTrackedSpawnedRuntimeObject(
+                trackedSpawnedRuntimeObject,
+                source,
+                reason,
+                trigger);
+
+            outcomeReason = returned
+                ? "runtime_spawned_object_returned"
+                : "runtime_spawned_object_return_failed";
+            return returned;
+        }
+
         public void Clear()
         {
             ClearTrackedSpawns();
@@ -332,7 +372,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             try
             {
+                int trackedCountBefore = _trackedSpawns.Count;
                 _poolService.Return(trackedSpawnedRuntimeObject.SpawnOrigin.PoolDefinition, trackedSpawnedRuntimeObject.SpawnedInstance);
+
+                DebugUtility.Log(
+                    typeof(ActorProjectileSpawnRuntimeState),
+                    $"event='ActorProjectileSpawnedRuntimeObjectReturned' actorId='{trackedSpawnedRuntimeObject.OwnerActorId}' actorInstanceRuntimeId='{trackedSpawnedRuntimeObject.OwnerActorInstanceRuntimeId}' spawnedActorId='{trackedSpawnedRuntimeObject.SpawnedActorId}' spawnedActorInstanceRuntimeId='{trackedSpawnedRuntimeObject.SpawnedActorInstanceRuntimeId}' originPoolDefinition='{trackedSpawnedRuntimeObject.OriginPoolDefinitionName}' spawnProfileId='{trackedSpawnedRuntimeObject.SpawnProfileId}' commandSequence='{trackedSpawnedRuntimeObject.CommandSequence}' trackedCountBefore='{trackedCountBefore}' trackedCountAfter='{_trackedSpawns.Count}' source='{Normalize(source)}' trigger='{Normalize(trigger)}' reason='{Normalize(reason)}'.",
+                    DebugUtility.Colors.Success);
                 return true;
             }
             catch (Exception exception)
@@ -427,6 +473,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
                 RemoveTrackedSpawnedRuntimeObject(trackedSpawnedRuntimeObject != null ? trackedSpawnedRuntimeObject.SpawnedActor : null, "prune_stale", reason);
             }
+        }
+
+        private bool TryGetTrackedSpawnedRuntimeObject(
+            RuntimeSpawnedActor spawnedActor,
+            out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject)
+        {
+            trackedSpawnedRuntimeObject = null;
+
+            if (spawnedActor == null)
+            {
+                return false;
+            }
+
+            for (int index = _trackedSpawns.Count - 1; index >= 0; index--)
+            {
+                TrackedSpawnedRuntimeObject candidate = _trackedSpawns[index];
+                if (candidate == null || !ReferenceEquals(candidate.SpawnedActor, spawnedActor))
+                {
+                    continue;
+                }
+
+                trackedSpawnedRuntimeObject = candidate;
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryRemoveTrackedSpawnedRuntimeObject(

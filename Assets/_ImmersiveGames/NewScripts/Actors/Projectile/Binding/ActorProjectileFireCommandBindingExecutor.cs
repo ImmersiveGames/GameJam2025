@@ -1,4 +1,6 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Audio;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
@@ -7,6 +9,7 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
 {
@@ -81,13 +84,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
 
         private readonly IPoolService _poolService;
         private readonly IGlobalAudioService _globalAudioService;
+        private readonly IActorAttributeEventStream _actorAttributeEventStream;
 
         public ActorProjectileFireCommandBindingExecutor(
             IPoolService poolService,
-            IGlobalAudioService globalAudioService)
+            IGlobalAudioService globalAudioService,
+            IActorAttributeEventStream actorAttributeEventStream)
         {
             _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
             _globalAudioService = globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService));
+            _actorAttributeEventStream = actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream));
         }
 
         public ActorProjectileFireCommandBindingResult Execute(
@@ -189,9 +195,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
                 "projectile_spawn_runtime_state_pool_service_configured_by_actor_projectile_binding");
 
             string adapterId = BuildAdapterId(context, projectileFireEndpoint);
+            ActorDamageSourceEndpoint damageSourceEndpoint = ResolveDamageSourceEndpoint(projectileFireEndpoint);
             IActorProjectileSpawnAdapter spawnAdapter = new PooledActorProjectileSpawnAdapter(
                 adapterId,
-                _poolService);
+                _poolService,
+                _actorAttributeEventStream,
+                damageSourceEndpoint);
             projectileFireEndpoint.ConfigureSpawnAdapter(
                 spawnAdapter,
                 nameof(ActorProjectileFireCommandBindingExecutor),
@@ -212,6 +221,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
             return new ActorProjectileFireCommandBindingResult(
                 ActorProjectileFireCommandBindingState.Executable,
                 $"{projectileFireEndpoint.GetType().Name}|endpointId={projectileFireEndpoint.EndpointId}|profileId={projectileFireEndpoint.ProfileId}|fireModeId={projectileFireEndpoint.DefaultFireModeId}|spawnAdapter={projectileFireEndpoint.SpawnAdapterName}");
+        }
+
+
+        private static ActorDamageSourceEndpoint ResolveDamageSourceEndpoint(
+            IActorProjectileFireEndpoint projectileFireEndpoint)
+        {
+            if (projectileFireEndpoint is not Component component)
+            {
+                return null;
+            }
+
+            Actor actorRoot = component.GetComponentInParent<Actor>(includeInactive: true);
+            if (actorRoot != null &&
+                actorRoot.CapabilitySurface != null &&
+                actorRoot.CapabilitySurface.TryGetEndpoint(out ActorDamageSourceEndpoint surfaceEndpoint) &&
+                surfaceEndpoint != null)
+            {
+                return surfaceEndpoint;
+            }
+
+            ActorDamageSourceEndpoint localEndpoint = component.GetComponent<ActorDamageSourceEndpoint>();
+            if (localEndpoint != null)
+            {
+                return localEndpoint;
+            }
+
+            return component.GetComponentInParent<ActorDamageSourceEndpoint>(includeInactive: true)
+                ?? component.GetComponentInChildren<ActorDamageSourceEndpoint>(includeInactive: true);
         }
 
         private static string BuildAdapterId(

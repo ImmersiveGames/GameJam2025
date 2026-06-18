@@ -9,10 +9,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 473356860399608770}
+  - component: {fileID: 430447558163765957}
   - component: {fileID: 651234567890123456}
   - component: {fileID: 1666666666666666666}
   - component: {fileID: 2527674146183889330}
   - component: {fileID: 2258523653316105712}
+  - component: {fileID: 3228984753516743124}
+  - component: {fileID: 6011605480591046477}
   m_Layer: 0
   m_Name: NPC_Generic
   m_TagString: Untagged
@@ -36,6 +39,33 @@ Transform:
   - {fileID: 6230500782231504634}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!54 &430447558163765957
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 84
+  m_CollisionDetection: 0
 --- !u!114 &651234567890123456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48,6 +78,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27e7ee15b05442c8b26840eb681d6274, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  capabilitySurface: {fileID: 1666666666666666666}
   actorId: npc.generic.01
   actorScope: 1
   participationPolicy: 2
@@ -94,6 +125,32 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   attributeProfile: {fileID: 11400000, guid: 4f0dab15635e13847a67f7a90f2d8a95, type: 2}
+--- !u!114 &3228984753516743124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55ea818df1a081e438d23a4b61bffeda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Attributes.Runtime.ActorAttributeMutationReceiverEndpoint
+  attributeEndpoint: {fileID: 2258523653316105712}
+--- !u!114 &6011605480591046477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38300b3be8d6a3b4a8363fc178c0e07e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.Actors.Damage.Runtime.ActorDamageableEndpoint
+  targetAttributeDefinition: {fileID: 11400000, guid: b101e7a7894cc9c4d8535ace53589d2b, type: 2}
 --- !u!1 &1996203835894000634
 GameObject:
   m_ObjectHideFlags: 0

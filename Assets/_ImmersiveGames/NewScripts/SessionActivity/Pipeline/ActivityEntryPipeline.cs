@@ -150,7 +150,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
             _actorCommandBindingAdapter = new ActorCommandBindingAdapter(
                 _poolService,
-                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)));
+                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)),
+                _actorAttributeEventStream);
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activityEntryCapabilityInventoryBuildStage = new ActivityEntryCapabilityInventoryBuildStage();
         }

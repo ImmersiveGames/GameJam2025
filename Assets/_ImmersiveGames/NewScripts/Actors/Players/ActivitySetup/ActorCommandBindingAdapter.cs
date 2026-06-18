@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Binding;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -13,11 +14,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public ActorCommandBindingAdapter(
             IPoolService poolService,
-            IGlobalAudioService globalAudioService)
+            IGlobalAudioService globalAudioService,
+            IActorAttributeEventStream actorAttributeEventStream)
         {
             _projectileFireCommandBindingExecutor = new ActorProjectileFireCommandBindingExecutor(
                 poolService ?? throw new ArgumentNullException(nameof(poolService)),
-                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)));
+                globalAudioService ?? throw new ArgumentNullException(nameof(globalAudioService)),
+                actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream)));
         }
 
         public IReadOnlyList<ActorCommandBindingRecord> Execute(

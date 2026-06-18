@@ -10,6 +10,11 @@ Este ADR não implementa runtime.
 Este ADR não substitui os ADRs de `SessionOperational`, `SessionActivity`, `PlayerParticipation`, IDREF, Actor Command/Projectile ou Reset.  
 Este ADR deve orientar auditoria e cortes incrementais posteriores.
 
+
+### Status adicional — congelamento parcial registrado
+
+Em `2026-06-17`, este ADR recebeu um congelamento parcial do trilho funcional até `ADR0007-E4B3-FIX1`. O congelamento registra `PASS funcional` histórico para damage/impact/effect event/return-to-pool, mas mantém `NewScriptsv4.zip` como `PARTIAL` para assets/prefabs até fechar as dívidas de target actor requirement e prefab hygiene.
+
 ---
 
 ## Fonte normativa local
@@ -707,6 +712,296 @@ Session/game policy decide GameOver.
 ```
 
 ---
+
+---
+
+## Congelamento parcial — ADR0007 até Impact Damage / Effect Event / Return To Pool
+
+### Status do congelamento
+
+Data de registro: `2026-06-17`.  
+Base auditada para este registro: `NewScriptsv4.zip`.  
+Objetivo deste bloco: congelar o estado funcional e arquitetural validado **antes de qualquer novo fix em assets/prefabs**.
+
+Resultado consolidado:
+
+```text
+PASS funcional histórico até ADR0007-E4B3-FIX1.
+PARTIAL / não PASS arquitetural final para assets/prefabs em NewScriptsv4.
+E5A Impact Audio Effect Adapter não faz parte deste congelamento porque foi revertido/está ausente no pacote atual.
+```
+
+Este congelamento não autoriza novos fixes silenciosos. Qualquer alteração posterior deve ser registrada como corte novo.
+
+---
+
+### Cortes congelados como trilho funcional validado
+
+| Corte | Estado congelado | Observação |
+|---|---|---|
+| `E1A/E1B/E1B2/E1C` | `CLOSED / PASS funcional` | Threshold contracts, authoring, defaults e avaliação/publicação de eventos. |
+| `E2A/E2A-FIX1/E2B` | `CLOSED / PASS funcional` | `ActorAttributeMutationReceiverEndpoint` e QA pelo receiver canônico. |
+| `E3A/E3B` | `CLOSED / PASS funcional` | `ActorDamageableEndpoint` mínimo e sequência até depleted por QA. |
+| `E4A/E4A-FIX1` | `CLOSED / PASS funcional` | `ActorDamageSourceEndpoint` como source actor e exposição por QA. |
+| `E4B1/E4B1-FIX1` | `CLOSED / PASS funcional` | `ActorImpactEndpoint` genérico e relay de collider/presentation. |
+| `E4B2` | `CLOSED / PASS funcional` | Impacto aplicando dano via source actor -> damageable target -> attribute mutation. |
+| `E4B3/E4B3-FIX1` | `CLOSED / PASS funcional` | Retorno ao pool por handler e publicação de `ActorImpactEffectEvent` antes do return. |
+
+Fora deste congelamento:
+
+```text
+E5A — Impact Audio Effect Adapter Minimal
+Health lifecycle / defeated
+Damage rules / team / friendly-fire
+VFX/material surface policy
+Death/GameOver
+Rollback/undo
+```
+
+---
+
+### Fluxo funcional congelado
+
+O fluxo validado até aqui é:
+
+```text
+ActorProjectileFireEndpoint
+-> RuntimeSpawnedActor projectile
+-> ActorImpactEndpoint
+-> ActorImpactDamageApplicationAdapter
+-> ActorDamageSourceEndpoint do owner actor/player
+-> ActorDamageableEndpoint do target actor
+-> ActorAttributeMutationReceiverEndpoint
+-> ActorAttributeEndpoint
+-> ActorAttributeChangedEvent
+-> ActorAttributeThresholdCrossedEvent, se houver cruzamento
+-> ActorImpactEffectEventStream
+-> ActorProjectileImpactReturnHandler
+-> ActorProjectileSpawnRuntimeState
+-> PoolService.Return via owner de spawn
+```
+
+Ownership congelado:
+
+| Responsabilidade | Owner congelado |
+|---|---|
+| Commit de atributo | `ActorAttributeEndpoint` |
+| Avaliação de threshold | `ActorAttributeThresholdEvaluator` / domínio de Attributes |
+| Receber mutação externa | `ActorAttributeMutationReceiverEndpoint` |
+| Receber dano | `ActorDamageableEndpoint` |
+| Emitir dano | `ActorDamageSourceEndpoint` do actor fonte |
+| Detectar contato físico | `ActorImpactEndpoint` |
+| Conectar impacto a dano | `ActorImpactDamageApplicationAdapter` |
+| Publicar evento passivo de efeito | `ActorImpactEffectEventStream` |
+| Retornar projectile ao pool | `ActorProjectileImpactReturnHandler` + `ActorProjectileSpawnRuntimeState` |
+| Executar pool técnico | `PoolService`, nunca `ActorImpactEndpoint` diretamente |
+
+---
+
+### Evidência funcional congelada por smoke/log
+
+Os smokes anteriores validaram:
+
+```text
+sem error CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+sem RejectedForeign / RejectedStale indevido
+```
+
+O trilho de dano por impacto foi validado em NPCs distintos:
+
+```text
+npc.route.generic.01: 100 -> 75 -> 50
+npc.generic.01: 100 -> 75 -> 50
+```
+
+Leitura arquitetural dessa evidência:
+
+```text
+Os dois NPCs podem compartilhar o mesmo ActorAttributeProfileAsset.
+Eles não compartilham ActorAttributeState runtime.
+Cada actor instance recebe estado próprio via ActorAttributeProfileAsset.CreateStates(actorInstanceRuntimeId).
+```
+
+Threshold validado:
+
+```text
+100 -> 75 publica npc.attribute.health.75.down
+75 -> 50 não publica threshold quando não há threshold configurado nesse intervalo
+```
+
+O retorno ao pool por impacto também foi validado:
+
+```text
+ActorImpactDamageApplicationCompleted
+-> ActorImpactEffectEventPublished
+-> ActorImpactReturnRequested
+-> ActorProjectileImpactReturnRequested
+-> ActorProjectileSpawnedRuntimeObjectReturned
+-> ActorProjectileImpactReturnAccepted
+-> ActorImpactReturnCompleted
+```
+
+A ordem congelada é intencional:
+
+```text
+impacto
+-> dano
+-> evento passivo de efeito
+-> retorno técnico ao pool
+```
+
+Não inverter essa ordem. O evento de efeito deve ser publicado antes do projectile voltar ao pool.
+
+---
+
+### Estado auditado de assets/prefabs em NewScriptsv4
+
+O pacote `NewScriptsv4.zip` está funcionalmente coerente com os smokes de dano, mas não deve ser tratado como PASS arquitetural final de assets/prefabs.
+
+#### Assets considerados coerentes
+
+```text
+PlayerAttributeProfile.asset
+NpcAttributeProfile.asset
+ActorProjectileFireProfile_PrimaryShot.asset
+ActorProjectileSpawnProfile_PrimaryProjectile.asset
+PoolDefinition_PrimaryProjectile.asset
+```
+
+Leitura:
+
+```text
+Attribute profiles são authoring data.
+Estado runtime de atributo é por ActorInstanceRuntimeId.
+Fire profile resolve spawn, motion, layer e SFX de disparo.
+Spawn profile representa RuntimeSpawnedActor ActivityScoped.
+Pool de projectile é Activity-scoped com autoReturn técnico.
+```
+
+#### Player actor
+
+Shape esperado e aceito:
+
+```text
+ActorAttributeEndpoint
+ActorAttributeMutationReceiverEndpoint
+ActorDamageableEndpoint
+ActorDamageSourceEndpoint
+ActorProjectileFireEndpoint
+```
+
+O `ActorDamageSourceEndpoint` do player continua válido. Ele representa o actor fonte do dano quando o projectile é apenas o transportador físico do impacto.
+
+#### NPCs
+
+Shape esperado e aceito:
+
+```text
+ActorAttributeEndpoint
+ActorAttributeMutationReceiverEndpoint
+ActorDamageableEndpoint
+Presentation/collider resolvível pelo ActorImpactTargetResolver
+```
+
+NPC comum e NPC route-scoped foram validados como targets damageable independentes.
+
+#### Projectile prefab
+
+Shape esperado:
+
+```text
+RuntimeSpawnedActor
+ActorCapabilitySurface
+ActorPresentationEndpoint
+ActorPooledPresentationPreparer
+ActorProjectileMotionEndpoint
+ActorImpactEndpoint
+Rigidbody
+Collider ou relay/surface física compatível com presentation
+```
+
+Shape não aceito como final:
+
+```text
+ActorDamageSourceEndpoint em projectile comum
+ActorDamageableEndpoint em projectile comum
+ActorAttributeEndpoint em projectile comum
+ActorAttributeMutationReceiverEndpoint em projectile comum
+```
+
+O projectile comum é carrier/impact actor, não source canônico de dano. A source canônica do tiro é o owner actor, normalmente `actor.player.primary`.
+
+---
+
+### Dívidas congeladas antes de qualquer fix
+
+As seguintes dívidas devem permanecer visíveis e não devem ser escondidas por compat ou fallback silencioso:
+
+| Dívida | Severidade | Motivo | Próxima ação recomendada |
+|---|---|---|---|
+| `ActorImpactEndpoint` ainda pode registrar impacto sem exigir target actor resolvido. | High | Pode consumir lease de projectile em colisão com objeto sem Actor e impedir dano real posterior. | Adicionar policy/flag `requireTargetActorForRegisteredImpact`. |
+| `ProjectileActor_Primary.prefab` contém `ActorDamageSourceEndpoint` no shape comum atual. | Medium/High | Ambiguidade de ownership: projectile vira source indevido, enquanto source correta é owner actor. | Remover do prefab comum ou justificar apenas para projectiles autônomos. |
+| `ActorImpactEndpoint.targetLayerMask` em projectile comum foi observado como `Everything` em auditoria local. | High | Qualquer collider pode consumir impacto. | Trocar para mask explícito de hurtbox/damageable target. |
+| Superfície física do projectile depende de collider/presentation/relay materializado. | Medium | Smoke validou runtime, mas o contrato de authoring precisa ficar explícito. | Formalizar regra de prefab/presentation para collider + Rigidbody. |
+| `ActorImpactRejected` e `ActorProjectileMotionStateCleared` ainda podem logar ids vazios. | Low | Observabilidade fraca pós-limpeza, sem quebra funcional. | Hygiene posterior. |
+| `E5A` de áudio de impacto foi revertido/ausente. | Low | Não afeta damage, mas não há consumer de `ActorImpactEffectEvent`. | Recriar E5A depois de fechar E4B4. |
+
+---
+
+### Invariantes congelados
+
+Não regredir estes pontos:
+
+```text
+Damage não é owner de health.
+Damage não é owner de attribute state.
+Damage não é owner de pool.
+Impact não substitui DamageSource.
+Projectile comum não é source canônico do dano.
+Source canônico do tiro é o owner actor.
+Damageable não decide death, GameOver ou pool return.
+ActorImpactEndpoint não chama PoolService diretamente.
+ActorImpactEffectEvent é publicado antes do return técnico ao pool.
+Attribute profile compartilhado não implica estado runtime compartilhado.
+```
+
+---
+
+### Próximo corte recomendado após este congelamento
+
+```text
+ADR0007-E4B4 — Impact Target Actor Requirement + Projectile Prefab Hygiene
+```
+
+Escopo recomendado:
+
+```text
+1. Adicionar policy explícita para exigir target actor antes de registrar impacto.
+2. Rejeitar impacto sem target actor com outcomeReason='impact_target_actor_missing_or_invalid'.
+3. Remover ActorDamageSourceEndpoint do ProjectileActor_Primary.prefab comum.
+4. Trocar targetLayerMask de projectile comum para layer mask explícito de targets damageable/hurtbox/NPC.
+5. Formalizar collider/relay/presentation contract do projectile sem criar fallback silencioso.
+6. Preservar damage application, effect event before return e return-to-pool por handler.
+```
+
+Critério de smoke para esse próximo corte:
+
+```text
+ActorImpactTargetResolved >= 1
+ActorImpactRegistered >= 1
+ActorDamageIntentApplied >= 1
+ActorAttributeChangedEventPublished >= 1
+ActorImpactEffectEventPublished >= 1
+ActorImpactReturnCompleted >= 1
+
+ActorImpactTargetResolveSkipped pode existir,
+mas impacto sem target actor não pode virar ActorImpactRegistered quando requireTargetActorForRegisteredImpact=true.
+```
+
 
 ## Open questions
 

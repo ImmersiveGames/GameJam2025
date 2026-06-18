@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.Actors.Impact.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
@@ -857,7 +858,53 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileFireEndpoint),
                     $"event='ActorProjectileSpawnTrackSkipped' actorId='{adapterResult.Command.ActorId}' actorInstanceRuntimeId='{adapterResult.Command.ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{adapterResult.SpawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_tracker_rejected_spawn'.");
+                return;
             }
+
+            ConfigureImpactReturnHandlers(adapterResult.SpawnedInstance, spawnedActor, source, reason);
+        }
+
+        private void ConfigureImpactReturnHandlers(
+            GameObject spawnedInstance,
+            RuntimeSpawnedActor spawnedActor,
+            string source,
+            string reason)
+        {
+            if (spawnedInstance == null || spawnedActor == null)
+            {
+                return;
+            }
+
+            ActorImpactEndpoint[] impactEndpoints = spawnedInstance.GetComponentsInChildren<ActorImpactEndpoint>(includeInactive: true);
+            if (impactEndpoints == null || impactEndpoints.Length == 0)
+            {
+                DebugUtility.LogVerbose(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"event='ActorProjectileImpactReturnHandlerConfigurationSkipped' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' spawnedInstanceName='{spawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='impact_endpoint_missing'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            int configuredCount = 0;
+            for (int index = 0; index < impactEndpoints.Length; index++)
+            {
+                ActorImpactEndpoint impactEndpoint = impactEndpoints[index];
+                if (impactEndpoint == null)
+                {
+                    continue;
+                }
+
+                impactEndpoint.ConfigureReturnHandler(
+                    new ActorProjectileImpactReturnHandler(_spawnRuntimeState, spawnedActor),
+                    nameof(ActorProjectileFireEndpoint),
+                    "projectile_impact_return_handler_configured_by_spawn_owner");
+                configuredCount++;
+            }
+
+            DebugUtility.LogVerbose(
+                typeof(ActorProjectileFireEndpoint),
+                $"event='ActorProjectileImpactReturnHandlerConfiguredFromSpawn' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' spawnedActorId='{spawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{spawnedActor.RuntimeActorInstanceId}' impactEndpointCount='{impactEndpoints.Length}' configuredCount='{configuredCount}' spawnedInstanceName='{spawnedInstance.name}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_impact_return_handler_configured_by_spawn_owner'.",
+                DebugUtility.Colors.Success);
         }
 
 
