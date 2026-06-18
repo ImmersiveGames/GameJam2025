@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -23,12 +24,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            TargetId = Normalize(targetId);
-            RoleId = Normalize(roleId);
+            TargetId = targetId.TrimToEmpty();
+            RoleId = roleId.TrimToEmpty();
             ContributorKind = contributorKind;
             Requiredness = requiredness;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -44,12 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ContributorKind != ActivityObjectContributorKind.Unknown &&
             Requiredness != ActivitySetupRequirementRequiredness.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityObjectLifecycleContribution
     {
@@ -93,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int priority,
             IActivityObjectResetEndpoint resetEndpoint)
         {
-            ContributionId = Normalize(contributionId);
+            ContributionId = contributionId.TrimToEmpty();
             Priority = priority;
             ResetEndpoint = resetEndpoint;
         }
@@ -104,12 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectResetEndpoint ResetEndpoint { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && ResetEndpoint != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityObjectSnapshotContribution : IActivityObjectSnapshotContribution
     {
@@ -118,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int priority,
             IActivityObjectSnapshotProvider snapshotProvider)
         {
-            ContributionId = Normalize(contributionId);
+            ContributionId = contributionId.TrimToEmpty();
             Priority = priority;
             SnapshotProvider = snapshotProvider;
         }
@@ -129,12 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectSnapshotProvider SnapshotProvider { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && SnapshotProvider != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityObjectSnapshotRestoreContribution : IActivityObjectSnapshotRestoreContribution
     {
@@ -143,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int priority,
             IActivityObjectSnapshotRestoreEndpoint restoreEndpoint)
         {
-            ContributionId = Normalize(contributionId);
+            ContributionId = contributionId.TrimToEmpty();
             Priority = priority;
             RestoreEndpoint = restoreEndpoint;
         }
@@ -154,12 +140,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectSnapshotRestoreEndpoint RestoreEndpoint { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && RestoreEndpoint != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityObjectReleaseContribution : IActivityObjectReleaseContribution
     {
@@ -168,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int priority,
             IActivityObjectReleaseEndpoint releaseEndpoint)
         {
-            ContributionId = Normalize(contributionId);
+            ContributionId = contributionId.TrimToEmpty();
             Priority = priority;
             ReleaseEndpoint = releaseEndpoint;
         }
@@ -179,10 +160,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IActivityObjectReleaseEndpoint ReleaseEndpoint { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributionId) && ReleaseEndpoint != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

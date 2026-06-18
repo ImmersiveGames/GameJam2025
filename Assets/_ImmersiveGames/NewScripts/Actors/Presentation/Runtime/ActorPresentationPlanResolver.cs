@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 {
@@ -42,9 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             string source,
             string reason)
         {
-            string origin = string.IsNullOrWhiteSpace(source)
-                ? nameof(ActorPresentationPlanResolver)
-                : source.Trim();
+            string origin = source.TrimToOrDefault(nameof(ActorPresentationPlanResolver));
 
             if (string.IsNullOrWhiteSpace(activityIdentity) ||
                 string.IsNullOrWhiteSpace(actorId) ||

@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityEntryStageBoundaryKind
@@ -25,8 +26,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Identity = identity;
             Definition = definition;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -38,12 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             Definition.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityEntryStageBoundary
     {

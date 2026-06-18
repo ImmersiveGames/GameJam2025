@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
@@ -31,15 +32,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             ActorKind = actorKind;
             ResetIntent = resetIntent;
             StateProfileKind = stateProfileKind;
-            PlacementId = Normalize(placementId);
+            PlacementId = placementId.TrimToEmpty();
             HasPlacement = hasPlacement;
             PlacementRequired = placementRequired;
             PlacementOptional = placementOptional;
             PlacementDeclared = placementDeclared;
             PlacementPosition = placementPosition;
             PlacementEulerAngles = placementEulerAngles;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -65,9 +66,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             ActorKind != global::_ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown &&
             ResetIntent != ActivityResetIntent.Unknown &&
             StateProfileKind != ActivityResetStateProfileKind.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IActorResetEndpoint
     {
@@ -106,16 +105,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
     {
         public ActorResetSkippedReferenceReason(string capabilityId, string reasonCode)
         {
-            CapabilityId = Normalize(capabilityId);
-            ReasonCode = Normalize(reasonCode);
+            CapabilityId = capabilityId.TrimToEmpty();
+            ReasonCode = reasonCode.TrimToEmpty();
         }
 
         public string CapabilityId { get; }
         public string ReasonCode { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && !string.IsNullOrWhiteSpace(ReasonCode);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorResetResult
     {

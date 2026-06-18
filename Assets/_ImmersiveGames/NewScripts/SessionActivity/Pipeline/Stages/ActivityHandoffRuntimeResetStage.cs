@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -16,8 +17,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             InitialIdentity = initialIdentity;
             EntrySequence = entrySequence;
-            TriggerSource = Normalize(triggerSource);
-            TriggerReason = Normalize(triggerReason);
+            TriggerSource = triggerSource.TrimToEmpty();
+            TriggerReason = triggerReason.TrimToEmpty();
         }
 
         public SessionActivityIdentity InitialIdentity { get; }
@@ -26,12 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string TriggerReason { get; }
 
         public bool IsValid => InitialIdentity.IsValid && EntrySequence > 0;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal static class ActivityHandoffRuntimeResetStage
     {
@@ -79,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static void Log(string eventName, ActivityHandoffRuntimeResetStageCommand command, string color)
         {
-            string message = $"event='{Normalize(eventName)}' owner='{Owner}' activityId='{Normalize(command.InitialIdentity.ActivityId)}' entrySequence='{command.EntrySequence}' triggerSource='{Normalize(command.TriggerSource)}' triggerReason='{Normalize(command.TriggerReason)}' resetReason='{ResetReason}'.";
+            string message = $"event='{eventName.TrimToEmpty()}' owner='{Owner}' activityId='{command.InitialIdentity.ActivityId.TrimToEmpty()}' entrySequence='{command.EntrySequence}' triggerSource='{command.TriggerSource.TrimToEmpty()}' triggerReason='{command.TriggerReason.TrimToEmpty()}' resetReason='{ResetReason}'.";
 
             if (eventName.EndsWith("Completed", System.StringComparison.Ordinal))
             {
@@ -95,10 +91,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 message,
                 color);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

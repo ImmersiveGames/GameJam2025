@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private List<ActivityContentSceneEntry> contentScenes = new();
         [SerializeField] private ActivitySetupRequirementsAuthoring setupRequirements = new();
 
-        public string ContentProfileId => Normalize(contentProfileId);
+        public string ContentProfileId => contentProfileId.TrimToEmpty();
         public ActivitySceneDiscoveryMode DiscoveryMode => discoveryMode;
         public ActivityContentPreparationPolicy PreparationPolicy => preparationPolicy;
         public IReadOnlyList<ActivityContentSceneEntry> ContentScenes => contentScenes;
@@ -85,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         private void OnValidate()
         {
-            contentProfileId = Normalize(contentProfileId);
+            contentProfileId = contentProfileId.TrimToEmpty();
 
             if (setupRequirements == null)
             {
@@ -95,10 +96,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
             setupRequirements.PruneLegacyEmptyObjectEntryRequirements();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

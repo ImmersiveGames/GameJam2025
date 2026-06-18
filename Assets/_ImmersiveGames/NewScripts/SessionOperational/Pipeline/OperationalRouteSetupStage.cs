@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -38,23 +39,23 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             PlanResolution = planResolution;
-            ActiveSceneName = Normalize(activeSceneName);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            ActiveSceneName = activeSceneName.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             RuntimeModeConfig = runtimeModeConfig;
             HasPreviousCompletedRoute = hasPreviousCompletedRoute;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            PreviousRouteOperationId = Normalize(previousRouteOperationId);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            PreviousRouteOperationId = previousRouteOperationId.TrimToEmpty();
             PreviousRouteSequence = previousRouteSequence < 0 ? 0 : previousRouteSequence;
             PreviousRouteActiveSceneKey = previousRouteActiveSceneKey;
             PreviousSaveActivityOnExit = previousSaveActivityOnExit;
             PreviousRouteContributorScopePolicy = previousRouteContributorScopePolicy;
-            PreviousActivityIdentity = Normalize(previousActivityIdentity);
-            PreviousActivitySaveKey = Normalize(previousActivitySaveKey);
+            PreviousActivityIdentity = previousActivityIdentity.TrimToEmpty();
+            PreviousActivitySaveKey = previousActivitySaveKey.TrimToEmpty();
             PreviousRouteOwnedLoadedSceneKeys = previousRouteOwnedLoadedSceneKeys ?? Array.Empty<SceneKeyAsset>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRoutePlanResolution PlanResolution { get; }
@@ -86,9 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig != null &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct OperationalRouteSetupResult
     {
@@ -107,9 +106,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand = routeCommand;
             RouteActivitySavePlan = routeActivitySavePlan;
             LoadingCommand = loadingCommand;
-            ActiveSceneName = Normalize(activeSceneName);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            ActiveSceneName = activeSceneName.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalRouteSetupResultKind Kind { get; }
@@ -125,9 +124,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string TransitionId => RouteCommand.TransitionId;
         public int RouteSequence => RouteCommand.RouteSequence;
         public bool IsCompleted => Kind == OperationalRouteSetupResultKind.Completed;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     /// <summary>
     /// Resolve o setup puro da rota operacional: command, loading plan, audio plan e RouteActivitySave plan.
@@ -235,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(OperationalRouteSetupStage),
-                $"RouteActivitySavePlanReady routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' routeSequence='{routeCommand.RouteSequence}' loadActivitySaveOnEnter='{routeActivitySavePlan.CurrentPolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePlan.CurrentPolicy.SaveActivityOnExit}' contributorScopePolicy='{routeActivitySavePlan.CurrentPolicy.ContributorScopePolicy}' loadShouldRun='{routeActivitySavePlan.LoadOnEnter.ShouldLoad}' saveOnExitShouldRun='{routeActivitySavePlan.SaveOnExit.ShouldSave}' saveOnExitSkipKind='{routeActivitySavePlan.SaveOnExit.SkipKind}' saveOnExitSkipReason='{RouteActivitySaveSkipKindMapper.ToCode(routeActivitySavePlan.SaveOnExit.SkipKind)}' saveOnExitSkipDetail='{Normalize(routeActivitySavePlan.SaveOnExit.SkipDetail)}' source='{routeCommand.Source}' reason='{routeCommand.Reason}'.",
+                $"RouteActivitySavePlanReady routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' routeSequence='{routeCommand.RouteSequence}' loadActivitySaveOnEnter='{routeActivitySavePlan.CurrentPolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePlan.CurrentPolicy.SaveActivityOnExit}' contributorScopePolicy='{routeActivitySavePlan.CurrentPolicy.ContributorScopePolicy}' loadShouldRun='{routeActivitySavePlan.LoadOnEnter.ShouldLoad}' saveOnExitShouldRun='{routeActivitySavePlan.SaveOnExit.ShouldSave}' saveOnExitSkipKind='{routeActivitySavePlan.SaveOnExit.SkipKind}' saveOnExitSkipReason='{RouteActivitySaveSkipKindMapper.ToCode(routeActivitySavePlan.SaveOnExit.SkipKind)}' saveOnExitSkipDetail='{routeActivitySavePlan.SaveOnExit.SkipDetail.TrimToEmpty()}' source='{routeCommand.Source}' reason='{routeCommand.Reason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(OperationalRouteSetupStage),
@@ -370,7 +367,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneKey.SceneName.Trim();
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -168,13 +169,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
-                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}'");
+                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{actorId.TrimToEmpty()}' attributeId='{attributeId.TrimToEmpty()}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}'");
 
             if (applied && result.HasFact)
             {
                 ActorAttributeChangedFact fact = result.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
-                    $"operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+                    $"operation='{fact.Operation}' actorId='{actorId.TrimToEmpty()}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;
@@ -204,13 +205,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
-                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorAttributeMutationReceiverEndpoint'");
+                $"action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{actorId.TrimToEmpty()}' attributeId='{attributeId.TrimToEmpty()}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorAttributeMutationReceiverEndpoint'");
 
             if (applied && result.HasChangedFact)
             {
                 ActorAttributeChangedFact fact = result.ApplyResult.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
-                    $"event='ActorAttributeMutationQaApplied' operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+                    $"event='ActorAttributeMutationQaApplied' operation='{fact.Operation}' actorId='{actorId.TrimToEmpty()}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;
@@ -234,13 +235,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
-                $"action='{action}' outcomeKind='{outcome}' actorId='{Normalize(actorId)}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' targetAttributeId='{result.TargetAttributeId}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageableEndpoint'");
+                $"action='{action}' outcomeKind='{outcome}' actorId='{actorId.TrimToEmpty()}' rawDamageAmount='{rawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' targetAttributeId='{result.TargetAttributeId}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageableEndpoint'");
 
             if (applied && result.HasChangedFact)
             {
                 ActorAttributeChangedFact fact = result.MutationResult.ApplyResult.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
-                    $"event='ActorDamageQaApplied' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{result.RawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+                    $"event='ActorDamageQaApplied' actorId='{actorId.TrimToEmpty()}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{result.RawDamageAmount:0.###}' effectiveDamageAmount='{result.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{result.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;
@@ -266,14 +267,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
             DebugUtility.LogVerbose(typeof(SessionActivityHostQaCommandSurface),
-                $"action='{action}' outcomeKind='{outcome}' sourceActorId='{Normalize(sourceActorId)}' targetActorId='{Normalize(targetActorId)}' rawDamageAmount='{rawDamageAmount:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageSourceEndpoint'");
+                $"action='{action}' outcomeKind='{outcome}' sourceActorId='{sourceActorId.TrimToEmpty()}' targetActorId='{targetActorId.TrimToEmpty()}' rawDamageAmount='{rawDamageAmount:0.###}' reason='{result.Reason}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' receiver='ActorDamageSourceEndpoint'");
 
             if (applied && result.HasChangedFact)
             {
                 ActorDamageResult damageResult = result.DamageResult;
                 ActorAttributeChangedFact fact = damageResult.MutationResult.ApplyResult.Fact;
                 DebugUtility.Log(typeof(SessionActivityHostQaCommandSurface),
-                    $"event='ActorDamageSourceQaApplied' sourceActorId='{Normalize(sourceActorId)}' sourceActorInstanceRuntimeId='{result.SourceActorInstanceRuntimeId}' targetActorId='{Normalize(targetActorId)}' targetActorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{damageResult.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{damageResult.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
+                    $"event='ActorDamageSourceQaApplied' sourceActorId='{sourceActorId.TrimToEmpty()}' sourceActorInstanceRuntimeId='{result.SourceActorInstanceRuntimeId}' targetActorId='{targetActorId.TrimToEmpty()}' targetActorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' targetAttributeId='{fact.AttributeId}' rawDamageAmount='{damageResult.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' thresholdFactCount='{damageResult.MutationResult.ApplyResult.ThresholdFactCount}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;
@@ -317,10 +318,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             return $"SessionActivityHost/QA/{action}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

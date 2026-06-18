@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera
 {
@@ -32,10 +33,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera
             ActorScope = actorScope;
             PlayerActorId = playerActorId;
             PlayerSlotId = playerSlotId;
-            ComponentPath = Normalize(componentPath);
+            ComponentPath = componentPath.TrimToEmpty();
             Endpoint = endpoint;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -70,10 +71,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera
                    ActorInstanceRuntimeId == handle.ActorInstanceRuntimeId &&
                    ActorId == handle.ActorId;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

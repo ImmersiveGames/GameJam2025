@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     public enum InputModeRequestKind
@@ -31,14 +32,14 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string initialInputMode)
         {
             Kind = kind;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
-            ContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
-            RouteIdentity = string.IsNullOrWhiteSpace(routeIdentity) ? string.Empty : routeIdentity.Trim();
-            RouteOperationId = string.IsNullOrWhiteSpace(routeOperationId) ? string.Empty : routeOperationId.Trim();
-            TransitionId = string.IsNullOrWhiteSpace(transitionId) ? string.Empty : transitionId.Trim();
+            Reason = reason.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            ContextSignature = contextSignature.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            InitialInputMode = string.IsNullOrWhiteSpace(initialInputMode) ? string.Empty : initialInputMode.Trim();
+            InitialInputMode = initialInputMode.TrimToEmpty();
         }
     }
 }

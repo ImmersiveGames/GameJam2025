@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -28,10 +29,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string detail)
         {
             Kind = kind;
-            ConsumerIdentity = Normalize(consumerIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            ConsumerIdentity = consumerIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalConsumerEntryAndReadinessResultKind Kind { get; }
@@ -71,12 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason,
                 detail);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalConsumerEntryAndReadinessCommand
     {
@@ -94,12 +90,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand = routeCommand;
             LoadingCommand = loadingCommand;
             LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -122,12 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class OperationalConsumerEntryAndReadinessStage
     {
@@ -219,8 +210,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalConsumerEntryAndReadinessCommand command,
             string expectedRouteOperationId)
         {
-            string normalizedConsumerIdentity = Normalize(command.RouteCommand.HandoffSessionStateId);
-            string normalizedExpectedRouteOperationId = Normalize(expectedRouteOperationId);
+            string normalizedConsumerIdentity = command.RouteCommand.HandoffSessionStateId.TrimToEmpty();
+            string normalizedExpectedRouteOperationId = expectedRouteOperationId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedConsumerIdentity))
             {
                 throw new InvalidOperationException(
@@ -287,7 +278,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var entryPort = _entryPortResolver();
             if (entryPort == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerEntry] IOperationalRouteConsumerEntryPort obrigatorio ausente para o trilho operacional routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerEntry] IOperationalRouteConsumerEntryPort obrigatorio ausente para o trilho operacional routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{command.RouteCommand.HandoffSessionStateId.TrimToEmpty()}'.");
             }
 
             return entryPort;
@@ -298,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             var readinessPort = _readinessPortResolver();
             if (readinessPort == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{command.RouteCommand.HandoffSessionStateId.TrimToEmpty()}'.");
             }
 
             return readinessPort;
@@ -314,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ? command.LoadedSnapshotPayloadContext.Payload.RecordCount
                 : 0;
             string loadedSnapshotPayloadSourceActivityId = command.HasLoadedSnapshotPayloadContext
-                ? Normalize(command.LoadedSnapshotPayloadContext.Payload.ActivityId)
+                ? command.LoadedSnapshotPayloadContext.Payload.ActivityId.TrimToEmpty()
                 : "<none>";
             int loadedSnapshotPayloadSourceEntrySequence = command.HasLoadedSnapshotPayloadContext
                 ? command.LoadedSnapshotPayloadContext.Payload.SourceEntrySequence
@@ -359,14 +350,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return "<none>";
             }
 
-            return string.IsNullOrWhiteSpace(plan.RouteParticipantSetDefinition.name)
-                ? "<unnamed>"
-                : plan.RouteParticipantSetDefinition.name.Trim();
+            return plan.RouteParticipantSetDefinition.name.TrimToOrDefault("<unnamed>");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

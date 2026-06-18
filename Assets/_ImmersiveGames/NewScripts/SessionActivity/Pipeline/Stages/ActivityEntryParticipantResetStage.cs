@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
@@ -177,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         actorMaterializationPlanEntries,
                         "reset");
 
-                string placementId = Normalize(materializationPlanEntry.PlacementId);
+                string placementId = materializationPlanEntry.PlacementId.TrimToEmpty();
                 ResolvePlacementPlanForEntry(
                     command.ActivityId,
                     identity,
@@ -315,7 +316,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                string providerType = Normalize(reference.ProviderType);
+                string providerType = reference.ProviderType.TrimToEmpty();
                 if (!string.IsNullOrWhiteSpace(providerType))
                 {
                     providerTypes.Add(providerType);
@@ -349,8 +350,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
             }
 
-            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
-            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
+            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? participant.ActorDefinitionId.Value.TrimToEmpty() : string.Empty;
+            string playerSlotId = participant.PlayerSlotId.IsValid ? participant.PlayerSlotId.Value.TrimToEmpty() : string.Empty;
             throw new InvalidOperationException(
                 $"missing_activity_participant_materialization_plan: activityId='{activityId}' participantId='{participant.ParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}' resolutionKey='SessionParticipantId'.");
         }
@@ -475,10 +476,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"required_reset_reference_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' capabilityId='{reason.CapabilityId}' reason='{reason.ReasonCode}'.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

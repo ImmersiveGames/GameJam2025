@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Audio
@@ -26,8 +27,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Audio
             string source,
             string reason)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             if (cue == null)
             {
@@ -61,10 +62,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Audio
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

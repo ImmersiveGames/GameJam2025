@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
 {
@@ -8,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
     {
         public ActorCapabilityId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -21,9 +22,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
 
         public static bool operator ==(ActorCapabilityId left, ActorCapabilityId right) => left.Equals(right);
         public static bool operator !=(ActorCapabilityId left, ActorCapabilityId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorCapabilityContributionPhase
     {
@@ -82,9 +81,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorKind = actorKind;
             ActorRole = actorRole;
             ActorScope = actorScope;
-            ComponentPath = Normalize(componentPath);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            ComponentPath = componentPath.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -106,9 +105,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorScope != ActorScope.Unknown &&
             !string.IsNullOrWhiteSpace(ComponentPath) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorCapabilityContributionDescriptor
     {
@@ -133,9 +130,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorKind = actorKind;
             ActorRole = actorRole;
             ActorScope = actorScope;
-            ComponentPath = Normalize(componentPath);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            ComponentPath = componentPath.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorCapabilityId CapabilityId { get; }
@@ -161,9 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorScope != ActorScope.Unknown &&
             !string.IsNullOrWhiteSpace(ComponentPath) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorCapabilitySnapshotPayload
     {
@@ -189,12 +184,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             ActorRole = actorRole;
             ActorScope = actorScope;
             CapabilityId = capabilityId;
-            SchemaId = Normalize(schemaId);
+            SchemaId = schemaId.TrimToEmpty();
             SchemaVersion = schemaVersion;
             PayloadFormat = payloadFormat;
             Payload = payload ?? string.Empty;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -223,9 +218,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             SchemaVersion > 0 &&
             PayloadFormat != ActorCapabilitySnapshotPayloadFormat.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorCapabilitySnapshotCaptureResult
     {
@@ -238,9 +231,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         {
             Captured = captured;
             Payload = payload;
-            OutcomeReason = Normalize(outcomeReason);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            OutcomeReason = outcomeReason.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Captured { get; }
@@ -250,9 +243,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         public string Reason { get; }
 
         public bool IsValid => Captured ? Payload.IsValid : !string.IsNullOrWhiteSpace(OutcomeReason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorCapabilityRestoreResult
     {
@@ -265,9 +256,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         {
             Restored = restored;
             Compatibility = compatibility;
-            OutcomeReason = Normalize(outcomeReason);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            OutcomeReason = outcomeReason.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Restored { get; }
@@ -280,9 +271,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             Compatibility != ActorCapabilityRestoreCompatibility.Unknown &&
             !string.IsNullOrWhiteSpace(OutcomeReason) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorCapabilityReleaseResult
     {
@@ -293,9 +282,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
             string reason)
         {
             Released = released;
-            OutcomeReason = Normalize(outcomeReason);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            OutcomeReason = outcomeReason.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Released { get; }
@@ -304,9 +293,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
         public string Reason { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(OutcomeReason) && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IActorCapabilityContribution
     {

@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             PreviousNormalizedValue = previousNormalizedValue;
             CurrentNormalizedValue = currentNormalizedValue;
             Crossed = crossed;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorAttributeThresholdId ThresholdId { get; }
@@ -121,10 +122,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
             return value > 1f ? 1f : value;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

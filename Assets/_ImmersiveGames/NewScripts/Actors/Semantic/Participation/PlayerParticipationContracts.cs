@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
     public enum PlayerParticipationOutcome
@@ -55,9 +56,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             ActorId.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum PlayerParticipationSeedEntryStatus
     {
@@ -110,9 +109,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             ActorId.IsValid &&
             ActorScope != ActorScope.Unknown &&
             Status != PlayerParticipationSeedEntryStatus.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum PlayerMaterializationStatus
     {
@@ -148,8 +145,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             HasPlacementPlan = hasPlacementPlan;
             ParticipationStatus = participationStatus;
             MaterializationStatus = materializationStatus;
-            RuntimeName = Normalize(runtimeName);
-            RuntimeSceneName = Normalize(runtimeSceneName);
+            RuntimeName = runtimeName.TrimToEmpty();
+            RuntimeSceneName = runtimeSceneName.TrimToEmpty();
         }
 
         public PlayerSlotId PlayerSlotId { get; }
@@ -173,9 +170,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             (ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized ||
              ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized ||
              ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum PlayerReadinessStatus
     {
@@ -242,9 +237,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped &&
                 MaterializationStatus == PlayerMaterializationStatus.Skipped &&
                 ReadinessStatus == PlayerReadinessStatus.OptionalSkipped);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerMaterializationRecord
     {
@@ -260,8 +253,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             Required = required;
             HasPrefabReference = hasPrefabReference;
             MaterializationStatus = materializationStatus;
-            RuntimeName = Normalize(runtimeName);
-            RuntimeSceneName = Normalize(runtimeSceneName);
+            RuntimeName = runtimeName.TrimToEmpty();
+            RuntimeSceneName = runtimeSceneName.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -271,9 +264,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public string RuntimeName { get; }
         public string RuntimeSceneName { get; }
         public bool IsValid => ActorId.IsValid && MaterializationStatus != PlayerMaterializationStatus.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
     public readonly struct PlayerSet
     {
         public PlayerSet(IReadOnlyList<PlayerSetEntry> entries)
@@ -337,12 +328,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             int routeSequence,
             string transitionId)
         {
-            PipelineId = Normalize(pipelineId);
-            SessionId = Normalize(sessionId);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionId = sessionId.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            TransitionId = Normalize(transitionId);
+            TransitionId = transitionId.TrimToEmpty();
         }
 
         public string PipelineId { get; }
@@ -359,12 +350,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(TransitionId);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct PlayerParticipationPlan
     {
@@ -378,8 +364,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             Identity = identity;
             ExpectsSessionActivityEntry = expectsSessionActivityEntry;
             PlayerSet = playerSet.IsValid ? playerSet : PlayerSet.Empty;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public PlayerParticipationSeedIdentity Identity { get; }
@@ -393,12 +379,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSet.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct PlayerParticipationSeedSnapshot
     {
@@ -419,7 +400,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             SeedEntries = seedEntries ?? Array.Empty<PlayerParticipationSeedEntry>();
             MaterializationEntries = materializationEntries ?? Array.Empty<PlayerMaterializationEntry>();
             ReadinessEntries = readinessEntries ?? Array.Empty<PlayerReadinessEntry>();
-            Message = Normalize(message);
+            Message = message.TrimToEmpty();
         }
 
         public PlayerParticipationSeedIdentity Identity { get; }
@@ -519,13 +500,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
             return count;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static bool AreMaterializationEntriesValid(IReadOnlyList<PlayerMaterializationEntry> entries)
+private static bool AreMaterializationEntriesValid(IReadOnlyList<PlayerMaterializationEntry> entries)
         {
             if (entries == null)
             {

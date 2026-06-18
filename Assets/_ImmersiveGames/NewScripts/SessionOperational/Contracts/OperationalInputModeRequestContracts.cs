@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
     public enum OperationalInputModeRequestResultKind
@@ -18,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Identity = identity;
             InitialInputMode = initialInputMode;
             InputPolicy = inputPolicy;
-            RouteClass = Normalize(routeClass);
+            RouteClass = routeClass.TrimToEmpty();
         }
 
         public SessionOperationalIdentity Identity { get; }
@@ -35,9 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             InputPolicy != SessionOperationalInputPolicy.Unknown &&
             !string.IsNullOrWhiteSpace(RouteClass) &&
             !string.IsNullOrWhiteSpace(ContextSignature);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct OperationalInputModeRequestResult
     {
@@ -47,8 +46,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string detail)
         {
             Kind = kind;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalInputModeRequestResultKind Kind { get; }
@@ -61,9 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         public static OperationalInputModeRequestResult Failed(string reason, string detail) =>
             new(OperationalInputModeRequestResultKind.Failed, reason, detail);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IOperationalInputModeRequestPort
     {

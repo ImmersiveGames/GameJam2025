@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -69,10 +70,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             OutcomeKind = outcomeKind;
             FailureKind = failureKind;
             SkipKind = skipKind;
-            SkipReason = string.IsNullOrWhiteSpace(skipReason) ? string.Empty : skipReason.Trim();
+            SkipReason = skipReason.TrimToEmpty();
             HasSnapshot = hasSnapshot;
-            Detail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
-            ActivitySnapshotPayload = string.IsNullOrWhiteSpace(activitySnapshotPayload) ? string.Empty : activitySnapshotPayload.Trim();
+            Detail = detail.TrimToEmpty();
+            ActivitySnapshotPayload = activitySnapshotPayload.TrimToEmpty();
         }
 
         public RouteActivitySaveLoadOutcomeKind OutcomeKind { get; }
@@ -122,9 +123,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             OutcomeKind = outcomeKind;
             FailureKind = failureKind;
             SkipKind = skipKind;
-            SkipReason = string.IsNullOrWhiteSpace(skipReason) ? string.Empty : skipReason.Trim();
+            SkipReason = skipReason.TrimToEmpty();
             HasSnapshot = hasSnapshot;
-            Detail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
+            Detail = detail.TrimToEmpty();
         }
 
         public RouteActivitySaveSaveOutcomeKind OutcomeKind { get; }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
@@ -21,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
         private readonly Dictionary<string, PoolableSpawnOriginAnchor> _poolableSpawnOriginAnchorsById = new(StringComparer.Ordinal);
 
-        public string EndpointId => Normalize(endpointId);
+        public string EndpointId => endpointId.TrimToEmpty();
         public ActorPresentationProfileAsset Profile => profile;
         public IReadOnlyList<ActorPresentationContainer> Containers => (IReadOnlyList<ActorPresentationContainer>)containers ?? Array.Empty<ActorPresentationContainer>();
         public bool HasPoolableSpawnOriginSurface => _poolableSpawnOriginAnchorsById.Count > 0;
@@ -42,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 return false;
             }
 
-            string normalizedSlotId = Normalize(slotId);
+            string normalizedSlotId = slotId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedSlotId) || containers == null)
             {
                 return false;
@@ -272,7 +273,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
         private void OnValidate()
         {
-            endpointId = Normalize(endpointId);
+            endpointId = endpointId.TrimToEmpty();
             containers ??= new List<ActorPresentationContainer>();
         }
 
@@ -324,7 +325,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             DebugUtility.Log(
                 typeof(ActorPresentationEndpoint),
-                $"event='PoolableSpawnOriginFallbackApplied' surfaceOwner='{resolved.SurfaceOwner}' originId='{resolved.OriginId}' originKind='{resolved.OriginKind}' fallbackSource='{Normalize(fallbackSource)}' usedFallback='{resolved.UsedFallback}' source='{resolved.Source}' reason='{resolved.Reason}'.",
+                $"event='PoolableSpawnOriginFallbackApplied' surfaceOwner='{resolved.SurfaceOwner}' originId='{resolved.OriginId}' originKind='{resolved.OriginKind}' fallbackSource='{fallbackSource.TrimToEmpty()}' usedFallback='{resolved.UsedFallback}' source='{resolved.Source}' reason='{resolved.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -337,7 +338,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             DebugUtility.LogWarning(
                 typeof(ActorPresentationEndpoint),
-                $"event='PoolableSpawnOriginMissing' surfaceOwner='{nameof(ActorPresentationEndpoint)}' originId='{Normalize(originId.Value)}' resolutionMode='{resolutionMode}' usedFallback='{usedFallback}' source='{nameof(ActorPresentationEndpoint)}' reason='{Normalize(reason)}' message='{Normalize(message)}'.");
+                $"event='PoolableSpawnOriginMissing' surfaceOwner='{nameof(ActorPresentationEndpoint)}' originId='{originId.Value.TrimToEmpty()}' resolutionMode='{resolutionMode}' usedFallback='{usedFallback}' source='{nameof(ActorPresentationEndpoint)}' reason='{reason.TrimToEmpty()}' message='{message.TrimToEmpty()}'.");
         }
 
         private static string FormatVector(Vector3 value)
@@ -347,12 +348,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
         private static string BuildKey(ActorPresentationSlotKind slotKind, string slotId)
         {
-            return $"{slotKind}:{Normalize(slotId)}";
+            return $"{slotKind}:{slotId.TrimToEmpty()}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

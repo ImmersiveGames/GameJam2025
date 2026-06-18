@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             Operation = operation;
             HasApplyResult = hasApplyResult;
             ApplyResult = applyResult;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public static ActorAttributeMutationResult AppliedResult(
@@ -121,10 +122,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 default,
                 reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

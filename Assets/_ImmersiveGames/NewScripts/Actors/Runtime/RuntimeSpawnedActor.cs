@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
@@ -68,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(RuntimeSpawnedActor),
-                $"event='RuntimeSpawnedActorLayerOverrideApplied' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' layerMode='{layerBootstrap.Mode}' layerIndex='{layerBootstrap.LayerIndex}' layerName='{layerBootstrap.LayerName}' applyLayerToChildren='{layerBootstrap.ApplyLayerToChildren}' instanceName='{name}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='RuntimeSpawnedActorLayerOverrideApplied' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' layerMode='{layerBootstrap.Mode}' layerIndex='{layerBootstrap.LayerIndex}' layerName='{layerBootstrap.LayerName}' applyLayerToChildren='{layerBootstrap.ApplyLayerToChildren}' instanceName='{name}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
 
             return true;
@@ -119,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(RuntimeSpawnedActor),
-                $"event='RuntimeSpawnedActorMetadataBound' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' actorRole='{runtimeActorRole}' actorScope='{runtimeActorScope}' ownerActorId='{runtimeSpawnOrigin.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnOrigin.OwnerActorInstanceRuntimeId}' spawnProfileId='{runtimeSpawnOrigin.SpawnProfileId}' originPoolDefinition='{runtimeSpawnOrigin.PoolDefinitionName}' commandSequence='{runtimeSpawnOrigin.CommandSequence}' instanceName='{name}' activeSelf='{gameObject.activeSelf}' activeInHierarchy='{gameObject.activeInHierarchy}' source='{Normalize(source)}' reason='runtime_spawned_actor_metadata_bound'.",
+                $"event='RuntimeSpawnedActorMetadataBound' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' actorRole='{runtimeActorRole}' actorScope='{runtimeActorScope}' ownerActorId='{runtimeSpawnOrigin.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnOrigin.OwnerActorInstanceRuntimeId}' spawnProfileId='{runtimeSpawnOrigin.SpawnProfileId}' originPoolDefinition='{runtimeSpawnOrigin.PoolDefinitionName}' commandSequence='{runtimeSpawnOrigin.CommandSequence}' instanceName='{name}' activeSelf='{gameObject.activeSelf}' activeInHierarchy='{gameObject.activeInHierarchy}' source='{source.TrimToEmpty()}' reason='runtime_spawned_actor_metadata_bound'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -162,11 +163,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             base.OnValidate();
         }
 
-        private new static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
         private void ClearRuntimeMetadata()
         {
             runtimeActorId = default;
@@ -198,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(RuntimeSpawnedActor),
-                $"event='RuntimeSpawnedActorLayerBaselineCaptured' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' baselineCount='{runtimeLayerBaselineTransforms.Length}' instanceName='{name}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='RuntimeSpawnedActorLayerBaselineCaptured' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' baselineCount='{runtimeLayerBaselineTransforms.Length}' instanceName='{name}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -226,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(RuntimeSpawnedActor),
-                    $"event='RuntimeSpawnedActorLayerBaselineRestored' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' baselineCount='{restoreCount}' instanceName='{name}' source='{nameof(RuntimeSpawnedActor)}' reason='{Normalize(reason)}'.",
+                    $"event='RuntimeSpawnedActorLayerBaselineRestored' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' baselineCount='{restoreCount}' instanceName='{name}' source='{nameof(RuntimeSpawnedActor)}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -288,7 +284,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 {
                     DebugUtility.LogError(
                         typeof(RuntimeSpawnedActor),
-                        $"event='RuntimeSpawnedActorPoolLifecycleCallbackFailed' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' instanceName='{name}' lifecycleReason='{Normalize(reason)}' message='{Normalize(exception.Message)}'.");
+                        $"event='RuntimeSpawnedActorPoolLifecycleCallbackFailed' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' instanceName='{name}' lifecycleReason='{reason.TrimToEmpty()}' message='{exception.Message.TrimToEmpty()}'.");
                 }
             }
         }

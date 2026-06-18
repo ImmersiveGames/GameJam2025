@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Identity = identity;
             UnregisteredCount = unregisteredCount < 0 ? 0 : unregisteredCount;
             SkippedNoContributors = skippedNoContributors;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Completed { get; }

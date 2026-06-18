@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Authoring
@@ -21,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Authoring
         [SerializeField] private string primarySlotId = "visual.root";
         [SerializeField] private List<ActorPresentationSlotRequirement> slotRequirements = new();
 
-        public string ProfileId => Normalize(profileId);
+        public string ProfileId => profileId.TrimToEmpty();
         public ActorPresentationRequiredness Requiredness => requiredness;
         public ActorPresentationReleasePolicy ReleasePolicy => releasePolicy;
         public ActorPresentationResetPolicy ResetPolicy => resetPolicy;
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Authoring
         public int VariationSeed => variationSeed;
         public GameObject VisualPrefab => visualPrefab;
         public ActorPresentationSlotKind PrimarySlotKind => primarySlotKind;
-        public string PrimarySlotId => Normalize(primarySlotId);
+        public string PrimarySlotId => primarySlotId.TrimToEmpty();
         public IReadOnlyList<ActorPresentationSlotRequirement> SlotRequirements => (IReadOnlyList<ActorPresentationSlotRequirement>)slotRequirements ?? Array.Empty<ActorPresentationSlotRequirement>();
         public bool IsRequired => requiredness == ActorPresentationRequiredness.Required;
         public bool IsOptional => requiredness == ActorPresentationRequiredness.Optional;
@@ -125,11 +126,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Authoring
 
         private void OnValidate()
         {
-            profileId = Normalize(profileId);
-            primarySlotId = Normalize(primarySlotId);
+            profileId = profileId.TrimToEmpty();
+            primarySlotId = primarySlotId.TrimToEmpty();
             slotRequirements ??= new List<ActorPresentationSlotRequirement>();
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

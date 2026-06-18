@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal readonly struct ActivityEntryActorAttributeUiBindingResult
@@ -15,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             BoundCount = boundCount;
             ActiveHandleCount = activeHandleCount;
             Skipped = skipped;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public int TotalRequests { get; }
@@ -26,10 +27,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string Reason { get; }
 
         public bool HasBindings => !Skipped && BoundCount > 0;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

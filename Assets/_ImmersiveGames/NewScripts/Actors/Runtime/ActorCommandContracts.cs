@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
@@ -37,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     {
         public ActorCommandBindingId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -48,19 +49,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             return Value;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public readonly struct ActorCommandSourceIdentity
     {
         public ActorCommandSourceIdentity(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -71,12 +67,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             return Value;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public sealed class ActorCommandInputBinding
@@ -108,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         [SerializeField, HideInInspector, FormerlySerializedAs("ActionName")]
         private string legacyActionName = string.Empty;
 
-        public string BindingId => Normalize(bindingId);
+        public string BindingId => bindingId.TrimToEmpty();
         public bool Enabled => enabled;
         public bool Required => required;
         public ActorCommandKind CommandKind => commandKind;
@@ -135,8 +126,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             !string.IsNullOrWhiteSpace(legacyActionMapName) &&
             !string.IsNullOrWhiteSpace(legacyActionName);
 
-        public string LegacyActionMapName => Normalize(legacyActionMapName);
-        public string LegacyActionName => Normalize(legacyActionName);
+        public string LegacyActionMapName => legacyActionMapName.TrimToEmpty();
+        public string LegacyActionName => legacyActionName.TrimToEmpty();
 
         public bool IsCommandValueShapeValid => IsCommandValueCompatible(ResolveCommandId(), ValueKind, TriggerKind);
 
@@ -185,13 +176,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 _ => default
             };
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        internal static bool IsCommandValueCompatible(
+internal static bool IsCommandValueCompatible(
             ActorCommandId commandId,
             ActorCommandValueKind valueKind,
             ActorCommandTriggerKind triggerKind)
@@ -311,8 +296,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             SourceIdentity = sourceIdentity;
             Sequence = sequence < 0 ? 0 : sequence;
             Value = value;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -334,12 +319,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             Value.IsValid &&
             ActorCommandInputBinding.IsCommandValueCompatible(CommandId, Value.ValueKind, Value.TriggerKind) &&
             Sequence >= 0;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum ActorCommandDispatchStatus
     {
@@ -356,7 +336,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             string reason)
         {
             Status = status;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorCommandDispatchStatus Status { get; }
@@ -379,12 +359,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             return new ActorCommandDispatchResult(ActorCommandDispatchStatus.RejectedInactive, reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActorCommandSink
     {

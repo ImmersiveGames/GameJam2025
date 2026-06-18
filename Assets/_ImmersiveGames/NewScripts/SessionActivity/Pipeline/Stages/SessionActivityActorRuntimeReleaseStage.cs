@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 Object.Destroy(handle.Instance);
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
-                    $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(handle.ActorIdentity.Identity.ActivityId)}' entrySequence='{handle.ActorIdentity.Identity.EntrySequence}' trigger='RouteScopedIndexReset' actorId='{handle.ActorId}' actorInstanceRuntimeId='{handle.ActorInstanceRuntimeId}' actorScope='RouteScoped' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{handle.ActorIdentity.Identity.ActivityId.TrimToEmpty()}' entrySequence='{handle.ActorIdentity.Identity.EntrySequence}' trigger='RouteScopedIndexReset' actorId='{handle.ActorId}' actorInstanceRuntimeId='{handle.ActorInstanceRuntimeId}' actorScope='RouteScoped' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Success);
             }
         }
@@ -107,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
-                    $"event='ActorLifetimeDecisionResolved' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorLifetimeDecisionResolved' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{identity.ActivityId.TrimToEmpty()}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Info);
                 if (emitFacts)
                 {
@@ -141,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 sessionActorRuntimeStore.Remove(entry.ActorInstanceRuntimeId);
                 DebugUtility.LogVerbose(typeof(SessionActivityActorRuntimeReleaseStage),
-                    $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorLifetimeReleased' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{identity.ActivityId.TrimToEmpty()}' entrySequence='{identity.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Success);
                 if (emitFacts)
                 {
@@ -176,10 +177,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             runtimeState.AppendFact(fact);
             runtimeState.AppendTrace($"fact='{fact.Kind}' stage='{fact.Identity.Stage}' entrySequence='{fact.Identity.EntrySequence}' activity='{fact.Identity.ActivityId}' executionState='{runtimeState.CurrentExecutionState}' message=\"{fact.Message}\"");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

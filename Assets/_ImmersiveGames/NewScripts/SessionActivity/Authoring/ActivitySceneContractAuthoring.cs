@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -15,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private bool allowUndeclaredContributors;
         [SerializeField] private List<string> declaredContributorIds = new();
 
-        public string ActivitySceneId => Normalize(activitySceneId);
+        public string ActivitySceneId => activitySceneId.TrimToEmpty();
         public ActivitySceneDiscoveryMode DiscoveryMode => discoveryMode;
         public ActivitySceneRevealSafety RevealSafety => revealSafety;
         public bool AllowUndeclaredContributors => allowUndeclaredContributors;
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             List<ActivitySceneContractContributorEntry> contributors = new();
             for (int index = 0; index < declaredContributorIds.Count; index++)
             {
-                string contributorId = Normalize(declaredContributorIds[index]);
+                string contributorId = declaredContributorIds[index].TrimToEmpty();
                 if (string.IsNullOrWhiteSpace(contributorId))
                 {
                     continue;
@@ -65,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             HashSet<string> dedupe = new(StringComparer.Ordinal);
             for (int index = 0; index < declaredContributorIds.Count; index++)
             {
-                string contributorId = Normalize(declaredContributorIds[index]);
+                string contributorId = declaredContributorIds[index].TrimToEmpty();
                 if (string.IsNullOrWhiteSpace(contributorId))
                 {
                     throw new InvalidOperationException($"ActivitySceneContractAuthoring '{name}' has empty declaredContributorIds[{index}].");
@@ -77,10 +78,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 }
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

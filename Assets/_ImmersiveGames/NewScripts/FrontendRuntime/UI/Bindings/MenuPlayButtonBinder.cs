@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.RunPipeline.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 
         protected override bool OnClickCore(string actionReason)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(actionReason) ? "Menu/PlayButton" : actionReason.Trim();
+            string normalizedReason = actionReason.TrimToOrDefault("Menu/PlayButton");
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
                 $"MenuPlay -> RunActivationRequestedEvent reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);

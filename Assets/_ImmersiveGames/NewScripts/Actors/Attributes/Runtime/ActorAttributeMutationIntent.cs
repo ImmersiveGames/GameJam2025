@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
@@ -43,8 +44,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             Operation = operation;
             Amount = amount;
             SetValue = setValue;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorAttributeCommand ToCommand()
@@ -207,10 +208,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

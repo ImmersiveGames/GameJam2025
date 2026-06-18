@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
@@ -11,11 +12,11 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         [SerializeField] private string initializedBySource;
         [SerializeField] private string initializedByReason;
 
-        public PlayerSlotId PlayerSlotId => new(Normalize(playerSlotId));
+        public PlayerSlotId PlayerSlotId => new(playerSlotId.TrimToEmpty());
         public bool IsValid => PlayerSlotId.IsValid;
         public bool IsInitialized => initialized;
-        public string InitializedBySource => Normalize(initializedBySource);
-        public string InitializedByReason => Normalize(initializedByReason);
+        public string InitializedBySource => initializedBySource.TrimToEmpty();
+        public string InitializedByReason => initializedByReason.TrimToEmpty();
 
         public void Initialize(PlayerSlotId slotId, string source, string reason)
         {
@@ -39,13 +40,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
             playerSlotId = slotId.Value;
             initialized = true;
-            initializedBySource = Normalize(source);
-            initializedByReason = Normalize(reason);
+            initializedBySource = source.TrimToEmpty();
+            initializedByReason = reason.TrimToEmpty();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -22,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Required = required;
             Prefab = prefab;
             PlacementMode = placementMode;
-            PlacementId = Normalize(placementId);
+            PlacementId = placementId.TrimToEmpty();
             LocalPosition = localPosition;
             LocalEulerAngles = localEulerAngles;
         }
@@ -67,9 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 return hashCode;
             }
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SessionActivityRouteTransitionContext : IEquatable<SessionActivityRouteTransitionContext>
     {
@@ -134,16 +133,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason)
         {
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            SessionStateId = Normalize(sessionStateId);
+            SessionStateId = sessionStateId.TrimToEmpty();
             SessionParticipationContext = sessionParticipationContext;
             ActorMaterializationPlanEntries = actorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             RouteTransitionContext = routeTransitionContext;
             LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string ActivityId { get; }
@@ -256,12 +255,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
             return count;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }
 
 

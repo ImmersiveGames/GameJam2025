@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 {
@@ -26,8 +27,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             _sink = sink;
             _subscription = subscription;
             _sinkType = sinkType ?? string.Empty;
-            _source = Normalize(source);
-            _reason = Normalize(reason);
+            _source = source.TrimToEmpty();
+            _reason = reason.TrimToEmpty();
         }
 
         public bool IsDisposed => _disposed;
@@ -95,10 +96,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 $"event='ActorAttributeUiBindingDisposed' actorId='{_target.ActorId}' actorInstanceRuntimeId='{_target.ActorInstanceRuntimeId}' attributeId='{_target.AttributeId}' sinkType='{_sinkType}' source='{_source}' reason='{_reason}'",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

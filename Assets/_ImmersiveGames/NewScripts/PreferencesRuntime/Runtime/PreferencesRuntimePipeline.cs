@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
@@ -33,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestBootstrapLoadAudio(string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesAudioLoadRequested reason='{Normalize(reason)}'.",
+                $"PreferencesAudioLoadRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
 
             bool loaded = _saveAdapter.TryLoadAudio(
@@ -45,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             if (!loaded || loadedSnapshot == null)
             {
                 DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                    $"[Preferences] bootstrap kept installer seed for audio. reason='{Normalize(loadReason)}'.",
+                    $"[Preferences] bootstrap kept installer seed for audio. reason='{loadReason.TrimToOrDefault("Preferences/Unknown")}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestBootstrapLoadVideo(string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesVideoLoadRequested reason='{Normalize(reason)}'.",
+                $"PreferencesVideoLoadRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
 
             bool loaded = _saveAdapter.TryLoadVideo(
@@ -70,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             if (!loaded || loadedSnapshot == null)
             {
                 DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                    $"[Preferences] bootstrap kept installer seed for video. reason='{Normalize(loadReason)}'.",
+                    $"[Preferences] bootstrap kept installer seed for video. reason='{loadReason.TrimToOrDefault("Preferences/Unknown")}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
@@ -83,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestAudioPreview(float masterVolume, float bgmVolume, float sfxVolume, string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesAudioPreviewRequested reason='{Normalize(reason)}' master={masterVolume:0.###} bgm={bgmVolume:0.###} sfx={sfxVolume:0.###}.",
+                $"PreferencesAudioPreviewRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}' master={masterVolume:0.###} bgm={bgmVolume:0.###} sfx={sfxVolume:0.###}.",
                 DebugUtility.Colors.Info);
 
             return _stateService.TryPreviewAudioVolumes(masterVolume, bgmVolume, sfxVolume, reason, out bool _);
@@ -92,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestAudioCommit(string fieldHint, string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesAudioCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
+                $"PreferencesAudioCommitRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}' fieldHint='{fieldHint.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasSnapshot)
@@ -109,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             if (!_saveAdapter.TrySaveAudio(current, out string saveReason))
             {
                 DebugUtility.LogWarning(typeof(PreferencesRuntimePipeline),
-                    $"[Preferences] audio commit failed. reason='{Normalize(reason)}' saveReason='{Normalize(saveReason)}' snapshot={current}.");
+                    $"[Preferences] audio commit failed. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' saveReason='{saveReason.TrimToOrDefault("Preferences/Unknown")}' snapshot={current}.");
                 return false;
             }
 
@@ -120,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestAudioRestoreDefaults(string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesAudioRestoreDefaultsRequested reason='{Normalize(reason)}'.",
+                $"PreferencesAudioRestoreDefaultsRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasSnapshot)
@@ -152,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             if (!_saveAdapter.TrySaveAudio(restored, out string saveReason))
             {
                 DebugUtility.LogWarning(typeof(PreferencesRuntimePipeline),
-                    $"[Preferences] audio restore defaults save failed. reason='{Normalize(reason)}' saveReason='{Normalize(saveReason)}' snapshot={restored}.");
+                    $"[Preferences] audio restore defaults save failed. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' saveReason='{saveReason.TrimToOrDefault("Preferences/Unknown")}' snapshot={restored}.");
                 return false;
             }
 
@@ -163,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestVideoPreview(int width, int height, bool fullscreen, string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesVideoPreviewRequested reason='{Normalize(reason)}' resolution={width}x{height} fullscreen={fullscreen}.",
+                $"PreferencesVideoPreviewRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}' resolution={width}x{height} fullscreen={fullscreen}.",
                 DebugUtility.Colors.Info);
 
             return _stateService.TryPreviewVideoResolution(width, height, fullscreen, reason, out bool _);
@@ -172,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestVideoCommit(string fieldHint, string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesVideoCommitRequested reason='{Normalize(reason)}' fieldHint='{Normalize(fieldHint)}'.",
+                $"PreferencesVideoCommitRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}' fieldHint='{fieldHint.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasVideoSnapshot)
@@ -189,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             if (!_saveAdapter.TrySaveVideo(current, out string saveReason))
             {
                 DebugUtility.LogWarning(typeof(PreferencesRuntimePipeline),
-                    $"[Preferences] video commit failed. reason='{Normalize(reason)}' saveReason='{Normalize(saveReason)}' snapshot={current}.");
+                    $"[Preferences] video commit failed. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' saveReason='{saveReason.TrimToOrDefault("Preferences/Unknown")}' snapshot={current}.");
                 return false;
             }
 
@@ -200,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         public bool RequestVideoRestoreDefaults(string reason)
         {
             DebugUtility.LogVerbose(typeof(PreferencesRuntimePipeline),
-                $"PreferencesVideoRestoreDefaultsRequested reason='{Normalize(reason)}'.",
+                $"PreferencesVideoRestoreDefaultsRequested reason='{reason.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
 
             if (!_stateService.HasVideoSnapshot)
@@ -227,17 +228,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             if (!_saveAdapter.TrySaveVideo(restored, out string saveReason))
             {
                 DebugUtility.LogWarning(typeof(PreferencesRuntimePipeline),
-                    $"[Preferences] video restore defaults save failed. reason='{Normalize(reason)}' saveReason='{Normalize(saveReason)}' snapshot={restored}.");
+                    $"[Preferences] video restore defaults save failed. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' saveReason='{saveReason.TrimToOrDefault("Preferences/Unknown")}' snapshot={restored}.");
                 return false;
             }
 
             _lastCommittedVideoSnapshot = restored;
             return true;
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? "Preferences/Unknown" : value.Trim();
         }
 
         private static bool HasSameAudioValues(AudioPreferencesSnapshot left, AudioPreferencesSnapshot right)

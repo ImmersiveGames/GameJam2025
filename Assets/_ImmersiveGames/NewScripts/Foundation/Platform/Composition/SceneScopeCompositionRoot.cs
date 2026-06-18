@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -100,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             public SceneWorldRootContext(string sceneName, Transform worldRoot)
             {
-                SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+                SceneName = sceneName.TrimToEmpty();
                 WorldRoot = worldRoot;
             }
 

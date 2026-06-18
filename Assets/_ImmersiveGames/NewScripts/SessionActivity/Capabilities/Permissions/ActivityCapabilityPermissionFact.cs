@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -13,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             Command = command;
             OutcomeKind = outcomeKind;
-            OutcomeCode = Normalize(outcomeCode);
-            Message = Normalize(message);
+            OutcomeCode = outcomeCode.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityCapabilityPermissionCommand Command { get; }
@@ -23,10 +24,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public string Outcome => OutcomeCode;
         public string Message { get; }
         public bool IsValid => Command.IsValid && OutcomeKind != PermissionOutcomeKind.Unknown && !string.IsNullOrWhiteSpace(OutcomeCode);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -23,10 +24,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             RouteCommand = routeCommand;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            PreviousActivityIdentity = Normalize(previousActivityIdentity);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            PreviousActivityIdentity = previousActivityIdentity.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -39,12 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalActivityCameraReleasePreviousResult
     {
@@ -57,11 +53,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string detail)
         {
             Kind = kind;
-            CurrentRouteIdentity = Normalize(currentRouteIdentity);
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            PreviousActivityIdentity = Normalize(previousActivityIdentity);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            CurrentRouteIdentity = currentRouteIdentity.TrimToEmpty();
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            PreviousActivityIdentity = previousActivityIdentity.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalActivityCameraReleasePreviousResultKind Kind { get; }
@@ -74,12 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsSkipped => Kind == OperationalActivityCameraReleasePreviousResultKind.Skipped;
         public bool IsFailed => Kind == OperationalActivityCameraReleasePreviousResultKind.Failed;
         public bool IsAccepted => IsReleased || IsSkipped;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class OperationalActivityCameraReleasePreviousStage
     {
@@ -122,9 +113,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     : releaseReason;
 
                 DebugUtility.LogError(typeof(OperationalActivityCameraReleasePreviousStage),
-                    $"ActivityCameraPresentationReleasePreviousFailed currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                    $"ActivityCameraPresentationReleasePreviousFailed currentRouteIdentity='{routeCommand.RouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' reason='{failureReason.TrimToEmpty()}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
-                return Failed(command, Normalize(failureReason), "activity_camera_release_previous_failed");
+                return Failed(command, failureReason.TrimToEmpty(), "activity_camera_release_previous_failed");
             }
 
             if (releaseResult.IsSkipped)
@@ -177,10 +168,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 string.IsNullOrWhiteSpace(reason) ? "activity_camera_release_previous_failed" : reason,
                 string.IsNullOrWhiteSpace(detail) ? "activity_camera_release_previous_failed" : detail);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

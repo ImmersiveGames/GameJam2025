@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEditor;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
 {
@@ -11,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
     {
         public void Quit(string reason)
         {
-            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "FrontendUI/Quit" : reason.Trim();
+            string normalizedReason = reason.TrimToOrDefault("FrontendUI/Quit");
 
 #if UNITY_EDITOR
             DebugUtility.Log(typeof(FrontendQuitService),

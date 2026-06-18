@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -53,13 +54,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             DebugUtility.LogVerbose(
                 typeof(ActivityObjectExitCorrelationFreezeStage),
-                $"event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}'.",
+                $"event='ActivityObjectExitCorrelationFrozen' owner='{Owner}' technicalStateOwner='{TechnicalStateOwner}' activityId='{activityId}' entrySequence='{entrySequence}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}' discoveryOwner='{TechnicalStateOwner}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryOwner='{TechnicalStateOwner}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}'.",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

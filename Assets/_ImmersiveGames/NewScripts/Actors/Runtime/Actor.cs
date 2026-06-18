@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
@@ -49,11 +50,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         protected virtual void OnValidate()
         {
             EnsureCapabilitySurfaceResolved();
-        }
-
-        protected static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         protected static string ResolveOrigin(string source, string fallbackName, string objectName)

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -78,15 +79,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string reason)
         {
             Identity = identity;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            ActorId = Normalize(actorId);
+            ActorId = actorId.TrimToEmpty();
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorScope = actorScope;
             Trigger = trigger;
             Decision = decision;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -106,11 +107,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             !string.IsNullOrWhiteSpace(ActorId) &&
             ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
 }

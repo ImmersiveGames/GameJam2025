@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private List<ActivityAsset> activities = new();
         [SerializeField] private ActivityCatalogAdvanceAtEndMode advanceAtEndMode = ActivityCatalogAdvanceAtEndMode.StopAtEnd;
 
-        public string CatalogId => Normalize(catalogId);
+        public string CatalogId => catalogId.TrimToEmpty();
         public IReadOnlyList<ActivityAsset> Activities => activities;
         public ActivityCatalogAdvanceAtEndMode AdvanceAtEndMode => advanceAtEndMode;
 
@@ -96,10 +97,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 }
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

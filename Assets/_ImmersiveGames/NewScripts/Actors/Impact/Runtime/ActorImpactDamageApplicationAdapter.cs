@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 {
@@ -29,12 +30,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string reason,
             out ActorDamageSourceResult result)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactDamageApplicationAdapter),
-                $"event='ActorImpactDamageApplicationRequested' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' impactKind='{Normalize(impactResult.Intent.ImpactKind)}' source='{normalizedSource}' reason='{normalizedReason}'",
+                $"event='ActorImpactDamageApplicationRequested' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' impactKind='{impactResult.Intent.ImpactKind.TrimToEmpty()}' source='{normalizedSource}' reason='{normalizedReason}'",
                 DebugUtility.Colors.Info);
 
             if (!impactResult.Registered || !impactResult.HasIntent || !impactResult.HasResolvedTargetActor)
@@ -199,13 +200,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorImpactDamageApplicationAdapter),
-                $"event='ActorImpactDamageApplicationRejected' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' outcomeReason='{Normalize(rejectionReason)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactDamageApplicationRejected' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' outcomeReason='{rejectionReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Warning);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

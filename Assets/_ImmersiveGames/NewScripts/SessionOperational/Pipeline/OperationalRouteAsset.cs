@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
@@ -141,7 +142,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         // Perfil declarativo de apresentação de activity; não executa câmera por si só.
         [SerializeField] private ActivityPresentationProfileAsset activityPresentationProfile;
 
-        public string RouteIdentity => Normalize(routeIdentity);
+        public string RouteIdentity => routeIdentity.TrimToEmpty();
         public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile TransitionProfile => transitionProfile;
         public SessionOperationalRouteLoadingMode LoadingMode => loadingMode;
@@ -151,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SceneKeyAsset ActiveSceneKey => activeScene;
         public bool UnloadPreviousRouteOwnedScenes => unloadPreviousRouteOwnedScenes;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
-        public string HandoffSessionStateId => Normalize(handoffSessionStateId);
+        public string HandoffSessionStateId => handoffSessionStateId.TrimToEmpty();
         public OperationalSurfaceKind OperationalSurfaceKind => operationalSurfaceKind;
         public SessionOperationalInputPolicy InputPolicy => inputPolicy;
         public bool LoadActivitySaveOnEnter => loadActivitySaveOnEnter;
@@ -461,13 +462,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             errorMessage = string.Empty;
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName, out string sceneName, out string errorMessage)
+private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName, out string sceneName, out string errorMessage)
         {
             sceneName = string.Empty;
             errorMessage = string.Empty;
@@ -523,7 +518,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            string normalizedSceneName = Normalize(sceneName);
+            string normalizedSceneName = sceneName.TrimToEmpty();
             for (int i = 0; i < scenes.Count; i++)
             {
                 if (!TryResolveSceneName(scenes[i], $"scenes[{i}]", out string normalized, out _))
@@ -584,11 +579,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             Plan = plan;
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRoutePlan Plan { get; }
@@ -642,12 +637,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneKey.SceneName.Trim();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionOperationalRouteAudioCommand
     {
@@ -700,8 +690,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string message)
         {
             Command = command;
-            CorrelationId = Normalize(correlationId);
-            Message = Normalize(message);
+            CorrelationId = correlationId.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand Command { get; }
@@ -719,11 +709,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ? $"routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', correlationId='{CorrelationId}', message='{Message}'"
                 : "<none>";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
 }

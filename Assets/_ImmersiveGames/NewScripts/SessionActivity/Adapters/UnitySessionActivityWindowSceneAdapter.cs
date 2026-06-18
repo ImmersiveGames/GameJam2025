@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -88,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
                 throw new InvalidOperationException($"Activity '{activityId}' requires SceneKeyAsset for {windowKind} {operation}. source='{source}' reason='{reason}'.");
             }
 
-            string sceneName = string.IsNullOrWhiteSpace(sceneKey.SceneName) ? string.Empty : sceneKey.SceneName.Trim();
+            string sceneName = sceneKey.SceneName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 throw new InvalidOperationException($"Activity '{activityId}' requires non-empty SceneName in sceneKey='{sceneKey.name}' for {windowKind} {operation}. source='{source}' reason='{reason}'.");

@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
@@ -337,7 +338,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActivityRetainedParticipantLookup),
-                $"event='{eventName}' owner='ActivityRetainedParticipantLookup' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionId}' activityId='{command.Identity.ActivityId}' entrySequence='{command.Identity.EntrySequence}' previousEntrySequence='{(command.RetainedParticipationContext is { IsValid: true } ? command.RetainedParticipationContext.SessionActivityIdentity.EntrySequence : 0)}' participantId='{command.ParticipantBinding.ParticipantId}' actorId='{command.ParticipantBinding.ActorId}' actorScope='{command.ParticipantBinding.ActorScope}' outcomeKind='{outcomeKind}' sourceKind='{sourceKind}' retainedContextState='{(command.RetainedParticipationContext != null && command.RetainedParticipationContext.IsValid ? "present" : "absent")}' detail='{Normalize(detail)}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                $"event='{eventName}' owner='ActivityRetainedParticipantLookup' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionId}' activityId='{command.Identity.ActivityId}' entrySequence='{command.Identity.EntrySequence}' previousEntrySequence='{(command.RetainedParticipationContext is { IsValid: true } ? command.RetainedParticipationContext.SessionActivityIdentity.EntrySequence : 0)}' participantId='{command.ParticipantBinding.ParticipantId}' actorId='{command.ParticipantBinding.ActorId}' actorScope='{command.ParticipantBinding.ActorScope}' outcomeKind='{outcomeKind}' sourceKind='{sourceKind}' retainedContextState='{(command.RetainedParticipationContext != null && command.RetainedParticipationContext.IsValid ? "present" : "absent")}' detail='{detail.TrimToEmpty()}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}'.",
                 outcomeKind == ActivityRetainedParticipantLookupOutcomeKind.Resolved ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -348,10 +349,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                    (!string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) ||
                     !string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal));
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

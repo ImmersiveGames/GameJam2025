@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
@@ -37,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             SourceKind = sourceKind;
             ParticipantBinding = participantBinding;
             RetainedHandle = retainedHandle;
-            Detail = Normalize(detail);
+            Detail = detail.TrimToEmpty();
         }
 
         public ActivityRetainedParticipantLookupCommand Command { get; }
@@ -62,10 +63,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             OutcomeKind == ActivityRetainedParticipantLookupOutcomeKind.RejectedForeign;
 
         public bool ShouldMaterializeNew => OutcomeKind == ActivityRetainedParticipantLookupOutcomeKind.Missed;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string source,
             string reason)
         {
-            SessionStateId = Normalize(sessionStateId);
+            SessionStateId = sessionStateId.TrimToEmpty();
             SessionParticipationContext = sessionParticipationContext;
             ActorMaterializationSeedEntries = actorMaterializationSeedEntries ?? Array.Empty<PlayerSetDefinitionAsset.PlayerActorResolvedEntry>();
             LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
@@ -40,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             RouteFadeProfile = routeFadeProfile;
             HasRouteLoadingProfile = hasRouteLoadingProfile;
             RouteLoadingProfile = routeLoadingProfile;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string SessionStateId { get; }
@@ -60,9 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             HasSessionParticipationContext &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct OperationalRouteConsumerEntryResult
     {
@@ -72,8 +71,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string detail)
         {
             Kind = kind;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalRouteConsumerEntryResultKind Kind { get; }
@@ -83,9 +82,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public bool IsCompleted => Kind == OperationalRouteConsumerEntryResultKind.Completed;
         public bool IsRejected => Kind == OperationalRouteConsumerEntryResultKind.Rejected;
         public bool IsFailed => Kind == OperationalRouteConsumerEntryResultKind.Failed;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IOperationalRouteConsumerEntryPort
     {

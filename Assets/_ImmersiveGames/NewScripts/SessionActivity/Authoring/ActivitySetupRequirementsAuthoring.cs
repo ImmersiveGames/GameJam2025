@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -47,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         public void ValidateOrThrow(string source)
         {
-            string validationSource = Normalize(source);
+            string validationSource = source.TrimToEmpty();
 
             ValidateList(participantRequirements, validationSource, nameof(participantRequirements));
             ValidateList(objectEntryRequirements, validationSource, nameof(objectEntryRequirements));
@@ -106,12 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         {
             return entries?.Count ?? 0;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivitySetupRequirementAuthoring
     {
@@ -126,12 +122,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string requirementId;
         [SerializeField] private ActivitySetupRequirementRequiredness requiredness = ActivitySetupRequirementRequiredness.Required;
 
-        public string RequirementId => Normalize(requirementId);
+        public string RequirementId => requirementId.TrimToEmpty();
         public ActivitySetupRequirementRequiredness Requiredness => requiredness;
 
         public void ValidateOrThrow(string source, string listName, int index)
         {
-            string validationSource = $"{Normalize(source)}.{listName}[{index}]";
+            string validationSource = $"{source.TrimToEmpty()}.{listName}[{index}]";
 
             if (string.IsNullOrWhiteSpace(RequirementId))
             {
@@ -157,11 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         }
 
         protected abstract void ValidateSpecificOrThrow(string validationSource);
-
-        protected static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
+        
     }
 
     [Serializable]
@@ -173,10 +165,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string placementRequirementId;
 
         public ActivityParticipantRequirementKind ParticipantKind => participantKind;
-        public SessionParticipantId SessionParticipantId => new(Normalize(participantId));
+        public SessionParticipantId SessionParticipantId => new(participantId.TrimToEmpty());
         public string ParticipantId => SessionParticipantId.ToString();
         public SessionParticipantRole ExpectedSessionRole => expectedSessionRole;
-        public string PlacementRequirementId => Normalize(placementRequirementId);
+        public string PlacementRequirementId => placementRequirementId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -206,9 +198,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string placementRequirementId;
 
         public ActivityObjectEntryRequirementKind ObjectEntryKind => objectEntryKind;
-        public string ObjectId => Normalize(objectId);
-        public string ObjectTypeId => Normalize(objectTypeId);
-        public string PlacementRequirementId => Normalize(placementRequirementId);
+        public string ObjectId => objectId.TrimToEmpty();
+        public string ObjectTypeId => objectTypeId.TrimToEmpty();
+        public string PlacementRequirementId => placementRequirementId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -231,9 +223,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string contributorRole;
         [SerializeField] private string sceneName;
 
-        public string ContributorId => Normalize(contributorId);
-        public string ContributorRole => Normalize(contributorRole);
-        public string SceneName => Normalize(sceneName);
+        public string ContributorId => contributorId.TrimToEmpty();
+        public string ContributorRole => contributorRole.TrimToEmpty();
+        public string SceneName => sceneName.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -253,9 +245,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string sceneName;
 
         public ActivityPlacementRequirementKind PlacementKind => placementKind;
-        public string TargetId => Normalize(targetId);
-        public string MarkerId => Normalize(markerId);
-        public string SceneName => Normalize(sceneName);
+        public string TargetId => targetId.TrimToEmpty();
+        public string MarkerId => markerId.TrimToEmpty();
+        public string SceneName => sceneName.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -285,9 +277,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string profileId;
 
         public ActivityCameraBindingRequirementKind CameraBindingKind => cameraBindingKind;
-        public string BindingId => Normalize(bindingId);
-        public string TargetId => Normalize(targetId);
-        public string ProfileId => Normalize(profileId);
+        public string BindingId => bindingId.TrimToEmpty();
+        public string TargetId => targetId.TrimToEmpty();
+        public string ProfileId => profileId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -312,9 +304,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string profileId;
 
         public ActivityInteractionBindingRequirementKind InteractionBindingKind => interactionBindingKind;
-        public string BindingId => Normalize(bindingId);
-        public string TargetId => Normalize(targetId);
-        public string ProfileId => Normalize(profileId);
+        public string BindingId => bindingId.TrimToEmpty();
+        public string TargetId => targetId.TrimToEmpty();
+        public string ProfileId => profileId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -339,9 +331,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string profileId;
 
         public ActivityHudBindingRequirementKind HudBindingKind => hudBindingKind;
-        public string BindingId => Normalize(bindingId);
-        public string TargetId => Normalize(targetId);
-        public string ProfileId => Normalize(profileId);
+        public string BindingId => bindingId.TrimToEmpty();
+        public string TargetId => targetId.TrimToEmpty();
+        public string ProfileId => profileId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -365,8 +357,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string profileId;
 
         public ActivityWarmupRequirementKind WarmupKind => warmupKind;
-        public string TargetId => Normalize(targetId);
-        public string ProfileId => Normalize(profileId);
+        public string TargetId => targetId.TrimToEmpty();
+        public string ProfileId => profileId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -387,7 +379,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     {
         [SerializeField] private string targetId;
 
-        public string TargetId => Normalize(targetId);
+        public string TargetId => targetId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {
@@ -406,8 +398,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string policyId;
 
         public ActivityReleaseRequirementKind ReleaseKind => releaseKind;
-        public string TargetId => Normalize(targetId);
-        public string PolicyId => Normalize(policyId);
+        public string TargetId => targetId.TrimToEmpty();
+        public string PolicyId => policyId.TrimToEmpty();
 
         protected override void ValidateSpecificOrThrow(string validationSource)
         {

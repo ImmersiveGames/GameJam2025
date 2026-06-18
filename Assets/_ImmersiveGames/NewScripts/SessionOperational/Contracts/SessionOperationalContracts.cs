@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
     public enum SessionOperationalStage
@@ -47,11 +48,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string routeProfileId,
             int routeSequence)
         {
-            PipelineId = Normalize(pipelineId);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            RouteId = Normalize(routeId);
-            RouteProfileId = Normalize(routeProfileId);
+            PipelineId = pipelineId.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            RouteId = routeId.TrimToEmpty();
+            RouteProfileId = routeProfileId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
         }
 
@@ -101,19 +102,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         public static bool operator ==(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => left.Equals(right);
         public static bool operator !=(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => !left.Equals(right);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionOperationalTransitionKey : IEquatable<SessionOperationalTransitionKey>
     {
         public SessionOperationalTransitionKey(SessionOperationalRouteKey routeKey, string transitionId)
         {
             RouteKey = routeKey;
-            TransitionId = Normalize(transitionId);
+            TransitionId = transitionId.TrimToEmpty();
         }
 
         public SessionOperationalRouteKey RouteKey { get; }
@@ -141,12 +137,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         public static bool operator ==(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => left.Equals(right);
         public static bool operator !=(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => !left.Equals(right);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionOperationalStageKey : IEquatable<SessionOperationalStageKey>
     {
@@ -196,15 +187,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string reason,
             SessionOperationalStage stage)
         {
-            SessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            SessionOperationalPipelineId = sessionOperationalPipelineId.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             TransitionSequence = transitionSequence < 0 ? 0 : transitionSequence;
-            RouteId = Normalize(routeId);
-            RouteProfileId = Normalize(routeProfileId);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            RouteId = routeId.TrimToEmpty();
+            RouteProfileId = routeProfileId.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
             Stage = stage;
             RouteKey = new SessionOperationalRouteKey(
                 SessionOperationalPipelineId,
@@ -290,12 +281,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"{sessionOperationalPipelineId}|{routeIdentity}|{routeOperationId}|{transitionId}|{transitionSequence}|{routeId}|{routeProfileId}|{source}|{reason}|{stage}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum SessionOperationalFactKind
     {
@@ -362,9 +348,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             Kind = kind;
             Identity = identity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public SessionOperationalFactKind Kind { get; }
@@ -382,12 +368,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum SessionOperationalResultKind
     {
@@ -408,7 +389,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Kind = kind;
             Identity = identity;
             Facts = facts ?? Array.Empty<SessionOperationalFact>();
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalResultKind Kind { get; }
@@ -428,10 +409,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', reason='{Reason}', factsCount='{Facts.Count}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

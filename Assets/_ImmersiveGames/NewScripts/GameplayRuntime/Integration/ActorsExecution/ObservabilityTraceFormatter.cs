@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 {
     internal static class ObservabilityTraceFormatter
@@ -33,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         public static string BuildCompactLogMessage(string headline, params (string Key, object Value)[] fields)
         {
-            var builder = new StringBuilder(string.IsNullOrWhiteSpace(headline) ? string.Empty : headline.Trim());
+            var builder = new StringBuilder(headline.TrimToEmpty());
             if (fields == null || fields.Length == 0)
             {
                 return builder.ToString();
@@ -78,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     builder.Append('|');
                 }
 
-                builder.Append(Normalize(parts[index]));
+                builder.Append(parts[index].TrimToEmpty());
             }
 
             return builder.ToString();
@@ -91,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 case null:
                     return string.Empty;
                 case string text:
-                    return Normalize(text);
+                    return text.TrimToEmpty();
                 case bool boolean:
                     return boolean ? "true" : "false";
                 case Enum enumeration:
@@ -102,13 +103,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     return value.ToString();
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string ToHexLower(byte[] bytes, int length)
+private static string ToHexLower(byte[] bytes, int length)
         {
             if (bytes == null || bytes.Length == 0 || length <= 0)
             {

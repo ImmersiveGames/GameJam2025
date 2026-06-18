@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 {
     public readonly struct SceneCompositionRequest
@@ -13,11 +14,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             string activeScene)
         {
             Scope = scope;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            CorrelationId = string.IsNullOrWhiteSpace(correlationId) ? string.Empty : correlationId.Trim();
+            Reason = reason.TrimToEmpty();
+            CorrelationId = correlationId.TrimToEmpty();
             ScenesToLoad = scenesToLoad ?? Array.Empty<string>();
             ScenesToUnload = scenesToUnload ?? Array.Empty<string>();
-            ActiveScene = string.IsNullOrWhiteSpace(activeScene) ? string.Empty : activeScene.Trim();
+            ActiveScene = activeScene.TrimToEmpty();
         }
 
         public SceneCompositionScope Scope { get; }

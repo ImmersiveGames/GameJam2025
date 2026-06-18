@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 {
@@ -17,8 +18,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             string source,
             string reason)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
             ActorAttributeUiTargetSelector selector = request.Selector;
             ActorAttributeUiTargetSelectorKind selectorKind = selector?.Kind ?? default;
             string selectorKindLabel = DescribeSelectorKind(selector);
@@ -320,7 +321,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             string reason,
             string failureReason)
         {
-            string normalizedFailureReason = Normalize(failureReason);
+            string normalizedFailureReason = failureReason.TrimToEmpty();
             DebugUtility.LogWarning(
                 typeof(ActivityEntryActorAttributeUiTargetResolver),
                 $"event='ActorAttributeUiTargetResolveRejected' selectorKind='{selectorKindLabel}' actorId='{DescribeSelectorActorId(request.Selector)}' actorInstanceRuntimeId='{DescribeSelectorActorInstanceRuntimeId(request.Selector)}' attributeId='{request.AttributeId}' source='{source}' reason='{reason}' failureReason='{normalizedFailureReason}'");
@@ -361,10 +362,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             return selector == null ? "missing" : selector.Kind.ToString();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences
 {
     /// <summary>
@@ -16,9 +17,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences
 
         private void OnValidate()
         {
-            sceneName = string.IsNullOrWhiteSpace(sceneName)
-                ? string.Empty
-                : sceneName.Trim();
+            sceneName = sceneName.TrimToEmpty();
         }
     }
 }

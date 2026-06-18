@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -30,8 +31,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         public bool Supports(string requestedTargetId)
         {
-            string local = Normalize(targetId);
-            string requested = Normalize(requestedTargetId);
+            string local = targetId.TrimToEmpty();
+            string requested = requestedTargetId.TrimToEmpty();
             return !string.IsNullOrWhiteSpace(local) &&
                    !string.IsNullOrWhiteSpace(requested) &&
                    string.Equals(local, requested, StringComparison.Ordinal);
@@ -59,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     afterPositionZ: selfPosition.z,
                     command.Source,
                     command.Reason,
-                    $"target_not_supported targetId='{command.TargetId}' endpointTargetId='{Normalize(targetId)}'");
+                    $"target_not_supported targetId='{command.TargetId}' endpointTargetId='{targetId.TrimToEmpty()}'");
             }
 
             if (targetTransform == null)
@@ -148,15 +149,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         private void OnValidate()
         {
-            targetId = Normalize(targetId);
+            targetId = targetId.TrimToEmpty();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static bool IsNearlyEqual(Vector3 left, Vector3 right, float tolerance)
+private static bool IsNearlyEqual(Vector3 left, Vector3 right, float tolerance)
         {
             return Mathf.Abs(left.x - right.x) <= tolerance &&
                    Mathf.Abs(left.y - right.y) <= tolerance &&

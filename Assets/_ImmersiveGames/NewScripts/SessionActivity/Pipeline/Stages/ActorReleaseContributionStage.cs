@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -31,10 +32,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorRole = actorRole;
             ActorScope = actorScope;
             CapabilitySurface = capabilitySurface;
-            ComponentBasePath = Normalize(componentBasePath);
+            ComponentBasePath = componentBasePath.TrimToEmpty();
             Trigger = trigger;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -65,12 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ? ActorKind.Player
                 : ActorKind.Actor;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal readonly struct ActorReleaseContributionStageResult
     {
@@ -79,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Completed = completed;
             Executed = executed < 0 ? 0 : executed;
             Skipped = skipped < 0 ? 0 : skipped;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Completed { get; }
@@ -87,12 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public int Skipped { get; }
         public string Reason { get; }
         public bool IsValid => Completed && !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal static class ActorReleaseContributionStage
     {
@@ -142,7 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     string outcomeReason = result.IsValid ? result.OutcomeReason : "invalid_release_result";
                     DebugUtility.Log(
                         typeof(ActorReleaseContributionStage),
-                        $"event='ActorReleaseContributionFailed' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{command.Identity.ActivityId}' entrySequence='{command.Identity.EntrySequence}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' actorScope='{command.ActorScope}' trigger='{command.Trigger}' providerType='{provider.GetType().FullName ?? provider.GetType().Name}' outcomeReason='{Normalize(outcomeReason)}' source='{command.Source}' reason='{command.Reason}'.",
+                        $"event='ActorReleaseContributionFailed' owner='{Owner}' macroLifecycleOwner='{MacroLifecycleOwner}' activityId='{command.Identity.ActivityId}' entrySequence='{command.Identity.EntrySequence}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' actorScope='{command.ActorScope}' trigger='{command.Trigger}' providerType='{provider.GetType().FullName ?? provider.GetType().Name}' outcomeReason='{outcomeReason.TrimToEmpty()}' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Error);
                     throw new InvalidOperationException($"[FATAL][ActorReleaseContributionStage] Release contribution failed actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' provider='{provider.GetType().Name}' reason='{outcomeReason}'.");
                 }
@@ -200,10 +191,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return path;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
@@ -23,9 +24,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             OwnerActorInstanceRuntimeId = intent.OwnerActorInstanceRuntimeId;
             TargetActorId = intent.TargetActorId;
             TargetActorInstanceRuntimeId = intent.TargetActorInstanceRuntimeId;
-            ImpactKind = Normalize(intent.ImpactKind);
-            TargetObjectName = Normalize(intent.TargetObjectName);
-            TargetColliderName = Normalize(intent.TargetColliderName);
+            ImpactKind = intent.ImpactKind.TrimToEmpty();
+            TargetObjectName = intent.TargetObjectName.TrimToEmpty();
+            TargetColliderName = intent.TargetColliderName.TrimToEmpty();
             HasContact = intent.Contact.HasContact;
             ContactPoint = intent.Contact.Point;
             ContactNormal = intent.Contact.Normal;
@@ -33,8 +34,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             DamageApplicationRequested = damageApplicationRequested;
             DamageApplicationCompleted = damageApplicationCompleted;
             ReturnRequestEligible = returnRequestEligible;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ImpactActorId { get; }
@@ -60,10 +61,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             ImpactActorId.IsValid &&
             ImpactActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(ImpactKind);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 
@@ -40,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             Kind = kind;
             SourceKind = sourceKind;
             Binding = binding;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityActorParticipationExitBindingResolutionKind Kind { get; }
@@ -74,9 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
         public static ActivityActorParticipationExitBindingResolutionResult RejectedStale(string reason) =>
             new(ActivityActorParticipationExitBindingResolutionKind.RejectedStale, ActivityActorParticipationExitBindingResolutionSourceKind.None, default, reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     internal sealed class ActivityActorExitRuntimeState
     {
@@ -91,11 +90,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 string activityIdentity)
             {
                 ActorInstanceRuntimeId = actorInstanceRuntimeId;
-                ActorId = Normalize(actorId);
+                ActorId = actorId.TrimToEmpty();
                 Endpoint = endpoint;
                 RuntimeHandle = runtimeHandle;
-                PipelineIdentity = Normalize(pipelineIdentity);
-                ActivityIdentity = Normalize(activityIdentity);
+                PipelineIdentity = pipelineIdentity.TrimToEmpty();
+                ActivityIdentity = activityIdentity.TrimToEmpty();
             }
 
             public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
@@ -226,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             out SessionActivityPipeline.ActorAttributeCapabilityState state)
         {
             state = default;
-            string normalizedActorId = string.IsNullOrWhiteSpace(actorId) ? string.Empty : actorId.Trim();
+            string normalizedActorId = actorId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedActorId))
             {
                 return false;
@@ -447,7 +446,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             }
 
             throw new InvalidOperationException(
-                $"[FATAL][ActivityActorExitRuntimeState][ActorInventoryFeed] Missing current entry ActorInventoryFeedResult activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}'.");
+                $"[FATAL][ActivityActorExitRuntimeState][ActorInventoryFeed] Missing current entry ActorInventoryFeedResult activityId='{identity.ActivityId.TrimToEmpty()}' entrySequence='{identity.EntrySequence}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.");
         }
 
         public void ClearActorInventoryFeedResult(string activityId, int entrySequence, string source, string reason)
@@ -485,7 +484,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                    string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
                    string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal);
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

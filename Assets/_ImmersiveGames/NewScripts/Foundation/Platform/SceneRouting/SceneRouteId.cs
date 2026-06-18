@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
 {
@@ -20,17 +21,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
 
         public SceneRouteId(string value)
         {
-            this.value = Normalize(value);
+            this.value = value.TrimToEmpty().ToLowerInvariant();
         }
 
         public static SceneRouteId FromName(string name) => new(name);
-
-        public static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? string.Empty
-                : value.Trim().ToLowerInvariant();
-        }
 
         public override string ToString() => Value;
 

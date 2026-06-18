@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
@@ -242,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
         private static string Sanitize(string text)
         {
-            return string.IsNullOrWhiteSpace(text) ? "n/a" : text.Trim();
+            return text.TrimToOrDefault("n/a");
         }
     }
 }

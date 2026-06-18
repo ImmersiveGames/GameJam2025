@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
 {
@@ -243,13 +244,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
         {
             DebugUtility.LogVerbose(
                 typeof(ActivityActorScopeCompatibilityPolicy),
-                $"event='{eventName}' owner='{Owner}' decisionKind='{Normalize(decisionKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' activePipelineId='{Normalize(activeIdentity.PipelineId)}' activeSessionId='{Normalize(activeIdentity.SessionId)}' activeActivityId='{Normalize(activeIdentity.ActivityId)}' activeEntrySequence='{activeIdentity.EntrySequence}' targetPipelineId='{Normalize(targetIdentity.PipelineId)}' targetSessionId='{Normalize(targetIdentity.SessionId)}' targetActivityId='{Normalize(targetIdentity.ActivityId)}' targetEntrySequence='{targetIdentity.EntrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorScope='{actorScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='{eventName}' owner='{Owner}' decisionKind='{decisionKind.TrimToEmpty()}' outcome='{outcome.TrimToEmpty()}' outcomeReason='{outcomeReason.TrimToEmpty()}' activePipelineId='{activeIdentity.PipelineId.TrimToEmpty()}' activeSessionId='{activeIdentity.SessionId.TrimToEmpty()}' activeActivityId='{activeIdentity.ActivityId.TrimToEmpty()}' activeEntrySequence='{activeIdentity.EntrySequence}' targetPipelineId='{targetIdentity.PipelineId.TrimToEmpty()}' targetSessionId='{targetIdentity.SessionId.TrimToEmpty()}' targetActivityId='{targetIdentity.ActivityId.TrimToEmpty()}' targetEntrySequence='{targetIdentity.EntrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' actorScope='{actorScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

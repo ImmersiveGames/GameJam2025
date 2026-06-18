@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 {
@@ -16,11 +17,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             string reason)
         {
             Identity = identity;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             InventoryFeed = inventoryFeed;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -35,9 +36,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             EntrySequence > 0 &&
             InventoryFeed.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorParticipationActorOutcome
     {
@@ -59,8 +58,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Outcome = outcome;
             Instance = instance;
             Participation = participation;
-            ReasonCode = Normalize(reasonCode);
-            SkipKind = Normalize(skipKind);
+            ReasonCode = reasonCode.TrimToEmpty();
+            SkipKind = skipKind.TrimToEmpty();
         }
 
         public ActorParticipationActorOutcome Outcome { get; }
@@ -76,9 +75,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Instance.IsValid &&
             Participation.IsValid &&
             !string.IsNullOrWhiteSpace(ReasonCode);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorParticipationReadinessEvaluation
     {
@@ -89,16 +86,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         {
             IsReady = isReady;
             IsFailure = isFailure;
-            ReasonCode = Normalize(reasonCode);
+            ReasonCode = reasonCode.TrimToEmpty();
         }
 
         public bool IsReady { get; }
         public bool IsFailure { get; }
         public string ReasonCode { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(ReasonCode);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IActorParticipationReadinessPolicy
     {
@@ -125,8 +120,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Entered = entered < 0 ? 0 : entered;
             Skipped = skipped < 0 ? 0 : skipped;
             Failed = failed < 0 ? 0 : failed;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -138,9 +133,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && Total >= 0 && Entered >= 0 && Skipped >= 0 && Failed >= 0;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActorParticipationStageExecutor
     {
@@ -286,7 +279,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         IReadOnlyList<string> activityIds = participation.ExplicitActivityIds;
                         for (int index = 0; index < activityIds.Count; index++)
                         {
-                            if (string.Equals(Normalize(activityIds[index]), Normalize(activityId), StringComparison.Ordinal))
+                            if (string.Equals(activityIds[index].TrimToEmpty(), activityId.TrimToEmpty(), StringComparison.Ordinal))
                             {
                                 reasonCode = "eligible";
                                 return true;
@@ -302,7 +295,5 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     return false;
             }
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

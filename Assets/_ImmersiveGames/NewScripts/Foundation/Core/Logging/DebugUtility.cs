@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -456,7 +457,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                     continue;
                 }
 
-                string ruleId = string.IsNullOrWhiteSpace(rule.ruleId) ? $"rule_{i}" : rule.ruleId.Trim();
+                string ruleId = rule.ruleId.TrimToOrDefault($"rule_{i}");
                 entries.Add(new NamespaceRuleEntry(ruleId, prefix, rule.level));
             }
 

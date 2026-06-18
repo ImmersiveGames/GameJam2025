@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -17,14 +18,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private bool includeChildrenForEndpointDiscovery = true;
         [SerializeField] private string debugLabel;
 
-        public string TargetId => Normalize(targetId);
-        public string RoleId => Normalize(roleId);
+        public string TargetId => targetId.TrimToEmpty();
+        public string RoleId => roleId.TrimToEmpty();
         public ActivityObjectContributorKind ContributorKind => contributorKind;
         public ActivitySetupRequirementRequiredness DefaultRequiredness => defaultRequiredness;
         public ActivityResetBoundaryEligibility ResetBoundaryEligibility => resetBoundaryEligibility;
         public IReadOnlyList<ActivityReleaseRequirementKind> SupportedReleaseKinds => supportedReleaseKinds;
         public bool IncludeChildrenForEndpointDiscovery => includeChildrenForEndpointDiscovery;
-        public string DebugLabel => Normalize(debugLabel);
+        public string DebugLabel => debugLabel.TrimToEmpty();
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(TargetId) &&
@@ -74,19 +75,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         private void OnValidate()
         {
-            targetId = Normalize(targetId);
-            roleId = Normalize(roleId);
-            debugLabel = Normalize(debugLabel);
+            targetId = targetId.TrimToEmpty();
+            roleId = roleId.TrimToEmpty();
+            debugLabel = debugLabel.TrimToEmpty();
 
             if (supportedReleaseKinds == null)
             {
                 supportedReleaseKinds = new List<ActivityReleaseRequirementKind>();
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
@@ -7,14 +8,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         [SerializeField] private string placementId;
 
-        public string PlacementId => Normalize(placementId);
+        public string PlacementId => placementId.TrimToEmpty();
         public Vector3 Position => transform.position;
         public Quaternion Rotation => transform.rotation;
         public bool IsValid => !string.IsNullOrWhiteSpace(PlacementId);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

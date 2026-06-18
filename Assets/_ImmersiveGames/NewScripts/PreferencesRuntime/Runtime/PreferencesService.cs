@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
@@ -43,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             _currentSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 
             DebugUtility.LogVerbose<PreferencesService>(
-                $"[Preferences] audio snapshot set. reason='{NormalizeReason(reason)}' snapshot={snapshot}.",
+                $"[Preferences] audio snapshot set. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' snapshot={snapshot}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -52,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             _currentVideoSnapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 
             DebugUtility.LogVerbose<PreferencesService>(
-                $"[Preferences] video snapshot set. reason='{NormalizeReason(reason)}' snapshot={snapshot}.",
+                $"[Preferences] video snapshot set. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' snapshot={snapshot}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -71,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             CurrentSnapshot.ApplyTo(audioSettings);
 
             DebugUtility.LogVerbose<PreferencesService>(
-                $"[Preferences] audio snapshot applied to runtime. reason='{NormalizeReason(reason)}' snapshot={CurrentSnapshot}.",
+                $"[Preferences] audio snapshot applied to runtime. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' snapshot={CurrentSnapshot}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -87,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             Screen.SetResolution(snapshot.ResolutionWidth, snapshot.ResolutionHeight, mode);
 
             DebugUtility.Log(typeof(PreferencesService),
-                $"[Preferences] video runtime apply resolution={snapshot.ResolutionWidth}x{snapshot.ResolutionHeight} mode='{mode}' reason='{NormalizeReason(reason)}'.",
+                $"[Preferences] video runtime apply resolution={snapshot.ResolutionWidth}x{snapshot.ResolutionHeight} mode='{mode}' reason='{reason.TrimToOrDefault("Preferences/Unknown")}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -177,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 
             var resolved = ResolveFallbackVideoResolution();
             DebugUtility.Log<PreferencesService>(
-                $"[Preferences] video resolution normalized. reason='{NormalizeReason(reason)}' requested={width}x{height} selected={resolved.x}x{resolved.y}.",
+                $"[Preferences] video resolution normalized. reason='{reason.TrimToOrDefault("Preferences/Unknown")}' requested={width}x{height} selected={resolved.x}x{resolved.y}.",
                 DebugUtility.Colors.Info);
 
             return new VideoPreferencesSnapshot(profileId, slotId, resolved.x, resolved.y, fullscreen);
@@ -274,11 +275,6 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             }
 
             return false;
-        }
-
-        private static string NormalizeReason(string reason)
-        {
-            return string.IsNullOrWhiteSpace(reason) ? "Preferences/Unknown" : reason.Trim();
         }
 
         private static bool HasSameAudioValues(AudioPreferencesSnapshot left, AudioPreferencesSnapshot right)

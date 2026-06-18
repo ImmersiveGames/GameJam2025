@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -121,11 +122,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Identity = identity;
             SubplanKind = subplanKind;
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             Requiredness = requiredness;
             Status = status;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -150,12 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', subplanKind='{SubplanKind}', requirementId='{RequirementId}', requiredness='{Requiredness}', status='{Status}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ParticipantRequirement
     {
@@ -170,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ParticipantKind = participantKind;
             SessionParticipantId = sessionParticipantId;
             ExpectedSessionRole = expectedSessionRole;
-            PlacementRequirementId = Normalize(placementRequirementId);
+            PlacementRequirementId = placementRequirementId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -190,12 +186,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', participantKind='{ParticipantKind}', participantId='{ParticipantId}', expectedSessionRole='{ExpectedSessionRole}', placementRequirementId='{PlacementRequirementId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ObjectEntryRequirement
     {
@@ -208,9 +199,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             ObjectEntryKind = objectEntryKind;
-            ObjectId = Normalize(objectId);
-            ObjectTypeId = Normalize(objectTypeId);
-            PlacementRequirementId = Normalize(placementRequirementId);
+            ObjectId = objectId.TrimToEmpty();
+            ObjectTypeId = objectTypeId.TrimToEmpty();
+            PlacementRequirementId = placementRequirementId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -228,12 +219,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', objectEntryKind='{ObjectEntryKind}', objectId='{ObjectId}', objectTypeId='{ObjectTypeId}', placementRequirementId='{PlacementRequirementId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SceneContributorRequirement
     {
@@ -244,9 +230,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string sceneName)
         {
             Requirement = requirement;
-            ContributorId = Normalize(contributorId);
-            ContributorRole = Normalize(contributorRole);
-            SceneName = Normalize(sceneName);
+            ContributorId = contributorId.TrimToEmpty();
+            ContributorRole = contributorRole.TrimToEmpty();
+            SceneName = sceneName.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -262,12 +248,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', contributorId='{ContributorId}', contributorRole='{ContributorRole}', sceneName='{SceneName}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct PlacementRequirement
     {
@@ -280,9 +261,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             PlacementKind = placementKind;
-            TargetId = Normalize(targetId);
-            MarkerId = Normalize(markerId);
-            SceneName = Normalize(sceneName);
+            TargetId = targetId.TrimToEmpty();
+            MarkerId = markerId.TrimToEmpty();
+            SceneName = sceneName.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -300,12 +281,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', placementKind='{PlacementKind}', targetId='{TargetId}', markerId='{MarkerId}', sceneName='{SceneName}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct CameraBindingRequirement
     {
@@ -318,9 +294,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             CameraBindingKind = cameraBindingKind;
-            BindingId = Normalize(bindingId);
-            TargetId = Normalize(targetId);
-            ProfileId = Normalize(profileId);
+            BindingId = bindingId.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
+            ProfileId = profileId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -338,12 +314,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', cameraBindingKind='{CameraBindingKind}', bindingId='{BindingId}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct InteractionBindingRequirement
     {
@@ -356,9 +327,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             InteractionBindingKind = interactionBindingKind;
-            BindingId = Normalize(bindingId);
-            TargetId = Normalize(targetId);
-            ProfileId = Normalize(profileId);
+            BindingId = bindingId.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
+            ProfileId = profileId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -376,12 +347,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', interactionBindingKind='{InteractionBindingKind}', bindingId='{BindingId}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct HudBindingRequirement
     {
@@ -394,9 +360,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             HudBindingKind = hudBindingKind;
-            BindingId = Normalize(bindingId);
-            TargetId = Normalize(targetId);
-            ProfileId = Normalize(profileId);
+            BindingId = bindingId.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
+            ProfileId = profileId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -414,12 +380,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', hudBindingKind='{HudBindingKind}', bindingId='{BindingId}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct WarmupRequirement
     {
@@ -431,8 +392,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             WarmupKind = warmupKind;
-            TargetId = Normalize(targetId);
-            ProfileId = Normalize(profileId);
+            TargetId = targetId.TrimToEmpty();
+            ProfileId = profileId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -449,12 +410,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', warmupKind='{WarmupKind}', targetId='{TargetId}', profileId='{ProfileId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct StateResetRequirement
     {
@@ -463,7 +419,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string targetId)
         {
             Requirement = requirement;
-            TargetId = Normalize(targetId);
+            TargetId = targetId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -477,12 +433,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', targetId='{TargetId}', resetDescriptor='endpoint_inventory'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ReleaseRequirement
     {
@@ -494,8 +445,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Requirement = requirement;
             ReleaseKind = releaseKind;
-            TargetId = Normalize(targetId);
-            PolicyId = Normalize(policyId);
+            TargetId = targetId.TrimToEmpty();
+            PolicyId = policyId.TrimToEmpty();
         }
 
         public ActivitySetupRequirement Requirement { get; }
@@ -512,12 +463,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"requirement='{Requirement}', releaseKind='{ReleaseKind}', targetId='{TargetId}', policyId='{PolicyId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivitySetupInventory
     {
@@ -538,7 +484,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            InventoryId = Normalize(inventoryId);
+            InventoryId = inventoryId.TrimToEmpty();
             ParticipantRequirements = participantRequirements ?? Array.Empty<ParticipantRequirement>();
             ObjectEntryRequirements = objectEntryRequirements ?? Array.Empty<ObjectEntryRequirement>();
             SceneContributorRequirements = sceneContributorRequirements ?? Array.Empty<SceneContributorRequirement>();
@@ -549,8 +495,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             WarmupRequirements = warmupRequirements ?? Array.Empty<WarmupRequirement>();
             StateResetRequirements = stateResetRequirements ?? Array.Empty<StateResetRequirement>();
             ReleaseRequirements = releaseRequirements ?? Array.Empty<ReleaseRequirement>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -601,12 +547,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', inventoryId='{InventoryId}', totalRequirements='{TotalRequirementCount}', participants='{ParticipantRequirements.Count}', objects='{ObjectEntryRequirements.Count}', contributors='{SceneContributorRequirements.Count}', placements='{PlacementRequirements.Count}', cameras='{CameraBindingRequirements.Count}', interactions='{InteractionBindingRequirements.Count}', hud='{HudBindingRequirements.Count}', warmup='{WarmupRequirements.Count}', reset='{StateResetRequirements.Count}', release='{ReleaseRequirements.Count}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivitySetupInventoryBuildResult
     {
@@ -619,9 +560,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Inventory = inventory;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivitySetupInventoryBuildResultKind Kind { get; }
@@ -642,11 +583,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', inventory='{Inventory}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
 }

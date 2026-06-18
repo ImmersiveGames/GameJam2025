@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityCatalogAdvanceAtEndMode
@@ -214,9 +215,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int activityOrdinal,
             int entrySequence)
         {
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
         }
@@ -263,12 +264,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public static bool operator ==(SessionActivityCycleKey left, SessionActivityCycleKey right) => left.Equals(right);
         public static bool operator !=(SessionActivityCycleKey left, SessionActivityCycleKey right) => !left.Equals(right);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivityStageKey : IEquatable<SessionActivityStageKey>
     {
@@ -315,13 +311,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityStage stage,
             string source)
         {
-            PipelineId = Normalize(pipelineId);
-            SessionId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             Stage = stage;
-            Source = Normalize(source);
+            Source = source.TrimToEmpty();
             CycleKey = new SessionActivityCycleKey(PipelineId, SessionId, ActivityId, ActivityOrdinal, EntrySequence);
             StageKey = new SessionActivityStageKey(CycleKey, Stage);
             CycleSignature = BuildCycleSignature(PipelineId, SessionId, ActivityId, ActivityOrdinal, EntrySequence, Stage);
@@ -374,12 +370,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"{pipelineId}|{sessionStateId}|{activityId}|{activityOrdinal}|{entrySequence}|{stage}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivityDefinition
     {
@@ -399,8 +390,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string nextActivityId,
             string source)
         {
-            ActivityId = Normalize(activityId);
-            DisplayName = Normalize(displayName);
+            ActivityId = activityId.TrimToEmpty();
+            DisplayName = displayName.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             ActivityContentMode = activityContentMode;
             ActivityContentProfile = activityContentProfile;
@@ -411,8 +402,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             NextActivityTransitionProfileSource = nextActivityTransitionProfileSource;
             NextActivityTransitionContinuePolicy = nextActivityTransitionContinuePolicy;
             NextActivityTransitionProfileOverride = nextActivityTransitionProfileOverride;
-            NextActivityId = Normalize(nextActivityId);
-            Source = Normalize(source);
+            NextActivityId = nextActivityId.TrimToEmpty();
+            Source = source.TrimToEmpty();
         }
 
         public string ActivityId { get; }
@@ -454,12 +445,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum SessionActivityCommandKind
     {
@@ -536,18 +522,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason)
         {
-            OperationId = Normalize(operationId);
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            OperationId = operationId.TrimToEmpty();
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal;
             EntrySequence = entrySequence;
             WindowKind = windowKind;
             OperationKind = operationKind;
-            SceneKey = Normalize(sceneKey);
-            SceneName = Normalize(sceneName);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            SceneKey = sceneKey.TrimToEmpty();
+            SceneName = sceneName.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string OperationId { get; }
@@ -576,12 +562,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"operationId='{OperationId}', pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', windowKind='{WindowKind}', operationKind='{OperationKind}', sceneKey='{(string.IsNullOrWhiteSpace(SceneKey) ? "<none>" : SceneKey)}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivityCommand
     {
@@ -594,9 +575,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Identity = identity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            TargetActivityId = Normalize(targetActivityId);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            TargetActivityId = targetActivityId.TrimToEmpty();
         }
 
         public SessionActivityCommandKind Kind { get; }
@@ -615,12 +596,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', targetActivityId='{(string.IsNullOrWhiteSpace(TargetActivityId) ? "<none>" : TargetActivityId)}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum SessionActivityFactKind
     {
@@ -872,9 +848,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Identity = identity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
             Handoff = handoff;
         }
 
@@ -894,12 +870,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivitySnapshot
     {
@@ -914,9 +885,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity = identity;
             Definition = definition;
             Handoff = handoff;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -935,12 +906,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', definition='{Definition}', handoff='{Handoff}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum SessionActivityCommandResultKind
     {
@@ -964,7 +930,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind = kind;
             Command = command;
             Facts = facts ?? Array.Empty<SessionActivityFact>();
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityCommandResultKind Kind { get; }
@@ -982,12 +948,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsCompleted => Kind == SessionActivityCommandResultKind.Completed;
         public bool IsFailed => Kind == SessionActivityCommandResultKind.Failed;
         public bool IsSkippedNoContent => Kind == SessionActivityCommandResultKind.SkippedNoContent;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivityHandoff
     {
@@ -1001,9 +962,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             FromIdentity = fromIdentity;
             ToIdentity = toIdentity;
-            NextActivityId = Normalize(nextActivityId);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            NextActivityId = nextActivityId.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
             LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
         }
 
@@ -1025,12 +986,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"from='{FromIdentity}', to='{ToIdentity}', nextActivityId='{NextActivityId}', source='{Source}', reason='{Reason}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionActivityPauseOverlayAdapter
     {
@@ -1056,8 +1012,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Identity = identity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityInputModeKind Kind { get; }
@@ -1069,12 +1025,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != SessionActivityInputModeKind.Unknown &&
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivityInputModeObservation
     {
@@ -1085,9 +1036,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string outcome)
         {
             Command = command;
-            Fact = Normalize(fact);
-            Snapshot = Normalize(snapshot);
-            Outcome = Normalize(outcome);
+            Fact = fact.TrimToEmpty();
+            Snapshot = snapshot.TrimToEmpty();
+            Outcome = outcome.TrimToEmpty();
         }
 
         public SessionActivityInputModeCommand Command { get; }
@@ -1100,12 +1051,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(Fact) &&
             !string.IsNullOrWhiteSpace(Snapshot) &&
             !string.IsNullOrWhiteSpace(Outcome);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionActivityInputModeAdapter
     {
@@ -1124,8 +1070,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Mode = mode;
             FadeProfile = fadeProfile;
             LoadingProfile = loadingProfile;
-            ResolvedFadeProfileSource = Normalize(resolvedFadeProfileSource);
-            ResolvedLoadingProfileSource = Normalize(resolvedLoadingProfileSource);
+            ResolvedFadeProfileSource = resolvedFadeProfileSource.TrimToEmpty();
+            ResolvedLoadingProfileSource = resolvedLoadingProfileSource.TrimToEmpty();
         }
 
         public ActivityTransitionMode Mode { get; }
@@ -1136,28 +1082,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool HasFadeProfile => FadeProfile != null;
         public bool HasLoadingProfile => LoadingProfile != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivitySceneContractContributorEntry
     {
         public ActivitySceneContractContributorEntry(string contributorId)
         {
-            ContributorId = Normalize(contributorId);
+            ContributorId = contributorId.TrimToEmpty();
         }
 
         public string ContributorId { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(ContributorId);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivitySceneContractSnapshot
     {
@@ -1168,7 +1104,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             bool allowUndeclaredContributors,
             IReadOnlyList<ActivitySceneContractContributorEntry> declaredContributors)
         {
-            ActivitySceneId = Normalize(activitySceneId);
+            ActivitySceneId = activitySceneId.TrimToEmpty();
             DiscoveryMode = discoveryMode;
             RevealSafety = revealSafety;
             AllowUndeclaredContributors = allowUndeclaredContributors;
@@ -1182,12 +1118,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IReadOnlyList<ActivitySceneContractContributorEntry> DeclaredContributors { get; }
 
         public bool IsValid => !string.IsNullOrWhiteSpace(ActivitySceneId);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionActivityTransitionAdapter
     {

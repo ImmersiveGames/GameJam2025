@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [SerializeField] private InputActionReference uiTrackedDevicePosition;
         [SerializeField] private InputActionReference uiTrackedDeviceOrientation;
 
-        public string ProfileId => Normalize(profileId);
+        public string ProfileId => profileId.TrimToEmpty();
         public int MaxPlayerSlots => maxPlayerSlots;
         public InputActionAsset UiActionsAsset => uiActionsAsset;
         public InputActionReference UiPoint => uiPoint;
@@ -100,10 +101,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             errorMessage = string.Empty;
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

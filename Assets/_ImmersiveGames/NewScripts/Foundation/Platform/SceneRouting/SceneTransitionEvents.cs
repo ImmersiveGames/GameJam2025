@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
 {
     public readonly struct SceneTransitionContext : IEquatable<SceneTransitionContext>
@@ -43,11 +44,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
             TargetActiveScene = targetActiveScene;
             UseFade = useFade;
             RouteId = routeId;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Reason = reason.TrimToEmpty();
             TransitionProfile = transitionProfile;
             RequiresResetDelegation = requiresResetDelegation;
-            ResetDecisionSource = string.IsNullOrWhiteSpace(resetDecisionSource) ? string.Empty : resetDecisionSource.Trim();
-            ResetDecisionReason = string.IsNullOrWhiteSpace(resetDecisionReason) ? string.Empty : resetDecisionReason.Trim();
+            ResetDecisionSource = resetDecisionSource.TrimToEmpty();
+            ResetDecisionReason = resetDecisionReason.TrimToEmpty();
             Payload = payload ?? SceneTransitionPayload.Empty;
 
             ContextSignature = !string.IsNullOrWhiteSpace(contextSignature)

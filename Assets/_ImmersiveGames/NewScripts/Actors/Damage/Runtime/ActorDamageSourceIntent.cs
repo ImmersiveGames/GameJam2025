@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 {
@@ -43,9 +44,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             TargetActorId = targetActorId;
             TargetActorInstanceRuntimeId = targetActorInstanceRuntimeId;
             RawDamageAmount = rawDamageAmount;
-            DamageKind = Normalize(damageKind);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            DamageKind = damageKind.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public static ActorDamageSourceIntent Direct(
@@ -74,10 +75,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

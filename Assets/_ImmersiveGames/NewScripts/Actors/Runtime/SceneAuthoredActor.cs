@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
@@ -15,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         [SerializeField] private ActorParticipationRecord.ActorParticipationPolicy participationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
         [SerializeField] private List<ActivityAsset> participatingActivities = new();
 
-        public override ActorId ActorIdValue => new(Normalize(actorId));
+        public override ActorId ActorIdValue => new(actorId.TrimToEmpty());
         public override ActorRole ActorRoleMetadata => ActorRole.SceneActor;
         public override ActorScope ActorScopeMetadata => actorScope;
         public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => participationPolicy;
@@ -48,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                     throw new InvalidOperationException($"{origin} has null participatingActivities[{index}] with ActorParticipationPolicy=ExplicitActivityIds.");
                 }
 
-                string activityId = Normalize(activity.ActivityId);
+                string activityId = activity.ActivityId.TrimToEmpty();
                 if (string.IsNullOrWhiteSpace(activityId))
                 {
                     throw new InvalidOperationException($"{origin} has participatingActivities[{index}]='{activity.name}' with empty ActivityId.");
@@ -120,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         protected override void OnValidate()
         {
             base.OnValidate();
-            actorId = Normalize(actorId);
+            actorId = actorId.TrimToEmpty();
             if (participatingActivities == null)
             {
                 participatingActivities = new List<ActivityAsset>();
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                     return false;
                 }
 
-                string activityId = Normalize(activity.ActivityId);
+                string activityId = activity.ActivityId.TrimToEmpty();
                 if (string.IsNullOrWhiteSpace(activityId))
                 {
                     return false;
@@ -166,9 +167,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             return true;
         }
 
-        private new static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
     }
 }

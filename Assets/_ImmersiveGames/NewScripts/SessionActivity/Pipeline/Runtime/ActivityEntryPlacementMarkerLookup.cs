@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             eulerAngles = Vector3.zero;
             resolutionReason = string.Empty;
 
-            string normalizedPlacementId = Normalize(placementId);
+            string normalizedPlacementId = placementId.TrimToEmpty();
             if (!identity.IsValid)
             {
                 resolutionReason = "invalid_activity_identity";
@@ -156,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                         continue;
                     }
 
-                    string markerId = Normalize(marker.PlacementId);
+                    string markerId = marker.PlacementId.TrimToEmpty();
                     if (!string.Equals(markerId, normalizedPlacementId, StringComparison.Ordinal))
                     {
                         continue;
@@ -192,10 +193,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
             return $"{current},{value.Trim()}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

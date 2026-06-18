@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
@@ -36,11 +37,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             Action<AudioSfxPlaybackHandle, EntityId, string, string, string> onCompleted)
         {
             _cueId = cueId;
-            _cueName = string.IsNullOrWhiteSpace(cueName) ? "<unknown>" : cueName.Trim();
+            _cueName = cueName.TrimToOrDefault("<unknown>");
             _source = source;
             _followTarget = followTarget;
-            _modeLabel = string.IsNullOrWhiteSpace(modeLabel) ? "2D" : modeLabel.Trim();
-            _reason = string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason.Trim();
+            _modeLabel = modeLabel.TrimToOrDefault("2D");
+            _reason = reason.TrimToOrDefault("unspecified");
             _destroyOwnerOnComplete = destroyOwnerOnComplete;
             _onCompleted = onCompleted;
             _isValid = true;

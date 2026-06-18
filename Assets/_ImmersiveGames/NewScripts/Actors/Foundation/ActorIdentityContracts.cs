@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
@@ -9,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
     {
         public ActorId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         [field: SerializeField] public string Value { get; private set; }
@@ -22,9 +23,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public static bool operator ==(ActorId left, ActorId right) => left.Equals(right);
         public static bool operator !=(ActorId left, ActorId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     [Serializable]
     public struct ActorInstanceRuntimeId : IEquatable<ActorInstanceRuntimeId>
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public ActorInstanceRuntimeId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         [field: SerializeField] public string Value { get; private set; }
@@ -58,8 +57,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
                 return default;
             }
 
-            string normalizedActorId = Normalize(actorId);
-            string normalizedScopeDiscriminator = Normalize(actorScopeDiscriminator);
+            string normalizedActorId = actorId.TrimToEmpty();
+            string normalizedScopeDiscriminator = actorScopeDiscriminator.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedActorId))
             {
                 return default;
@@ -87,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
                 return default;
             }
 
-            string normalizedSpawnedActorId = Normalize(spawnedActorId);
+            string normalizedSpawnedActorId = spawnedActorId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedSpawnedActorId))
             {
                 return default;
@@ -97,7 +96,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             return new ActorInstanceRuntimeId(
                 $"{ownerActorInstanceRuntimeId.Value}|runtime-spawn|{RuntimeActorTypeDiscriminator}|{normalizedSpawnedActorId}|{normalizedSequence}");
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

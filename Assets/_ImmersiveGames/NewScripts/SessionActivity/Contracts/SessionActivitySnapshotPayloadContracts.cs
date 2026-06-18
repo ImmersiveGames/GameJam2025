@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public readonly struct SessionActivitySnapshotPayload
@@ -11,10 +12,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int entrySequence,
             ActivityCapabilitySnapshotEnvelope capabilitySnapshotEnvelope)
         {
-            SchemaId = Normalize(schemaId);
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            SchemaId = schemaId.TrimToEmpty();
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             CapabilitySnapshotEnvelope = capabilitySnapshotEnvelope;
@@ -37,12 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityOrdinal > 0 &&
             EntrySequence > 0 &&
             HasCapabilitySnapshotEnvelope;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionActivitySnapshotPayloadProvider
     {

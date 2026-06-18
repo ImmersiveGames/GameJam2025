@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -27,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Kind = kind;
             Resolution = resolution;
             PlayerActorIdentity = playerActorIdentity;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityActorParticipationExitBindingDecisionKind Kind { get; }
@@ -54,12 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityActorParticipationExitBindingResolutionResult resolution,
             string reason) =>
             new(ActivityActorParticipationExitBindingDecisionKind.Failed, resolution, default, reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal static class ActivityActorParticipationExitBindingDecisionBuilder
     {

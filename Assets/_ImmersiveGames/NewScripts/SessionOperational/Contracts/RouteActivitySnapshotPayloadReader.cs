@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
@@ -32,8 +33,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Succeeded = succeeded;
             Payload = payload;
             FailureKind = failureKind;
-            FailureReason = Normalize(failureReason);
-            Detail = Normalize(detail);
+            FailureReason = failureReason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public bool Succeeded { get; }
@@ -41,12 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public RouteActivitySnapshotPayloadReadFailureKind FailureKind { get; }
         public string FailureReason { get; }
         public string Detail { get; }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public static class RouteActivitySnapshotPayloadReader
     {
@@ -80,14 +76,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.InvalidJson, "invalid_json");
             }
 
-            string schemaId = Normalize(dto.schemaId);
-            if (string.IsNullOrWhiteSpace(schemaId) || !string.Equals(schemaId, Normalize(expectedSchemaId), StringComparison.Ordinal))
+            string schemaId = dto.schemaId.TrimToEmpty();
+            if (string.IsNullOrWhiteSpace(schemaId) || !string.Equals(schemaId, expectedSchemaId.TrimToEmpty(), StringComparison.Ordinal))
             {
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.UnknownFailure, $"schema_id_invalid:{schemaId}");
             }
 
-            string sessionStateId = Normalize(dto.sessionStateId);
-            string activityId = Normalize(dto.activityId);
+            string sessionStateId = dto.sessionStateId.TrimToEmpty();
+            string activityId = dto.activityId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sessionStateId) || string.IsNullOrWhiteSpace(activityId))
             {
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.MissingActivityId, "missing_activity_id");
@@ -103,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.InvalidEntrySequence, "invalid_entry_sequence");
             }
 
-            if (!string.Equals(Normalize(dto.canonicalPayload), CanonicalPayloadEnvelope, StringComparison.Ordinal))
+            if (!string.Equals(dto.canonicalPayload.TrimToEmpty(), CanonicalPayloadEnvelope, StringComparison.Ordinal))
             {
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.UnsupportedLegacyPayload, "legacy_snapshot_payload_not_supported");
             }
@@ -114,8 +110,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 return Fail(RouteActivitySnapshotPayloadReadFailureKind.MissingCapabilitySnapshotEnvelope, "missing_capability_snapshot_envelope_records");
             }
 
-            string envelopeSessionStateId = Normalize(envelopeDto.sessionStateId);
-            string envelopeActivityId = Normalize(envelopeDto.activityId);
+            string envelopeSessionStateId = envelopeDto.sessionStateId.TrimToEmpty();
+            string envelopeActivityId = envelopeDto.activityId.TrimToEmpty();
             int envelopeEntrySequence = envelopeDto.entrySequence;
             if (!string.Equals(envelopeSessionStateId, sessionStateId, StringComparison.Ordinal) ||
                 !string.Equals(envelopeActivityId, activityId, StringComparison.Ordinal) ||
@@ -134,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 envelopeDto.activityOrdinal,
                 envelopeEntrySequence,
                 SessionActivityStage.ActivitySetupStarted,
-                Normalize(envelopeDto.source));
+                envelopeDto.source.TrimToEmpty());
 
             if (!envelopeIdentity.IsValid)
             {
@@ -192,14 +188,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         private static ActivityCapabilitySnapshotOwnerKind ParseOwnerKind(string value)
         {
-            return Enum.TryParse(Normalize(value), false, out ActivityCapabilitySnapshotOwnerKind parsed)
+            return Enum.TryParse(value.TrimToEmpty(), false, out ActivityCapabilitySnapshotOwnerKind parsed)
                 ? parsed
                 : ActivityCapabilitySnapshotOwnerKind.Unknown;
         }
 
         private static ActivityCapabilitySnapshotPayloadFormat ParsePayloadFormat(string value)
         {
-            return Enum.TryParse(Normalize(value), false, out ActivityCapabilitySnapshotPayloadFormat parsed)
+            return Enum.TryParse(value.TrimToEmpty(), false, out ActivityCapabilitySnapshotPayloadFormat parsed)
                 ? parsed
                 : ActivityCapabilitySnapshotPayloadFormat.Unknown;
         }
@@ -216,13 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 failureReason,
                 detail);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        [Serializable]
+[Serializable]
         private sealed class SnapshotPayloadDto
         {
             public string schemaId;

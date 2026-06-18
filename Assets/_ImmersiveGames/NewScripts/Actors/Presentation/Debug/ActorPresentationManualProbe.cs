@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 {
@@ -290,14 +291,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
         private void OnValidate()
         {
-            activityIdentity = Normalize(activityIdentity);
-            actorId = Normalize(actorId);
-            actorKind = Normalize(actorKind);
+            activityIdentity = activityIdentity.TrimToEmpty();
+            actorId = actorId.TrimToEmpty();
+            actorKind = actorKind.TrimToEmpty();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

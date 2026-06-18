@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
     {
         public PoolableSpawnOriginId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -22,9 +23,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
 
         public static bool operator ==(PoolableSpawnOriginId left, PoolableSpawnOriginId right) => left.Equals(right);
         public static bool operator !=(PoolableSpawnOriginId left, PoolableSpawnOriginId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum PoolableSpawnOriginKind
     {
@@ -57,11 +56,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             OriginId = originId;
             OriginKind = originKind;
             OriginTransform = originTransform;
-            SurfaceOwner = Normalize(surfaceOwner);
+            SurfaceOwner = surfaceOwner.TrimToEmpty();
             ResolutionMode = resolutionMode;
             UsedFallback = usedFallback;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public PoolableSpawnOriginId OriginId { get; }
@@ -82,9 +81,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
 
         public Vector3 Position => OriginTransform != null ? OriginTransform.position : default;
         public Vector3 Direction => OriginTransform != null ? OriginTransform.forward : Vector3.forward;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IPoolableSpawnOriginSurface
     {

@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
@@ -22,19 +23,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         private void Reset()
         {
             originTransform = transform;
-            originId = Normalize(originId);
+            originId = originId.TrimToEmpty();
         }
 
         private void OnValidate()
         {
-            originId = Normalize(originId);
+            originId = originId.TrimToEmpty();
 
             if (originTransform == null)
             {
                 originTransform = transform;
             }
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
@@ -17,13 +18,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Header("Entries")]
         [SerializeField] private List<RuntimePersistentSceneEntry> entries = new();
 
-        public string PolicyId => Normalize(policyId);
+        public string PolicyId => policyId.TrimToEmpty();
         public IReadOnlyList<RuntimePersistentSceneEntry> Entries => entries;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnValidate()
         {
-            policyId = Normalize(policyId);
+            policyId = policyId.TrimToEmpty();
 
             if (TryValidate(out string errorMessage) || string.IsNullOrWhiteSpace(errorMessage))
             {
@@ -75,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             {
                 HardFailFastH1.Trigger(
                     typeof(RuntimePersistentScenesPolicyAsset),
-                    $"[FATAL][Config][RuntimeMode] RuntimePersistentScenesPolicyAsset invalida. owner='{Normalize(owner)}' policyId='{PolicyId}' detail='{errorMessage}'.");
+                    $"[FATAL][Config][RuntimeMode] RuntimePersistentScenesPolicyAsset invalida. owner='{owner.TrimToEmpty()}' policyId='{PolicyId}' detail='{errorMessage}'.");
             }
 
             if (entries.Count == 0)
@@ -103,10 +104,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             {
                 HardFailFastH1.Trigger(
                     typeof(RuntimePersistentScenesPolicyAsset),
-                    $"[FATAL][Config][RuntimeMode] RuntimePersistentScenesPolicyAsset invalida. owner='{Normalize(owner)}' policyId='{PolicyId}' detail='{errorMessage}'.");
+                    $"[FATAL][Config][RuntimeMode] RuntimePersistentScenesPolicyAsset invalida. owner='{owner.TrimToEmpty()}' policyId='{PolicyId}' detail='{errorMessage}'.");
             }
 
-            string normalizedOwner = Normalize(owner);
+            string normalizedOwner = owner.TrimToEmpty();
             string matchedSceneName = string.Empty;
             bool hasMatch = false;
 
@@ -168,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 return false;
             }
 
-            sceneName = Normalize(sceneKey.SceneName);
+            sceneName = sceneKey.SceneName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 errorMessage = $"{fieldName}.sceneKey requires a non-empty SceneName. asset='{sceneKey.name}'.";
@@ -183,12 +184,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public sealed class RuntimePersistentSceneEntry

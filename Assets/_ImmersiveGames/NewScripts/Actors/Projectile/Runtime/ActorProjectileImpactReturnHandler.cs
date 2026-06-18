@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Actors.Impact.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
@@ -29,8 +30,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             string reason,
             out string outcomeReason)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileImpactReturnHandler),
@@ -71,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileImpactReturnHandler),
-                $"event='ActorProjectileImpactReturnAccepted' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' spawnedActorId='{impactResult.Intent.ImpactActorId}' spawnedActorInstanceRuntimeId='{impactResult.Intent.ImpactActorInstanceRuntimeId}' outcomeReason='{Normalize(outcomeReason)}' source='{normalizedSource}' reason='{normalizedReason}'",
+                $"event='ActorProjectileImpactReturnAccepted' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' spawnedActorId='{impactResult.Intent.ImpactActorId}' spawnedActorInstanceRuntimeId='{impactResult.Intent.ImpactActorInstanceRuntimeId}' outcomeReason='{outcomeReason.TrimToEmpty()}' source='{normalizedSource}' reason='{normalizedReason}'",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -84,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileImpactReturnHandler),
-                $"event='ActorProjectileImpactReturnRejected' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' spawnedActorId='{ResolveSpawnedActorId()}' spawnedActorInstanceRuntimeId='{ResolveSpawnedActorInstanceRuntimeId()}' outcomeReason='{Normalize(outcomeReason)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorProjectileImpactReturnRejected' impactActorId='{impactResult.Intent.ImpactActorId}' ownerActorId='{impactResult.Intent.OwnerActorId}' targetActorId='{impactResult.Intent.TargetActorId}' spawnedActorId='{ResolveSpawnedActorId()}' spawnedActorInstanceRuntimeId='{ResolveSpawnedActorInstanceRuntimeId()}' outcomeReason='{outcomeReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Warning);
         }
 
@@ -97,10 +98,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return _spawnedActor == null ? string.Empty : _spawnedActor.RuntimeActorInstanceId.ToString();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

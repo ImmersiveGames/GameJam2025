@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using UnityEngine;
 using UnityEngine.Serialization;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
 {
@@ -142,19 +143,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
             attributeId = string.Empty;
             if (attributeDefinition == null)
             {
-                DebugUtility.LogError(typeof(ActorAttributeRuntimeCommandQaProbe), $"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition is required. actorId='{Normalize(sceneActorId)}'.");
+                DebugUtility.LogError(typeof(ActorAttributeRuntimeCommandQaProbe), $"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition is required. actorId='{sceneActorId.TrimToEmpty()}'.");
                 return false;
             }
 
             var runtimeId = ActorAttributeId.FromDefinition(attributeDefinition);
             if (!runtimeId.IsValid)
             {
-                DebugUtility.LogError(typeof(ActorAttributeRuntimeCommandQaProbe), $"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{Normalize(sceneActorId)}'.");
+                DebugUtility.LogError(typeof(ActorAttributeRuntimeCommandQaProbe), $"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{sceneActorId.TrimToEmpty()}'.");
                 return false;
             }
 
             attributeId = runtimeId.ToString();
-            DebugUtility.LogVerbose(typeof(ActorAttributeRuntimeCommandQaProbe), $"attributeDefinitionResolved definition='{attributeDefinition.name}' attributeId='{attributeId}' actorId='{Normalize(sceneActorId)}'.");
+            DebugUtility.LogVerbose(typeof(ActorAttributeRuntimeCommandQaProbe), $"attributeDefinitionResolved definition='{attributeDefinition.name}' attributeId='{attributeId}' actorId='{sceneActorId.TrimToEmpty()}'.");
             return true;
         }
 
@@ -167,10 +168,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
 
             throw new InvalidOperationException("[FATAL][ActorAttributeRuntimeCommandQaProbe] SessionActivityHost reference is required.");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

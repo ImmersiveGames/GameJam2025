@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -78,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 return;
             }
 
-            string normalizedReason = Normalize(reason);
+            string normalizedReason = reason.TrimToEmpty();
 
             switch (clearMode)
             {
@@ -151,10 +152,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             ValidateProgressionSlotContextOrFail(slotContext);
 
-            string normalizedActivityIdentity = Normalize(activityIdentity);
+            string normalizedActivityIdentity = activityIdentity.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedActivityIdentity))
             {
                 return new RouteActivitySaveLoadResult(
@@ -77,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     RouteActivitySaveSkipKind.NoSnapshotPayload,
                     "no_snapshot",
                     false,
-                    $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' loadReason='{Normalize(loadReason)}'");
+                    $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' loadReason='{loadReason.TrimToEmpty()}'");
             }
 
             string activitySnapshotPayload = string.Empty;
@@ -118,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             ValidateProgressionSlotContextOrFail(slotContext);
 
-            string normalizedActivityIdentity = Normalize(activitySaveOwnerIdentity);
+            string normalizedActivityIdentity = activitySaveOwnerIdentity.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedActivityIdentity))
             {
                 return new RouteActivitySaveSaveResult(
@@ -142,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "activity save key obrigatoria ausente para save-on-exit.");
             }
 
-            string normalizedPayload = Normalize(activitySnapshotPayload);
+            string normalizedPayload = activitySnapshotPayload.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedPayload))
             {
                 return new RouteActivitySaveSaveResult(
@@ -178,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             bool saved = _saveService.TrySave(request, out var saveResult, out string saveReason);
             if (!saved || saveResult == null || !saveResult.IsSuccess)
             {
-                string detail = $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' saveReason='{Normalize(saveReason)}'";
+                string detail = $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' saveReason='{saveReason.TrimToEmpty()}'";
                 throw new InvalidOperationException($"[FATAL][Config][RouteActivitySave] save-on-exit falhou. {detail}");
             }
 
@@ -193,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private static string DetectActivitySnapshotPayloadKind(string payload)
         {
-            string normalized = Normalize(payload);
+            string normalized = payload.TrimToEmpty();
             if (normalized.IndexOf("\"canonicalPayload\":\"CapabilitySnapshotEnvelope\"", StringComparison.Ordinal) >= 0 ||
                 normalized.IndexOf("\"capabilitySnapshotEnvelope\"", StringComparison.Ordinal) >= 0)
             {
@@ -213,13 +214,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private static string BuildActivitySaveKey(string activityIdentity)
         {
-            string normalized = Normalize(activityIdentity);
+            string normalized = activityIdentity.TrimToEmpty();
             return string.IsNullOrWhiteSpace(normalized) ? string.Empty : $"activity:{normalized}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

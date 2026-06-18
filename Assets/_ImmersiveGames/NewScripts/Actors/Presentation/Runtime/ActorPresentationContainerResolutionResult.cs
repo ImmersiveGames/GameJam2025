@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 {
@@ -20,8 +21,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             string message)
         {
             Requirement = requirement;
-            ReasonCode = Normalize(reasonCode);
-            Message = Normalize(message);
+            ReasonCode = reasonCode.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorPresentationSlotRequirement Requirement { get; }
@@ -31,12 +32,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         public bool IsValid =>
             Requirement.IsValid &&
             !string.IsNullOrWhiteSpace(ReasonCode);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActorPresentationContainerResolutionResult
     {
@@ -50,8 +46,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             Kind = kind;
             Bindings = bindings ?? Array.Empty<ActorPresentationSlotBinding>();
             SkippedOptionalSlots = skippedOptionalSlots ?? Array.Empty<ActorPresentationSkippedSlot>();
-            ReasonCode = Normalize(reasonCode);
-            Message = Normalize(message);
+            ReasonCode = reasonCode.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorPresentationContainerResolutionResultKind Kind { get; }
@@ -108,10 +104,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 reasonCode,
                 message);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

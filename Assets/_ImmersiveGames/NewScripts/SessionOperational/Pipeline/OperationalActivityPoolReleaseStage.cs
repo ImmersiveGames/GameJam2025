@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     internal enum OperationalActivityPoolReleaseResultKind
@@ -23,11 +24,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             RouteCommand = routeCommand;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            PreviousActivityIdentity = Normalize(previousActivityIdentity);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            PreviousActivityIdentity = previousActivityIdentity.TrimToEmpty();
             HandoffExitResult = handoffExitResult;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -38,9 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Reason { get; }
 
         public bool IsValid => RouteCommand.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     internal readonly struct OperationalActivityPoolReleaseResult
     {
@@ -58,8 +57,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ReleasedPoolCount = releasedPoolCount < 0 ? 0 : releasedPoolCount;
             ActiveObjectCountBeforeRelease = activeObjectCountBeforeRelease < 0 ? 0 : activeObjectCountBeforeRelease;
             InactiveObjectCountBeforeRelease = inactiveObjectCountBeforeRelease < 0 ? 0 : inactiveObjectCountBeforeRelease;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalActivityPoolReleaseResultKind Kind { get; }
@@ -72,9 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsAccepted => Kind == OperationalActivityPoolReleaseResultKind.NotRequired || Kind == OperationalActivityPoolReleaseResultKind.Completed;
         public bool IsCompleted => Kind == OperationalActivityPoolReleaseResultKind.Completed;
         public bool IsFailed => Kind == OperationalActivityPoolReleaseResultKind.Failed;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     internal sealed class OperationalActivityPoolReleaseStage
     {
@@ -171,8 +168,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             string detail)
         {
-            string normalizedReason = Normalize(reason);
-            string normalizedDetail = Normalize(detail);
+            string normalizedReason = reason.TrimToEmpty();
+            string normalizedDetail = detail.TrimToEmpty();
 
             DebugUtility.LogWarning(typeof(OperationalActivityPoolReleaseStage),
                 $"event='OperationalActivityPoolReleaseFailed' owner='OperationalActivityPoolReleaseStage' routeIdentity='{command.RouteCommand.RouteIdentity}' routeOperationId='{command.RouteCommand.RouteOperationId}' transitionId='{command.RouteCommand.TransitionId}' routeSequence='{command.RouteCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' previousActivityIdentity='{command.PreviousActivityIdentity}' destinationSurfaceKind='{command.RouteCommand.SurfaceKind}' completionHandoff='{command.RouteCommand.CompletionHandoff}' reason='{normalizedReason}' detail='{normalizedDetail}' source='{command.Source}' reasonDetail='{command.Reason}'.");
@@ -186,7 +183,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 normalizedReason,
                 normalizedDetail);
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

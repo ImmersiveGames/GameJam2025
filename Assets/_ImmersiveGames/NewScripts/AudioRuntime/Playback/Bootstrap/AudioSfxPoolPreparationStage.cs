@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
@@ -37,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 
             DebugUtility.LogVerbose(
                 typeof(AudioSfxPoolPreparationStage),
-                $"event='AudioSfxPoolPreparationStarted' catalogCount='{catalogCount}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='AudioSfxPoolPreparationStarted' catalogCount='{catalogCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
 
             for (int index = 0; index < poolDefinitions.Count; index++)
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 
                 DebugUtility.LogVerbose(
                     typeof(AudioSfxPoolPreparationStage),
-                    $"event='AudioSfxPoolDependencyResolved' poolDefinition='{poolDefinition.name}' poolLabel='{Normalize(poolDefinition.PoolLabel)}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='AudioSfxPoolDependencyResolved' poolDefinition='{poolDefinition.name}' poolLabel='{poolDefinition.PoolLabel.TrimToEmpty()}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Info);
 
                 if (poolDefinition.RegistrationMode != PoolRegistrationMode.GlobalBoot)
@@ -66,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                     skippedCount++;
                     DebugUtility.LogVerbose(
                         typeof(AudioSfxPoolPreparationStage),
-                        $"event='AudioSfxPoolPreparationSkipped' poolDefinition='{poolDefinition.name}' poolLabel='{Normalize(poolDefinition.PoolLabel)}' registrationMode='{poolDefinition.RegistrationMode}' reason='timing_not_global_boot' source='{Normalize(source)}' reasonText='{Normalize(reason)}'.",
+                        $"event='AudioSfxPoolPreparationSkipped' poolDefinition='{poolDefinition.name}' poolLabel='{poolDefinition.PoolLabel.TrimToEmpty()}' registrationMode='{poolDefinition.RegistrationMode}' reason='timing_not_global_boot' source='{source.TrimToEmpty()}' reasonText='{reason.TrimToEmpty()}'.",
                         DebugUtility.Colors.Info);
                     continue;
                 }
@@ -76,19 +77,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 
                 DebugUtility.LogVerbose(
                     typeof(AudioSfxPoolPreparationStage),
-                    $"event='AudioSfxPoolPrepared' poolDefinition='{poolDefinition.name}' poolLabel='{Normalize(poolDefinition.PoolLabel)}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='AudioSfxPoolPrepared' poolDefinition='{poolDefinition.name}' poolLabel='{poolDefinition.PoolLabel.TrimToEmpty()}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Success);
             }
 
             DebugUtility.LogVerbose(
                 typeof(AudioSfxPoolPreparationStage),
-                $"event='AudioSfxPoolPreparationCompleted' catalogCount='{catalogCount}' resolvedPoolCount='{resolvedCount}' preparedPoolCount='{preparedCount}' skippedPoolCount='{skippedCount}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='AudioSfxPoolPreparationCompleted' catalogCount='{catalogCount}' resolvedPoolCount='{resolvedCount}' preparedPoolCount='{preparedCount}' skippedPoolCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

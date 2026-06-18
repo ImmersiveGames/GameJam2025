@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
@@ -66,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             [SerializeField, Min(0f), InspectorName("Arco radial (graus)"), Tooltip("Usado por RadialArc planejado. Sem efeito runtime completo enquanto o plano de múltiplos spawns não existir.")]
             private float radialArcDegrees;
 
-            public string FireModeId => Normalize(fireModeId);
+            public string FireModeId => fireModeId.TrimToEmpty();
             public ActorProjectileSpawnProfileAsset ProjectileSpawnProfile => projectileSpawnProfile;
             public ActorProjectileSpawnLayerModeKind SpawnLayerMode => spawnLayerMode;
             public LayerMask SpawnLayerMask => spawnLayerMask;
@@ -195,12 +196,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 #if UNITY_EDITOR
             public void NormalizeForEditor()
             {
-                fireModeId = Normalize(fireModeId);
+                fireModeId = fireModeId.TrimToEmpty();
                 motionStrategy = motionStrategy == ActorProjectileMotionStrategyKind.Linear ? motionStrategy : ActorProjectileMotionStrategyKind.Linear;
                 linearSpeed = LinearSpeed;
                 cooldownSeconds = CooldownSeconds;
                 fireAudioVolumeScale = FireAudioVolumeScale;
-                spawnOriginId = Normalize(spawnOriginId);
+                spawnOriginId = spawnOriginId.TrimToEmpty();
                 projectileCount = spawnPattern == ActorProjectileSpawnPatternKind.Single ? 1 : Math.Max(2, ProjectileCount);
                 radialArcDegrees = spawnPattern == ActorProjectileSpawnPatternKind.RadialArc ? Math.Max(0.01f, RadialArcDegrees) : RadialArcDegrees;
             }
@@ -228,8 +229,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
         [SerializeField, InspectorName("Modos"), Tooltip("Lista de modos de disparo. Cada modo escolhe um perfil de spawn e agrupa opções ativas e planejadas do disparo.")]
         private FireModeAuthoring[] fireModes = Array.Empty<FireModeAuthoring>();
 
-        public ActorProjectileProfileId ProfileId => new(Normalize(profileId));
-        public ActorProjectileFireModeId DefaultFireModeId => new(Normalize(defaultFireModeId));
+        public ActorProjectileProfileId ProfileId => new(profileId.TrimToEmpty());
+        public ActorProjectileFireModeId DefaultFireModeId => new(defaultFireModeId.TrimToEmpty());
         public int FireModeCount => fireModes == null ? 0 : fireModes.Length;
         public bool IsValid => TryValidate(out _);
 
@@ -375,8 +376,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            profileId = Normalize(profileId);
-            defaultFireModeId = Normalize(defaultFireModeId);
+            profileId = profileId.TrimToEmpty();
+            defaultFireModeId = defaultFireModeId.TrimToEmpty();
             if (fireModes == null)
             {
                 return;
@@ -388,7 +389,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             }
         }
 #endif
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

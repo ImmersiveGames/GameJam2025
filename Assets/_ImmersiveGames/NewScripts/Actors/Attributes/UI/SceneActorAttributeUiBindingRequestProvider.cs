@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
@@ -145,12 +146,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             DebugUtility.LogWarning(
                 typeof(SceneActorAttributeUiBindingRequestProvider),
-                $"event='ActorAttributeUiSceneRequestProviderEntryRejected' provider='{name}' scene='{gameObject.scene.name}' entryIndex='{index}' selectorKind='{Normalize(selectorKind)}' attributeId='{Normalize(attributeId)}' sinkType='{Normalize(sinkType)}' failureReason='{Normalize(reason)}'");
+                $"event='ActorAttributeUiSceneRequestProviderEntryRejected' provider='{name}' scene='{gameObject.scene.name}' entryIndex='{index}' selectorKind='{selectorKind.TrimToEmpty()}' attributeId='{attributeId.TrimToEmpty()}' sinkType='{sinkType.TrimToEmpty()}' failureReason='{reason.TrimToEmpty()}'");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

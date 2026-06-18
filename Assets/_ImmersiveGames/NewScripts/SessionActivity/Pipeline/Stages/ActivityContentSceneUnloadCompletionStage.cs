@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -89,13 +90,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             DebugUtility.LogVerbose(
                 typeof(ActivityContentSceneUnloadCompletionStage),
-                $"event='ActivityContentUnloadCompletionTechnicalCompleted' owner='{Owner}' pipelineId='{unloadedIdentity.PipelineId}' sessionStateId='{unloadedIdentity.SessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' operationId='{operation.OperationId}' unloadKind='{command.UnloadKind}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' pendingOperationCleared='true'.",
+                $"event='ActivityContentUnloadCompletionTechnicalCompleted' owner='{Owner}' pipelineId='{unloadedIdentity.PipelineId}' sessionStateId='{unloadedIdentity.SessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' operationId='{operation.OperationId}' unloadKind='{command.UnloadKind}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}' pendingOperationCleared='true'.",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
@@ -25,12 +26,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             ParticipantKind = participantKind;
             RequestedParticipantId = requestedParticipantId;
             ParticipantBinding = participantBinding;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -57,12 +58,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return participantId.IsValid ? participantId.ToString() : "<none>";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityParticipantMaterializationCommand
     {
@@ -76,12 +72,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             ParticipantKind = participantKind;
             ParticipantBinding = participantBinding;
             NeedKind = needKind;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -105,12 +101,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', materializationPolicy='{ParticipantBinding.MaterializationPolicy}', needKind='{NeedKind}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityParticipantResetCommand
     {
@@ -133,9 +124,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             ParticipantBinding = participantBinding;
-            PlacementRequirementId = Normalize(placementRequirementId);
+            PlacementRequirementId = placementRequirementId.TrimToEmpty();
             ActorIdentity = actorIdentity;
             ResetReferences = resetReferences ?? Array.Empty<ActorCapabilityResetEndpointReference>();
             ResetScopePlan = resetScopePlan;
@@ -146,8 +137,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             HasPlacement = hasPlacement;
             PlacementPosition = placementPosition;
             PlacementEulerAngles = placementEulerAngles;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -195,12 +186,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int resetReferenceCount = ResetReferences?.Count ?? 0;
             return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', resetIntent='{ResetIntent}', resetStateProfile='{StateProfileKind}', resetDescriptor='endpoint_inventory', descriptorMode='endpoint_inventory', resetReferenceCount='{resetReferenceCount}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityParticipantCommandPlan
     {
@@ -214,8 +200,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity = identity;
             BindCommands = bindCommands ?? Array.Empty<ActivityParticipantBindCommand>();
             MaterializationCommands = materializationCommands ?? Array.Empty<ActivityParticipantMaterializationCommand>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -240,10 +226,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', totalCommands='{TotalCommandCount}', bind='{BindCommands.Count}', materialization='{MaterializationCommands.Count}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

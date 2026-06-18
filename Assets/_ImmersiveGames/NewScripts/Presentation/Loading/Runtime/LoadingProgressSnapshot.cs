@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using _ImmersiveGames.NewScripts.UnityUtils;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Presentation.Loading.Runtime
 {
     public readonly struct LoadingProgressSnapshot
@@ -7,8 +8,8 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Runtime
         {
             NormalizedProgress = Mathf.Clamp01(normalizedProgress);
             Percentage = Mathf.Clamp(Mathf.RoundToInt(NormalizedProgress * 100f), 0, 100);
-            StepLabel = string.IsNullOrWhiteSpace(stepLabel) ? "Loading..." : stepLabel.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            StepLabel = stepLabel.TrimToOrDefault("Loading...");
+            Reason = reason.TrimToEmpty();
         }
 
         public float NormalizedProgress { get; }

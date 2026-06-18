@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
@@ -118,10 +119,10 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 
         private static string ResolveReasonOrFallback(string configuredReason, string actionReason, OperationalRouteAsset resolvedRouteDefinition)
         {
-            string normalized = Normalize(configuredReason);
+            string normalized = configuredReason.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalized))
             {
-                normalized = Normalize(actionReason);
+                normalized = actionReason.TrimToEmpty();
             }
 
             if (string.IsNullOrWhiteSpace(normalized))
@@ -153,10 +154,5 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             resolvedRouteDefinition = routeDefinition;
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

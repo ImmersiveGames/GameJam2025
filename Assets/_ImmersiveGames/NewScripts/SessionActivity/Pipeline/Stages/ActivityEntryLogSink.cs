@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -13,19 +14,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string reason,
             string detail = "")
         {
-            string normalizedEventName = Normalize(eventName);
+            string normalizedEventName = eventName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedEventName))
             {
                 throw new InvalidOperationException("ActivityEntry owner eventName is required.");
             }
 
-            string normalizedDetail = Normalize(detail);
+            string normalizedDetail = detail.TrimToEmpty();
             string detailSuffix = string.IsNullOrWhiteSpace(normalizedDetail)
                 ? string.Empty
                 : $" {normalizedDetail}";
 
             string message =
-                $"event='{normalizedEventName}' owner='ActivityEntryPipeline' macroLifecycleOwner='SessionActivityPipeline' pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{Normalize(source)}' reason='{Normalize(reason)}'{detailSuffix}.";
+                $"event='{normalizedEventName}' owner='ActivityEntryPipeline' macroLifecycleOwner='SessionActivityPipeline' pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'{detailSuffix}.";
 
             DebugUtility.Log(typeof(ActivityEntryPipeline), message, DebugUtility.Colors.Info);
         }
@@ -46,10 +47,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"{phaseName} pipelineId='{identity.PipelineId}' sessionStateId='{identity.SessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{source}' reason='{reason}'.{normalizedDetail}",
                 completed ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

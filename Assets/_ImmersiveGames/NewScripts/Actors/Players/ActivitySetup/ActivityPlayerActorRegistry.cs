@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
@@ -392,7 +393,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             DebugUtility.LogVerbose(
                 typeof(ActivityPlayerActorRegistry),
-                $"event='{eventName}' owner='ActivityPlayerActorRegistry' decisionKind='{Normalize(decisionKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' activePipelineId='{Normalize(activeIdentity.PipelineId)}' activeSessionId='{Normalize(activeIdentity.SessionId)}' activeActivityId='{Normalize(activeIdentity.ActivityId)}' activeEntrySequence='{activeIdentity.EntrySequence}' targetPipelineId='{Normalize(targetIdentity.PipelineId)}' targetSessionId='{Normalize(targetIdentity.SessionId)}' targetActivityId='{Normalize(targetIdentity.ActivityId)}' targetEntrySequence='{targetIdentity.EntrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='{eventName}' owner='ActivityPlayerActorRegistry' decisionKind='{decisionKind.TrimToEmpty()}' outcome='{outcome.TrimToEmpty()}' outcomeReason='{outcomeReason.TrimToEmpty()}' activePipelineId='{activeIdentity.PipelineId.TrimToEmpty()}' activeSessionId='{activeIdentity.SessionId.TrimToEmpty()}' activeActivityId='{activeIdentity.ActivityId.TrimToEmpty()}' activeEntrySequence='{activeIdentity.EntrySequence}' targetPipelineId='{targetIdentity.PipelineId.TrimToEmpty()}' targetSessionId='{targetIdentity.SessionId.TrimToEmpty()}' targetActivityId='{targetIdentity.ActivityId.TrimToEmpty()}' targetEntrySequence='{targetIdentity.EntrySequence}' actorId='{actorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -413,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             string actorInstanceKey = resolvedActorInstanceRuntimeId.IsValid ? resolvedActorInstanceRuntimeId.Value : "<none>";
-            string key = $"{Normalize(decisionKind)}|{actorInstanceKey}|{activeIdentity.EntrySequence}";
+            string key = $"{decisionKind.TrimToEmpty()}|{actorInstanceKey}|{activeIdentity.EntrySequence}";
             if (!LookupResolvedLogKeys.Add(key))
             {
                 return;
@@ -439,10 +440,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("ActivityPlayerActorRegistry active scope is not initialized.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

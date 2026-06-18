@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
 {
@@ -129,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
                 if (reference == null || !reference.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"Invalid actor reset reference for boundary filtering. activityId='{Normalize(activityId)}' contextId='{Normalize(contextId)}' referenceIndex='{referenceIndex}'.");
+                        $"Invalid actor reset reference for boundary filtering. activityId='{activityId.TrimToEmpty()}' contextId='{contextId.TrimToEmpty()}' referenceIndex='{referenceIndex}'.");
                 }
 
                 if (AllowsReset(resetScopePlan, reference.ResetBoundaryEligibility))
@@ -155,13 +156,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies
             SessionActivityIdentity identity = plan.Identity;
             DebugUtility.LogVerbose(
                 typeof(ActivityResetBoundaryPolicy),
-                $"event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' resetIntent='{plan.ResetIntent}' resetStateProfile='{plan.StateProfileKind}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{Normalize(outcome)}' outcomeReason='{Normalize(outcomeReason)}' behaviorMode='ResetIntentStateProfilePolicy' pipelineId='{Normalize(identity.PipelineId)}' sessionStateId='{Normalize(identity.SessionId)}' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' source='{Normalize(plan.Source)}' reason='{Normalize(plan.Reason)}'.",
+                $"event='ActivityResetScopePlanResolved' owner='{Owner}' policyId='{plan.PolicyId}' resetIntent='{plan.ResetIntent}' resetStateProfile='{plan.StateProfileKind}' boundaryKind='{plan.BoundaryKind}' targetScope='{plan.TargetScope}' boundaryEligibilityRequired='{ResolveEligibility(plan.BoundaryKind)}' outcome='{outcome.TrimToEmpty()}' outcomeReason='{outcomeReason.TrimToEmpty()}' behaviorMode='ResetIntentStateProfilePolicy' pipelineId='{identity.PipelineId.TrimToEmpty()}' sessionStateId='{identity.SessionId.TrimToEmpty()}' activityId='{identity.ActivityId.TrimToEmpty()}' entrySequence='{identity.EntrySequence}' source='{plan.Source.TrimToEmpty()}' reason='{plan.Reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

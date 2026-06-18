@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -29,8 +30,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         public bool Supports(string requestedTargetId)
         {
-            string local = Normalize(targetId);
-            string requested = Normalize(requestedTargetId);
+            string local = targetId.TrimToEmpty();
+            string requested = requestedTargetId.TrimToEmpty();
             return !string.IsNullOrWhiteSpace(local) &&
                    !string.IsNullOrWhiteSpace(requested) &&
                    string.Equals(local, requested, StringComparison.Ordinal);
@@ -52,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     false,
                     command.Source,
                     command.Reason,
-                    $"target_not_supported targetId='{command.TargetId}' providerTargetId='{Normalize(targetId)}'");
+                    $"target_not_supported targetId='{command.TargetId}' providerTargetId='{targetId.TrimToEmpty()}'");
             }
 
             if (targetTransform == null)
@@ -101,15 +102,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         private void OnValidate()
         {
-            targetId = Normalize(targetId);
+            targetId = targetId.TrimToEmpty();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string BuildTransformPath(Transform current)
+private static string BuildTransformPath(Transform current)
         {
             if (current == null)
             {

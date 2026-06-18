@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Core.Identifiers
 {
@@ -135,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Identifiers
 
         private static string NormalizeToken(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            return value.TrimToEmpty();
         }
     }
 }

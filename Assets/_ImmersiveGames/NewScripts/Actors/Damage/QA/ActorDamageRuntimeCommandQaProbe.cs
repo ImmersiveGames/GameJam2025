@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -42,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
         public void QaApplyDamageSequenceToDepleted()
         {
             SessionActivityHost resolvedHost = RequireHost();
-            string normalizedActorId = Normalize(targetActorId);
+            string normalizedActorId = targetActorId.TrimToEmpty();
             int appliedCount = 0;
             int rejectedCount = 0;
 
@@ -99,12 +100,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
         {
             DebugUtility.LogVerbose(
                 typeof(ActorDamageRuntimeCommandQaProbe),
-                $"event='ActorDamageQaProbeReset' sourceActorId='{Normalize(sourceActorId)}' targetActorId='{Normalize(targetActorId)}' damageAmount='{damageAmount:0.###}' damageSequenceStepCount='{damageSequenceStepCount}' reason='component_reset_defaults'.");
+                $"event='ActorDamageQaProbeReset' sourceActorId='{sourceActorId.TrimToEmpty()}' targetActorId='{targetActorId.TrimToEmpty()}' damageAmount='{damageAmount:0.###}' damageSequenceStepCount='{damageSequenceStepCount}' reason='component_reset_defaults'.");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

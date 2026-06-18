@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
@@ -64,12 +65,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             ActorPresentationRequiredness requiredness)
         {
             this.slotKind = slotKind;
-            this.slotId = Normalize(slotId);
+            this.slotId = slotId.TrimToEmpty();
             this.requiredness = requiredness;
         }
 
         public ActorPresentationSlotKind SlotKind => slotKind;
-        public string SlotId => Normalize(slotId);
+        public string SlotId => slotId.TrimToEmpty();
         public ActorPresentationRequiredness Requiredness => requiredness;
 
         public bool IsRequired => requiredness == ActorPresentationRequiredness.Required;
@@ -79,9 +80,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             slotKind != ActorPresentationSlotKind.Unknown &&
             !string.IsNullOrWhiteSpace(SlotId) &&
             requiredness != ActorPresentationRequiredness.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     [Serializable]
     public struct ActorPresentationSlotBinding
@@ -96,12 +95,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             Transform container)
         {
             this.slotKind = slotKind;
-            this.slotId = Normalize(slotId);
+            this.slotId = slotId.TrimToEmpty();
             this.container = container;
         }
 
         public ActorPresentationSlotKind SlotKind => slotKind;
-        public string SlotId => Normalize(slotId);
+        public string SlotId => slotId.TrimToEmpty();
         public Transform Container => container;
         public bool HasContainer => container != null;
 
@@ -109,9 +108,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             slotKind != ActorPresentationSlotKind.Unknown &&
             !string.IsNullOrWhiteSpace(SlotId) &&
             container != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationResolvedPlan
     {
@@ -132,10 +129,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             string source,
             string reason)
         {
-            ActivityIdentity = Normalize(activityIdentity);
-            ActorId = Normalize(actorId);
-            ActorKind = Normalize(actorKind);
-            ProfileId = Normalize(profileId);
+            ActivityIdentity = activityIdentity.TrimToEmpty();
+            ActorId = actorId.TrimToEmpty();
+            ActorKind = actorKind.TrimToEmpty();
+            ProfileId = profileId.TrimToEmpty();
             Requiredness = requiredness;
             ReleasePolicy = releasePolicy;
             ResetPolicy = resetPolicy;
@@ -143,10 +140,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             VariationSeed = variationSeed;
             VisualPrefab = visualPrefab;
             PrimarySlotKind = primarySlotKind;
-            PrimarySlotId = Normalize(primarySlotId);
+            PrimarySlotId = primarySlotId.TrimToEmpty();
             Slots = slots ?? Array.Empty<ActorPresentationSlotBinding>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string ActivityIdentity { get; }
@@ -206,9 +203,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
 
             return false;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationRuntimeHandle
     {
@@ -220,8 +215,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         {
             ResolvedPlan = resolvedPlan;
             PresentationInstance = presentationInstance;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorPresentationResolvedPlan ResolvedPlan { get; }
@@ -233,9 +228,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             ResolvedPlan.IsValid &&
             PresentationInstance != null &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationMaterializationCommand
     {
@@ -245,8 +238,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             string reason)
         {
             ResolvedPlan = resolvedPlan;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorPresentationResolvedPlan ResolvedPlan { get; }
@@ -254,9 +247,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Reason { get; }
 
         public bool IsValid => ResolvedPlan.IsValid && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationReadyFact
     {
@@ -266,8 +257,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             string reason)
         {
             RuntimeHandle = runtimeHandle;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorPresentationRuntimeHandle RuntimeHandle { get; }
@@ -279,9 +270,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public bool IsValid =>
             RuntimeHandle.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationReleaseCommand
     {
@@ -291,8 +280,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             string reason)
         {
             RuntimeHandle = runtimeHandle;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorPresentationRuntimeHandle RuntimeHandle { get; }
@@ -301,9 +290,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Reason { get; }
 
         public bool IsValid => RuntimeHandle.IsValid && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationReleasedFact
     {
@@ -313,8 +300,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             string reason)
         {
             RuntimeHandle = runtimeHandle;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorPresentationRuntimeHandle RuntimeHandle { get; }
@@ -323,9 +310,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
         public string Reason { get; }
 
         public bool IsValid => RuntimeHandle.ResolvedPlan.IsValid && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorPresentationResult
     {
@@ -341,8 +326,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
             ReadyFact = readyFact;
             ReleasedFact = releasedFact;
             SkippedPlan = skippedPlan;
-            ReasonCode = Normalize(reasonCode);
-            Message = Normalize(message);
+            ReasonCode = reasonCode.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorPresentationResultKind Kind { get; }
@@ -406,7 +391,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Contracts
                 reasonCode,
                 message);
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

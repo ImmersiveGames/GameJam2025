@@ -13,6 +13,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
@@ -42,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         private bool _projectileFireEnabled;
         private readonly Dictionary<ActorProjectileFireModeId, float> _nextAllowedFireTimeByMode = new();
 
-        public ActorProjectileFireEndpointId EndpointId => new(Normalize(endpointId));
+        public ActorProjectileFireEndpointId EndpointId => new(endpointId.TrimToEmpty());
         public ActorId ActorId => ResolveActor()?.ActorIdValue ?? default;
         public ActorInstanceRuntimeId ActorInstanceRuntimeId => ResolveActor()?.RuntimeActorInstanceId ?? default;
         public ActorProjectileProfileId ProfileId => fireProfile == null ? default : fireProfile.ProfileId;
@@ -50,9 +51,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         public bool IsRequired => required;
         public bool IsProjectileFireEnabled => _projectileFireEnabled;
         public bool HasSpawnAdapter => _spawnAdapter != null;
-        public string SpawnAdapterName => Normalize(_spawnAdapterName);
+        public string SpawnAdapterName => _spawnAdapterName.TrimToEmpty();
         public bool HasFireAudioAdapter => _fireAudioAdapter != null;
-        public string FireAudioAdapterName => Normalize(_fireAudioAdapterName);
+        public string FireAudioAdapterName => _fireAudioAdapterName.TrimToEmpty();
         public int TrackedSpawnCount => _spawnRuntimeState.TrackedSpawnCount;
         public bool HasConfiguredSpawnRuntimePoolService => _spawnRuntimeState.HasConfiguredPoolService;
         public IReadOnlyList<PoolDefinitionAsset> RuntimePoolDefinitions => fireProfile == null
@@ -74,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileSpawnAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{SpawnAdapterName}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileSpawnAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{SpawnAdapterName}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -106,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireAudioAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{FireAudioAdapterName}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileFireAudioAdapterConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{DefaultFireModeId}' adapter='{FireAudioAdapterName}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -499,7 +500,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             if (!TryGetReadiness(ActorCommandId.FirePrimary, out var readiness) && required)
             {
-                string origin = string.IsNullOrWhiteSpace(source) ? nameof(ActorProjectileFireEndpoint) : source.Trim();
+                string origin = source.TrimToOrDefault(nameof(ActorProjectileFireEndpoint));
                 throw new InvalidOperationException($"{origin} invalid projectile fire endpoint: kind='{readiness.Kind}' reason='{readiness.Reason}' message='{readiness.Message}'.");
             }
 
@@ -762,7 +763,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireOriginResolved' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{Normalize(originSource)}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' usedFallback='{resolvedOrigin.UsedFallback}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_resolved'.",
+                $"event='ActorProjectileFireOriginResolved' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource.TrimToEmpty()}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' usedFallback='{resolvedOrigin.UsedFallback}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_resolved'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -774,7 +775,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireOriginFallbackApplied' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{Normalize(originSource)}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' usedFallback='{resolvedOrigin.UsedFallback}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_fallback_applied'.",
+                $"event='ActorProjectileFireOriginFallbackApplied' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource.TrimToEmpty()}' position='{FormatVector(resolvedOrigin.Position)}' direction='{FormatVector(resolvedOrigin.Direction)}' usedFallback='{resolvedOrigin.UsedFallback}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_origin_fallback_applied'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -787,7 +788,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             DebugUtility.LogWarning(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireOriginMissing' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{Normalize(originSource)}' position='{FormatVector(Vector3.zero)}' direction='{FormatVector(Vector3.zero)}' reason='{Normalize(reason)}' message='{Normalize(message)}' source='{nameof(ActorProjectileFireEndpoint)}'.");
+                $"event='ActorProjectileFireOriginMissing' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='{originSource.TrimToEmpty()}' position='{FormatVector(Vector3.zero)}' direction='{FormatVector(Vector3.zero)}' reason='{reason.TrimToEmpty()}' message='{message.TrimToEmpty()}' source='{nameof(ActorProjectileFireEndpoint)}'.");
         }
 
         private void LogFireOriginCommandRejected(
@@ -798,7 +799,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             DebugUtility.LogWarning(
                 typeof(ActorProjectileFireEndpoint),
-                $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='none' position='{FormatVector(Vector3.zero)}' direction='{FormatVector(Vector3.zero)}' dispatchStatus='RejectedUnsupportedCommand' reason='{Normalize(reason)}' message='{Normalize(message)}' source='{nameof(ActorProjectileFireEndpoint)}'.");
+                $"event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireMode.FireModeId}' originId='{fireMode.SpawnOriginId}' resolutionMode='{fireMode.SpawnOriginResolutionMode}' originSource='none' position='{FormatVector(Vector3.zero)}' direction='{FormatVector(Vector3.zero)}' dispatchStatus='RejectedUnsupportedCommand' reason='{reason.TrimToEmpty()}' message='{message.TrimToEmpty()}' source='{nameof(ActorProjectileFireEndpoint)}'.");
         }
 
         private void TryPlayFireAudioCue(
@@ -1066,7 +1067,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            endpointId = Normalize(endpointId);
+            endpointId = endpointId.TrimToEmpty();
         }
 #endif
 
@@ -1074,7 +1075,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

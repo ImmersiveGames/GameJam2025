@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
@@ -231,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private static string ResolveReason(string reason)
         {
-            return string.IsNullOrWhiteSpace(reason) ? "unspecified" : reason.Trim();
+            return reason.TrimToOrDefault("unspecified");
         }
     }
 }

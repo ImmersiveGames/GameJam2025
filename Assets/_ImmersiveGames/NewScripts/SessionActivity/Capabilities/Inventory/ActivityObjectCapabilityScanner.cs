@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -195,10 +196,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityOwnerKind ownerKind,
             ActivityObjectContributionReport contribution)
         {
-            string normalizedTargetId = Normalize(contribution.TargetId);
-            string normalizedRoleId = Normalize(contribution.RoleId);
-            string normalizedSceneName = Normalize(contribution.SceneName);
-            string normalizedContentProfileId = Normalize(contribution.ContentProfileId);
+            string normalizedTargetId = contribution.TargetId.TrimToEmpty();
+            string normalizedRoleId = contribution.RoleId.TrimToEmpty();
+            string normalizedSceneName = contribution.SceneName.TrimToEmpty();
+            string normalizedContentProfileId = contribution.ContentProfileId.TrimToEmpty();
             return $"{inventoryId.Signature}|ownerKind={ownerKind}|contentProfileId={normalizedContentProfileId}|sceneName={normalizedSceneName}|targetId={normalizedTargetId}|roleId={normalizedRoleId}|contributorKind={contribution.ContributorKind}";
         }
 
@@ -208,7 +209,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityKind capabilityKind,
             IActivityObjectLifecycleContribution contribution)
         {
-            return $"{inventoryId.Signature}|ownerId={Normalize(ownerId)}|capabilityKind={capabilityKind}|moduleId={ModuleId}|contributionId={Normalize(contribution.ContributionId)}";
+            return $"{inventoryId.Signature}|ownerId={ownerId.TrimToEmpty()}|capabilityKind={capabilityKind}|moduleId={ModuleId}|contributionId={contribution.ContributionId.TrimToEmpty()}";
         }
 
         private static bool TryResolveCapabilityKind(
@@ -269,10 +270,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             return metadata;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

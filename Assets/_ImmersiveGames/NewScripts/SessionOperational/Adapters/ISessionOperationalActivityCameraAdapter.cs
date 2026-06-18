@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -25,16 +26,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string source,
             string reason)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            ActivityIdentity = Normalize(activityIdentity);
+            ActivityIdentity = activityIdentity.TrimToEmpty();
             CompletionHandoff = completionHandoff;
-            ActiveSceneName = Normalize(activeSceneName);
+            ActiveSceneName = activeSceneName.TrimToEmpty();
             ActivityPresentationProfile = activityPresentationProfile;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string RouteIdentity { get; }
@@ -56,12 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             !string.IsNullOrWhiteSpace(ActivityIdentity) &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionOperationalActivityCameraPrepareResult
     {
@@ -75,8 +71,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             OutcomeKind = outcomeKind;
             ReadyFact = readyFact;
             FailureFact = failureFact;
-            Reason = Normalize(reason);
-            SkipReason = Normalize(skipReason);
+            Reason = reason.TrimToEmpty();
+            SkipReason = skipReason.TrimToEmpty();
         }
 
         public SessionOperationalActivityCameraPrepareOutcomeKind OutcomeKind { get; }
@@ -123,12 +119,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason,
                 string.Empty);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum SessionOperationalActivityCameraReleaseOutcomeKind
     {
@@ -145,10 +136,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string source,
             string reason)
         {
-            CurrentRouteIdentity = Normalize(currentRouteIdentity);
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            CurrentRouteIdentity = currentRouteIdentity.TrimToEmpty();
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string CurrentRouteIdentity { get; }
@@ -159,12 +150,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionOperationalActivityCameraReleaseResult
     {
@@ -178,8 +164,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             OutcomeKind = outcomeKind;
             ReleasedFact = releasedFact;
             FailureFact = failureFact;
-            Reason = Normalize(reason);
-            SkipReason = Normalize(skipReason);
+            Reason = reason.TrimToEmpty();
+            SkipReason = skipReason.TrimToEmpty();
         }
 
         public SessionOperationalActivityCameraReleaseOutcomeKind OutcomeKind { get; }
@@ -226,12 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason,
                 string.Empty);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionOperationalActivityCameraAdapter
     {

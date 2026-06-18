@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 {
@@ -20,8 +21,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             Kind = kind;
             ResolvedPlan = resolvedPlan;
-            ReasonCode = Normalize(reasonCode);
-            Message = Normalize(message);
+            ReasonCode = reasonCode.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorPresentationPlanResolutionResultKind Kind { get; }
@@ -70,10 +71,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 reasonCode,
                 message);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

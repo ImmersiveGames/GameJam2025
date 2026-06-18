@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
@@ -36,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 failureReason = "projectile_motion_bootstrap_invalid";
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileMotionEndpoint),
-                    $"event='ActorProjectileMotionConfigurationRejected' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{bootstrap.Strategy}' linearSpeed='{bootstrap.Speed:0.###}' direction='{FormatVector(bootstrap.Direction)}' source='{Normalize(source)}' reason='{Normalize(reason)}' failureReason='{failureReason}'.");
+                    $"event='ActorProjectileMotionConfigurationRejected' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{bootstrap.Strategy}' linearSpeed='{bootstrap.Speed:0.###}' direction='{FormatVector(bootstrap.Direction)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}' failureReason='{failureReason}'.");
                 return false;
             }
 
@@ -45,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 failureReason = "projectile_motion_strategy_linear_required";
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileMotionEndpoint),
-                    $"event='ActorProjectileMotionConfigurationRejected' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{bootstrap.Strategy}' linearSpeed='{bootstrap.Speed:0.###}' direction='{FormatVector(bootstrap.Direction)}' source='{Normalize(source)}' reason='{Normalize(reason)}' failureReason='{failureReason}'.");
+                    $"event='ActorProjectileMotionConfigurationRejected' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{bootstrap.Strategy}' linearSpeed='{bootstrap.Speed:0.###}' direction='{FormatVector(bootstrap.Direction)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}' failureReason='{failureReason}'.");
                 return false;
             }
 
@@ -58,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileMotionEndpoint),
-                $"event='ActorProjectileMotionConfigured' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{_motionStrategy}' linearSpeed='{_linearSpeed:0.###}' direction='{FormatVector(_motionDirection)}' velocity='{FormatVector(_velocity)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileMotionConfigured' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{_motionStrategy}' linearSpeed='{_linearSpeed:0.###}' direction='{FormatVector(_motionDirection)}' velocity='{FormatVector(_velocity)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -128,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.Log(
                 typeof(ActorProjectileMotionEndpoint),
-                $"event='ActorProjectileMotionStateCleared' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='Unknown' linearSpeed='0' source='{nameof(ActorProjectileMotionEndpoint)}' reason='{Normalize(reason)}'.",
+                $"event='ActorProjectileMotionStateCleared' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='Unknown' linearSpeed='0' source='{nameof(ActorProjectileMotionEndpoint)}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -148,10 +149,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

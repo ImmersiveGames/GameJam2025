@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
@@ -147,8 +148,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             PipelineIdentity = pipelineIdentity;
             Entries = entries ?? Array.Empty<PlayerActorEntryPlan>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -157,9 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Entries != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerActorMaterializationRecord
     {
@@ -190,8 +189,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             PipelineIdentity = pipelineIdentity;
             Actors = actors ?? Array.Empty<PlayerActorIdentityRecord>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -199,9 +198,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && Actors != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerActorParticipationExitRecord
     {
@@ -241,8 +238,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             PipelineIdentity = pipelineIdentity;
             Actors = actors ?? Array.Empty<PlayerActorIdentityRecord>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -250,9 +247,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && Actors != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerActorParticipationEnterRecord
     {
@@ -280,11 +275,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             string reason)
         {
             Identity = identity;
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             ParticipantBinding = participantBinding;
             Required = required;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -304,9 +299,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerInputBindingCommand
     {
@@ -318,8 +311,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             PipelineIdentity = pipelineIdentity;
             Requirements = requirements ?? Array.Empty<PlayerInputBindingRequirement>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -328,9 +321,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Requirements != null && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerInputBindingRecord
     {
@@ -343,7 +334,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Requirement = requirement;
             ActorIdentity = actorIdentity;
             Bound = bound;
-            ObservedInputId = Normalize(observedInputId);
+            ObservedInputId = observedInputId.TrimToEmpty();
         }
 
         public PlayerInputBindingRequirement Requirement { get; }
@@ -351,9 +342,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool Bound { get; }
         public string ObservedInputId { get; }
         public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedInputId);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IPlayerInputBindingAdapter
     {
@@ -371,7 +360,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             ActivityParticipantBinding participantBinding,
             bool required)
         {
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             ParticipantKind = participantKind;
             ParticipantBinding = participantBinding;
             Required = required;
@@ -386,9 +375,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
             ParticipantBinding.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorCommandBindingState
     {
@@ -411,8 +398,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             PipelineIdentity = pipelineIdentity;
             Bindings = bindings ?? Array.Empty<ActorCommandBindingReference>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -421,9 +408,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Bindings != null && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorCommandBindingRecord
     {
@@ -436,7 +421,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Requirement = requirement;
             ActorIdentity = actorIdentity;
             State = state;
-            ObservedEndpoint = Normalize(observedEndpoint);
+            ObservedEndpoint = observedEndpoint.TrimToEmpty();
         }
 
         public ActorCommandBindingReference Requirement { get; }
@@ -453,9 +438,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             State == ActorCommandBindingState.Executable;
         public bool IsExecutable => State == ActorCommandBindingState.Executable;
         public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint) && State != ActorCommandBindingState.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IActorCommandBindingAdapter
     {
@@ -484,7 +467,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             TotalBoundCount = totalBoundCount < 0 ? 0 : totalBoundCount;
             SkippedCount = skippedCount < 0 ? 0 : skippedCount;
             Skipped = skipped;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -504,9 +487,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             RequiredBoundCount <= RequiredRequirements &&
             TotalBoundCount >= 0 &&
             SkippedCount >= 0;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct MovementBindingRequirement
     {
@@ -519,11 +500,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             string reason)
         {
             Identity = identity;
-            RequirementId = Normalize(requirementId);
+            RequirementId = requirementId.TrimToEmpty();
             ParticipantBinding = participantBinding;
             Required = required;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -543,9 +524,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct MovementBindingCommand
     {
@@ -557,8 +536,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             PipelineIdentity = pipelineIdentity;
             Requirements = requirements ?? Array.Empty<MovementBindingRequirement>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -567,9 +546,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Reason { get; }
 
         public bool IsValid => PipelineIdentity.IsValid && Requirements != null && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct MovementBindingRecord
     {
@@ -582,7 +559,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Requirement = requirement;
             ActorIdentity = actorIdentity;
             Bound = bound;
-            ObservedEndpoint = Normalize(observedEndpoint);
+            ObservedEndpoint = observedEndpoint.TrimToEmpty();
         }
 
         public MovementBindingRequirement Requirement { get; }
@@ -590,9 +567,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool Bound { get; }
         public string ObservedEndpoint { get; }
         public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedEndpoint);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IMovementBindingAdapter
     {
@@ -614,8 +589,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             PipelineIdentity = pipelineIdentity;
             Actors = actors ?? Array.Empty<PlayerActorIdentityRecord>();
             Enable = enable;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity PipelineIdentity { get; }
@@ -624,9 +599,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && Actors != null && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct MovementControlRecord
     {
@@ -637,16 +610,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             ActorIdentity = actorIdentity;
             Enabled = enabled;
-            ObservedEndpoint = Normalize(observedEndpoint);
+            ObservedEndpoint = observedEndpoint.TrimToEmpty();
         }
 
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public bool Enabled { get; }
         public string ObservedEndpoint { get; }
         public bool IsValid => ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IPlayerMovementControlAdapter
     {

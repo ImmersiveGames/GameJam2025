@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
@@ -83,9 +84,9 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         private static string BuildRequestKey(InputModeRequestEvent evt)
         {
             string kind = evt.Kind.ToString();
-            string source = string.IsNullOrWhiteSpace(evt.Source) ? "<none>" : evt.Source.Trim();
-            string reason = string.IsNullOrWhiteSpace(evt.Reason) ? "<none>" : evt.Reason.Trim();
-            string contextSignature = string.IsNullOrWhiteSpace(evt.ContextSignature) ? "<none>" : evt.ContextSignature.Trim();
+            string source = evt.Source.TrimToOrDefault("<none>");
+            string reason = evt.Reason.TrimToOrDefault("<none>");
+            string contextSignature = evt.ContextSignature.TrimToOrDefault("<none>");
             return $"{kind}|{source}|{reason}|{contextSignature}";
         }
     }

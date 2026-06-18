@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -42,12 +43,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string RouteIdentity { get; }
@@ -62,12 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class OperationalRouteMaterializationBoundary
     {
@@ -117,20 +113,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private static void LogMaterializationStarted(OperationalRouteMaterializationBoundaryCommand command)
         {
             DebugUtility.LogVerbose(typeof(OperationalRouteMaterializationBoundary),
-                $"OperationalRouteMaterializationStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                $"OperationalRouteMaterializationStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogMaterializationCompleted(OperationalRouteMaterializationBoundaryCommand command)
         {
             DebugUtility.Log(typeof(OperationalRouteMaterializationBoundary),
-                $"OperationalRouteMaterializationCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                $"OperationalRouteMaterializationCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source.TrimToEmpty()}' reason='{command.Reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

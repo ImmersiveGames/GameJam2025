@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -21,11 +22,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Content.Definitio
         [SerializeField] private string materializationExpectation = string.Empty;
         [SerializeField] private string observabilityExpectation = string.Empty;
 
-        public string EntryId => Normalize(entryId);
+        public string EntryId => entryId.TrimToEmpty();
         public GameplayContentEntryRole Role => role;
         public Object ConfigurationReference => configurationReference;
-        public string MaterializationExpectation => Normalize(materializationExpectation);
-        public string ObservabilityExpectation => Normalize(observabilityExpectation);
+        public string MaterializationExpectation => materializationExpectation.TrimToEmpty();
+        public string ObservabilityExpectation => observabilityExpectation.TrimToEmpty();
 
         public bool IsValid => TryValidateRuntime(out _);
 
@@ -47,11 +48,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Content.Definitio
 
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }
 

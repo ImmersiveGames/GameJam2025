@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -28,9 +29,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
         public void SetActiveIdentity(string pipelineId, string sessionStateId, string activityId, int entrySequence)
         {
-            string nextPipelineId = Normalize(pipelineId);
-            string nextSessionStateId = Normalize(sessionStateId);
-            string nextActivityId = Normalize(activityId);
+            string nextPipelineId = pipelineId.TrimToEmpty();
+            string nextSessionStateId = sessionStateId.TrimToEmpty();
+            string nextActivityId = activityId.TrimToEmpty();
             int nextEntrySequence = entrySequence < 0 ? 0 : entrySequence;
             bool identityChanged =
                 !string.Equals(_activePipelineId, nextPipelineId, StringComparison.Ordinal) ||
@@ -219,13 +220,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             return list;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermissionCommand command)
+private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermissionCommand command)
         {
             return command is { State: ActivityCapabilityPermissionState.Allowed, PermissionId: ActivityCapabilityPermissionId.ActivityGameplayControl };
         }

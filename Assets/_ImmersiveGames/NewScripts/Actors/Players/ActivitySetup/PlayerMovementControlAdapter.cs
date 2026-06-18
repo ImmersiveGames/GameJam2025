@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class PlayerMovementControlAdapter : IPlayerMovementControlAdapter
@@ -187,9 +188,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public static ActivityCapabilityPermissionReceiverId CreateReceiverId(
             ActivityCapabilityPermissionReceiverIdentity identity)
         {
-            string normalizedPipelineId = Normalize(identity.PipelineId);
-            string normalizedSessionStateId = Normalize(identity.SessionStateId);
-            string normalizedActivityId = Normalize(identity.ActivityId);
+            string normalizedPipelineId = identity.PipelineId.TrimToEmpty();
+            string normalizedSessionStateId = identity.SessionStateId.TrimToEmpty();
+            string normalizedActivityId = identity.ActivityId.TrimToEmpty();
             string normalizedActorInstanceRuntimeId = identity.ActorInstanceRuntimeId.IsValid ? identity.ActorInstanceRuntimeId.Value : string.Empty;
             string actorInstanceToken = string.IsNullOrWhiteSpace(normalizedActorInstanceRuntimeId) ? "actor.instance.unbound" : normalizedActorInstanceRuntimeId;
             return ActivityCapabilityPermissionReceiverId.FromString($"movement.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actorInstance={actorInstanceToken}");
@@ -257,10 +258,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             string token = ActivityCapabilityPermissionIds.ToToken(permissionId);
             return string.Equals(token, ActivityCapabilityPermissionIds.ActivityGameplayControl, StringComparison.Ordinal);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

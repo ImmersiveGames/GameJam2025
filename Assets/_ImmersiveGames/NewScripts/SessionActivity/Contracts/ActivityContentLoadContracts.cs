@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -32,8 +33,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string sceneKey,
             string sceneName)
         {
-            SceneKey = Normalize(sceneKey);
-            SceneName = Normalize(sceneName);
+            SceneKey = sceneKey.TrimToEmpty();
+            SceneName = sceneName.TrimToEmpty();
         }
 
         public string SceneKey { get; }
@@ -59,12 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 sceneKey.name,
                 sceneKey.SceneName);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentSceneLoadCommand
     {
@@ -78,14 +74,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason)
         {
-            OperationId = Normalize(operationId);
+            OperationId = operationId.TrimToEmpty();
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
             SceneReference = sceneReference;
             Requiredness = requiredness;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string OperationId { get; }
@@ -114,12 +110,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentSceneLoadResult
     {
@@ -132,9 +123,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Command = command;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityContentLoadResultKind Kind { get; }
@@ -157,12 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentSceneUnloadCommand
     {
@@ -178,16 +164,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason)
         {
-            OperationId = Normalize(operationId);
+            OperationId = operationId.TrimToEmpty();
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
             SceneReference = sceneReference;
             Requiredness = requiredness;
-            ReleaseSource = Normalize(releaseSource);
-            ReleaseReason = Normalize(releaseReason);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            ReleaseSource = releaseSource.TrimToEmpty();
+            ReleaseReason = releaseReason.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string OperationId { get; }
@@ -218,12 +204,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"operationId='{OperationId}', identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', requiredness='{Requiredness}', releaseSource='{ReleaseSource}', releaseReason='{ReleaseReason}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentSceneUnloadResult
     {
@@ -236,9 +217,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Command = command;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityContentUnloadResultKind Kind { get; }
@@ -262,12 +243,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentLoadPlanScene
     {
@@ -313,13 +289,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             ActivityContentMode = activityContentMode;
-            ActivityContentProfileId = Normalize(activityContentProfileId);
+            ActivityContentProfileId = activityContentProfileId.TrimToEmpty();
             Scenes = scenes ?? Array.Empty<ActivityContentLoadPlanScene>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -385,12 +361,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int sceneCount = Scenes?.Count ?? 0;
             return $"identity='{Identity}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfileId='{(string.IsNullOrWhiteSpace(ActivityContentProfileId) ? "<none>" : ActivityContentProfileId)}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentLoadedSceneRecord
     {
@@ -405,15 +376,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
             SceneReference = sceneReference;
-            SceneKey = Normalize(sceneReference.SceneKey);
-            SceneName = Normalize(sceneReference.SceneName);
-            OperationId = Normalize(operationId);
+            SceneKey = sceneReference.SceneKey.TrimToEmpty();
+            SceneName = sceneReference.SceneName.TrimToEmpty();
+            OperationId = operationId.TrimToEmpty();
             Requiredness = requiredness;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -443,12 +414,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneReference='{SceneReference}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', operationId='{OperationId}', requiredness='{Requiredness}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentLoadedSet
     {
@@ -460,10 +426,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             Scenes = scenes ?? Array.Empty<ActivityContentLoadedSceneRecord>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -513,12 +479,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int sceneCount = Scenes?.Count ?? 0;
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityContentLoadFact
     {
@@ -533,11 +494,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             LoadedSet = loadedSet;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityContentLoadResultKind Kind { get; }
@@ -558,12 +519,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', identity='{Identity}', contentProfileId='{(string.IsNullOrWhiteSpace(ContentProfileId) ? "<none>" : ContentProfileId)}', loadedSet='{LoadedSet}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityContentSceneAdapter
     {

@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -50,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             AppliedCount = appliedCount < 0 ? 0 : appliedCount;
             SkippedCount = skippedCount < 0 ? 0 : skippedCount;
             FailedCount = failedCount < 0 ? 0 : failedCount;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Completed { get; }
@@ -61,12 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public int FailedCount { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal static class ActivityObjectReleaseStage
     {

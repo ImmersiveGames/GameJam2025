@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -24,8 +25,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             var command = request.RouteCommand;
             string routeIdentity = command.RouteIdentity;
-            string source = Normalize(request.Source);
-            string reason = Normalize(request.Reason);
+            string source = request.Source.TrimToEmpty();
+            string reason = request.Reason.TrimToEmpty();
             string activeSceneName = ResolveSceneName(command.ActiveSceneKey, nameof(command.ActiveSceneKey));
 
             ValidatePersistentScenesPolicyOrFail(command);
@@ -56,13 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 compositionResult.Reason,
                 "scene_composition_applied");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
+private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
         {
             if (sceneKey == null)
             {

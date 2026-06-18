@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalStageOrderPolicy stageOrderPolicy)
         {
             _state = state ?? throw new ArgumentNullException(nameof(state));
-            _sessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
+            _sessionOperationalPipelineId = sessionOperationalPipelineId.TrimToEmpty();
             _stageOrderPolicy = stageOrderPolicy ?? throw new ArgumentNullException(nameof(stageOrderPolicy));
 
             if (string.IsNullOrWhiteSpace(_sessionOperationalPipelineId))
@@ -37,14 +38,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             string message)
         {
-            string normalizedRouteIdentity = Normalize(routeIdentity);
-            string normalizedRouteOperationId = Normalize(routeOperationId);
-            string normalizedTransitionId = Normalize(transitionId);
-            string normalizedRouteId = Normalize(routeId);
-            string normalizedRouteProfileId = Normalize(routeProfileId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
-            string normalizedMessage = Normalize(message);
+            string normalizedRouteIdentity = routeIdentity.TrimToEmpty();
+            string normalizedRouteOperationId = routeOperationId.TrimToEmpty();
+            string normalizedTransitionId = transitionId.TrimToEmpty();
+            string normalizedRouteId = routeId.TrimToEmpty();
+            string normalizedRouteProfileId = routeProfileId.TrimToEmpty();
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
+            string normalizedMessage = message.TrimToEmpty();
 
             if (stage == SessionOperationalStage.Unknown ||
                 string.IsNullOrWhiteSpace(normalizedRouteIdentity) ||
@@ -162,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 stage == SessionOperationalStage.InitialInputModePrepared)
             {
                 _state.AppendTrace(
-                    $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeIdentity='{fact.Identity.RouteIdentity}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
+                    $"fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeIdentity='{fact.Identity.RouteIdentity}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{_state.RouteClass.TrimToEmpty()}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
             }
 
             if (stage == SessionOperationalStage.Completed)
@@ -179,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalInputPolicy inputPolicy,
             SessionOperationalInputModeKind initialInputMode)
         {
-            _state.SetInputModeContext(Normalize(routeClass), inputPolicy, initialInputMode);
+            _state.SetInputModeContext(routeClass.TrimToEmpty(), inputPolicy, initialInputMode);
         }
 
         public SessionOperationalIdentity CurrentIdentity => _state.CurrentIdentity;
@@ -221,9 +222,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             string message)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
-            string normalizedMessage = Normalize(message);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
+            string normalizedMessage = message.TrimToEmpty();
 
             SessionOperationalIdentity identity = new(
                 _sessionOperationalPipelineId,
@@ -327,10 +328,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 _ => SessionOperationalFactKind.Unknown
             };
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -21,8 +22,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivityTransitionContinuePolicy nextActivityTransitionContinuePolicy = ActivityTransitionContinuePolicy.Unknown;
         [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfileOverride;
 
-        public string ActivityId => Normalize(activityId);
-        public string DisplayName => Normalize(displayName);
+        public string ActivityId => activityId.TrimToEmpty();
+        public string DisplayName => displayName.TrimToEmpty();
         public ActivityContentMode ActivityContentMode => activityContentMode;
         public ActivityContentProfileAsset ActivityContentProfile => activityContentProfile;
         public bool HasActivityContentProfile => activityContentProfile != null;
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey => deactivationWindowAdditiveSceneKey;
         public ActivityAsset NextActivity => nextActivity;
-        public string NextActivityId => nextActivity != null ? Normalize(nextActivity.ActivityId) : string.Empty;
+        public string NextActivityId => nextActivity != null ? nextActivity.ActivityId.TrimToEmpty() : string.Empty;
         public bool HasNextActivity => nextActivity != null;
         public ActivityTransitionProfileSource NextActivityTransitionProfileSource => nextActivityTransitionProfileSource;
         public ActivityTransitionContinuePolicy NextActivityTransitionContinuePolicy => nextActivityTransitionContinuePolicy;
@@ -150,10 +151,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 activityContentProfile.ValidateOrThrow($"ActivityAsset:{name}:ActivityContentProfile");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

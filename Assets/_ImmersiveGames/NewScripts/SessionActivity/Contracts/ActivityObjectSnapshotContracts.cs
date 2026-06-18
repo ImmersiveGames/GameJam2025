@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityObjectSnapshotCoordinateSpace
@@ -28,8 +29,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
-            TargetId = Normalize(targetId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
             CoordinateSpace = coordinateSpace;
             PositionX = positionX;
             PositionY = positionY;
@@ -41,8 +42,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ScaleX = scaleX;
             ScaleY = scaleY;
             ScaleZ = scaleZ;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -67,12 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(TargetId) &&
             CoordinateSpace != ActivityObjectSnapshotCoordinateSpace.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityObjectSnapshotCaptureCommand
     {
@@ -84,10 +80,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
-            TargetId = Normalize(targetId);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            ContentProfileId = contentProfileId.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -100,12 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(TargetId) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum ActivityObjectSnapshotCaptureResultKind
     {
@@ -130,9 +121,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Command = command;
             Snapshot = snapshot;
             HasTransformPayload = hasTransformPayload;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public ActivityObjectSnapshotCaptureResultKind Kind { get; }
@@ -150,12 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != ActivityObjectSnapshotCaptureResultKind.Unknown &&
             Command.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityObjectSnapshotProvider
     {
@@ -184,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            TargetId = Normalize(targetId);
+            TargetId = targetId.TrimToEmpty();
             CoordinateSpace = coordinateSpace;
             PositionX = positionX;
             PositionY = positionY;
@@ -196,8 +182,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ScaleX = scaleX;
             ScaleY = scaleY;
             ScaleZ = scaleZ;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -221,12 +207,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(TargetId) &&
             CoordinateSpace != ActivityObjectSnapshotCoordinateSpace.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum ActivityObjectSnapshotRestoreResultKind
     {
@@ -261,9 +242,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             AfterPositionX = afterPositionX;
             AfterPositionY = afterPositionY;
             AfterPositionZ = afterPositionZ;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public ActivityObjectSnapshotRestoreResultKind Kind { get; }
@@ -286,12 +267,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != ActivityObjectSnapshotRestoreResultKind.Unknown &&
             Command.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityObjectSnapshotRestoreEndpoint
     {

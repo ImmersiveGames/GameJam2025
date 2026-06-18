@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 {
@@ -207,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 
         private static string NormalizeSceneNameOrFail(string sceneName, string phase)
         {
-            string normalized = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+            string normalized = sceneName.TrimToEmpty();
             if (!string.IsNullOrEmpty(normalized))
             {
                 return normalized;
@@ -220,7 +221,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
 
         private static string NormalizeSceneName(string sceneName)
         {
-            return string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+            return sceneName.TrimToEmpty();
         }
 
         private static bool IsSceneLoaded(string sceneName)

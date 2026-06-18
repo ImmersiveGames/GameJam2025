@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
 {
     public enum SpawnedActorReturnToPoolResultKind
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             PoolOrigin = poolOrigin;
             LifetimeState = lifetimeState;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -43,9 +44,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             HasPoolOrigin &&
             LifetimeState.IsValid &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SpawnedActorReturnToPoolResult
     {
@@ -59,8 +58,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             Kind = kind;
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public SpawnedActorReturnToPoolResultKind Kind { get; }
@@ -72,9 +71,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool IsSuccess => Kind == SpawnedActorReturnToPoolResultKind.Success;
         public bool IsSkipped => Kind == SpawnedActorReturnToPoolResultKind.Skipped;
         public bool IsFailed => Kind == SpawnedActorReturnToPoolResultKind.Failed;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SpawnedActorResetCommand
     {
@@ -93,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SnapshotPolicy = snapshotPolicy;
             PoolOrigin = poolOrigin;
             LifetimeState = lifetimeState;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -112,9 +109,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SnapshotPolicy != ActorSnapshotPolicy.Unknown &&
             LifetimeState.IsValid &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SpawnedActorResetFactPayload
     {
@@ -133,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SnapshotPolicy = snapshotPolicy;
             PoolOrigin = poolOrigin;
             ResultKind = resultKind;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -152,7 +147,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SnapshotPolicy != ActorSnapshotPolicy.Unknown &&
             ResultKind != SpawnedActorReturnToPoolResultKind.Unknown &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

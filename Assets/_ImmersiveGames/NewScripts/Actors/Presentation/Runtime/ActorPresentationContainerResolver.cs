@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 {
@@ -22,9 +23,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             string source,
             string reason)
         {
-            string origin = string.IsNullOrWhiteSpace(source)
-                ? nameof(ActorPresentationContainerResolver)
-                : source.Trim();
+            string origin = source.TrimToOrDefault(nameof(ActorPresentationContainerResolver));
 
             if (endpoint == null)
             {
@@ -152,12 +151,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
         private static string BuildKey(ActorPresentationSlotKind slotKind, string slotId)
         {
-            return $"{slotKind}:{Normalize(slotId)}";
+            return $"{slotKind}:{slotId.TrimToEmpty()}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

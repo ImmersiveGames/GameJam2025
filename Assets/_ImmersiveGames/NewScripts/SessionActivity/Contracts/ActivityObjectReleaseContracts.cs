@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityObjectReleaseResultKind
@@ -22,13 +23,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            TargetId = Normalize(targetId);
-            RoleId = Normalize(roleId);
+            TargetId = targetId.TrimToEmpty();
+            RoleId = roleId.TrimToEmpty();
             ContributorKind = contributorKind;
             Requiredness = requiredness;
             ReleaseKind = releaseKind;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -55,12 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', releaseKind='{ReleaseKind}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityObjectReleaseResult
     {
@@ -73,9 +69,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Command = command;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityObjectReleaseResultKind Kind { get; }
@@ -98,12 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityObjectReleaseEndpoint
     {

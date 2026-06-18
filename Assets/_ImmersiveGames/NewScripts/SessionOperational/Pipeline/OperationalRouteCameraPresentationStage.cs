@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             Kind = kind;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public OperationalRouteCameraPresentationResultKind Kind { get; }
@@ -33,12 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalRouteCameraPresentationResultKind.Completed,
                 reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalRouteCameraPresentationCommand
     {
@@ -53,13 +49,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             RouteCommand = routeCommand;
-            ActiveSceneName = Normalize(activeSceneName);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            ActiveSceneName = activeSceneName.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -79,12 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class OperationalRouteCameraPresentationStage
     {
@@ -139,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!_routeCameraAdapter.TryPrepareRouteCamera(prepareCommand, out var prepareResult, out string prepareReason))
             {
                 bool required = routeCommand.SurfacePresentationProfile != null && routeCommand.SurfacePresentationProfile.Required;
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' required='{required}' reason='{Normalize(prepareReason)}'.");
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' required='{required}' reason='{prepareReason.TrimToEmpty()}'.");
             }
 
             if (prepareResult.IsSkipped)
@@ -164,9 +155,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             bool profileRequired = routeCommand.SurfacePresentationProfile != null && routeCommand.SurfacePresentationProfile.Required;
 
             DebugUtility.LogError(typeof(OperationalRouteCameraPresentationStage),
-                $"RouteCameraPresentationFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' profileRequired='{profileRequired}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                $"RouteCameraPresentationFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' profileRequired='{profileRequired}' reason='{failureReason.TrimToEmpty()}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
-            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' required='{profileRequired}' reason='{Normalize(failureReason)}'.");
+            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' required='{profileRequired}' reason='{failureReason.TrimToEmpty()}'.");
         }
 
         private static bool ShouldSkipRouteCameraByPolicy(
@@ -213,13 +204,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private static void LogStageStarted(OperationalRouteCameraPresentationCommand command)
         {
             DebugUtility.LogVerbose(typeof(OperationalRouteCameraPresentationStage),
-                $"RouteCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activeScene='{Normalize(command.ActiveSceneName)}' operationalSurfaceKind='{command.RouteCommand.SurfaceKind}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
+                $"RouteCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activeScene='{command.ActiveSceneName.TrimToEmpty()}' operationalSurfaceKind='{command.RouteCommand.SurfaceKind}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

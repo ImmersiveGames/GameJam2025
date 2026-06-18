@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 {
@@ -68,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             _snapshotPayloadForSaveOnExit = payload;
             _lastSnapshotCaptureFailedForSaveOnExit = captureFailed;
-            _lastSnapshotCaptureFailureDetail = string.IsNullOrWhiteSpace(failureDetail) ? string.Empty : failureDetail.Trim();
+            _lastSnapshotCaptureFailureDetail = failureDetail.TrimToEmpty();
         }
 
         public bool TryGetSnapshotPayloadForSaveOnExit(
@@ -86,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 {
                     string detail = string.IsNullOrWhiteSpace(_lastSnapshotCaptureFailureDetail)
                         ? "snapshot_capture_failed"
-                        : Normalize(_lastSnapshotCaptureFailureDetail);
+                        : _lastSnapshotCaptureFailureDetail.TrimToEmpty();
                     failureReason = $"snapshot_capture_failed:{detail}";
                 }
                 else if (!HasContributorDiscoveryResult || _currentContributorDiscoveryResult.Reports.Count == 0)
@@ -126,10 +127,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             ClearInventoryState(activityId, entrySequence, source, reason);
             ClearSnapshotPayloadForSaveOnExit(activityId, entrySequence, source, reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
@@ -51,12 +52,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.QA
         {
             DebugUtility.LogVerbose(
                 typeof(ActorDamageSourceRuntimeCommandQaProbe),
-                $"event='ActorDamageSourceQaProbeReset' sourceActorId='{Normalize(sourceActorId)}' targetActorId='{Normalize(targetActorId)}' damageAmount='{damageAmount:0.###}' reason='component_reset_defaults'.");
+                $"event='ActorDamageSourceQaProbeReset' sourceActorId='{sourceActorId.TrimToEmpty()}' targetActorId='{targetActorId.TrimToEmpty()}' damageAmount='{damageAmount:0.###}' reason='component_reset_defaults'.");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

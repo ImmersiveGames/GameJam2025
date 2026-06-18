@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 {
     public sealed class SaveSlotDescriptor
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         {
             SlotId = slotId;
             SlotKind = slotKind;
-            Label = Normalize(label);
+            Label = label.TrimToEmpty();
             IsCurrent = isCurrent;
         }
 
@@ -20,10 +21,5 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         public bool IsCurrent { get; }
 
         public bool IsValid => SlotId.IsValid && SlotKind != SaveSlotKind.Unknown;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
     {
         public RuntimeSpawnProfileId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -20,9 +21,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public static bool operator ==(RuntimeSpawnProfileId left, RuntimeSpawnProfileId right) => left.Equals(right);
         public static bool operator !=(RuntimeSpawnProfileId left, RuntimeSpawnProfileId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct RuntimeSpawnOriginMetadata
     {
@@ -40,8 +39,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SpawnProfileId = spawnProfileId;
             PoolDefinition = poolDefinition;
             CommandSequence = commandSequence < 0 ? 0 : commandSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId OwnerActorId { get; }
@@ -59,7 +58,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             PoolDefinition != null;
 
         public string PoolDefinitionName => PoolDefinition == null ? string.Empty : PoolDefinition.name;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

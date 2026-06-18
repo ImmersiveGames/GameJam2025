@@ -32,6 +32,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
@@ -106,9 +107,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 string reason)
             {
                 Identity = identity;
-                RouteOperationId = Normalize(routeOperationId);
-                Source = Normalize(source);
-                Reason = Normalize(reason);
+                RouteOperationId = routeOperationId.TrimToEmpty();
+                Source = source.TrimToEmpty();
+                Reason = reason.TrimToEmpty();
             }
 
             public SessionActivityIdentity Identity { get; }
@@ -148,9 +149,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 string reason,
                 TaskCompletionSource<SessionActivityRouteExitTeardownResult> completion)
             {
-                SessionStateId = Normalize(sessionStateId);
-                Source = Normalize(source);
-                Reason = Normalize(reason);
+                SessionStateId = sessionStateId.TrimToEmpty();
+                Source = source.TrimToEmpty();
+                Reason = reason.TrimToEmpty();
                 Completion = completion;
             }
 
@@ -190,7 +191,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 RequiredRequirements = requiredRequirements;
                 RequiredResolvedRequirements = requiredResolvedRequirements;
                 ActiveActorsCount = activeActorsCount;
-                ReasonCode = Normalize(reasonCode);
+                ReasonCode = reasonCode.TrimToEmpty();
             }
 
             public ActivityParticipantReadinessStageOutcome Outcome { get; }
@@ -230,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActorDamageSourceEndpoint damageSourceEndpoint = null)
             {
                 ActorInstanceRuntimeId = actorInstanceRuntimeId;
-                ActorId = Normalize(actorId);
+                ActorId = actorId.TrimToEmpty();
                 Endpoint = endpoint;
                 MutationReceiver = mutationReceiver;
                 DamageableEndpoint = damageableEndpoint;
@@ -263,9 +264,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 bool handoffPrepared,
                 bool continueAccepted)
             {
-                FromActivityId = Normalize(fromActivityId);
+                FromActivityId = fromActivityId.TrimToEmpty();
                 FromEntrySequence = fromEntrySequence;
-                ToActivityId = Normalize(toActivityId);
+                ToActivityId = toActivityId.TrimToEmpty();
                 ToEntrySequence = toEntrySequence;
                 HandoffPrepared = handoffPrepared;
                 ContinueAccepted = continueAccepted;
@@ -297,8 +298,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 Activity = activity;
                 FromEntrySequence = fromEntrySequence;
                 NextEntrySequence = nextEntrySequence;
-                Source = Normalize(source);
-                Reason = Normalize(reason);
+                Source = source.TrimToEmpty();
+                Reason = reason.TrimToEmpty();
             }
 
             public SessionActivityDefinition Activity { get; }
@@ -319,8 +320,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 Definition = definition;
                 EntrySequence = entrySequence;
-                Source = Normalize(source);
-                Reason = Normalize(reason);
+                Source = source.TrimToEmpty();
+                Reason = reason.TrimToEmpty();
                 NextSceneIndex = 0;
             }
 
@@ -361,10 +362,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 Definition = definition;
                 EntrySequence = entrySequence;
-                Source = Normalize(source);
-                Reason = Normalize(reason);
-                ContinuationKind = Normalize(continuationKind);
-                ContinuationTargetActivityId = Normalize(continuationTargetActivityId);
+                Source = source.TrimToEmpty();
+                Reason = reason.TrimToEmpty();
+                ContinuationKind = continuationKind.TrimToEmpty();
+                ContinuationTargetActivityId = continuationTargetActivityId.TrimToEmpty();
                 ContinuationTargetEntrySequence = continuationTargetEntrySequence;
                 HasPendingRestartTransition = hasPendingRestartTransition;
                 HasPendingRouteExit = hasPendingRouteExit;
@@ -372,12 +373,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 RouteExitRequested = routeExitRequested;
                 DeactivationCompleted = deactivationCompleted;
                 ActivityCompletionRequested = activityCompletionRequested;
-                ReleaseStatus = Normalize(releaseStatus);
+                ReleaseStatus = releaseStatus.TrimToEmpty();
                 SkippedNoContent = skippedNoContent;
                 LoadedSceneCount = loadedSceneCount;
                 ReleasedSceneCount = releasedSceneCount;
-                PreviousStage = Normalize(previousStage);
-                NextStage = Normalize(nextStage);
+                PreviousStage = previousStage.TrimToEmpty();
+                NextStage = nextStage.TrimToEmpty();
             }
 
             public SessionActivityDefinition Definition { get; }
@@ -445,7 +446,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _entryMovementBindingRuntimeBridge = new ActivityEntryMovementBindingRuntimeBridgeAdapter(this);
             _entryCameraBindingRuntimeBridge = new ActivityEntryCameraBindingRuntimeBridgeAdapter(this);
             _activityExitActorTeardownRuntimeBridge = new ActivityExitActorTeardownRuntimeBridgeAdapter(this);
-            _sessionId = Normalize(sessionStateId);
+            _sessionId = sessionStateId.TrimToEmpty();
 
             if (string.IsNullOrWhiteSpace(_sessionId))
             {
@@ -537,7 +538,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             throw new InvalidOperationException(
-                $"[FATAL][Lifecycle][SessionActivityPipeline] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{_sessionId}' requestedSessionStateId='{Normalize(requestedSessionStateId)}' stage='{stage}' activityId='{_state.CurrentDefinition.ActivityId}' source='{Normalize(source)}' reason='{Normalize(reason)}' detail='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
+                $"[FATAL][Lifecycle][SessionActivityPipeline] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{_sessionId}' requestedSessionStateId='{requestedSessionStateId.TrimToEmpty()}' stage='{stage}' activityId='{_state.CurrentDefinition.ActivityId}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}' detail='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
         }
 
 
@@ -633,9 +634,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public SessionActivitySessionResetResult ResetSessionAfterRouteExit(string sessionStateId, string source, string reason)
         {
-            string normalizedSessionStateId = Normalize(sessionStateId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSessionStateId = sessionStateId.TrimToEmpty();
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
             {
@@ -1229,7 +1230,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason)
         {
             string sceneKeyName = sceneKey != null ? sceneKey.name : string.Empty;
-            string sceneName = sceneKey != null ? Normalize(sceneKey.SceneName) : string.Empty;
+            string sceneName = sceneKey != null ? sceneKey.SceneName.TrimToEmpty() : string.Empty;
             return new SessionActivityPendingOperation(
                 Guid.NewGuid().ToString("N"),
                 _state.PipelineId,
@@ -1532,7 +1533,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string previousStage,
             string nextStage)
         {
-            string normalizedContinuationKind = Normalize(continuationKind);
+            string normalizedContinuationKind = continuationKind.TrimToEmpty();
             string targetActivityId = string.Empty;
             int targetEntrySequence = 0;
 
@@ -1611,10 +1612,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string continuationKind = string.IsNullOrWhiteSpace(continuationKindOverride)
                 ? telemetry.ContinuationKind
-                : Normalize(continuationKindOverride);
+                : continuationKindOverride.TrimToEmpty();
             string targetActivityId = string.IsNullOrWhiteSpace(targetActivityIdOverride)
                 ? telemetry.ContinuationTargetActivityId
-                : Normalize(targetActivityIdOverride);
+                : targetActivityIdOverride.TrimToEmpty();
             int targetEntrySequence = targetEntrySequenceOverride > 0
                 ? targetEntrySequenceOverride
                 : telemetry.ContinuationTargetEntrySequence;
@@ -1686,7 +1687,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            string normalizedEventName = Normalize(eventName);
+            string normalizedEventName = eventName.TrimToEmpty();
             string message =
                 $"event='{normalizedEventName}' owner='{ActivityContentReleaseContinuationStage.Owner}' macroLifecycleOwner='{ActivityContentReleaseContinuationStage.MacroLifecycleOwner}' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{telemetry.Definition.ActivityId}' entrySequence='{telemetry.EntrySequence}' stage='{_state.CurrentStage}' source='{telemetry.Source}' reason='{telemetry.Reason}' continuationKind='{telemetry.ContinuationKind}' continuationTargetActivityId='{(string.IsNullOrWhiteSpace(telemetry.ContinuationTargetActivityId) ? "<none>" : telemetry.ContinuationTargetActivityId)}' continuationTargetEntrySequence='{telemetry.ContinuationTargetEntrySequence}' hasPendingRestartTransition='{telemetry.HasPendingRestartTransition.ToString().ToLowerInvariant()}' hasPendingRouteExit='{telemetry.HasPendingRouteExit.ToString().ToLowerInvariant()}' hasNextActivity='{telemetry.HasNextActivity.ToString().ToLowerInvariant()}' routeExitRequested='{telemetry.RouteExitRequested.ToString().ToLowerInvariant()}' deactivationCompleted='{telemetry.DeactivationCompleted.ToString().ToLowerInvariant()}' activityCompletionRequested='{telemetry.ActivityCompletionRequested.ToString().ToLowerInvariant()}' releaseStatus='{telemetry.ReleaseStatus}' skippedNoContent='{telemetry.SkippedNoContent.ToString().ToLowerInvariant()}' loadedSceneCount='{telemetry.LoadedSceneCount}' releasedSceneCount='{telemetry.ReleasedSceneCount}' previousStage='{telemetry.PreviousStage}' nextStage='{telemetry.NextStage}'.";
 
@@ -3538,7 +3539,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (!isCurrentEntryInventory)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][SessionActivityPipeline][CapabilityInventory] Missing current entry capability inventory for consumer='{Normalize(consumerName)}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}'.");
+                    $"[FATAL][SessionActivityPipeline][CapabilityInventory] Missing current entry capability inventory for consumer='{consumerName.TrimToEmpty()}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}'.");
             }
 
             return inventory;
@@ -3646,7 +3647,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         IReadOnlyList<string> activityIds = participation.ExplicitActivityIds;
                         for (int index = 0; index < activityIds.Count; index++)
                         {
-                            if (string.Equals(Normalize(activityIds[index]), Normalize(activityId), StringComparison.Ordinal))
+                            if (string.Equals(activityIds[index].TrimToEmpty(), activityId.TrimToEmpty(), StringComparison.Ordinal))
                             {
                                 reasonCode = "eligible";
                                 return true;
@@ -3768,7 +3769,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason)
         {
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorAttributeCommandRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' attributeId='{attributeId}' operation='{operation}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                $"event='ActorAttributeCommandRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' attributeId='{attributeId}' operation='{operation}' rejectionReason='{rejectionReason.TrimToEmpty()}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Error);
         }
 
@@ -3781,7 +3782,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason)
         {
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorAttributeMutationIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' attributeId='{attributeId}' operation='{operation}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                $"event='ActorAttributeMutationIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' attributeId='{attributeId}' operation='{operation}' rejectionReason='{rejectionReason.TrimToEmpty()}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Error);
         }
 
@@ -3793,7 +3794,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason)
         {
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorDamageIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' rawDamageAmount='{rawDamageAmount:0.###}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                $"event='ActorDamageIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' actorId='{actorId}' rawDamageAmount='{rawDamageAmount:0.###}' rejectionReason='{rejectionReason.TrimToEmpty()}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Error);
         }
 
@@ -3806,7 +3807,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason)
         {
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"event='ActorDamageSourceIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' sourceActorId='{sourceActorId}' targetActorId='{targetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' rejectionReason='{Normalize(rejectionReason)}' source='{source}' reason='{reason}'.",
+                $"event='ActorDamageSourceIntentRequestRejected' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' sourceActorId='{sourceActorId}' targetActorId='{targetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' rejectionReason='{rejectionReason.TrimToEmpty()}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Error);
         }
 
@@ -4378,8 +4379,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 int contentSceneOrdinal)
             {
                 Contract = contract;
-                SceneName = Normalize(sceneName);
-                ScopeKind = Normalize(scopeKind);
+                SceneName = sceneName.TrimToEmpty();
+                ScopeKind = scopeKind.TrimToEmpty();
                 ContentSceneOrdinal = contentSceneOrdinal < 0 ? 0 : contentSceneOrdinal;
             }
 
@@ -4422,14 +4423,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out ActorAttributeApplyResult result)
         {
             result = default;
-            string normalizedActorId = Normalize(actorId);
-            ActorAttributeId runtimeAttributeId = new(Normalize(attributeId));
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedActorId = actorId.TrimToEmpty();
+            ActorAttributeId runtimeAttributeId = new(attributeId.TrimToEmpty());
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
             int entrySequence = _state.CurrentEntrySequence;
             string currentActivityId = _state.CurrentIdentity.IsValid
                 ? _state.CurrentIdentity.ActivityId
-                : Normalize(_state.CurrentDefinition.ActivityId);
+                : _state.CurrentDefinition.ActivityId.TrimToEmpty();
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
                 $"event='ActorAttributeCommandRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' attributeId='{runtimeAttributeId}' operation='{operation}' source='{normalizedSource}' reason='{normalizedReason}'.",
@@ -4502,14 +4503,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out ActorAttributeMutationResult result)
         {
             result = default;
-            string normalizedActorId = Normalize(actorId);
-            ActorAttributeId runtimeAttributeId = new(Normalize(attributeId));
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedActorId = actorId.TrimToEmpty();
+            ActorAttributeId runtimeAttributeId = new(attributeId.TrimToEmpty());
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
             int entrySequence = _state.CurrentEntrySequence;
             string currentActivityId = _state.CurrentIdentity.IsValid
                 ? _state.CurrentIdentity.ActivityId
-                : Normalize(_state.CurrentDefinition.ActivityId);
+                : _state.CurrentDefinition.ActivityId.TrimToEmpty();
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
                 $"event='ActorAttributeMutationIntentRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' attributeId='{runtimeAttributeId}' operation='{operation}' source='{normalizedSource}' reason='{normalizedReason}'.",
@@ -4624,13 +4625,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out ActorDamageResult result)
         {
             result = default;
-            string normalizedActorId = Normalize(actorId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedActorId = actorId.TrimToEmpty();
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
             int entrySequence = _state.CurrentEntrySequence;
             string currentActivityId = _state.CurrentIdentity.IsValid
                 ? _state.CurrentIdentity.ActivityId
-                : Normalize(_state.CurrentDefinition.ActivityId);
+                : _state.CurrentDefinition.ActivityId.TrimToEmpty();
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
                 $"event='ActorDamageIntentRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' rawDamageAmount='{rawDamageAmount:0.###}' source='{normalizedSource}' reason='{normalizedReason}'.",
@@ -4749,14 +4750,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out ActorDamageSourceResult result)
         {
             result = default;
-            string normalizedSourceActorId = Normalize(sourceActorId);
-            string normalizedTargetActorId = Normalize(targetActorId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSourceActorId = sourceActorId.TrimToEmpty();
+            string normalizedTargetActorId = targetActorId.TrimToEmpty();
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
             int entrySequence = _state.CurrentEntrySequence;
             string currentActivityId = _state.CurrentIdentity.IsValid
                 ? _state.CurrentIdentity.ActivityId
-                : Normalize(_state.CurrentDefinition.ActivityId);
+                : _state.CurrentDefinition.ActivityId.TrimToEmpty();
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
                 $"event='ActorDamageSourceIntentRequested' activityId='{currentActivityId}' entrySequence='{entrySequence}' sourceActorId='{normalizedSourceActorId}' targetActorId='{normalizedTargetActorId}' rawDamageAmount='{rawDamageAmount:0.###}' source='{normalizedSource}' reason='{normalizedReason}'.",
@@ -4994,8 +4995,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out string outcomeReason)
         {
             outcomeReason = "unknown";
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             DebugUtility.LogVerbose(
                 typeof(SessionActivityPipeline),
@@ -5249,8 +5250,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out string outcomeReason)
         {
             outcomeReason = "unknown";
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             DebugUtility.LogVerbose(
                 typeof(SessionActivityPipeline),
@@ -5369,8 +5370,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             out string outcomeReason)
         {
             outcomeReason = "unknown";
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             DebugUtility.LogVerbose(
                 typeof(SessionActivityPipeline),
@@ -5455,7 +5456,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 outcomeReason = string.IsNullOrWhiteSpace(payloadFailureReason)
                     ? "activity_snapshot_capture_qa_payload_missing"
-                    : Normalize(payloadFailureReason);
+                    : payloadFailureReason.TrimToEmpty();
 
                 if (string.Equals(outcomeReason, "no_activity_content_contributors", StringComparison.Ordinal))
                 {
@@ -7637,7 +7638,7 @@ private bool HasLoadedSetForCurrentEntry(
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires activationWindowAdditiveSceneKey when activationWindowMode=AdditiveScene.");
             }
 
-            string sceneName = Normalize(definition.ActivationWindowAdditiveSceneKey.SceneName);
+            string sceneName = definition.ActivationWindowAdditiveSceneKey.SceneName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires activationWindowAdditiveSceneKey.SceneName when activationWindowMode=AdditiveScene. asset='{definition.ActivationWindowAdditiveSceneKey.name}'.");
@@ -7674,7 +7675,7 @@ private bool HasLoadedSetForCurrentEntry(
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires activationWindowAdditiveSceneKey for additive activation window unload.");
             }
 
-            string sceneName = Normalize(definition.ActivationWindowAdditiveSceneKey.SceneName);
+            string sceneName = definition.ActivationWindowAdditiveSceneKey.SceneName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires activationWindowAdditiveSceneKey.SceneName for additive activation window unload. asset='{definition.ActivationWindowAdditiveSceneKey.name}'.");
@@ -7711,7 +7712,7 @@ private bool HasLoadedSetForCurrentEntry(
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires deactivationWindowAdditiveSceneKey when deactivationWindowMode=AdditiveScene.");
             }
 
-            string sceneName = Normalize(definition.DeactivationWindowAdditiveSceneKey.SceneName);
+            string sceneName = definition.DeactivationWindowAdditiveSceneKey.SceneName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires deactivationWindowAdditiveSceneKey.SceneName when deactivationWindowMode=AdditiveScene. asset='{definition.DeactivationWindowAdditiveSceneKey.name}'.");
@@ -7748,7 +7749,7 @@ private bool HasLoadedSetForCurrentEntry(
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires deactivationWindowAdditiveSceneKey for additive deactivation window unload.");
             }
 
-            string sceneName = Normalize(definition.DeactivationWindowAdditiveSceneKey.SceneName);
+            string sceneName = definition.DeactivationWindowAdditiveSceneKey.SceneName.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires deactivationWindowAdditiveSceneKey.SceneName for additive deactivation window unload. asset='{definition.DeactivationWindowAdditiveSceneKey.name}'.");
@@ -7848,7 +7849,7 @@ private bool HasLoadedSetForCurrentEntry(
             out string failureReason)
         {
             payload = default;
-            string normalizedSessionStateId = Normalize(sessionStateId);
+            string normalizedSessionStateId = sessionStateId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedSessionStateId))
             {
                 failureReason = "session_state_id_missing";
@@ -7876,12 +7877,12 @@ private bool HasLoadedSetForCurrentEntry(
             string source,
             string reason)
         {
-            string normalizedSessionStateId = Normalize(requestedSessionStateId);
+            string normalizedSessionStateId = requestedSessionStateId.TrimToEmpty();
             SessionActivityStage stage = _state.CurrentStage;
             SessionActivityRailKind railKind = _activeRailKind;
             bool hasPendingOperation = _state.CurrentPendingOperation.IsValid;
-            string triggerSource = Normalize(source);
-            string triggerReason = Normalize(reason);
+            string triggerSource = source.TrimToEmpty();
+            string triggerReason = reason.TrimToEmpty();
 
             if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
             {
@@ -7952,7 +7953,7 @@ private bool HasLoadedSetForCurrentEntry(
                 return Task.FromCanceled<SessionActivityRouteExitTeardownResult>(cancellationToken);
             }
 
-            string normalizedSessionStateId = Normalize(requestedSessionStateId);
+            string normalizedSessionStateId = requestedSessionStateId.TrimToEmpty();
             if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
             {
                 return Task.FromResult(new SessionActivityRouteExitTeardownResult(
@@ -8011,7 +8012,7 @@ private bool HasLoadedSetForCurrentEntry(
             }
 
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"SessionActivityRouteExitAwaitRegistered sessionStateId='{normalizedSessionStateId}' source='{Normalize(source)}' reason='{Normalize(reason)}' stage='{_state.CurrentStage}' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}'.");
+                $"SessionActivityRouteExitAwaitRegistered sessionStateId='{normalizedSessionStateId}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}' stage='{_state.CurrentStage}' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}'.");
             return completion.Task;
         }
 
@@ -8031,7 +8032,7 @@ private bool HasLoadedSetForCurrentEntry(
                 return task.Result;
             }
 
-            string normalizedSessionStateId = Normalize(requestedSessionStateId);
+            string normalizedSessionStateId = requestedSessionStateId.TrimToEmpty();
             return new SessionActivityRouteExitTeardownResult(
                 SessionActivityRouteExitTeardownKind.Started,
                 normalizedSessionStateId,
@@ -8061,7 +8062,7 @@ private bool HasLoadedSetForCurrentEntry(
                 detail);
 
             DebugUtility.LogVerbose(typeof(SessionActivityPipeline),
-                $"SessionActivityRouteExitTeardownPreflightEvaluated result='{result}' source='{Normalize(source)}' reason='{Normalize(triggerReason)}'.",
+                $"SessionActivityRouteExitTeardownPreflightEvaluated result='{result}' source='{source.TrimToEmpty()}' reason='{triggerReason.TrimToEmpty()}'.",
                 kind == SessionActivityRouteExitTeardownPreflightKind.RejectedByPolicy || kind == SessionActivityRouteExitTeardownPreflightKind.Failed
                     ? DebugUtility.Colors.Warning
                     : DebugUtility.Colors.Info);
@@ -8152,7 +8153,7 @@ private bool HasLoadedSetForCurrentEntry(
                 "route_exit_completed",
                 "SessionActivity route-exit teardown completed by pipeline closure.");
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"SessionActivityRouteExitAwaitCompleted result='{result}' source='{Normalize(source)}' reason='{Normalize(reason)}'.");
+                $"SessionActivityRouteExitAwaitCompleted result='{result}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.");
             pending.Completion.TrySetResult(result);
         }
 
@@ -8308,7 +8309,7 @@ private bool HasLoadedSetForCurrentEntry(
             }
 
             PendingVisualReadinessCompletion pending = _pendingVisualReadinessCompletion;
-            if (!string.Equals(pending.Request.ExpectedRouteOperationId, Normalize(routeOperationId), StringComparison.Ordinal))
+            if (!string.Equals(pending.Request.ExpectedRouteOperationId, routeOperationId.TrimToEmpty(), StringComparison.Ordinal))
             {
                 return;
             }
@@ -8375,14 +8376,7 @@ private bool HasLoadedSetForCurrentEntry(
                 throw new InvalidOperationException($"Operation '{operation}' requires the pipeline to be started.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-
-        private sealed class ActivityEntryRuntimeBridgeAdapter : IActivityEntryRuntimeBridge
+private sealed class ActivityEntryRuntimeBridgeAdapter : IActivityEntryRuntimeBridge
         {
             private readonly SessionActivityPipeline _pipeline;
 

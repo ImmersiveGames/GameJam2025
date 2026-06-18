@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 {
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             Kind = kind;
             Handle = handle;
-            FailureReason = Normalize(failureReason);
+            FailureReason = failureReason.TrimToEmpty();
         }
 
         public ActorAttributeUiBindingResultKind Kind { get; }
@@ -33,10 +34,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         {
             return new ActorAttributeUiBindingResult(kind, null, failureReason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

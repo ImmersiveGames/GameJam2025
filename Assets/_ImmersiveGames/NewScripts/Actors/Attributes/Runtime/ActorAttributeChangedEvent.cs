@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
@@ -28,9 +29,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             MinValue = minValue;
             MaxValue = maxValue;
             Clamped = clamped;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            HasNormalizedValue = TryNormalize(currentValue, minValue, maxValue, out var normalizedValue);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            HasNormalizedValue = TryNormalize(currentValue, minValue, maxValue, out float normalizedValue);
             NormalizedValue = normalizedValue;
         }
 
@@ -53,9 +54,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             ActorInstanceRuntimeId.IsValid &&
             AttributeId.IsValid;
 
-        private static bool TryNormalize(float currentValue, float minValue, float maxValue, out float normalizedValue)
+        private static bool TryNormalize(
+            float currentValue,
+            float minValue,
+            float maxValue,
+            out float normalizedValue)
         {
             normalizedValue = 0f;
+
             float denominator = maxValue - minValue;
             if (denominator <= float.Epsilon)
             {
@@ -73,11 +79,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             }
 
             return true;
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

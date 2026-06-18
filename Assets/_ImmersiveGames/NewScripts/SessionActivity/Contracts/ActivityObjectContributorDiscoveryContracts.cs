@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -29,22 +30,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            PipelineId = Normalize(identity.PipelineId);
-            SessionStateId = Normalize(identity.SessionId);
-            ActivityId = Normalize(identity.ActivityId);
+            PipelineId = identity.PipelineId.TrimToEmpty();
+            SessionStateId = identity.SessionId.TrimToEmpty();
+            ActivityId = identity.ActivityId.TrimToEmpty();
             ActivityOrdinal = identity.ActivityOrdinal;
             EntrySequence = identity.EntrySequence;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             SceneKey = sceneKey;
-            SceneName = Normalize(sceneName);
-            TargetId = Normalize(targetId);
-            RoleId = Normalize(roleId);
+            SceneName = sceneName.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
+            RoleId = roleId.TrimToEmpty();
             ContributorKind = contributorKind;
             Requiredness = requiredness;
             ResetBoundaryEligibility = resetBoundaryEligibility;
             SupportedReleaseKinds = supportedReleaseKinds ?? Array.Empty<ActivityReleaseRequirementKind>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -86,12 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{SceneName}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(ResetBoundaryEligibility)}', resetDescriptor='endpoint_inventory', descriptorMode='endpoint_inventory', releaseKinds='{SupportedReleaseKinds.Count}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityObjectContributorDiscoveryResult
     {
@@ -104,11 +100,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string message)
         {
             Identity = identity;
-            ContentProfileId = Normalize(contentProfileId);
+            ContentProfileId = contentProfileId.TrimToEmpty();
             Reports = reports ?? Array.Empty<ActivityObjectContributionReport>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -128,10 +124,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', reports='{Reports.Count}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

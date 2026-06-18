@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
 {
     /// <summary>
@@ -22,15 +23,15 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
             string targetScene = null,
             bool technicalInternal = false)
         {
-            PhaseEntryIdentity = Normalize(phaseEntryIdentity);
-            SessionSignature = Normalize(sessionSignature);
-            EntrySignature = Normalize(entrySignature);
-            CycleSignature = Normalize(cycleSignature);
-            Reason = Normalize(reason);
-            Source = Normalize(source);
-            Handshake = Normalize(handshake);
-            RouteKind = Normalize(routeKind);
-            TargetScene = Normalize(targetScene);
+            PhaseEntryIdentity = phaseEntryIdentity.TrimToEmpty();
+            SessionSignature = sessionSignature.TrimToEmpty();
+            EntrySignature = entrySignature.TrimToEmpty();
+            CycleSignature = cycleSignature.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Handshake = handshake.TrimToEmpty();
+            RouteKind = routeKind.TrimToEmpty();
+            TargetScene = targetScene.TrimToEmpty();
             _technicalInternal = technicalInternal;
         }
 
@@ -130,13 +131,7 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
             hash.Add(_technicalInternal);
             return hash.ToHashCode();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string Format(string value)
+private static string Format(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "<null>" : value;
         }
@@ -365,7 +360,7 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     {
         public GameResetRequestedEvent(string reason = null, RunLifecycleSignalIdentity identity = null)
         {
-            Reason = RunLifecycleReasonFormatter.NormalizeOptional(reason, "Restart/Unspecified");
+            Reason = reason.TrimToOrDefault("Restart/Unspecified");
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 Reason,
                 nameof(GameResetRequestedEvent),

@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             Contribution = contribution;
             TargetObject = targetObject;
-            TargetObjectPath = Normalize(targetObjectPath);
+            TargetObjectPath = targetObjectPath.TrimToEmpty();
             IncludeChildrenForEndpointDiscovery = includeChildrenForEndpointDiscovery;
         }
 
@@ -23,10 +24,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public bool IncludeChildrenForEndpointDiscovery { get; }
         public bool HasTargetObjectPath => !string.IsNullOrWhiteSpace(TargetObjectPath);
         public bool IsValid => Contribution.IsValid && TargetObject != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

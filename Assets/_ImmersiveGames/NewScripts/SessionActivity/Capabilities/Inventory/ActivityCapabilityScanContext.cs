@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -16,8 +17,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Identity = identity;
             ActivityObjectTargets = activityObjectTargets ?? Array.Empty<ActivityObjectCapabilityScanTarget>();
             ActorTargets = actorTargets ?? Array.Empty<ActorScanTarget>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityCapabilityScanContext(
@@ -38,10 +39,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

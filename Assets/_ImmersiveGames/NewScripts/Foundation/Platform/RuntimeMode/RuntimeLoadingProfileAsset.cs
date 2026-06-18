@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [SerializeField, Min(0f)] private float minimumVisibleSeconds;
         [SerializeField, Min(0f)] private float finalProgressHoldSeconds;
 
-        public string ProfileId => Normalize(profileId);
+        public string ProfileId => profileId.TrimToEmpty();
         public bool ShowImmediately => showImmediately;
         public bool HideAfterCompletion => hideAfterCompletion;
         public float MinimumVisibleSeconds => minimumVisibleSeconds < 0f ? 0f : minimumVisibleSeconds;
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnValidate()
         {
-            profileId = Normalize(profileId);
+            profileId = profileId.TrimToEmpty();
             minimumVisibleSeconds = Mathf.Max(0f, minimumVisibleSeconds);
 
             if (TryValidate(out string errorMessage) || string.IsNullOrWhiteSpace(errorMessage))
@@ -63,10 +64,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             errorMessage = string.Empty;
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

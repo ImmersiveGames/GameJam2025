@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
 {
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
             ReleasedPoolCount = releasedPoolCount < 0 ? 0 : releasedPoolCount;
             ActiveObjectCountBeforeRelease = activeObjectCountBeforeRelease < 0 ? 0 : activeObjectCountBeforeRelease;
             InactiveObjectCountBeforeRelease = inactiveObjectCountBeforeRelease < 0 ? 0 : inactiveObjectCountBeforeRelease;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Reason = reason.TrimToEmpty();
         }
 
         public PoolLifetimeScope Scope { get; }

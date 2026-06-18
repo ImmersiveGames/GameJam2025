@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -33,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SurfacePresentationProfileAsset surfacePresentationProfile,
             ActivityPresentationProfileAsset activityPresentationProfile)
         {
-            RouteIdentity = Normalize(routeIdentity);
+            RouteIdentity = routeIdentity.TrimToEmpty();
             TransitionMode = transitionMode;
             TransitionProfile = transitionProfile;
             LoadingMode = loadingMode;
@@ -45,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
             ActiveSceneKey = activeSceneKey;
             CompletionHandoff = completionHandoff;
-            HandoffSessionStateId = Normalize(handoffSessionStateId);
+            HandoffSessionStateId = handoffSessionStateId.TrimToEmpty();
             OperationalSurfaceKind = operationalSurfaceKind;
             InputPolicy = inputPolicy;
             ActivitySavePolicy = activitySavePolicy;
@@ -111,10 +112,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneKey.SceneName.Trim();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

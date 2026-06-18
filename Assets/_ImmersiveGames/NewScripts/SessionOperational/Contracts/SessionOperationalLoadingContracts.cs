@@ -1,4 +1,5 @@
-﻿using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -52,15 +53,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string loadingSceneName,
             float finalProgressHoldSeconds)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
             LoadingMode = loadingMode;
             LoadingProfile = loadingProfile;
-            LoadingSceneName = Normalize(loadingSceneName);
+            LoadingSceneName = loadingSceneName.TrimToEmpty();
             ShowImmediately = loadingProfile != null && loadingProfile.ShowImmediately;
             HideAfterCompletion = loadingProfile == null || loadingProfile.HideAfterCompletion;
             MinimumVisibleSeconds = loadingProfile != null && loadingProfile.MinimumVisibleSeconds > 0f
@@ -84,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public bool HideAfterCompletion { get; }
         public float MinimumVisibleSeconds { get; }
         public float FinalProgressHoldSeconds { get; }
-        public string LoadingProfileId => LoadingProfile != null ? Normalize(LoadingProfile.ProfileId) : string.Empty;
+        public string LoadingProfileId => LoadingProfile != null ? LoadingProfile.ProfileId.TrimToEmpty() : string.Empty;
         public bool IsEnabled => LoadingMode != SessionOperationalRouteLoadingMode.None && !string.IsNullOrWhiteSpace(LoadingSceneName);
 
         public bool IsValid
@@ -127,12 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 ? $"routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', loadingMode='{LoadingMode}', loadingProfileId='{LoadingProfileId}', loadingSceneName='{LoadingSceneName}', showImmediately='{ShowImmediately}', hideAfterCompletion='{HideAfterCompletion}', minimumVisibleSeconds='{MinimumVisibleSeconds:0.###}', finalProgressHoldSeconds='{FinalProgressHoldSeconds:0.###}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionOperationalLoadingFact
     {
@@ -148,8 +144,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Stage = stage;
             OutcomeKind = outcomeKind;
             NormalizedProgress = Mathf.Clamp01(normalizedProgress);
-            StepLabel = Normalize(stepLabel);
-            Message = Normalize(message);
+            StepLabel = stepLabel.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public SessionOperationalLoadingCommand Command { get; }
@@ -177,11 +173,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 ? $"routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', loadingProfileId='{LoadingProfileId}', stage='{Stage}', normalizedProgress='{NormalizedProgress:0.###}', stepLabel='{StepLabel}', message='{Message}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }
 

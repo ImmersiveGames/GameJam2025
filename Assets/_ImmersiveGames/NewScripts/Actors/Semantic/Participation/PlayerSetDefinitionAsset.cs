@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
@@ -58,9 +59,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             [SerializeField] private ActorDefinitionAsset actorDefinition;
             [SerializeField] private bool required;
 
-            public PlayerSlotId PlayerSlotId => new(Normalize(playerSlotId));
-            public PlayerSelectionId PlayerSelectionId => new(Normalize(playerSelectionId));
-            public ActorId ActorId => new(Normalize(actorId));
+            public PlayerSlotId PlayerSlotId => new(playerSlotId.TrimToEmpty());
+            public PlayerSelectionId PlayerSelectionId => new(playerSelectionId.TrimToEmpty());
+            public ActorId ActorId => new(actorId.TrimToEmpty());
             public ActorDefinitionAsset ActorDefinition => actorDefinition;
             public ActorDefinitionId ActorDefinitionId => new(actorDefinition != null ? actorDefinition.ActorDefinitionId : string.Empty);
             public bool HasPrefabReference => actorDefinition != null && actorDefinition.PrefabReference != null;
@@ -170,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         {
             if (!TryValidate(out string errorMessage))
             {
-                string message = $"[FATAL][Config][PlayerSetDefinition] owner='{Normalize(owner)}' asset='{name}' detail='{errorMessage}'.";
+                string message = $"[FATAL][Config][PlayerSetDefinition] owner='{owner.TrimToEmpty()}' asset='{name}' detail='{errorMessage}'.";
                 DebugUtility.LogError<PlayerSetDefinitionAsset>(message);
                 throw new InvalidOperationException(message);
             }
@@ -201,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         {
             if (!TryValidate(out string errorMessage))
             {
-                string message = $"[FATAL][Config][PlayerSetDefinition] owner='{Normalize(owner)}' asset='{name}' detail='{errorMessage}'.";
+                string message = $"[FATAL][Config][PlayerSetDefinition] owner='{owner.TrimToEmpty()}' asset='{name}' detail='{errorMessage}'.";
                 DebugUtility.LogError<PlayerSetDefinitionAsset>(message);
                 throw new InvalidOperationException(message);
             }
@@ -225,7 +226,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
             return resolvedEntries;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

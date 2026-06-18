@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 {
@@ -24,8 +25,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             string source,
             string reason)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             if (!target.IsValid)
             {
@@ -188,10 +189,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
             return ActorAttributeUiBindingResult.Rejected(kind, normalizedFailureReason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

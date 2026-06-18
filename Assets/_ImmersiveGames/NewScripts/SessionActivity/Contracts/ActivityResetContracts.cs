@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -141,9 +142,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             StateProfileKind = stateProfileKind == ActivityResetStateProfileKind.Unknown
                 ? ActivityResetIntentProfileDefaults.ResolveStateProfile(resetIntent)
                 : stateProfileKind;
-            PolicyId = Normalize(policyId);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            PolicyId = policyId.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -163,12 +164,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             StateProfileKind != ActivityResetStateProfileKind.Unknown &&
             !string.IsNullOrWhiteSpace(PolicyId) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityResetActivityReference
     {
@@ -178,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int activityOrdinal)
         {
             Identity = identity;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
         }
 
@@ -192,12 +188,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityOrdinal > 0 &&
             string.Equals(Identity.ActivityId, ActivityId, System.StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum ActivityResetCompletionKind
     {
@@ -218,8 +209,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Activity = activity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityResetActivityReference Activity { get; }
@@ -232,12 +223,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsValid =>
             Activity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityResetContext
     {
@@ -264,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int failedCount)
         {
             CompletionKind = completionKind;
-            CompletionReason = Normalize(completionReason);
+            CompletionReason = completionReason.TrimToEmpty();
             CommandCount = commandCount < 0 ? 0 : commandCount;
             AppliedCount = appliedCount < 0 ? 0 : appliedCount;
             SkippedCount = skippedCount < 0 ? 0 : skippedCount;
@@ -279,10 +265,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int FailedCount { get; }
 
         public bool IsValid => CompletionKind != ActivityResetCompletionKind.Unknown;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

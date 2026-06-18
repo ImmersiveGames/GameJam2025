@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 {
@@ -24,11 +25,11 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
             string savedAtUtc = null)
         {
             Kind = kind;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Reason = reason.TrimToEmpty();
             Entries = CloneEntries(entries);
             SchemaVersion = schemaVersion;
             Revision = revision;
-            SavedAtUtc = string.IsNullOrWhiteSpace(savedAtUtc) ? string.Empty : savedAtUtc.Trim();
+            SavedAtUtc = savedAtUtc.TrimToEmpty();
         }
 
         public SaveResultKind Kind { get; }

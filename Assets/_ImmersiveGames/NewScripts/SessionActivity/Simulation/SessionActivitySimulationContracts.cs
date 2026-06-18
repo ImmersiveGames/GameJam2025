@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 {
     public enum ActivityExecutionBlockingCommandKind
@@ -44,14 +45,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             string source,
             string reason)
         {
-            _pipelineId = Normalize(pipelineId);
-            _sessionStateId = Normalize(sessionStateId);
-            _activityId = Normalize(activityId);
+            _pipelineId = pipelineId.TrimToEmpty();
+            _sessionStateId = sessionStateId.TrimToEmpty();
+            _activityId = activityId.TrimToEmpty();
             _activityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             _entrySequence = entrySequence < 0 ? 0 : entrySequence;
             _stage = stage;
-            _source = Normalize(source);
-            _reason = Normalize(reason);
+            _source = source.TrimToEmpty();
+            _reason = reason.TrimToEmpty();
         }
 
         public string PipelineId => _pipelineId ?? string.Empty;
@@ -125,12 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
         public static bool operator ==(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right) => left.Equals(right);
         public static bool operator !=(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right) => !left.Equals(right);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public readonly struct ActivityExecutionBlockingCommand
@@ -143,8 +139,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             Kind = kind;
             Identity = identity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityExecutionBlockingCommandKind Kind { get; }
@@ -158,12 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public readonly struct SimulationGateFact
@@ -177,9 +168,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             Kind = kind;
             Identity = identity;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityExecutionBlockingFactKind Kind { get; }
@@ -194,12 +185,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public readonly struct SimulationGateSnapshot
@@ -223,9 +209,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             ActivityBlocked = activityBlocked;
             ActivityIdentity = activityIdentity;
             LastFact = lastFact;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityExecutionBlockingCommandKind CommandKind { get; }
@@ -245,12 +231,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"commandKind='{CommandKind}', commandIdentity='{CommandIdentity}', sessionBlocked='{SessionBlocked}', sessionIdentity='{SessionIdentity}', activityBlocked='{ActivityBlocked}', activityIdentity='{ActivityIdentity}', lastFact='{LastFact}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     [Serializable]
     public sealed class ActivityExecutionBlockingState
@@ -290,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             Command = command;
             Facts = facts ?? Array.Empty<SimulationGateFact>();
             Snapshot = snapshot;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityExecutionBlockingCommand Command { get; }
@@ -307,11 +288,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         {
             return $"command='{Command}', factsCount='{Facts.Count}', reason='{Reason}', snapshot='{Snapshot}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }
 

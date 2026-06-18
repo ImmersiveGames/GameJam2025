@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
@@ -50,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             entrySequence = identity.EntrySequence;
             playerSlotId = bindPlayerSlotId.Value;
             playerActorId = bindPlayerActorId.Value;
-            endpointType = Normalize(bindEndpointType);
+            endpointType = bindEndpointType.TrimToEmpty();
         }
 
         public void Clear()
@@ -63,10 +64,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             playerActorId = string.Empty;
             endpointType = string.Empty;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

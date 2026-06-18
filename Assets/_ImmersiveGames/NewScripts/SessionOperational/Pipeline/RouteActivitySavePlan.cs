@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -14,9 +15,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteActivitySaveLoadPlan loadOnEnter,
             RouteActivitySaveOnExitPlan saveOnExit)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             CurrentPolicy = currentPolicy;
             LoadOnEnter = loadOnEnter;
@@ -39,9 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             CurrentPolicy.IsValid &&
             LoadOnEnter.IsValid &&
             SaveOnExit.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct RouteActivitySaveLoadPlan
     {
@@ -56,15 +55,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteActivitySaveSkipKind skipKind,
             string skipDetail)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            ActivityIdentity = Normalize(activityIdentity);
+            ActivityIdentity = activityIdentity.TrimToEmpty();
             LoadActivitySaveOnEnter = loadActivitySaveOnEnter;
             ShouldLoad = shouldLoad;
             SkipKind = skipKind;
-            SkipDetail = Normalize(skipDetail);
+            SkipDetail = skipDetail.TrimToEmpty();
         }
 
         public string RouteIdentity { get; }
@@ -84,9 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
             (ShouldLoad || SkipKind != RouteActivitySaveSkipKind.None);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct RouteActivitySaveOnExitPlan
     {
@@ -107,21 +104,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteActivitySaveSkipKind skipKind,
             string skipDetail)
         {
-            CurrentRouteIdentity = Normalize(currentRouteIdentity);
-            CurrentRouteOperationId = Normalize(currentRouteOperationId);
-            CurrentTransitionId = Normalize(currentTransitionId);
+            CurrentRouteIdentity = currentRouteIdentity.TrimToEmpty();
+            CurrentRouteOperationId = currentRouteOperationId.TrimToEmpty();
+            CurrentTransitionId = currentTransitionId.TrimToEmpty();
             CurrentRouteSequence = currentRouteSequence < 0 ? 0 : currentRouteSequence;
             HasPreviousRoute = hasPreviousRoute;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            PreviousRouteOperationId = Normalize(previousRouteOperationId);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            PreviousRouteOperationId = previousRouteOperationId.TrimToEmpty();
             PreviousRouteSequence = previousRouteSequence < 0 ? 0 : previousRouteSequence;
             PreviousSaveActivityOnExit = previousSaveActivityOnExit;
             PreviousRouteContributorScopePolicy = previousRouteContributorScopePolicy;
-            PreviousActivityIdentity = Normalize(previousActivityIdentity);
-            PreviousActivitySaveKey = Normalize(previousActivitySaveKey);
+            PreviousActivityIdentity = previousActivityIdentity.TrimToEmpty();
+            PreviousActivitySaveKey = previousActivitySaveKey.TrimToEmpty();
             ShouldSave = shouldSave;
             SkipKind = skipKind;
-            SkipDetail = Normalize(skipDetail);
+            SkipDetail = skipDetail.TrimToEmpty();
         }
 
         public string CurrentRouteIdentity { get; }
@@ -147,9 +144,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(CurrentTransitionId) &&
             CurrentRouteSequence > 0 &&
             (ShouldSave || SkipKind != RouteActivitySaveSkipKind.None);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public static class RouteActivitySavePlanResolver
     {

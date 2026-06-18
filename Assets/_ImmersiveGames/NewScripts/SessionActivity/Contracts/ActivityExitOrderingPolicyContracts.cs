@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -64,8 +65,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SnapshotBeforeTeardown = snapshotBeforeTeardown;
             ReleaseAfterDeactivationWindow = releaseAfterDeactivationWindow;
             OperationalMayContinueBeforeRouteExitCompleted = operationalMayContinueBeforeRouteExitCompleted;
-            PolicyId = Normalize(policyId);
-            Reason = Normalize(reason);
+            PolicyId = policyId.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityExitOrderingScenario Scenario { get; }
@@ -173,12 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             operationalMayContinueBeforeRouteExitCompleted: false,
             policyId: ActivityExitOrderingPolicyIds.RouteExitFromDeactivationWindowReady,
             reason: "route_exit_from_deactivation_window_ready_must_reuse_active_window_and_complete_single_exit_rail");
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public static class ActivityExitOrderingPolicyIds
     {

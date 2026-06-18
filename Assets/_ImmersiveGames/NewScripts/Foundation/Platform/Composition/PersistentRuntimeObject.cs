@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -22,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 throw new InvalidOperationException(message);
             }
 
-            string key = Normalize(identityKey);
+            string key = identityKey.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(key))
             {
                 string message = $"[FATAL][Config][PersistentRuntimeObject] identityKey obrigatorio ausente. gameObject='{name}'.";
@@ -54,16 +55,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 return;
             }
 
-            string key = Normalize(identityKey);
+            string key = identityKey.TrimToEmpty();
             if (Registry.TryGetValue(key, out var existing) && ReferenceEquals(existing, this))
             {
                 Registry.Remove(key);
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

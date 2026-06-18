@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 {
@@ -20,8 +21,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             SourceKind = sourceKind;
             Required = required;
             DefaultReservation = defaultReservation;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public PlayerSlotId SlotId { get; }
@@ -33,9 +34,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Reason { get; }
 
         public bool IsValid => SlotId.IsValid && SlotKind != PlayerSlotKind.Unknown && SourceKind != PlayerSlotReservationSourceKind.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerSelection
     {
@@ -51,8 +50,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             SelectionId = selectionId;
             ActorDefinitionId = actorDefinitionId;
             SourceKind = sourceKind;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public PlayerSlotId SlotId { get; }
@@ -67,9 +66,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             SelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             SourceKind != PlayerSelectionSourceKind.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SessionParticipantBinding
     {
@@ -99,8 +96,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             Required = required;
             RequiresPlayerActor = requiresPlayerActor;
             RequiresPlayerInput = requiresPlayerInput;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionParticipantId ParticipantId { get; }
@@ -126,9 +123,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             ActorId.IsValid &&
             ActorScope != ActorScope.Unknown &&
             MaterializationPolicy != ActorMaterializationPolicyKind.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class SessionParticipationContext
     {
@@ -170,17 +165,17 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             string source,
             string reason)
         {
-            SessionId = Normalize(sessionId);
+            SessionId = sessionId.TrimToEmpty();
             Revision = revision;
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
             RequirementKind = requirementKind;
             SlotReservations = slotReservations ?? Array.Empty<PlayerSlotReservation>();
             Selections = selections ?? Array.Empty<PlayerSelection>();
             Participants = participants ?? Array.Empty<SessionParticipantBinding>();
             RuntimeJoinPolicy = runtimeJoinPolicy;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string SessionId { get; }
@@ -283,7 +278,5 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
             return true;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

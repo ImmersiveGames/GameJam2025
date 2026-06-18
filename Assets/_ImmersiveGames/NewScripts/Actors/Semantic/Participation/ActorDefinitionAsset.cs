@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
@@ -35,12 +36,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         [SerializeField] private Vector3 localPosition;
         [SerializeField] private Vector3 localRotation;
 
-        public string ActorDefinitionId => Normalize(actorDefinitionId);
-        public string DisplayName => Normalize(displayName);
+        public string ActorDefinitionId => actorDefinitionId.TrimToEmpty();
+        public string DisplayName => displayName.TrimToEmpty();
         public ActorDefinitionKind ActorKind => actorKind;
         public GameObject PrefabReference => prefabReference;
         public ActorPlacementMode PlacementMode => placementMode;
-        public string PlacementKey => Normalize(placementKey);
+        public string PlacementKey => placementKey.TrimToEmpty();
         public Vector3 LocalPosition => localPosition;
         public Vector3 LocalRotation => localRotation;
         public bool HasPlacementPlan => ResolveHasPlacementPlan(placementMode, placementKey);
@@ -87,13 +88,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 }
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static bool IsValidPlacementMode(ActorPlacementMode value)
+private static bool IsValidPlacementMode(ActorPlacementMode value)
         {
             return value == ActorPlacementMode.None ||
                    value == ActorPlacementMode.SceneMarker ||

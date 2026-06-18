@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -18,8 +19,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Owners = owners ?? Array.Empty<ActivityCapabilityOwnerDescriptor>();
             Capabilities = capabilities ?? Array.Empty<ActivityCapabilityDescriptor>();
             RuntimeReferences = runtimeReferences ?? new Dictionary<string, IActivityCapabilityRuntimeReference>(StringComparer.Ordinal);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityCapabilityInventoryId Id { get; }
@@ -86,10 +87,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"id='{Id}', owners='{OwnerCount}', capabilities='{CapabilityCount}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

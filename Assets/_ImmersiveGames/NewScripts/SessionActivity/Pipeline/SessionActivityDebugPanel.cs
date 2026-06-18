@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
@@ -185,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 "SessionActivityHost/QA/SaveCapturedActivitySnapshotEnvelope",
                 out string outcomeReason);
 
-            string normalizedOutcomeReason = string.IsNullOrWhiteSpace(outcomeReason) ? string.Empty : outcomeReason.Trim();
+            string normalizedOutcomeReason = outcomeReason.TrimToEmpty();
             string outcomeKind = normalizedOutcomeReason.StartsWith("qa_save_skipped_", StringComparison.Ordinal)
                 ? "Skipped"
                 : saved

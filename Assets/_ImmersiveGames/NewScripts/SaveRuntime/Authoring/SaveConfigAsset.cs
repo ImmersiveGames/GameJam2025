@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
@@ -15,8 +16,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
         [SerializeField] private int schemaVersion = 1;
         [SerializeField] private SaveBackendAsset backend;
 
-        public string DefaultProfileId => Normalize(defaultProfileId);
-        public string DefaultSlotId => Normalize(defaultSlotId);
+        public string DefaultProfileId => defaultProfileId.TrimToEmpty();
+        public string DefaultSlotId => defaultSlotId.TrimToEmpty();
         public int SchemaVersion => schemaVersion;
         public SaveBackendAsset Backend => backend;
 
@@ -53,10 +54,5 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
                 throw new InvalidOperationException($"SaveConfigAsset '{name}' requires backend.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

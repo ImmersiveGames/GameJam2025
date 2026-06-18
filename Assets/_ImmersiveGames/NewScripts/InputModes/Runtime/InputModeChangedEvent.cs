@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         {
             PreviousMode = previousMode;
             CurrentMode = currentMode;
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Reason = reason.TrimToEmpty();
         }
 
         public InputModeRequestKind PreviousMode { get; }

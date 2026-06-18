@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Identity = identity;
             Command = command;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            SnapshotSchemaId = Normalize(snapshotSchemaId);
+            SnapshotSchemaId = snapshotSchemaId.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -36,12 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(SnapshotSchemaId) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal readonly struct ActivityObjectSnapshotCaptureStageResult
     {
@@ -58,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             CapturedCount = capturedCount < 0 ? 0 : capturedCount;
             FailedCount = failedCount < 0 ? 0 : failedCount;
             HasTransformPayload = hasTransformPayload;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Completed { get; }
@@ -68,12 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public bool HasTransformPayload { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal static class ActivityObjectSnapshotCaptureStage
     {
@@ -350,7 +341,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 {
                     captureFailureDetail = string.IsNullOrWhiteSpace(captureResult.Detail)
                         ? "snapshot_capture_failed"
-                        : Normalize(captureResult.Detail);
+                        : captureResult.Detail.TrimToEmpty();
                 }
                 failedIdentity = endpoint.BuildIdentity(
                     definition,
@@ -410,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 bool captureFailed = failedCount > 0;
                 string failureDetail = failedCount > 0
-                    ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail))
+                    ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : captureFailureDetail.TrimToEmpty())
                     : string.Empty;
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     default,
@@ -701,10 +692,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ? "local_transform"
                 : "world_transform";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -30,13 +31,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
             ActivityObjectLifecycleCapabilityCount = activityObjectLifecycleCapabilityCount < 0 ? 0 : activityObjectLifecycleCapabilityCount;
-            ActivityObjectLifecycleCapabilityKindsSummary = Normalize(activityObjectLifecycleCapabilityKindsSummary);
+            ActivityObjectLifecycleCapabilityKindsSummary = activityObjectLifecycleCapabilityKindsSummary.TrimToEmpty();
             ActorLifecycleCapabilityCount = actorLifecycleCapabilityCount < 0 ? 0 : actorLifecycleCapabilityCount;
-            ActorLifecycleCapabilityKindsSummary = Normalize(actorLifecycleCapabilityKindsSummary);
+            ActorLifecycleCapabilityKindsSummary = actorLifecycleCapabilityKindsSummary.TrimToEmpty();
             ObjectTargetCount = objectTargetCount < 0 ? 0 : objectTargetCount;
             UnresolvedReportCount = unresolvedReportCount < 0 ? 0 : unresolvedReportCount;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityCapabilityInventory Inventory { get; }
@@ -53,10 +54,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Inventory.IsValid;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

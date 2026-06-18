@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -31,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             LoadingStarted = loadingStarted;
             LoadingCompleted = loadingCompleted;
             LoadingHidden = loadingHidden;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalLoadingResultKind Kind { get; }
@@ -44,12 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsCompleted => Kind == OperationalLoadingResultKind.Completed;
         public bool IsSkipped => Kind == OperationalLoadingResultKind.Skipped;
         public bool IsAccepted => IsCompleted || IsSkipped;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalLoadingCommand
     {
@@ -59,8 +55,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             LoadingCommand = loadingCommand;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalLoadingCommand LoadingCommand { get; }
@@ -71,12 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             LoadingCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
 
     public readonly struct OperationalLoadingCompletionState

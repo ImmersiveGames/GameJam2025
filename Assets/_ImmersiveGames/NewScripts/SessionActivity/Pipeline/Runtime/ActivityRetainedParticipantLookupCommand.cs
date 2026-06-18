@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
@@ -17,8 +18,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             Identity = identity;
             ParticipantBinding = participantBinding;
             RetainedParticipationContext = retainedParticipationContext;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -31,10 +32,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             Identity.IsValid &&
             ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -53,19 +54,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             Completed = completed;
             Identity = identity;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Completed { get; }
         public SessionActivityIdentity Identity { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal interface IActivityExitActorTeardownRuntimeBridge
     {
@@ -814,7 +810,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorParticipationExitActorResult actorResult,
             string reasonCodeOverride = null)
         {
-            string reasonCode = string.IsNullOrWhiteSpace(reasonCodeOverride) ? actorResult.ReasonCode : reasonCodeOverride.Trim();
+            string reasonCode = reasonCodeOverride.TrimToOrDefault(actorResult.ReasonCode);
             SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
             endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{reasonCode}'.");
@@ -1101,13 +1097,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return "Unknown";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static ActorLifetimeTrigger ResolveLifetimeTrigger(SessionActivityPipeline.ActorPresentationReleaseRail releaseRail)
+private static ActorLifetimeTrigger ResolveLifetimeTrigger(SessionActivityPipeline.ActorPresentationReleaseRail releaseRail)
         {
             return releaseRail switch
             {

@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityCapabilityStageBoundaryKind
@@ -20,11 +21,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            CapabilityId = Normalize(capabilityId);
-            ActorId = Normalize(actorId);
-            ActorKind = Normalize(actorKind);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            CapabilityId = capabilityId.TrimToEmpty();
+            ActorId = actorId.TrimToEmpty();
+            ActorKind = actorKind.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -38,12 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(CapabilityId) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityCapabilityStageBoundary
     {

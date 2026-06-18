@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Presentation.Loading.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -151,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
                 return;
             }
 
-            _currentMessage = string.IsNullOrWhiteSpace(message) ? DefaultLabel : message.Trim();
+            _currentMessage = message.TrimToOrDefault(DefaultLabel);
             loadingText.text = _currentProgress.StepLabel ?? _currentMessage;
         }
 

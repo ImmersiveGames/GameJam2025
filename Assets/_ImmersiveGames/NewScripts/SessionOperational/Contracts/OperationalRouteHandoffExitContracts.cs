@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -21,11 +22,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string source,
             string reason)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            HandoffIdentity = Normalize(handoffIdentity);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            HandoffIdentity = handoffIdentity.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string RouteIdentity { get; }
@@ -35,12 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Reason { get; }
 
         public bool RequiresHandoffExit => !string.IsNullOrWhiteSpace(HandoffIdentity);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalRouteHandoffExitRequest
     {
@@ -54,14 +50,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string source,
             string reason)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            HandoffIdentity = Normalize(handoffIdentity);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            HandoffIdentity = handoffIdentity.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string RouteIdentity { get; }
@@ -74,12 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Reason { get; }
 
         public bool RequiresHandoffExit => !string.IsNullOrWhiteSpace(HandoffIdentity);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalRouteHandoffExitPreflightResult
     {
@@ -89,8 +80,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string detail)
         {
             Kind = kind;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalRouteHandoffExitPreflightKind Kind { get; }
@@ -106,12 +97,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum OperationalRouteHandoffExitKind
     {
@@ -131,9 +117,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string detail)
         {
             Kind = kind;
-            HandoffIdentity = Normalize(handoffIdentity);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            HandoffIdentity = handoffIdentity.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalRouteHandoffExitKind Kind { get; }
@@ -150,12 +136,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', handoffIdentity='{HandoffIdentity}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IOperationalRouteHandoffExitPort
     {

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
@@ -21,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             TargetActor = targetActor;
             TargetActorId = targetActorId;
             TargetActorInstanceRuntimeId = targetActorInstanceRuntimeId;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public GameObject TargetObject { get; }
@@ -51,10 +52,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 default,
                 reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

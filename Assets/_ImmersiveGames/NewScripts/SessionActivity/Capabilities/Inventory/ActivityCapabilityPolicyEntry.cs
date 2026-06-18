@@ -1,11 +1,12 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
     public readonly struct ActivityCapabilityPolicyEntry
     {
         public ActivityCapabilityPolicyEntry(string key, string value)
         {
-            Key = Normalize(key);
-            Value = Normalize(value);
+            Key = key.TrimToEmpty();
+            Value = value.TrimToEmpty();
         }
 
         public string Key { get; }
@@ -16,10 +17,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"{Key}={Value}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

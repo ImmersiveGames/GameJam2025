@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
@@ -53,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorDamageSourceEndpoint),
-                $"event='ActorDamageSourceConfigured' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageKind='{Normalize(damageKind)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorDamageSourceConfigured' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 
@@ -158,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorDamageSourceEndpoint),
-                $"event='ActorDamageSourceIntentEmitted' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' damageKind='{Normalize(damageIntent.DamageKind)}' rawDamageAmount='{intent.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' changedFact='{damageResult.HasChangedFact}' thresholdFacts='{damageResult.HasThresholdFacts}' source='{intent.Source}' reason='{intent.Reason}'",
+                $"event='ActorDamageSourceIntentEmitted' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' damageKind='{damageIntent.DamageKind.TrimToEmpty()}' rawDamageAmount='{intent.RawDamageAmount:0.###}' effectiveDamageAmount='{damageResult.EffectiveDamageAmount:0.###}' changedFact='{damageResult.HasChangedFact}' thresholdFacts='{damageResult.HasThresholdFacts}' source='{intent.Source}' reason='{intent.Reason}'",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -167,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorDamageSourceEndpoint),
-                $"event='ActorDamageSourceIntentRejected' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{Normalize(reason)}' source='{intent.Source}' reason='{intent.Reason}'",
+                $"event='ActorDamageSourceIntentRejected' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'",
                 DebugUtility.Colors.Warning);
         }
 
@@ -175,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             DebugUtility.LogWarning(
                 typeof(ActorDamageSourceEndpoint),
-                $"event='ActorDamageSourceIntentFailed' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{Normalize(reason)}' source='{intent.Source}' reason='{intent.Reason}'");
+                $"event='ActorDamageSourceIntentFailed' sourceActorId='{intent.SourceActorId}' sourceActorInstanceRuntimeId='{intent.SourceActorInstanceRuntimeId}' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'");
         }
 
         private static bool MatchesRequiredActivityIdentity(
@@ -190,10 +191,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             return candidateIdentity.IsValid &&
                    candidateIdentity.CycleKey == requiredIdentity.CycleKey;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

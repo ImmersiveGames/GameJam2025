@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -22,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string source,
             string reason)
         {
-            ScannerId = Normalize(scannerId);
+            ScannerId = scannerId.TrimToEmpty();
             Owners = owners ?? Array.Empty<ActivityCapabilityOwnerDescriptor>();
             Capabilities = capabilities ?? Array.Empty<ActivityCapabilityDescriptor>();
             RuntimeReferences = runtimeReferences ?? Array.Empty<IActivityCapabilityRuntimeReference>();
@@ -30,8 +31,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
             PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string ScannerId { get; }
@@ -61,10 +62,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source,
                 reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

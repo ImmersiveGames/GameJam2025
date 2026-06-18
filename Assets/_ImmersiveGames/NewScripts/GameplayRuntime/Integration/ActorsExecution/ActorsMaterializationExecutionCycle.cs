@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 {
     public readonly struct ActorsMaterializationExecutionCycle
@@ -6,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public ActorsMaterializationExecutionCycle(int phaseLocalEntrySequence, string entrySignature)
         {
             PhaseLocalEntrySequence = phaseLocalEntrySequence < 0 ? 0 : phaseLocalEntrySequence;
-            EntrySignature = string.IsNullOrWhiteSpace(entrySignature) ? string.Empty : entrySignature.Trim();
+            EntrySignature = entrySignature.TrimToEmpty();
         }
 
         public int PhaseLocalEntrySequence { get; }
@@ -29,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             if (!cycle.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] Invalid materialization execution cycle. phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{(string.IsNullOrWhiteSpace(entrySignature) ? "<none>" : entrySignature.Trim())}' source='{(string.IsNullOrWhiteSpace(source) ? "<none>" : source.Trim())}'.");
+                    $"[FATAL][Config][ActorsExecution] Invalid materialization execution cycle. phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{(entrySignature.TrimToOrDefault("<none>"))}' source='{(source.TrimToOrDefault("<none>"))}'.");
             }
 
             return cycle;

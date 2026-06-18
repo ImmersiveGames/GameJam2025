@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -19,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             DiscoveryResult = discoveryResult;
             Targets = targets ?? Array.Empty<ActivityObjectCapabilityScanTarget>();
             UnresolvedReports = unresolvedReports ?? Array.Empty<ActivityObjectContributionReport>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityObjectContributorDiscoveryResult DiscoveryResult { get; }
@@ -29,12 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => DiscoveryResult.IsValid && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class ActivityObjectCapabilityScanTargetAdapter
     {

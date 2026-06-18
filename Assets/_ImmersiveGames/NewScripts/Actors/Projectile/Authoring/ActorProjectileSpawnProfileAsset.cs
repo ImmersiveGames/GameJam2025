@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
@@ -35,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
         [SerializeField, InspectorName("Salvar em snapshot?"), Tooltip("Policy de snapshot. Projectiles runtime transient normalmente usam SkipRuntimeTransient.")]
         private ActorSnapshotPolicy snapshotPolicy = ActorSnapshotPolicy.SkipRuntimeTransient;
 
-        public ActorProjectileSpawnProfileId ProfileId => new(Normalize(profileId));
+        public ActorProjectileSpawnProfileId ProfileId => new(profileId.TrimToEmpty());
         public PoolDefinitionAsset PoolDefinition => poolDefinition;
         public ActorMaterializationKind MaterializationKind => materializationKind;
         public ActorLifetimePolicy.PolicyKind LifetimePolicy => lifetimePolicy;
@@ -108,10 +109,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            profileId = Normalize(profileId);
+            profileId = profileId.TrimToEmpty();
         }
 #endif
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

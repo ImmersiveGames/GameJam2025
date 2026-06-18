@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
 
@@ -297,7 +298,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 matchedRecordCount += 1;
-                string targetId = Normalize(record.OwnerId);
+                string targetId = record.OwnerId.TrimToEmpty();
                 if (string.IsNullOrWhiteSpace(targetId))
                 {
                     failureReason = "activity_object_snapshot_record_owner_missing";
@@ -313,7 +314,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 catch (Exception ex)
                 {
                     failureReason = "activity_object_snapshot_record_payload_invalid_json";
-                    failureDetail = $"recordIndex='{index}' ownerId='{targetId}' exception='{ex.GetType().Name}:{Normalize(ex.Message)}'";
+                    failureDetail = $"recordIndex='{index}' ownerId='{targetId}' exception='{ex.GetType().Name}:{ex.Message.TrimToEmpty()}'";
                     return false;
                 }
 
@@ -324,7 +325,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     return false;
                 }
 
-                string payloadTargetId = Normalize(dto.targetId);
+                string payloadTargetId = dto.targetId.TrimToEmpty();
                 if (!string.IsNullOrWhiteSpace(payloadTargetId) && !string.Equals(payloadTargetId, targetId, StringComparison.Ordinal))
                 {
                     failureReason = "activity_object_snapshot_record_target_mismatch";
@@ -332,7 +333,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     return false;
                 }
 
-                string coordinateSpace = Normalize(dto.coordinateSpace);
+                string coordinateSpace = dto.coordinateSpace.TrimToEmpty();
                 if (!string.Equals(coordinateSpace, WorldTransformCoordinateSpace, StringComparison.Ordinal))
                 {
                     failureReason = "activity_object_snapshot_record_coordinate_space_unsupported";
@@ -374,13 +375,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 record.PayloadFormat == ActivityCapabilitySnapshotPayloadFormat.Json &&
                 !string.IsNullOrWhiteSpace(record.Payload);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private readonly struct ActivityObjectTransformSnapshotPayload
+private readonly struct ActivityObjectTransformSnapshotPayload
         {
             public ActivityObjectTransformSnapshotPayload(
                 string targetId,
@@ -395,7 +390,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 float scaleY,
                 float scaleZ)
             {
-                TargetId = Normalize(targetId);
+                TargetId = targetId.TrimToEmpty();
                 PositionX = positionX;
                 PositionY = positionY;
                 PositionZ = positionZ;

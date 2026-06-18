@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -12,17 +13,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public OperationalRouteAudioRequest(SessionOperationalRouteCommand routeCommand, string source, string reason)
         {
             RouteCommand = routeCommand;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => RouteCommand.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum OperationalRouteAudioResultKind
     {
@@ -42,10 +41,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string detail)
         {
             Kind = kind;
-            CueType = Normalize(cueType);
-            CueName = Normalize(cueName);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            CueType = cueType.TrimToEmpty();
+            CueName = cueName.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalRouteAudioResultKind Kind { get; }
@@ -75,7 +74,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 reason,
                 detail);
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

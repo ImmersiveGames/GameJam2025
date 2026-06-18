@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 {
@@ -10,8 +11,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             string actorId,
             string sceneName)
         {
-            string normalizedActorId = Normalize(actorId);
-            string normalizedSceneName = Normalize(sceneName);
+            string normalizedActorId = actorId.TrimToEmpty();
+            string normalizedSceneName = sceneName.TrimToEmpty();
 
             switch (actorScope)
             {
@@ -29,10 +30,5 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         $"Scene-authored Actor uses unsupported ActorScope='{actorScope}' in v0. actorId='{normalizedActorId}' scene='{normalizedSceneName}'.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

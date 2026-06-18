@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 {
@@ -6,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
     {
         public PlayerSlotId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -19,15 +20,13 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
         public static bool operator ==(PlayerSlotId left, PlayerSlotId right) => left.Equals(right);
         public static bool operator !=(PlayerSlotId left, PlayerSlotId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerSelectionId : IEquatable<PlayerSelectionId>
     {
         public PlayerSelectionId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -40,15 +39,13 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
         public static bool operator ==(PlayerSelectionId left, PlayerSelectionId right) => left.Equals(right);
         public static bool operator !=(PlayerSelectionId left, PlayerSelectionId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SessionParticipantId : IEquatable<SessionParticipantId>
     {
         public SessionParticipantId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -71,15 +68,13 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
             return new SessionParticipantId($"participant.{playerSlotId}");
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct PlayerActorId : IEquatable<PlayerActorId>
     {
         public PlayerActorId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -92,15 +87,13 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
         public static bool operator ==(PlayerActorId left, PlayerActorId right) => left.Equals(right);
         public static bool operator !=(PlayerActorId left, PlayerActorId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActivityParticipantRequirementId : IEquatable<ActivityParticipantRequirementId>
     {
         public ActivityParticipantRequirementId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -113,7 +106,5 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
         public static bool operator ==(ActivityParticipantRequirementId left, ActivityParticipantRequirementId right) => left.Equals(right);
         public static bool operator !=(ActivityParticipantRequirementId left, ActivityParticipantRequirementId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
@@ -38,8 +39,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             MaxValue = maxValue;
             PreviousNormalizedValue = Clamp01(previousNormalizedValue);
             CurrentNormalizedValue = Clamp01(currentNormalizedValue);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -92,10 +93,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
             return value > 1f ? 1f : value;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

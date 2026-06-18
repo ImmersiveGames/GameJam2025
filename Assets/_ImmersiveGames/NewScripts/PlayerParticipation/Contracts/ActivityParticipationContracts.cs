@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 {
@@ -36,8 +37,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             Required = required;
             RequiresPlayerActor = requiresPlayerActor;
             RequiresPlayerInput = requiresPlayerInput;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActivityParticipantRequirementId RequirementId { get; }
@@ -65,9 +66,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             ActorId.IsValid &&
             ActorScope != ActorScope.Unknown &&
             MaterializationPolicy != ActorMaterializationPolicyKind.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActivityParticipationContext
     {
@@ -79,8 +78,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         {
             SessionActivityIdentity = sessionActivityIdentity;
             Participants = participants ?? Array.Empty<ActivityParticipantBinding>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity SessionActivityIdentity { get; }
@@ -109,9 +108,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
 
             return true;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorMaterializationRequest
     {
@@ -123,8 +120,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         {
             Identity = identity;
             Participant = participant;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -133,9 +130,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         public string Reason { get; }
 
         public bool IsValid => Identity.IsValid && Participant.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorMaterializationResult
     {
@@ -155,8 +150,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             CapabilitySurface = capabilitySurface;
             Materialized = materialized;
             Retained = retained;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionParticipantId ParticipantId { get; }
@@ -174,7 +169,5 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
             (Materialized || Retained);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

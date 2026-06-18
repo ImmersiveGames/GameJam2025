@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 {
@@ -42,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             EffectiveDamageAmount = effectiveDamageAmount;
             HasMutationResult = hasMutationResult;
             MutationResult = mutationResult;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public static ActorDamageResult AppliedResult(
@@ -138,10 +139,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 default,
                 reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

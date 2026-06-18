@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -17,9 +18,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
         {
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
@@ -79,10 +80,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', entrySequence='{EntrySequence}', actorId='{ActorId}', actorInstanceRuntimeId='{ActorInstanceRuntimeId}', playerActorId='{PlayerActorId}', playerSlotId='{PlayerSlotId}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

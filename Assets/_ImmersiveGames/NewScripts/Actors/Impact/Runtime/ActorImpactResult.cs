@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 {
@@ -18,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             Target = target;
             HasIntent = hasIntent;
             HasTarget = hasTarget;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorImpactOutcome Outcome { get; }
@@ -85,10 +86,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 target.HasTargetObject || target.HasTargetCollider || target.HasTargetActor,
                 reason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

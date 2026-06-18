@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
     public readonly struct ActivityCapabilityOwnerDescriptor
@@ -11,11 +12,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string source)
         {
             OwnerKind = ownerKind;
-            OwnerId = Normalize(ownerId);
-            OwnerPath = Normalize(ownerPath);
-            SourceScene = Normalize(sourceScene);
-            SourceContent = Normalize(sourceContent);
-            Source = Normalize(source);
+            OwnerId = ownerId.TrimToEmpty();
+            OwnerPath = ownerPath.TrimToEmpty();
+            SourceScene = sourceScene.TrimToEmpty();
+            SourceContent = sourceContent.TrimToEmpty();
+            Source = source.TrimToEmpty();
         }
 
         public ActivityCapabilityOwnerKind OwnerKind { get; }
@@ -36,10 +37,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"ownerKind='{OwnerKind}', ownerId='{OwnerId}', ownerPath='{OwnerPath}', sourceScene='{SourceScene}', sourceContent='{SourceContent}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

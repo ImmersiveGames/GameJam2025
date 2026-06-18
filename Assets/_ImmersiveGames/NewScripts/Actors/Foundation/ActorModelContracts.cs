@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
@@ -10,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
     {
         public ActorDefinitionId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -23,17 +24,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public static bool operator ==(ActorDefinitionId left, ActorDefinitionId right) => left.Equals(right);
         public static bool operator !=(ActorDefinitionId left, ActorDefinitionId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorDefinitionRef
     {
         public ActorDefinitionRef(ActorDefinitionId definitionId, string sourceAssetName, string sourceAssetPath)
         {
             DefinitionId = definitionId;
-            SourceAssetName = Normalize(sourceAssetName);
-            SourceAssetPath = Normalize(sourceAssetPath);
+            SourceAssetName = sourceAssetName.TrimToEmpty();
+            SourceAssetPath = sourceAssetPath.TrimToEmpty();
         }
 
         public ActorDefinitionId DefinitionId { get; }
@@ -41,9 +40,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string SourceAssetPath { get; }
         public bool HasDefinitionId => DefinitionId.IsValid;
         public bool IsValid => DefinitionId.IsValid || !string.IsNullOrWhiteSpace(SourceAssetName);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorKind
     {
@@ -156,19 +153,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             Identity = identity;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             DefinitionRef = definitionRef;
-            ActorId = Normalize(actorId);
+            ActorId = actorId.TrimToEmpty();
             Kind = actorKind;
             RuntimeActor = runtimeActor;
             CapabilitySurface = capabilitySurface;
             Role = actorRole;
             Scope = actorScope;
             SourceKind = actorSourceKind;
-            ParticipationPolicy = Normalize(participationPolicy);
+            ParticipationPolicy = participationPolicy.TrimToEmpty();
             ActorRoot = actorRoot;
-            SourceSceneName = Normalize(sourceSceneName);
-            ComponentBasePath = Normalize(componentBasePath);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            SourceSceneName = sourceSceneName.TrimToEmpty();
+            ComponentBasePath = componentBasePath.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -201,9 +198,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SourceKind != ActorSourceKind.Unknown &&
             !string.IsNullOrWhiteSpace(ParticipationPolicy) &&
             ActorRoot != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorEntryRecord
     {
@@ -217,8 +212,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             Identity = identity;
             ActorInstance = actorInstance;
             EntryOrder = entryOrder < 0 ? 0 : entryOrder;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -227,9 +222,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && ActorInstance.IsValid && EntryOrder >= 0 && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorParticipationRecord
     {
@@ -255,9 +248,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ParticipatesInCurrentEntry = participatesInCurrentEntry;
             Policy = policy;
             ExplicitActivityIds = explicitActivityIds ?? Array.Empty<string>();
-            PolicyMetadata = Normalize(policyMetadata);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            PolicyMetadata = policyMetadata.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -284,7 +277,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
             for (int index = 0; index < ExplicitActivityIds.Count; index++)
             {
-                if (string.IsNullOrWhiteSpace(Normalize(ExplicitActivityIds[index])))
+                if (string.IsNullOrWhiteSpace(ExplicitActivityIds[index].TrimToEmpty()))
                 {
                     return false;
                 }
@@ -292,7 +285,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
             return true;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

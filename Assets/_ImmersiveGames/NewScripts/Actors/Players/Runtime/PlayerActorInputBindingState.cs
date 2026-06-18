@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
@@ -60,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             playerActorId = bindPlayerActorId.Value;
             playerInputInstanceId = bindPlayerInputInstanceId;
             playerInputIndex = bindPlayerInputIndex < 0 ? 0 : bindPlayerInputIndex;
-            playerInputName = Normalize(bindPlayerInputName);
+            playerInputName = bindPlayerInputName.TrimToEmpty();
         }
 
         public void Clear()
@@ -75,10 +76,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             playerInputIndex = 0;
             playerInputName = string.Empty;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

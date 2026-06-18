@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
         public ActorAttributeThresholdId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public bool Equals(ActorAttributeThresholdId other)
@@ -46,10 +47,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         {
             return !left.Equals(right);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

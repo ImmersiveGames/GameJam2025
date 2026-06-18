@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
@@ -17,8 +18,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
         public InputModeService(string playerMapName, string menuMapName)
         {
-            _playerMapName = InputModesDefaults.Normalize(playerMapName);
-            _menuMapName = InputModesDefaults.Normalize(menuMapName);
+            _playerMapName = playerMapName.TrimToEmpty();
+            _menuMapName = menuMapName.TrimToEmpty();
 
             if (string.IsNullOrWhiteSpace(_playerMapName))
             {
@@ -41,11 +42,11 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             if (playerInput == null)
             {
                 HardFailFastH1.Trigger(typeof(InputModeService),
-                    $"[FATAL][Config][InputModes] PlayerInput obrigatorio ausente para reaplicar modo atual reason='{NormalizeReason(reason)}'.");
+                    $"[FATAL][Config][InputModes] PlayerInput obrigatorio ausente para reaplicar modo atual reason='{reason.TrimToOrDefault("InputMode/Unknown")}'.");
                 return;
             }
 
-            string resolvedReason = NormalizeReason(reason);
+            string resolvedReason = reason.TrimToOrDefault("InputMode/Unknown");
             switch (_currentMode)
             {
                 case InputModeRequestKind.FrontendMenu:
@@ -75,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
         private void HandleRequest(InputModeRequestKind mode, string reason)
         {
-            string resolvedReason = NormalizeReason(reason);
+            string resolvedReason = reason.TrimToOrDefault("InputMode/Unknown");
 
             switch (mode)
             {
@@ -107,16 +108,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                         $"[FATAL][H1][InputModes] Unsupported InputModeRequestKind '{mode}' reason='{resolvedReason}'.");
                     return;
             }
-        }
-
-        private static string NormalizeReason(string reason)
-        {
-            if (string.IsNullOrWhiteSpace(reason))
-            {
-                return "InputMode/Unknown";
-            }
-
-            return reason.Trim();
         }
 
         private void ApplyModeToPlayerInput(InputModeRequestKind mode, string actionMapName, PlayerInput playerInput, string reason)

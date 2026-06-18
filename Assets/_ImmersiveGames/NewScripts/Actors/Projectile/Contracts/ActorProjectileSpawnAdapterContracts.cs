@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
@@ -30,8 +31,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             PoolCalled = poolCalled;
             SpawnedInstance = spawnedInstance;
             SpawnedActor = spawnedActor;
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorProjectileSpawnAdapterResultKind Kind { get; }
@@ -130,12 +131,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
                 reason,
                 message);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActorProjectileSpawnAdapter
     {

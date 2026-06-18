@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
@@ -27,12 +28,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             OwnerActorInstanceRuntimeId = ownerActorInstanceRuntimeId;
             TargetActorId = targetActorId;
             TargetActorInstanceRuntimeId = targetActorInstanceRuntimeId;
-            ImpactKind = Normalize(impactKind);
-            TargetObjectName = Normalize(targetObjectName);
-            TargetColliderName = Normalize(targetColliderName);
+            ImpactKind = impactKind.TrimToEmpty();
+            TargetObjectName = targetObjectName.TrimToEmpty();
+            TargetColliderName = targetColliderName.TrimToEmpty();
             Contact = contact;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ImpactActorId { get; }
@@ -59,10 +60,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
         public Vector3 ContactPoint => Contact.Point;
         public Vector3 ContactNormal => Contact.Normal;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

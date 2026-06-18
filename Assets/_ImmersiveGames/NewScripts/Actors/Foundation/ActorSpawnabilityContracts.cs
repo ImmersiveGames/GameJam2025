@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
 {
     public enum ActorMaterializationKind
@@ -54,8 +55,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
     {
         public SpawnedActorPoolOrigin(string poolOriginId, string poolDefinitionId)
         {
-            PoolOriginId = Normalize(poolOriginId);
-            PoolDefinitionId = Normalize(poolDefinitionId);
+            PoolOriginId = poolOriginId.TrimToEmpty();
+            PoolDefinitionId = poolDefinitionId.TrimToEmpty();
         }
 
         public string PoolOriginId { get; }
@@ -65,9 +66,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool IsValid => HasPoolOriginId || HasPoolDefinitionId;
 
         public override string ToString() => HasPoolOriginId ? PoolOriginId : PoolDefinitionId;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SpawnedActorLifetimeState
     {

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 {
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             AttributeId = attributeId;
-            InvalidReason = Normalize(invalidReason);
+            InvalidReason = invalidReason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -29,10 +30,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             ActorInstanceRuntimeId.IsValid &&
             AttributeId.IsValid &&
             string.IsNullOrWhiteSpace(InvalidReason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

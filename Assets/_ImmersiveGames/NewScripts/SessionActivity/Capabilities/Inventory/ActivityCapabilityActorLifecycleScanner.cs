@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeR
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -526,13 +527,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             return ActivityCapabilityOwnerKind.Unsupported;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string BuildActorLifecycleOwnerId(
+private static string BuildActorLifecycleOwnerId(
             ActivityCapabilityInventoryId inventoryId,
             ActivityCapabilityOwnerKind ownerKind,
             string actorId,
@@ -541,7 +536,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActorRole actorRole,
             ActorScope actorScope)
         {
-            string normalizedActorId = Normalize(actorId);
+            string normalizedActorId = actorId.TrimToEmpty();
             string actorInstanceToken = actorInstanceRuntimeId.IsValid ? actorInstanceRuntimeId.Value : "actor.instance.unbound";
             return $"{inventoryId.Signature}|ownerKind={ownerKind}|actorId={normalizedActorId}|actorInstance={actorInstanceToken}|actorKind={actorKind}|actorRole={actorRole}|actorScope={actorScope}";
         }
@@ -552,7 +547,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityKind capabilityKind,
             ActorCapabilityId contributionCapabilityId)
         {
-            return $"{inventoryId.Signature}|ownerId={Normalize(ownerId)}|capabilityKind={capabilityKind}|moduleId={ModuleId}|contributionCapabilityId={Normalize(contributionCapabilityId.Value)}";
+            return $"{inventoryId.Signature}|ownerId={ownerId.TrimToEmpty()}|capabilityKind={capabilityKind}|moduleId={ModuleId}|contributionCapabilityId={contributionCapabilityId.Value.TrimToEmpty()}";
         }
     }
 
@@ -570,12 +565,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             TypedCapabilityId = new ActorCapabilityId(capabilityId);
             CapabilityId = TypedCapabilityId.Value;
-            OwnerId = Normalize(ownerId);
+            OwnerId = ownerId.TrimToEmpty();
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             TargetId = actorId.Value;
-            ComponentPath = Normalize(componentPath);
-            ProviderType = Normalize(providerType);
+            ComponentPath = componentPath.TrimToEmpty();
+            ProviderType = providerType.TrimToEmpty();
             Endpoint = endpoint;
             Contribution = contribution;
         }
@@ -598,9 +593,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             !string.IsNullOrWhiteSpace(ProviderType) &&
             Endpoint != null &&
             Contribution != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActorCapabilitySnapshotContributionReference : IActivityCapabilityRuntimeReference
     {
@@ -614,11 +607,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             TypedCapabilityId = new ActorCapabilityId(capabilityId);
             CapabilityId = TypedCapabilityId.Value;
-            OwnerId = Normalize(ownerId);
+            OwnerId = ownerId.TrimToEmpty();
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             TargetId = actorId.Value;
-            ComponentPath = Normalize(componentPath);
+            ComponentPath = componentPath.TrimToEmpty();
             Contribution = contribution;
         }
 
@@ -634,9 +627,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string SchemaId => Contribution?.SchemaId ?? string.Empty;
         public int SchemaVersion => Contribution?.SchemaVersion ?? 0;
         public bool IsValid => TypedCapabilityId.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && Contribution != null && SnapshotEndpoint != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActorCapabilitySnapshotRestoreContributionReference : IActivityCapabilityRuntimeReference
     {
@@ -650,11 +641,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             TypedCapabilityId = new ActorCapabilityId(capabilityId);
             CapabilityId = TypedCapabilityId.Value;
-            OwnerId = Normalize(ownerId);
+            OwnerId = ownerId.TrimToEmpty();
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             TargetId = actorId.Value;
-            ComponentPath = Normalize(componentPath);
+            ComponentPath = componentPath.TrimToEmpty();
             Contribution = contribution;
         }
 
@@ -670,9 +661,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string SchemaId => Contribution?.SchemaId ?? string.Empty;
         public int SchemaVersion => Contribution?.SchemaVersion ?? 0;
         public bool IsValid => TypedCapabilityId.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && Contribution != null && RestoreEndpoint != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActorCapabilityReleaseEndpointReference : IActivityCapabilityRuntimeReference
     {
@@ -686,11 +675,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             TypedCapabilityId = new ActorCapabilityId(capabilityId);
             CapabilityId = TypedCapabilityId.Value;
-            OwnerId = Normalize(ownerId);
+            OwnerId = ownerId.TrimToEmpty();
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             TargetId = actorId.Value;
-            ComponentPath = Normalize(componentPath);
+            ComponentPath = componentPath.TrimToEmpty();
             Contribution = contribution;
         }
 
@@ -704,7 +693,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public IActorReleaseContribution Contribution { get; }
         public IActorCapabilityReleaseEndpoint ReleaseEndpoint => Contribution?.ReleaseEndpoint;
         public bool IsValid => TypedCapabilityId.IsValid && ActorId.IsValid && ActorInstanceRuntimeId.IsValid && Contribution != null && ReleaseEndpoint != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

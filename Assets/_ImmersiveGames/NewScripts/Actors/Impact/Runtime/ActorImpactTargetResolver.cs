@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactTargetResolver),
-                $"event='ActorImpactTargetResolved' targetActorId='{target.TargetActorId}' targetActorInstanceRuntimeId='{target.TargetActorInstanceRuntimeId}' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactTargetResolved' targetActorId='{target.TargetActorId}' targetActorInstanceRuntimeId='{target.TargetActorInstanceRuntimeId}' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -57,13 +58,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorImpactTargetResolver),
-                $"event='ActorImpactTargetResolveSkipped' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' outcomeReason='{Normalize(target.Reason)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactTargetResolveSkipped' targetObject='{target.TargetObjectName}' targetCollider='{target.TargetColliderName}' outcomeReason='{target.Reason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

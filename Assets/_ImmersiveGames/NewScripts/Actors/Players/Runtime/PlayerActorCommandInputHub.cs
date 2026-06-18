@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -604,7 +605,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
         private static string NormalizeContext(string context)
         {
-            return string.IsNullOrWhiteSpace(context) ? "<none>" : context.Trim();
+            return context.TrimToOrDefault("<none>");
         }
 
         private readonly struct ResolvedCommandBinding

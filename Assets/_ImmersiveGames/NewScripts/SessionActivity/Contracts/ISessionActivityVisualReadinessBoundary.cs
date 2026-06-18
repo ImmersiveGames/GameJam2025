@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -24,14 +25,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason)
         {
-            SessionStateId = Normalize(sessionStateId);
-            ExpectedRouteOperationId = Normalize(expectedRouteOperationId);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ExpectedRouteOperationId = expectedRouteOperationId.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string SessionStateId { get; }
@@ -52,12 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"sessionStateId='{SessionStateId}', expectedRouteOperationId='{ExpectedRouteOperationId}', routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct SessionActivityVisualReadinessResult
     {
@@ -71,12 +67,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string detail)
         {
             Kind = kind;
-            SessionStateId = Normalize(sessionStateId);
-            RouteOperationId = Normalize(routeOperationId);
-            ActivityId = Normalize(activityId);
+            SessionStateId = sessionStateId.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public SessionActivityVisualReadinessResultKind Kind { get; }
@@ -100,12 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', routeOperationId='{RouteOperationId}', activityId='{ActivityId}', entrySequence='{EntrySequence}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionActivityVisualReadinessBoundary
     {

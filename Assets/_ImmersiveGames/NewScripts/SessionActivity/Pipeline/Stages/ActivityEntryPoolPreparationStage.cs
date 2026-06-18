@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -38,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             DebugUtility.LogVerbose(
                 typeof(ActivityEntryPoolPreparationStage),
-                $"event='ActivityEntryPoolPreparationStarted' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerCount='{providerCount}' resolvedPoolCount='{resolvedDependencies.Count}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActivityEntryPoolPreparationStarted' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerCount='{providerCount}' resolvedPoolCount='{resolvedDependencies.Count}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
 
             for (int index = 0; index < resolvedDependencies.Count; index++)
@@ -48,14 +49,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 DebugUtility.LogVerbose(
                     typeof(ActivityEntryPoolPreparationStage),
-                    $"event='ActivityEntryPoolDependencyResolved' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerType='{dependency.ProviderType}' poolDefinition='{poolDefinition.name}' poolLabel='{Normalize(poolDefinition.PoolLabel)}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActivityEntryPoolDependencyResolved' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerType='{dependency.ProviderType}' poolDefinition='{poolDefinition.name}' poolLabel='{poolDefinition.PoolLabel.TrimToEmpty()}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Info);
 
                 if (poolDefinition.RegistrationMode != PoolRegistrationMode.ActivityEntry)
                 {
                     DebugUtility.LogVerbose(
                         typeof(ActivityEntryPoolPreparationStage),
-                        $"event='ActivityEntryPoolPreparationSkipped' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerType='{dependency.ProviderType}' poolDefinition='{poolDefinition.name}' poolLabel='{Normalize(poolDefinition.PoolLabel)}' registrationMode='{poolDefinition.RegistrationMode}' reason='timing_not_activity_entry' source='{Normalize(source)}' reasonText='{Normalize(reason)}'.",
+                        $"event='ActivityEntryPoolPreparationSkipped' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerType='{dependency.ProviderType}' poolDefinition='{poolDefinition.name}' poolLabel='{poolDefinition.PoolLabel.TrimToEmpty()}' registrationMode='{poolDefinition.RegistrationMode}' reason='timing_not_activity_entry' source='{source.TrimToEmpty()}' reasonText='{reason.TrimToEmpty()}'.",
                         DebugUtility.Colors.Info);
                     continue;
                 }
@@ -64,13 +65,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 DebugUtility.LogVerbose(
                     typeof(ActivityEntryPoolPreparationStage),
-                    $"event='ActivityEntryPoolPrepared' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerType='{dependency.ProviderType}' poolDefinition='{poolDefinition.name}' poolLabel='{Normalize(poolDefinition.PoolLabel)}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                    $"event='ActivityEntryPoolPrepared' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerType='{dependency.ProviderType}' poolDefinition='{poolDefinition.name}' poolLabel='{poolDefinition.PoolLabel.TrimToEmpty()}' registrationMode='{poolDefinition.RegistrationMode}' prewarm='{poolDefinition.Prewarm}' initialSize='{poolDefinition.InitialSize}' lifetimeScope='{poolDefinition.LifetimeScope}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Success);
             }
 
             DebugUtility.LogVerbose(
                 typeof(ActivityEntryPoolPreparationStage),
-                $"event='ActivityEntryPoolPreparationCompleted' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerCount='{providerCount}' resolvedPoolCount='{resolvedDependencies.Count}' preparedPoolCount='{CountPrepared(resolvedDependencies)}' skippedPoolCount='{CountSkipped(resolvedDependencies)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"event='ActivityEntryPoolPreparationCompleted' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' providerCount='{providerCount}' resolvedPoolCount='{resolvedDependencies.Count}' preparedPoolCount='{CountPrepared(resolvedDependencies)}' skippedPoolCount='{CountSkipped(resolvedDependencies)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -141,13 +142,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return dependencies;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static int CountPrepared(IReadOnlyList<ResolvedPoolDependency> dependencies)
+private static int CountPrepared(IReadOnlyList<ResolvedPoolDependency> dependencies)
         {
             int prepared = 0;
             for (int index = 0; index < dependencies.Count; index++)
@@ -179,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             public ResolvedPoolDependency(string providerType, PoolDefinitionAsset poolDefinition)
             {
-                ProviderType = Normalize(providerType);
+                ProviderType = providerType.TrimToEmpty();
                 PoolDefinition = poolDefinition;
             }
 

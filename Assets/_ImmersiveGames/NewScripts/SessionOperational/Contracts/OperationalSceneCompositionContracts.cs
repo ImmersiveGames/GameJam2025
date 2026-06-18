@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -15,20 +16,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string reason)
         {
             RouteCommand = routeCommand;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => RouteCommand.IsValid;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum OperationalSceneCompositionResultKind
     {
@@ -47,8 +43,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             Kind = kind;
             CompletionFact = completionFact;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalSceneCompositionResultKind Kind { get; }
@@ -74,10 +70,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
                 reason,
                 detail);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

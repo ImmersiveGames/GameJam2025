@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -11,9 +12,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string activityId,
             int entrySequence)
         {
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             Signature = BuildSignature(PipelineId, SessionStateId, ActivityId, EntrySequence);
         }
@@ -63,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         public static string DeriveOwnerId(ActivityCapabilityInventoryId inventoryId, ActivityCapabilityOwnerKind ownerKind, string ownerPath, string ownerSource)
         {
-            return $"{Normalize(inventoryId.Signature)}|ownerKind={ownerKind}|ownerPath={Normalize(ownerPath)}|ownerSource={Normalize(ownerSource)}";
+            return $"{inventoryId.Signature.TrimToEmpty()}|ownerKind={ownerKind}|ownerPath={ownerPath.TrimToEmpty()}|ownerSource={ownerSource.TrimToEmpty()}";
         }
 
         public static string DeriveCapabilityId(
@@ -73,17 +74,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string moduleId,
             string componentPath)
         {
-            return $"{Normalize(inventoryId.Signature)}|ownerId={Normalize(ownerId)}|capabilityKind={capabilityKind}|moduleId={Normalize(moduleId)}|componentPath={Normalize(componentPath)}";
+            return $"{inventoryId.Signature.TrimToEmpty()}|ownerId={ownerId.TrimToEmpty()}|capabilityKind={capabilityKind}|moduleId={moduleId.TrimToEmpty()}|componentPath={componentPath.TrimToEmpty()}";
         }
 
         private static string BuildSignature(string pipelineId, string sessionStateId, string activityId, int entrySequence)
         {
             return $"{pipelineId}|{sessionStateId}|{activityId}|{entrySequence}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 {
@@ -18,11 +19,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             string reason)
         {
             Identity = identity;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             InventoryFeed = inventoryFeed;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -37,9 +38,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             EntrySequence > 0 &&
             InventoryFeed.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorParticipationExitActorOutcome
     {
@@ -65,8 +64,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Participation = participation;
             PlayerActorId = playerActorId;
             PlayerSlotId = playerSlotId;
-            ReasonCode = Normalize(reasonCode);
-            SkipOrFailureKind = Normalize(skipOrFailureKind);
+            ReasonCode = reasonCode.TrimToEmpty();
+            SkipOrFailureKind = skipOrFailureKind.TrimToEmpty();
         }
 
         public ActorParticipationExitActorOutcome Outcome { get; }
@@ -85,9 +84,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Instance.IsValid &&
             Participation.IsValid &&
             !string.IsNullOrWhiteSpace(ReasonCode);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorParticipationExitResult
     {
@@ -107,8 +104,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Exited = exited < 0 ? 0 : exited;
             Skipped = skipped < 0 ? 0 : skipped;
             Failed = failed < 0 ? 0 : failed;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -120,9 +117,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => Identity.IsValid && Total >= 0 && Exited >= 0 && Skipped >= 0 && Failed >= 0;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActorParticipationExitStageExecutor
     {
@@ -328,7 +323,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         IReadOnlyList<string> activityIds = participation.ExplicitActivityIds;
                         for (int index = 0; index < activityIds.Count; index++)
                         {
-                            if (string.Equals(Normalize(activityIds[index]), Normalize(activityId), StringComparison.Ordinal))
+                            if (string.Equals(activityIds[index].TrimToEmpty(), activityId.TrimToEmpty(), StringComparison.Ordinal))
                             {
                                 reasonCode = "eligible";
                                 return true;
@@ -364,7 +359,5 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return false;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

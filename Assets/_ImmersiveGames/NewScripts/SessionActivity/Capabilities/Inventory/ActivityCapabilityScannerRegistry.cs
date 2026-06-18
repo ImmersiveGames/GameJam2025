@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -18,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 throw new ArgumentNullException(nameof(scanner));
             }
 
-            string scannerId = Normalize(scanner.ScannerId);
+            string scannerId = scanner.ScannerId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(scannerId))
             {
                 throw new InvalidOperationException("Activity capability scanner must provide a non-empty scannerId.");
@@ -44,10 +45,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             return string.Compare(left.ScannerId, right.ScannerId, StringComparison.Ordinal);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences
 {
@@ -18,13 +19,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             ActivityCapabilityPermissionReceiverIdentity identity,
             IActivityCapabilityPermissionReceiver receiver)
         {
-            CapabilityId = Normalize(capabilityId);
-            OwnerId = Normalize(ownerId);
+            CapabilityId = capabilityId.TrimToEmpty();
+            OwnerId = ownerId.TrimToEmpty();
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             PlayerActorId = playerActorId;
             PlayerSlotId = playerSlotId;
-            ComponentPath = Normalize(componentPath);
+            ComponentPath = componentPath.TrimToEmpty();
             PermissionId = permissionId;
             Identity = identity;
             Receiver = receiver;
@@ -52,10 +53,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             Identity.IsValid &&
             ReceiverId.IsValid &&
             Receiver != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

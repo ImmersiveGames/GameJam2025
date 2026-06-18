@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 {
@@ -42,8 +43,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             ActorInstances = actorInstances ?? Array.Empty<ActorInstanceRecord>();
             ActorEntries = actorEntries ?? Array.Empty<ActorEntryRecord>();
             ActorParticipations = actorParticipations ?? Array.Empty<ActorParticipationRecord>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -67,9 +68,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return targets;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class ActorInventoryFeed
     {

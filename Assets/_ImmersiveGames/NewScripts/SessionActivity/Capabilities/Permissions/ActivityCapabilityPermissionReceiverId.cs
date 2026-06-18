@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
     {
         public ActivityCapabilityPermissionReceiverId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -27,10 +28,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             return new ActivityCapabilityPermissionReceiverId(value);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

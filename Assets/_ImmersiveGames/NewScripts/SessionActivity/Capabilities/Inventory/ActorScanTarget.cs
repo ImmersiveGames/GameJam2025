@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -24,18 +25,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorDefinitionRef = actorDefinitionRef;
-            ActorId = Normalize(actorId);
+            ActorId = actorId.TrimToEmpty();
             ActorKind = actorKind;
             RuntimeActor = runtimeActor;
             CapabilitySurface = capabilitySurface;
             ActorRole = actorRole;
             ActorScope = actorScope;
             ActorSourceKind = actorSourceKind;
-            ParticipationPolicy = Normalize(participationPolicy);
+            ParticipationPolicy = participationPolicy.TrimToEmpty();
             ActorRoot = actorRoot;
-            SourceSceneName = Normalize(sourceSceneName);
-            ComponentBasePath = Normalize(componentBasePath);
-            Source = Normalize(source);
+            SourceSceneName = sourceSceneName.TrimToEmpty();
+            ComponentBasePath = componentBasePath.TrimToEmpty();
+            Source = source.TrimToEmpty();
         }
 
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
@@ -94,7 +95,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source);
             return target.IsValid;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

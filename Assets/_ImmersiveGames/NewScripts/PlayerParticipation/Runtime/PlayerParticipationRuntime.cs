@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
 {
@@ -23,11 +24,11 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
             string reason)
         {
             Kind = kind;
-            SessionId = Normalize(sessionId);
+            SessionId = sessionId.TrimToEmpty();
             Revision = revision;
             Context = context;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public PlayerParticipationRuntimeContextResolutionKind Kind { get; }
@@ -49,9 +50,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
             !string.IsNullOrWhiteSpace(SessionId) &&
             Revision > 0 &&
             Context is { IsValid: true };
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IPlayerParticipationRuntime
     {
@@ -189,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
         {
             result = default;
 
-            string normalizedSessionId = Normalize(sessionId);
+            string normalizedSessionId = sessionId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedSessionId) ||
                 !_statesBySessionId.TryGetValue(normalizedSessionId, out var state) ||
                 state == null ||
@@ -222,7 +221,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
 
         public bool ClearSession(string sessionId, string source, string reason)
         {
-            string normalizedSessionId = Normalize(sessionId);
+            string normalizedSessionId = sessionId.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedSessionId))
             {
                 return false;
@@ -281,7 +280,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
 
         private static string NormalizeRequired(string value, string argumentName)
         {
-            string normalized = Normalize(value);
+            string normalized = value.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalized))
             {
                 throw new ArgumentException($"{argumentName} is required.", argumentName);
@@ -289,10 +288,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
 
             return normalized;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-
-        private sealed class PlayerParticipationRuntimeState
+private sealed class PlayerParticipationRuntimeState
         {
             public PlayerParticipationRuntimeState(
                 string sessionId,
@@ -304,8 +300,8 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
                 SessionId = NormalizeRequired(sessionId, nameof(sessionId));
                 Revision = revision;
                 Context = context ?? throw new ArgumentNullException(nameof(context));
-                Source = Normalize(source);
-                Reason = Normalize(reason);
+                Source = source.TrimToEmpty();
+                Reason = reason.TrimToEmpty();
             }
 
             public string SessionId { get; }

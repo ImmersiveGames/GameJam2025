@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -133,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             IReadOnlyList<SceneKeyAsset> explicitScenesToLoad = route.ScenesToLoad ?? Array.Empty<SceneKeyAsset>();
             HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrEmpty(persistentScenesPolicy);
-            string normalizedActiveSceneName = Normalize(activeSceneName);
+            string normalizedActiveSceneName = activeSceneName.TrimToEmpty();
             bool activeSceneImplicitLoad = !ContainsScene(explicitScenesToLoad, normalizedActiveSceneName);
             List<SceneKeyAsset> finalScenesToLoad = new();
             HashSet<string> dedupe = new(StringComparer.Ordinal);
@@ -165,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             IReadOnlyList<SceneKeyAsset> explicitScenesToUnload = route.ScenesToUnload ?? Array.Empty<SceneKeyAsset>();
             HashSet<string> currentRouteLoadSceneSet = BuildSceneSetOrEmpty(currentRouteLoadedSceneKeys);
-            string normalizedCurrentActiveSceneName = Normalize(currentActiveSceneName);
+            string normalizedCurrentActiveSceneName = currentActiveSceneName.TrimToEmpty();
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload = ResolveAutoScenesToUnloadOrFail(
                 route,
                 persistentScenesPolicy,
@@ -337,7 +338,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             for (int i = 0; i < scenes.Count; i++)
             {
-                if (string.Equals(ResolveSceneName(scenes[i], $"scenes[{i}]"), Normalize(sceneName), StringComparison.Ordinal))
+                if (string.Equals(ResolveSceneName(scenes[i], $"scenes[{i}]"), sceneName.TrimToEmpty(), StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -355,13 +356,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneKey.SceneName.Trim();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private readonly struct SessionOperationalRouteLoadPlan
+private readonly struct SessionOperationalRouteLoadPlan
         {
             public SessionOperationalRouteLoadPlan(bool activeSceneImplicitLoad, IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
             {

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private SceneKeyAsset sceneKey;
         [SerializeField] private ActivityContentRequiredness requiredness = ActivityContentRequiredness.Required;
 
-        public string EntryId => Normalize(entryId);
+        public string EntryId => entryId.TrimToEmpty();
         public SceneKeyAsset SceneKey => sceneKey;
         public ActivityContentRequiredness Requiredness => requiredness;
         public bool IsRequired => requiredness == ActivityContentRequiredness.Required;
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         public void ValidateOrThrow(string source, int index)
         {
-            string validationSource = Normalize(source);
+            string validationSource = source.TrimToEmpty();
 
             if (requiredness == ActivityContentRequiredness.Unknown)
             {
@@ -37,10 +38,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException($"{validationSource} content scene entry at index {index} references SceneKeyAsset '{sceneKey.name}' with empty SceneName.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

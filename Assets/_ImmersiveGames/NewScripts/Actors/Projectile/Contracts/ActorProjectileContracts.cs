@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
@@ -13,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
     {
         public ActorProjectileFireModeId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -26,15 +27,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public static bool operator ==(ActorProjectileFireModeId left, ActorProjectileFireModeId right) => left.Equals(right);
         public static bool operator !=(ActorProjectileFireModeId left, ActorProjectileFireModeId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileProfileId : IEquatable<ActorProjectileProfileId>
     {
         public ActorProjectileProfileId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -47,15 +46,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public static bool operator ==(ActorProjectileProfileId left, ActorProjectileProfileId right) => left.Equals(right);
         public static bool operator !=(ActorProjectileProfileId left, ActorProjectileProfileId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileSpawnProfileId : IEquatable<ActorProjectileSpawnProfileId>
     {
         public ActorProjectileSpawnProfileId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -68,9 +65,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public static bool operator ==(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right) => left.Equals(right);
         public static bool operator !=(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorProjectileSpawnPatternKind
     {
@@ -182,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         {
             Mode = mode;
             LayerIndex = mode == ActorProjectileSpawnLayerModeKind.None ? -1 : layerIndex;
-            LayerName = Normalize(layerName);
+            LayerName = layerName.TrimToEmpty();
             ApplyLayerToChildren = applyLayerToChildren;
         }
 
@@ -193,9 +188,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public bool IsValid =>
             Mode == ActorProjectileSpawnLayerModeKind.None ||
             (Mode == ActorProjectileSpawnLayerModeKind.Override && LayerIndex >= 0 && LayerIndex <= 31 && !string.IsNullOrWhiteSpace(LayerName));
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileMotionBootstrap
     {
@@ -209,8 +202,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Direction = direction;
             Speed = speed < 0f ? 0f : speed;
             Strategy = strategy;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public Vector3 Direction { get; }
@@ -224,9 +217,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Speed > 0f &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileFireMode
     {
@@ -271,7 +262,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             FireAudioCue = fireAudioCue;
             FireAudioVolumeScale = fireAudioVolumeScale < 0f ? 0f : fireAudioVolumeScale;
             CooldownSeconds = cooldownSeconds < 0f ? 0f : cooldownSeconds;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorProjectileFireModeId FireModeId { get; }
@@ -310,9 +301,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             MotionStrategy == ActorProjectileMotionStrategyKind.Linear &&
             LinearSpeed > 0f &&
             SpawnOriginId.IsValid;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileFireCommand
     {
@@ -344,8 +333,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Direction = direction;
             MotionBootstrap = motionBootstrap;
             LayerBootstrap = layerBootstrap;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -378,9 +367,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             LayerBootstrap.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileFireResult
     {
@@ -398,8 +385,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             FireModeId = fireModeId;
             BlockedReason = blockedReason;
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorProjectileFireResultKind Kind { get; }
@@ -413,7 +400,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public bool IsAccepted => Kind == ActorProjectileFireResultKind.Accepted;
         public bool IsBlocked => Kind == ActorProjectileFireResultKind.Blocked;
         public bool IsFailed => Kind == ActorProjectileFireResultKind.Failed;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

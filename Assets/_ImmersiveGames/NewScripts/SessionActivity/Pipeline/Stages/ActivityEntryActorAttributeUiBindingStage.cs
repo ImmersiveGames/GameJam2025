@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -35,8 +36,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bindingRuntimeState = bindingRuntimeState ?? throw new ArgumentNullException(nameof(bindingRuntimeState));
 
             IReadOnlyList<ActorAttributeUiBindingRequestEntry> requestEntries = requestProvider.GetRequests() ?? Array.Empty<ActorAttributeUiBindingRequestEntry>();
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             DebugUtility.LogVerbose(
                 typeof(ActivityEntryActorAttributeUiBindingStage),
@@ -129,10 +130,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 skipped: false,
                 reason: "bindings_applied");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -40,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
+            string currentSnapshotId = currentState.CurrentSnapshotId.TrimToEmpty();
             string snapshotPointerSource = string.IsNullOrWhiteSpace(currentSnapshotId)
                 ? "revision_fallback"
                 : "current_snapshot_id";
@@ -72,16 +73,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             DebugUtility.LogVerbose(typeof(DefaultProgressionSlotContextResolver),
-                $"ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' snapshotPointerSource='{snapshotPointerSource}' currentSnapshotIdRaw='{Normalize(currentSnapshotId)}' currentRevision='{currentState.Revision}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"ProgressionSlotContextResolved routeIdentity='{routeIdentity.TrimToEmpty()}' routeOperationId='{routeOperationId.TrimToEmpty()}' transitionId='{transitionId.TrimToEmpty()}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' snapshotPointerSource='{snapshotPointerSource}' currentSnapshotIdRaw='{currentSnapshotId.TrimToEmpty()}' currentRevision='{currentState.Revision}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
 
             failureReason = "resolved";
             return true;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 {
@@ -18,9 +19,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             Kind = kind;
             SelectorKind = selectorKind;
             Target = target;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            FailureReason = Normalize(failureReason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            FailureReason = failureReason.TrimToEmpty();
         }
 
         public ActorAttributeUiTargetResolveResultKind Kind { get; }
@@ -66,10 +67,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
                 reason,
                 failureReason);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

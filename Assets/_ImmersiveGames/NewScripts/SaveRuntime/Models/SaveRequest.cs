@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 {
@@ -43,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 
         private static string NormalizeOptional(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            return value.TrimToEmpty();
         }
     }
 }

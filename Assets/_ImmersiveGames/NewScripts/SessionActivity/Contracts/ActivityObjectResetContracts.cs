@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityObjectResetResultKind
@@ -23,14 +24,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            TargetId = Normalize(targetId);
-            RoleId = Normalize(roleId);
+            TargetId = targetId.TrimToEmpty();
+            RoleId = roleId.TrimToEmpty();
             ContributorKind = contributorKind;
             Requiredness = requiredness;
             ResetDescriptorMetadata = NormalizeResetDescriptorMetadata(resetDescriptorMetadata);
             ResetScopePlan = resetScopePlan;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -60,15 +61,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"identity='{Identity}', targetId='{TargetId}', roleId='{(string.IsNullOrWhiteSpace(RoleId) ? "<none>" : RoleId)}', contributorKind='{ContributorKind}', requiredness='{Requiredness}', resetIntent='{ResetIntent}', resetStateProfile='{StateProfileKind}', resetDescriptor='{ResetDescriptorMetadata}' descriptorMode='endpoint_inventory' executionMode='intent_handler_per_report', source='{Source}', reason='{Reason}'";
         }
-
-        private static string Normalize(string value)
+private static string NormalizeResetDescriptorMetadata(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string NormalizeResetDescriptorMetadata(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+            return value.TrimToOrDefault("<none>");
         }
     }
 
@@ -83,9 +78,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Kind = kind;
             Command = command;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActivityObjectResetResultKind Kind { get; }
@@ -108,12 +103,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IActivityObjectResetEndpoint
     {

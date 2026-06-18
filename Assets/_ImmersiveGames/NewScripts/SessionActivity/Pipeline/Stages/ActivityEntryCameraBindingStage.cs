@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -129,9 +130,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 var failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
                 identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.CameraBindingFailed);
-                factBridge.EmitFact(facts, SessionActivityFactKind.CameraBindingFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='{Normalize(rebindReason)}'.");
-                factBridge.EmitSnapshot(snapshots, "camera_binding_failed", command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='{Normalize(rebindReason)}'.");
-                throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][CameraBinding] Rebind failed activityId='{command.ActivityId}' entrySequence='{entrySequence}' reason='{Normalize(rebindReason)}'.");
+                factBridge.EmitFact(facts, SessionActivityFactKind.CameraBindingFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='{rebindReason.TrimToEmpty()}'.");
+                factBridge.EmitSnapshot(snapshots, "camera_binding_failed", command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='{rebindReason.TrimToEmpty()}'.");
+                throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][CameraBinding] Rebind failed activityId='{command.ActivityId}' entrySequence='{entrySequence}' reason='{rebindReason.TrimToEmpty()}'.");
             }
 
             factBridge.EmitFact(
@@ -251,10 +252,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return requiredCount;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

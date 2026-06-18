@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime
@@ -18,10 +19,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime
 
         public void Bind(string bindPlayerId, string bindRouteIdentity, string bindRouteOperationId, string bindTransitionId, int bindRouteSequence)
         {
-            playerId = string.IsNullOrWhiteSpace(bindPlayerId) ? string.Empty : bindPlayerId.Trim();
-            routeIdentity = string.IsNullOrWhiteSpace(bindRouteIdentity) ? string.Empty : bindRouteIdentity.Trim();
-            routeOperationId = string.IsNullOrWhiteSpace(bindRouteOperationId) ? string.Empty : bindRouteOperationId.Trim();
-            transitionId = string.IsNullOrWhiteSpace(bindTransitionId) ? string.Empty : bindTransitionId.Trim();
+            playerId = bindPlayerId.TrimToEmpty();
+            routeIdentity = bindRouteIdentity.TrimToEmpty();
+            routeOperationId = bindRouteOperationId.TrimToEmpty();
+            transitionId = bindTransitionId.TrimToEmpty();
             routeSequence = bindRouteSequence < 0 ? 0 : bindRouteSequence;
         }
     }

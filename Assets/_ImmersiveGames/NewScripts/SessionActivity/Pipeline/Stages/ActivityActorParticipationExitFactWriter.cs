@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -56,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorParticipationExitActorResult actorResult,
             string reasonCodeOverride = null)
         {
-            string reasonCode = string.IsNullOrWhiteSpace(reasonCodeOverride) ? actorResult.ReasonCode : reasonCodeOverride.Trim();
+            string reasonCode = reasonCodeOverride.TrimToOrDefault(actorResult.ReasonCode);
             SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
             endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed actorId='{instance.ActorId}' reason='{reasonCode}'.");
@@ -146,9 +147,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             Type resolvedOwnerType = ownerType ?? typeof(ActivityExitActorTeardownStage);
-            string resolvedOwnerName = string.IsNullOrWhiteSpace(ownerName)
-                ? nameof(ActivityExitActorTeardownStage)
-                : ownerName.Trim();
+            string resolvedOwnerName = ownerName.TrimToOrDefault(nameof(ActivityExitActorTeardownStage));
 
             endpoint.EmitFact(
                 facts,

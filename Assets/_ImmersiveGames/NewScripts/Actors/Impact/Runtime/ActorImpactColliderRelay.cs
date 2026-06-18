@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactColliderRelay),
-                $"event='ActorImpactColliderRelayConfigured' relay='{name}' collider='{(_collider != null ? _collider.name : string.Empty)}' endpoint='{(_endpoint != null ? _endpoint.name : string.Empty)}' source='{Normalize(source)}' reason='{Normalize(reason)}'",
+                $"event='ActorImpactColliderRelayConfigured' relay='{name}' collider='{(_collider != null ? _collider.name : string.Empty)}' endpoint='{(_endpoint != null ? _endpoint.name : string.Empty)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 
@@ -59,10 +60,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 nameof(ActorImpactColliderRelay),
                 "relay_collision_enter");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

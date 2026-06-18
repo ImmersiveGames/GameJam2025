@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         [SerializeField] private Transform containerTransform;
 
         public ActorPresentationSlotKind SlotKind => slotKind;
-        public string SlotId => Normalize(slotId);
+        public string SlotId => slotId.TrimToEmpty();
         public Transform ContainerTransform => containerTransform;
         public bool HasContainerTransform => containerTransform != null;
 
@@ -52,12 +53,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         {
             // Default de authoring local: o próprio marker é o container.
             containerTransform = transform;
-            slotId = Normalize(slotId);
+            slotId = slotId.TrimToEmpty();
         }
 
         private void OnValidate()
         {
-            slotId = Normalize(slotId);
+            slotId = slotId.TrimToEmpty();
 
             if (containerTransform == null)
             {
@@ -65,10 +66,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                 containerTransform = transform;
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

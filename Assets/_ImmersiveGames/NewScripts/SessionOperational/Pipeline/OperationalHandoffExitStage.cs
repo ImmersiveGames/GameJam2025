@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -29,13 +30,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             RouteCommand = routeCommand;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            PreviousActivityIdentity = Normalize(previousActivityIdentity);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            PreviousActivityIdentity = previousActivityIdentity.TrimToEmpty();
             PreviousActiveSceneKey = previousActiveSceneKey;
             PreviousRouteOwnedSceneKeys = previousRouteOwnedSceneKeys ?? Array.Empty<SceneKeyAsset>();
             FinalScenesToUnload = finalScenesToUnload ?? Array.Empty<SceneKeyAsset>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -51,12 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalHandoffExitResult
     {
@@ -72,14 +68,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string detail)
         {
             Kind = kind;
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            PreviousRouteIdentity = Normalize(previousRouteIdentity);
-            HandoffIdentity = Normalize(handoffIdentity);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            PreviousRouteIdentity = previousRouteIdentity.TrimToEmpty();
+            HandoffIdentity = handoffIdentity.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalHandoffExitResultKind Kind { get; }
@@ -95,30 +91,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsSkipped => Kind == OperationalHandoffExitResultKind.Skipped;
         public bool IsFailed => Kind == OperationalHandoffExitResultKind.Failed;
         public bool IsAccepted => IsCompleted || IsSkipped;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class RouteRequestBlockedByOperationalHandoffException : Exception
     {
         public RouteRequestBlockedByOperationalHandoffException(string blockedReason, string blockedDetail)
             : base("route_request_blocked_by_operational_handoff")
         {
-            BlockedReason = Normalize(blockedReason);
-            BlockedDetail = Normalize(blockedDetail);
+            BlockedReason = blockedReason.TrimToEmpty();
+            BlockedDetail = blockedDetail.TrimToEmpty();
         }
 
         public string BlockedReason { get; }
         public string BlockedDetail { get; }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class OperationalHandoffExitStage
     {

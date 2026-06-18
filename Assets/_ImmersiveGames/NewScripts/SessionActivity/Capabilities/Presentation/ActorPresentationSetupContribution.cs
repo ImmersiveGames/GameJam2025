@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
 {
@@ -31,12 +32,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
             ActorRole = actorRole;
             ActorScope = actorScope;
             ActorSourceKind = actorSourceKind;
-            ParticipationPolicy = Normalize(participationPolicy);
-            ComponentPath = Normalize(componentPath);
+            ParticipationPolicy = participationPolicy.TrimToEmpty();
+            ComponentPath = componentPath.TrimToEmpty();
             Endpoint = endpoint;
             Profile = profile;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -65,10 +66,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
             !string.IsNullOrWhiteSpace(ComponentPath) &&
             Endpoint != null &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

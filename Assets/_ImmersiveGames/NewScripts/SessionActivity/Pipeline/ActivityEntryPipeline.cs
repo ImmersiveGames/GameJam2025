@@ -16,6 +16,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine.InputSystem;
 using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 
@@ -170,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ? loadedSnapshotPayloadContext.Payload.RecordCount
                 : 0;
             string loadedSnapshotPayloadSourceActivityId = loadedSnapshotPayloadContext.HasPayload
-                ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId)
+                ? loadedSnapshotPayloadContext.Payload.ActivityId.TrimToEmpty()
                 : "<none>";
             int loadedSnapshotPayloadSourceEntrySequence = loadedSnapshotPayloadContext.HasPayload
                 ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence
@@ -763,7 +764,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Activity '{plan.ActivityId}' has unsupported ActivityContentMode='{plan.ActivityContentMode}'.");
             }
 
-            string profileId = Normalize(plan.ActivityContentProfileId);
+            string profileId = plan.ActivityContentProfileId.TrimToEmpty();
             _factBridge.EmitFact(facts,
                 SessionActivityFactKind.ActivityContentProfileResolved,
                 profileResolvedIdentity,
@@ -1121,7 +1122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     ? loadedSnapshotPayloadContext.Payload.RecordCount
                     : 0;
                 string restorePayloadSourceActivityId = loadedSnapshotPayloadContext.HasPayload
-                    ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId)
+                    ? loadedSnapshotPayloadContext.Payload.ActivityId.TrimToEmpty()
                     : "<none>";
                 int restorePayloadSourceEntrySequence = loadedSnapshotPayloadContext.HasPayload
                     ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence
@@ -1926,10 +1927,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Activity '{plan.ActivityId}' has invalid ActivityContentLoadPlan.");
             }
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

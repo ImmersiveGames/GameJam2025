@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -27,14 +28,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             RouteCommand = routeCommand;
-            ActiveSceneName = Normalize(activeSceneName);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            ActiveSceneName = activeSceneName.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            ActivityIdentity = Normalize(activityIdentity);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            ActivityIdentity = activityIdentity.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -55,12 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct OperationalActivityCameraPresentationResult
     {
@@ -72,10 +68,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string detail)
         {
             Kind = kind;
-            ActivityIdentity = Normalize(activityIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            ActivityIdentity = activityIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalActivityCameraPresentationResultKind Kind { get; }
@@ -129,12 +125,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason,
                 detail);
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class OperationalActivityCameraPresentationStage
     {
@@ -160,14 +151,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_presentation_started");
             DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
-                $"ActivityCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
+                $"ActivityCameraPresentationStageStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' completionHandoff='{command.RouteCommand.CompletionHandoff}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             if (command.RouteCommand.CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
             {
                 string skipReason = "activity_camera_not_required";
                 DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
-                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_presentation_skipped");
@@ -183,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 string skipReason = "activity_presentation_profile_missing";
                 DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
-                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_presentation_skipped");
@@ -198,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 string skipReason = "activity_presentation_camera_disabled";
                 DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
-                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' completionHandoff='{command.RouteCommand.CompletionHandoff}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_presentation_skipped");
@@ -234,12 +225,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_presentation_failed");
                 DebugUtility.LogError(typeof(OperationalActivityCameraPresentationStage),
-                    $"ActivityCameraPresentationStageFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' required='{required}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
+                    $"ActivityCameraPresentationStageFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' required='{required}' reason='{failureReason.TrimToEmpty()}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
                 return OperationalActivityCameraPresentationResult.Failed(
                     command.ActivityIdentity,
                     command.RouteOperationId,
-                    Normalize(failureReason),
+                    failureReason.TrimToEmpty(),
                     required ? "activity_camera_required_prepare_failed" : "activity_camera_prepare_failed");
             }
 
@@ -250,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     : prepareResult.SkipReason;
 
                 DebugUtility.LogVerbose(typeof(OperationalActivityCameraPresentationStage),
-                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"ActivityCameraPresentationStageSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' skipReason='{skipReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 return OperationalActivityCameraPresentationResult.Skipped(
@@ -268,7 +259,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 _factRecorder.TryRecordOperationStage(SessionOperationalStage.ActivityCameraPresentation, command.Source, command.Reason, "activity_camera_presentation_prepared");
                 DebugUtility.Log(typeof(OperationalActivityCameraPresentationStage),
-                    $"ActivityCameraPresentationStagePrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{Normalize(command.ActivityIdentity)}' resultReason='{resultReason}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"ActivityCameraPresentationStagePrepared routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity.TrimToEmpty()}' resultReason='{resultReason}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
 
                 return OperationalActivityCameraPresentationResult.Completed(
@@ -284,10 +275,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "activity_camera_prepare_failed",
                 "activity_camera_prepare_failed");
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

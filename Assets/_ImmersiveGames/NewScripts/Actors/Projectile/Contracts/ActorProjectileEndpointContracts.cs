@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
     {
         public ActorProjectileFireEndpointId(string value)
         {
-            Value = Normalize(value);
+            Value = value.TrimToEmpty();
         }
 
         public string Value { get; }
@@ -25,9 +26,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public static bool operator ==(ActorProjectileFireEndpointId left, ActorProjectileFireEndpointId right) => left.Equals(right);
         public static bool operator !=(ActorProjectileFireEndpointId left, ActorProjectileFireEndpointId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public enum ActorProjectileFireEndpointReadinessKind
     {
@@ -63,8 +62,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             DefaultFireModeId = defaultFireModeId;
             BoundCommandId = boundCommandId;
             Required = required;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorProjectileFireEndpointId EndpointId { get; }
@@ -86,9 +85,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             BoundCommandId.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct ActorProjectileFireEndpointReadiness
     {
@@ -106,8 +103,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             CommandId = commandId;
             FireModeId = fireModeId;
             BlockedReason = blockedReason;
-            Reason = Normalize(reason);
-            Message = Normalize(message);
+            Reason = reason.TrimToEmpty();
+            Message = message.TrimToEmpty();
         }
 
         public ActorProjectileFireEndpointReadinessKind Kind { get; }
@@ -172,9 +169,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
                 reason,
                 message);
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
 
     public interface IActorProjectileFireAudioAdapter

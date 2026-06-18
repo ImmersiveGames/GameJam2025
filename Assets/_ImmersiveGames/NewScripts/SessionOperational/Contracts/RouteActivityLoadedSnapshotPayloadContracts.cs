@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -8,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string schemaId,
             ActivityCapabilitySnapshotEnvelope capabilitySnapshotEnvelope)
         {
-            SchemaId = Normalize(schemaId);
+            SchemaId = schemaId.TrimToEmpty();
             CapabilitySnapshotEnvelope = capabilitySnapshotEnvelope;
         }
 
@@ -28,12 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string.Equals(SessionStateId, CapabilitySnapshotEnvelope.SessionStateId, System.StringComparison.Ordinal) &&
             string.Equals(ActivityId, CapabilitySnapshotEnvelope.ActivityId, System.StringComparison.Ordinal) &&
             SourceEntrySequence > 0;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface IRouteActivityLoadedSnapshotPayloadProvider
     {

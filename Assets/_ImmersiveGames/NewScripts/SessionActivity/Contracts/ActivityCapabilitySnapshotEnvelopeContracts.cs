@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -35,16 +36,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             Identity = identity;
             OwnerKind = ownerKind;
-            OwnerId = Normalize(ownerId);
-            ContentProfileId = Normalize(contentProfileId);
-            CapabilityId = Normalize(capabilityId);
-            CapabilityKind = Normalize(capabilityKind);
-            PayloadSchemaId = Normalize(payloadSchemaId);
+            OwnerId = ownerId.TrimToEmpty();
+            ContentProfileId = contentProfileId.TrimToEmpty();
+            CapabilityId = capabilityId.TrimToEmpty();
+            CapabilityKind = capabilityKind.TrimToEmpty();
+            PayloadSchemaId = payloadSchemaId.TrimToEmpty();
             PayloadSchemaVersion = payloadSchemaVersion < 0 ? 0 : payloadSchemaVersion;
             PayloadFormat = payloadFormat;
-            Payload = Normalize(payload);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Payload = payload.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -71,12 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             PayloadFormat != ActivityCapabilitySnapshotPayloadFormat.Unknown &&
             !string.IsNullOrWhiteSpace(Payload) &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public readonly struct ActivityCapabilitySnapshotEnvelope
     {
@@ -91,15 +87,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason)
         {
-            SchemaId = Normalize(schemaId);
-            PipelineId = Normalize(pipelineId);
-            SessionStateId = Normalize(sessionStateId);
-            ActivityId = Normalize(activityId);
+            SchemaId = schemaId.TrimToEmpty();
+            PipelineId = pipelineId.TrimToEmpty();
+            SessionStateId = sessionStateId.TrimToEmpty();
+            ActivityId = activityId.TrimToEmpty();
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             Records = records ?? Array.Empty<ActivityCapabilitySnapshotRecord>();
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string SchemaId { get; }
@@ -121,10 +117,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             EntrySequence > 0 &&
             Records is { Count: > 0 } &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

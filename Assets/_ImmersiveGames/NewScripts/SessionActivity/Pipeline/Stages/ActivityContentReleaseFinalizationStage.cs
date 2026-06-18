@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -19,15 +20,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string continuationKind)
         {
             Command = command;
-            ActivityId = Normalize(command.Identity.ActivityId);
+            ActivityId = command.Identity.ActivityId.TrimToEmpty();
             ActivityOrdinal = command.Identity.ActivityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             LoadedSceneCount = loadedSceneCount < 0 ? 0 : loadedSceneCount;
             ReleasedSceneCount = releasedSceneCount < 0 ? 0 : releasedSceneCount;
             SkippedNoContent = skippedNoContent;
-            CompletionKind = Normalize(completionKind);
-            Status = Normalize(status);
-            ContinuationKind = Normalize(continuationKind);
+            CompletionKind = completionKind.TrimToEmpty();
+            Status = status.TrimToEmpty();
+            ContinuationKind = continuationKind.TrimToEmpty();
         }
 
         public SessionActivityCommand Command { get; }
@@ -54,12 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             !string.IsNullOrWhiteSpace(CompletionKind) &&
             !string.IsNullOrWhiteSpace(Status) &&
             !string.IsNullOrWhiteSpace(ContinuationKind);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     internal readonly struct ActivityContentReleaseFinalizationStageResult
     {
@@ -71,8 +67,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             Completed = completed;
             Identity = identity;
-            ContinuationKind = string.IsNullOrWhiteSpace(continuationKind) ? string.Empty : continuationKind.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            ContinuationKind = continuationKind.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public bool Completed { get; }

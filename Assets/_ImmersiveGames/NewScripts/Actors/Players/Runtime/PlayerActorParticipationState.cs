@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
@@ -24,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.RuntimeAll;
 
         public PlayerActorParticipationStateKind ParticipationState => participationState;
-        public string CurrentActivityId => string.IsNullOrWhiteSpace(currentActivityId) ? string.Empty : currentActivityId.Trim();
+        public string CurrentActivityId => currentActivityId.TrimToEmpty();
         public int CurrentEntrySequence => currentEntrySequence;
 
         public void MarkActiveInActivity(SessionActivityIdentity identity)

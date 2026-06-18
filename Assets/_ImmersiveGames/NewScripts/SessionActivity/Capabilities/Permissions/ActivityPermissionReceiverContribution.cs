@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -25,8 +26,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             string reason)
         {
             Identity = identity;
-            CapabilityId = Normalize(capabilityId);
-            OwnerId = Normalize(ownerId);
+            CapabilityId = capabilityId.TrimToEmpty();
+            OwnerId = ownerId.TrimToEmpty();
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             PlayerActorId = playerActorId;
@@ -34,10 +35,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             PermissionId = permissionId;
             ReceiverIdentity = receiverIdentity;
             ReceiverId = receiverId;
-            ComponentPath = Normalize(componentPath);
+            ComponentPath = componentPath.TrimToEmpty();
             Provider = provider;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -67,10 +68,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             ReceiverId.IsValid &&
             Provider != null &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

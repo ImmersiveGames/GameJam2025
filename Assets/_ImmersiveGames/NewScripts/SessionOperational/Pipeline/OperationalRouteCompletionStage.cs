@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -22,10 +23,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            PipelineId = Normalize(pipelineId);
+            PipelineId = pipelineId.TrimToEmpty();
             RouteCommand = routeCommand;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string PipelineId { get; }
@@ -38,9 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     internal readonly struct OperationalRouteCompletionResult
     {
@@ -52,8 +51,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalResult operationalResult)
         {
             Kind = kind;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
             RouteSnapshot = routeSnapshot;
             OperationalResult = operationalResult;
         }
@@ -72,9 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public static OperationalRouteCompletionResult Failed(string reason, string detail) =>
             new(OperationalRouteCompletionResultKind.Failed, reason, detail, default, default);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     internal sealed class OperationalRouteCompletionStage
     {
@@ -174,13 +171,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string activityIdentity,
             IReadOnlyList<SceneKeyAsset> routeOwnedLoadedSceneKeys)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             ActiveSceneKey = activeSceneKey;
             SaveActivityOnExit = saveActivityOnExit;
             ContributorScopePolicy = contributorScopePolicy;
-            ActivityIdentity = Normalize(activityIdentity);
+            ActivityIdentity = activityIdentity.TrimToEmpty();
             RouteOwnedLoadedSceneKeys = routeOwnedLoadedSceneKeys ?? throw new ArgumentNullException(nameof(routeOwnedLoadedSceneKeys));
         }
 
@@ -199,7 +196,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence > 0 &&
             ActiveSceneKey != null &&
             RouteOwnedLoadedSceneKeys != null;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             IActorDamageSourceEndpoint damageSourceEndpoint = null,
             Transform spawnParent = null)
         {
-            _adapterId = Normalize(adapterId);
+            _adapterId = adapterId.TrimToEmpty();
             _poolService = poolService ?? throw new ArgumentNullException(nameof(poolService));
             _actorAttributeEventStream = actorAttributeEventStream;
             _damageSourceEndpoint = damageSourceEndpoint;
@@ -166,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     string motionFailureReason = string.IsNullOrWhiteSpace(motionConfigurationReason)
                         ? "projectile_motion_bootstrap_rejected"
                         : motionConfigurationReason;
-                    string motionFailureMessage = $"Projectile motion bootstrap rejected. poolDefinition='{poolDefinition.name}' instance='{instance.name}' reason='{Normalize(motionConfigurationReason)}'.";
+                    string motionFailureMessage = $"Projectile motion bootstrap rejected. poolDefinition='{poolDefinition.name}' instance='{instance.name}' reason='{motionConfigurationReason.TrimToEmpty()}'.";
                     ReturnRentedInstanceIfNeeded(poolDefinition, instance, motionFailureReason);
                     return ActorProjectileSpawnAdapterResult.Failed(
                         command,
@@ -227,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
                 DebugUtility.LogError(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"event='ActorProjectileSpawnAdapterFailed' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='{poolCalled}' instanceName='{(instance == null ? string.Empty : instance.name)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{reason}' message='{Normalize(ex.Message)}'.");
+                    $"event='ActorProjectileSpawnAdapterFailed' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='{poolCalled}' instanceName='{(instance == null ? string.Empty : instance.name)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{reason}' message='{ex.Message.TrimToEmpty()}'.");
 
                 return ActorProjectileSpawnAdapterResult.Failed(
                     command,
@@ -324,7 +325,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 presentationEndpointPresent = true;
 
-                string resolvedProfileId = Normalize(presentationEndpoint.Profile?.ProfileId);
+                string resolvedProfileId = presentationEndpoint.Profile?.ProfileId.TrimToEmpty();
                 if (!string.IsNullOrWhiteSpace(resolvedProfileId))
                 {
                     presentationProfileId = resolvedProfileId;
@@ -399,7 +400,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(PooledActorProjectileSpawnAdapter),
-                $"event='ActorProjectileSpawnVisualObserved' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' presentationEndpointPresent='{presentationEndpointPresent}' presentationProfileId='{presentationProfileId}' presentationVisualRootPresent='{presentationVisualRootPresent}' visualContract='{VisualContractOptionalForRuntimeSpawn}' rendererNames='{Normalize(rendererNames)}' materialNames='{Normalize(materialNames)}' position='{FormatVector(actualPosition)}' rotation='{FormatQuaternion(actualRotation)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_visual_observed'.",
+                $"event='ActorProjectileSpawnVisualObserved' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' presentationEndpointPresent='{presentationEndpointPresent}' presentationProfileId='{presentationProfileId}' presentationVisualRootPresent='{presentationVisualRootPresent}' visualContract='{VisualContractOptionalForRuntimeSpawn}' rendererNames='{rendererNames.TrimToEmpty()}' materialNames='{materialNames.TrimToEmpty()}' position='{FormatVector(actualPosition)}' rotation='{FormatQuaternion(actualRotation)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_visual_observed'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(
@@ -475,14 +476,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 _poolService.Return(poolDefinition, instance);
                 DebugUtility.Log(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"event='ActorProjectileSpawnFailedInstanceReturnedToPool' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{Normalize(reason)}'.",
+                    $"event='ActorProjectileSpawnFailedInstanceReturnedToPool' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{reason.TrimToEmpty()}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"event='ActorProjectileSpawnFailedInstanceReturnToPoolFailed' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{Normalize(reason)}' message='{Normalize(ex.Message)}'.");
+                    $"event='ActorProjectileSpawnFailedInstanceReturnToPoolFailed' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{reason.TrimToEmpty()}' message='{ex.Message.TrimToEmpty()}'.");
             }
         }
 
@@ -522,10 +523,5 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             return $"{value.x:0.###},{value.y:0.###},{value.z:0.###},{value.w:0.###}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

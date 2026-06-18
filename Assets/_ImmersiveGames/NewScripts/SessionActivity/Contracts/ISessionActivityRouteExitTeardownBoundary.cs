@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -25,12 +26,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string detail)
         {
             Kind = kind;
-            SessionStateId = Normalize(sessionStateId);
+            SessionStateId = sessionStateId.TrimToEmpty();
             Stage = stage;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             HasPendingHandoff = hasPendingHandoff;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public SessionActivityRouteExitTeardownKind Kind { get; }
@@ -53,12 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', activityId='{ActivityId}', hasPendingHandoff='{HasPendingHandoff}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
 
     public enum SessionActivitySessionResetKind
@@ -82,13 +78,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string detail)
         {
             Kind = kind;
-            SessionStateId = Normalize(sessionStateId);
+            SessionStateId = sessionStateId.TrimToEmpty();
             Stage = stage;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             SessionActorCountBefore = sessionActorCountBefore;
             SessionActorCountAfter = sessionActorCountAfter;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public SessionActivitySessionResetKind Kind { get; }
@@ -111,12 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', activityId='{ActivityId}', sessionActorCountBefore='{SessionActorCountBefore}', sessionActorCountAfter='{SessionActorCountAfter}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
 
     public enum SessionActivityRouteExitTeardownPreflightKind
@@ -141,13 +132,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string detail)
         {
             Kind = kind;
-            SessionStateId = Normalize(sessionStateId);
+            SessionStateId = sessionStateId.TrimToEmpty();
             Stage = stage;
             RailKind = railKind;
-            ActivityId = Normalize(activityId);
+            ActivityId = activityId.TrimToEmpty();
             HasPendingOperation = hasPendingOperation;
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public SessionActivityRouteExitTeardownPreflightKind Kind { get; }
@@ -174,12 +165,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return $"kind='{Kind}', sessionStateId='{SessionStateId}', stage='{Stage}', railKind='{RailKind}', activityId='{ActivityId}', hasPendingOperation='{HasPendingOperation}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public interface ISessionActivityRouteExitTeardownBoundary
     {

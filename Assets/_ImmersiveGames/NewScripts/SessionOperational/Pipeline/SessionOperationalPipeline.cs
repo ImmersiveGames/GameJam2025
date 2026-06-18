@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using DebugUtility = _ImmersiveGames.NewScripts.Foundation.Core.Logging.DebugUtility;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -22,9 +23,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public RouteRequestSubmissionResult(RouteRequestSubmissionKind kind, string routeIdentity, string reason, string detail)
         {
             Kind = kind;
-            RouteIdentity = Normalize(routeIdentity);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public RouteRequestSubmissionKind Kind { get; }
@@ -33,27 +34,23 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Detail { get; }
         public bool IsAccepted => Kind == RouteRequestSubmissionKind.Accepted;
         public bool IsRejectedByPolicy => Kind == RouteRequestSubmissionKind.RejectedByPolicy;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct RouteOperationCompletionSignal
     {
         public RouteOperationCompletionSignal(string routeIdentity, string routeOperationId, bool succeeded, string reason)
         {
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
             Succeeded = succeeded;
-            Reason = Normalize(reason);
+            Reason = reason.TrimToEmpty();
         }
 
         public string RouteIdentity { get; }
         public string RouteOperationId { get; }
         public bool Succeeded { get; }
         public string Reason { get; }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public sealed class SessionOperationalPipeline : IRouteActivityLoadedSnapshotPayloadProvider, IRouteActivityLoadedSnapshotPayloadStore
     {
@@ -102,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string sessionOperationalPipelineId = DefaultPipelineId)
         {
             _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
-            _sessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
+            _sessionOperationalPipelineId = sessionOperationalPipelineId.TrimToEmpty();
 
             if (string.IsNullOrWhiteSpace(_sessionOperationalPipelineId))
             {
@@ -161,8 +158,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason,
             out string outcomeReason)
         {
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
             var command = new OperationalRouteActivitySaveQaSaveCommand(
                 _dependencies.RuntimeModeConfig,
                 sessionStateId,
@@ -179,19 +176,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 outcomeReason = $"route_activity_save_qa_failed_exception:{exception.GetType().Name}";
                 DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
-                    $"checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadResolved='unknown' payloadKind='<none>' recordCount='0' contributorResolutionKind='{Normalize(outcomeReason)}' failureReason='{Normalize(exception.Message)}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                    $"checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{activityIdentity.TrimToEmpty()}' payloadResolved='unknown' payloadKind='<none>' recordCount='0' contributorResolutionKind='{outcomeReason.TrimToEmpty()}' failureReason='{exception.Message.TrimToEmpty()}' source='{normalizedSource}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
                 DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
-                    $"event='RouteActivitySaveQaRequested' outcomeKind='Failed' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    $"event='RouteActivitySaveQaRequested' outcomeKind='Failed' reason='{outcomeReason.TrimToEmpty()}' sessionStateId='{sessionStateId.TrimToEmpty()}' saveOwnerActivityIdentity='{sessionStateId.TrimToEmpty()}' payloadActivityIdentity='{activityIdentity.TrimToEmpty()}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
                 return false;
             }
 
             outcomeReason = string.IsNullOrWhiteSpace(result.Reason) ? result.Detail : result.Reason;
-            bool qaSkipped = result.IsCompleted && Normalize(outcomeReason).StartsWith("qa_save_skipped_", StringComparison.Ordinal);
+            bool qaSkipped = result.IsCompleted && outcomeReason.TrimToEmpty().StartsWith("qa_save_skipped_", StringComparison.Ordinal);
             string outcomeKind = result.IsCompleted ? (qaSkipped ? "Skipped" : "Saved") : "Failed";
             DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
-                $"event='RouteActivitySaveQaRequested' outcomeKind='{outcomeKind}' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                $"event='RouteActivitySaveQaRequested' outcomeKind='{outcomeKind}' reason='{outcomeReason.TrimToEmpty()}' sessionStateId='{sessionStateId.TrimToEmpty()}' saveOwnerActivityIdentity='{sessionStateId.TrimToEmpty()}' payloadActivityIdentity='{activityIdentity.TrimToEmpty()}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
                 result.IsCompleted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
             return result.IsCompleted;
         }
@@ -201,9 +198,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            string routeIdentity = route != null ? Normalize(route.RouteIdentity) : string.Empty;
-            string sourceText = Normalize(source);
-            string reasonText = Normalize(reason);
+            string routeIdentity = route != null ? route.RouteIdentity.TrimToEmpty() : string.Empty;
+            string sourceText = source.TrimToEmpty();
+            string reasonText = reason.TrimToEmpty();
 
             if (route == null)
             {
@@ -220,7 +217,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     RouteRequestSubmissionKind.FailedInvalidConfig,
                     routeIdentity,
                     "route_invalid",
-                    Normalize(routeValidationError));
+                    routeValidationError.TrimToEmpty());
             }
 
             var preflight = TryPreflightRouteRequest(routeIdentity, sourceText, reasonText);
@@ -239,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     RouteRequestSubmissionKind.FailedInvalidConfig,
                     routeIdentity,
                     "invalid_runtime_config",
-                    $"{ex.GetType().Name}:{Normalize(ex.Message)}");
+                    $"{ex.GetType().Name}:{ex.Message.TrimToEmpty()}");
             }
 
             _ = RequestOperationalRouteAsync(route, sourceText, reasonText);
@@ -256,7 +253,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             out string failureReason)
         {
             payload = default;
-            string normalizedActivityIdentity = Normalize(activityIdentity);
+            string normalizedActivityIdentity = activityIdentity.TrimToEmpty();
             if (string.IsNullOrWhiteSpace(normalizedActivityIdentity))
             {
                 failureReason = "activity_identity_missing";
@@ -308,9 +305,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             var runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             var persistentScenesPolicy = _dependencies.PersistentScenesPolicy;
-            string sourceText = Normalize(source);
-            string reasonText = Normalize(reason);
-            string routeIdentity = Normalize(route.RouteIdentity);
+            string sourceText = source.TrimToEmpty();
+            string reasonText = reason.TrimToEmpty();
+            string routeIdentity = route.RouteIdentity.TrimToEmpty();
             string activeSceneName = string.Empty;
             SessionOperationalRouteSnapshot previousCompletedRoute = default;
             SessionOperationalRoutePlanResolution planResolution = default;
@@ -859,7 +856,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            routeIdentity = Normalize(routeIdentity);
+            routeIdentity = routeIdentity.TrimToEmpty();
             lock (_operationalRouteSync)
             {
                 if (_hasActiveOperationalRouteOperation)
@@ -909,11 +906,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reasonDetail,
             string policyDetail)
         {
-            string normalizedPolicyDetail = Normalize(policyDetail);
+            string normalizedPolicyDetail = policyDetail.TrimToEmpty();
             DebugUtility.LogWarning<SessionOperationalPipeline>(
-                $"RouteRequestBlockedByOperationalHandoff routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{Normalize(source)}' reasonDetail='{Normalize(reasonDetail)}'.");
+                $"RouteRequestBlockedByOperationalHandoff routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{source.TrimToEmpty()}' reasonDetail='{reasonDetail.TrimToEmpty()}'.");
             DebugUtility.LogVerbose(typeof(SessionOperationalPipeline),
-                $"RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{Normalize(source)}' reasonDetail='{Normalize(reasonDetail)}'.",
+                $"RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' reason='{reason}' detail='{normalizedPolicyDetail}' source='{source.TrimToEmpty()}' reasonDetail='{reasonDetail.TrimToEmpty()}'.",
                 DebugUtility.Colors.Info);
             return new RouteRequestSubmissionResult(
                 RouteRequestSubmissionKind.RejectedByPolicy,
@@ -937,13 +934,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            string normalizedRouteOperationId = Normalize(routeOperationId);
-            string normalizedTransitionId = Normalize(transitionId);
-            string normalizedRouteIdentity = Normalize(routeIdentity);
-            string normalizedRouteId = Normalize(routeId);
-            string normalizedRouteProfileId = Normalize(routeProfileId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
+            string normalizedRouteOperationId = routeOperationId.TrimToEmpty();
+            string normalizedTransitionId = transitionId.TrimToEmpty();
+            string normalizedRouteIdentity = routeIdentity.TrimToEmpty();
+            string normalizedRouteId = routeId.TrimToEmpty();
+            string normalizedRouteProfileId = routeProfileId.TrimToEmpty();
+            string normalizedSource = source.TrimToEmpty();
+            string normalizedReason = reason.TrimToEmpty();
 
             if (string.IsNullOrWhiteSpace(normalizedRouteOperationId) ||
                 string.IsNullOrWhiteSpace(normalizedTransitionId) ||
@@ -1321,13 +1318,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             return _factRecorder.DumpState();
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-
-        private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
+private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
         {
             if (sceneKey == null)
             {
@@ -1363,7 +1354,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static string BuildActivitySaveKey(string activityIdentity)
         {
-            string normalized = Normalize(activityIdentity);
+            string normalized = activityIdentity.TrimToEmpty();
             return string.IsNullOrWhiteSpace(normalized) ? string.Empty : $"activity:{normalized}";
         }
 
@@ -1374,7 +1365,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 LoadedRouteActivitySnapshotPayload payload,
                 int payloadSize)
             {
-                ActivityIdentity = Normalize(activityIdentity);
+                ActivityIdentity = activityIdentity.TrimToEmpty();
                 Payload = payload;
                 PayloadSize = payloadSize < 0 ? 0 : payloadSize;
             }

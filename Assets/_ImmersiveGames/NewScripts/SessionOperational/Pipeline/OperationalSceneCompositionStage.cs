@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -15,9 +16,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             RouteCommand = routeCommand;
-            ActiveSceneName = Normalize(activeSceneName);
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            ActiveSceneName = activeSceneName.TrimToEmpty();
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
@@ -27,12 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsValid =>
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(ActiveSceneName);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     // Etapa 2 (canonização Command/Result/Fact): removed local OperationalSceneCompositionStageResult wrapper.
     // Stage now returns the canonical OperationalSceneCompositionResult directly from Contracts.
@@ -58,8 +54,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             var routeCommand = command.RouteCommand;
-            string source = Normalize(command.Source);
-            string reason = Normalize(command.Reason);
+            string source = command.Source.TrimToEmpty();
+            string reason = command.Reason.TrimToEmpty();
 
             _factRecorder.TryRecordOperationStage(SessionOperationalStage.SceneComposition, source, reason, "scene_composition_started");
 
@@ -103,10 +99,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return sceneCompositionPort;
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

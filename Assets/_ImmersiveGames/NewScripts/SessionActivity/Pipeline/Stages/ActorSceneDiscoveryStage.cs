@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -111,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         continue;
                     }
 
-                    string actorId = Normalize(actor.ActorId);
+                    string actorId = actor.ActorId.TrimToEmpty();
                     string actorType = nameof(Actor);
                     var actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                         identity,
@@ -142,7 +143,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
             }
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 }

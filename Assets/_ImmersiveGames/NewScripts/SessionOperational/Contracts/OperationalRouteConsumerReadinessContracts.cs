@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -24,14 +25,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string source,
             string reason)
         {
-            ConsumerIdentity = Normalize(consumerIdentity);
-            ExpectedRouteOperationId = Normalize(expectedRouteOperationId);
-            RouteIdentity = Normalize(routeIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            TransitionId = Normalize(transitionId);
+            ConsumerIdentity = consumerIdentity.TrimToEmpty();
+            ExpectedRouteOperationId = expectedRouteOperationId.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
             RouteSequence = routeSequence;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public string ConsumerIdentity { get; }
@@ -51,9 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct OperationalRouteConsumerReadinessResult
     {
@@ -65,10 +64,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             string detail)
         {
             Kind = kind;
-            ConsumerIdentity = Normalize(consumerIdentity);
-            RouteOperationId = Normalize(routeOperationId);
-            Reason = Normalize(reason);
-            Detail = Normalize(detail);
+            ConsumerIdentity = consumerIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+            Detail = detail.TrimToEmpty();
         }
 
         public OperationalRouteConsumerReadinessResultKind Kind { get; }
@@ -87,9 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         {
             return $"kind='{Kind}', consumerIdentity='{ConsumerIdentity}', routeOperationId='{RouteOperationId}', reason='{Reason}', detail='{Detail}'";
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public interface IOperationalRouteConsumerReadinessPort
     {

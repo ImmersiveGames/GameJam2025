@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipantRequirementId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantRequirementId;
@@ -842,10 +843,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"activity_participant_materialization_binding_invalid: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}'.");
             }
 
-            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
-            string sessionParticipantId = participant.ParticipantId.IsValid ? Normalize(participant.ParticipantId.Value) : string.Empty;
-            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
-            string actorId = participant.ActorId.IsValid ? Normalize(participant.ActorId.Value) : string.Empty;
+            string playerSlotId = participant.PlayerSlotId.IsValid ? participant.PlayerSlotId.Value.TrimToEmpty() : string.Empty;
+            string sessionParticipantId = participant.ParticipantId.IsValid ? participant.ParticipantId.Value.TrimToEmpty() : string.Empty;
+            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? participant.ActorDefinitionId.Value.TrimToEmpty() : string.Empty;
+            string actorId = participant.ActorId.IsValid ? participant.ActorId.Value.TrimToEmpty() : string.Empty;
             if (string.IsNullOrWhiteSpace(playerSlotId) || string.IsNullOrWhiteSpace(sessionParticipantId) || string.IsNullOrWhiteSpace(actorDefinitionId) || string.IsNullOrWhiteSpace(actorId))
             {
                 throw new InvalidOperationException(
@@ -955,7 +956,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             if (!identity.IsValid || !participant.IsValid || !retainedHandle.IsValid)
             {
-                throw new InvalidOperationException($"Cannot rebind retained player actor handle for operation='{Normalize(operation)}'.");
+                throw new InvalidOperationException($"Cannot rebind retained player actor handle for operation='{operation.TrimToEmpty()}'.");
             }
 
             var retainedInstance = retainedHandle.Instance;
@@ -1053,8 +1054,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return byParticipant;
             }
 
-            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
-            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
+            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? participant.ActorDefinitionId.Value.TrimToEmpty() : string.Empty;
+            string playerSlotId = participant.PlayerSlotId.IsValid ? participant.PlayerSlotId.Value.TrimToEmpty() : string.Empty;
             throw new InvalidOperationException(
                 $"missing_activity_participant_materialization_plan: activityId='{activityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}' resolutionKey='SessionParticipantId'.");
         }
@@ -1483,10 +1484,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ? transform.name
                 : $"{parentPath}/{transform.name}";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

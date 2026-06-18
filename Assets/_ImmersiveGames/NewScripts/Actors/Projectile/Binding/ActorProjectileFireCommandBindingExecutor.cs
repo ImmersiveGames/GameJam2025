@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
@@ -25,10 +26,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
         {
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
-            ParticipantId = Normalize(participantId);
+            ParticipantId = participantId.TrimToEmpty();
             Required = required;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
         }
 
         public ActorId ActorId { get; }
@@ -42,12 +43,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public enum ActorProjectileFireCommandBindingState
     {
@@ -63,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
             string observedEndpoint)
         {
             State = state;
-            ObservedEndpoint = Normalize(observedEndpoint);
+            ObservedEndpoint = observedEndpoint.TrimToEmpty();
         }
 
         public ActorProjectileFireCommandBindingState State { get; }
@@ -71,12 +67,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Binding
         public bool IsExecutable => State == ActorProjectileFireCommandBindingState.Executable;
         public bool Skipped => State == ActorProjectileFireCommandBindingState.SkippedOptional;
         public bool IsValid => State != ActorProjectileFireCommandBindingState.Unknown && !string.IsNullOrWhiteSpace(ObservedEndpoint);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 
     public sealed class ActorProjectileFireCommandBindingExecutor
     {

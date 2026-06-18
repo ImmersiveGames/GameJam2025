@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -17,16 +18,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             IReadOnlyList<ActivityCapabilityPolicyEntry> policyMetadata,
             string source)
         {
-            CapabilityId = Normalize(capabilityId);
+            CapabilityId = capabilityId.TrimToEmpty();
             CapabilityKind = capabilityKind;
-            ModuleId = Normalize(moduleId);
-            OwnerId = Normalize(ownerId);
-            ComponentPath = Normalize(componentPath);
-            ComponentType = Normalize(componentType);
+            ModuleId = moduleId.TrimToEmpty();
+            OwnerId = ownerId.TrimToEmpty();
+            ComponentPath = componentPath.TrimToEmpty();
+            ComponentType = componentType.TrimToEmpty();
             Required = required;
             Priority = priority;
             PolicyMetadata = policyMetadata ?? Array.Empty<ActivityCapabilityPolicyEntry>();
-            Source = Normalize(source);
+            Source = source.TrimToEmpty();
         }
 
         public string CapabilityId { get; }
@@ -54,10 +55,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return $"capabilityId='{CapabilityId}', capabilityKind='{CapabilityKind}', moduleId='{ModuleId}', ownerId='{OwnerId}', componentPath='{ComponentPath}', componentType='{ComponentType}', required='{Required}', priority='{Priority}'";
         }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }

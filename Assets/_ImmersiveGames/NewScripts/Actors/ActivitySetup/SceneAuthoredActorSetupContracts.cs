@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
@@ -31,14 +32,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         {
             Identity = identity;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
-            ActorId = Normalize(actorId);
+            ActorId = actorId.TrimToEmpty();
             ActorRole = actorRole;
             ActorScope = actorScope;
             ParticipationPolicy = participationPolicy;
             ExplicitActivityIds = explicitActivityIds ?? Array.Empty<string>();
             OriginSourceKind = originSourceKind;
-            OriginSceneName = Normalize(originSceneName);
-            ActorType = Normalize(actorType);
+            OriginSceneName = originSceneName.TrimToEmpty();
+            ActorType = actorType.TrimToEmpty();
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -77,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             for (int index = 0; index < ExplicitActivityIds.Count; index++)
             {
-                if (string.IsNullOrWhiteSpace(Normalize(ExplicitActivityIds[index])))
+                if (string.IsNullOrWhiteSpace(ExplicitActivityIds[index].TrimToEmpty()))
                 {
                     return false;
                 }
@@ -85,9 +86,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return true;
         }
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
+}
 
     public readonly struct SceneAuthoredActorRuntimeEntry
     {

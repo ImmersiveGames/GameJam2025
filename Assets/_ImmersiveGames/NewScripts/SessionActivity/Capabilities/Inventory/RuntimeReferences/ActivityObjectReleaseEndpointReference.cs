@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences
 {
@@ -11,10 +12,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             string componentPath,
             IActivityObjectReleaseEndpoint endpoint)
         {
-            CapabilityId = Normalize(capabilityId);
-            OwnerId = Normalize(ownerId);
-            TargetId = Normalize(targetId);
-            ComponentPath = Normalize(componentPath);
+            CapabilityId = capabilityId.TrimToEmpty();
+            OwnerId = ownerId.TrimToEmpty();
+            TargetId = targetId.TrimToEmpty();
+            ComponentPath = componentPath.TrimToEmpty();
             Endpoint = endpoint;
         }
 
@@ -24,10 +25,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public string ComponentPath { get; }
         public IActivityObjectReleaseEndpoint Endpoint { get; }
         public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && Endpoint != null;
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
+}
 }
