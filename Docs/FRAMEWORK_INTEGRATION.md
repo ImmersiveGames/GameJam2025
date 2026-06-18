@@ -16,6 +16,25 @@ Explicar como os sistemas do jogo ser√£o organizados dentro da framework do est√
 
 Assets/_ImmersiveGames/NewScripts
 
+# Legacy References
+
+## Original Project Scripts
+
+Location:
+
+Docs/LegacyReference/OldBirasFarm_Scripts_Legacy.zip
+
+Purpose:
+
+Reference-only copy of the original implementation.
+
+Rules:
+
+- Do not compile.
+- Do not directly migrate code.
+- Use only as behavioral reference.
+- New systems must follow the current framework architecture.
+
 ---
 
 # Framework Modules
