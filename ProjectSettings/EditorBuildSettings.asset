@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/_ImmersiveGames/Scenes/NewBootstrap.unity
+    path: Assets/_ImmersiveGames/Old Biras Farm/Scenes/NewBootstrap.unity
     guid: 2299f041a5d31c24d9b43449da1ca362
   - enabled: 1
     path: Assets/_ImmersiveGames/Scenes/FadeScene.unity
@@ -53,6 +53,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_ImmersiveGames/Scenes/ActivityScene02.unity
     guid: 312eb0ad182094444a753034b6f04980
+  - enabled: 1
+    path: Assets/_ImmersiveGames/Old Biras Farm/Scenes/Sandbox.unity
+    guid: 9821b1708737a74429bd2e03bb8ba18d
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 108886296fc74d142975b35c76c1d56f, type: 2}
-  m_UseUCBPForAssetBundles: 0

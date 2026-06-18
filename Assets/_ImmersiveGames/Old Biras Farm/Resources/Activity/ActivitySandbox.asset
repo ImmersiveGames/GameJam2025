@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e7444c4e7dc49ad94bd7ec06d1208ce, type: 3}
+  m_Name: ActivitySandbox
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.SessionActivity.Authoring.ActivityAsset
+  activityId: activity.sandbox
+  displayName: Sandbox
+  activityContentMode: 1
+  activityContentProfile: {fileID: 11400000, guid: d221e32d017e1bd4893dd7d216f81469, type: 2}
+  activationWindowMode: 0
+  activationWindowAdditiveSceneKey: {fileID: 0}
+  deactivationWindowMode: 0
+  deactivationWindowAdditiveSceneKey: {fileID: 0}
+  nextActivity: {fileID: 0}
+  nextActivityTransitionProfileSource: 0
+  nextActivityTransitionContinuePolicy: 1
+  nextActivityTransitionProfileOverride: {fileID: 0}

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f09365e9666160d49aaea77e1f7e6c35, type: 3}
+  m_Name: ActivityProfileSandbox
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.SessionActivity.Authoring.ActivityContentProfileAsset
+  contentProfileId: activity.profile.sandbox
+  discoveryMode: 1
+  preparationPolicy: 1
+  contentScenes:
+  - entryId: content.scene.sandbox
+    sceneKey: {fileID: 11400000, guid: 1bb58b96098ccde4e904506e443af992, type: 2}
+    requiredness: 2
+  setupRequirements:
+    participantRequirements:
+    - requirementId: participant.player.primary
+      requiredness: 2
+      participantKind: 1
+      participantId: participant.player.slot.1
+      expectedSessionRole: 1
+      placementRequirementId: 
+    objectEntryRequirements: []
+    sceneContributorRequirements: []
+    placementRequirements: []
+    cameraBindingRequirements:
+    - requirementId: camera.activity.sandbox
+      requiredness: 2
+      cameraBindingKind: 1
+      bindingId: activity.camera.sandbox
+      targetId: actor.player.primary
+      profileId: activity.presentation.sandbox
+    interactionBindingRequirements: []
+    hudBindingRequirements: []
+    warmupRequirements: []
+    stateResetRequirements: []
+    releaseRequirements: []
