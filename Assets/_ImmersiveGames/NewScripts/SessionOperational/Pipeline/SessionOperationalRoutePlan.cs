@@ -32,7 +32,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             PlayerSetDefinitionAsset routeParticipantSetDefinition,
             SessionOperationalRouteAudioCommand audio,
             SurfacePresentationProfileAsset surfacePresentationProfile,
-            ActivityPresentationProfileAsset activityPresentationProfile)
+            ActivityPresentationProfileAsset activityPresentationProfile,
+            RoutePauseSurfaceProfile routePauseSurfaceProfile)
         {
             RouteIdentity = routeIdentity.TrimToEmpty();
             TransitionMode = transitionMode;
@@ -54,6 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Audio = audio;
             SurfacePresentationProfile = surfacePresentationProfile;
             ActivityPresentationProfile = activityPresentationProfile;
+            RoutePauseSurfaceProfile = routePauseSurfaceProfile;
         }
 
         public string RouteIdentity { get; }
@@ -76,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SessionOperationalRouteAudioCommand Audio { get; }
         public SurfacePresentationProfileAsset SurfacePresentationProfile { get; }
         public ActivityPresentationProfileAsset ActivityPresentationProfile { get; }
+        public RoutePauseSurfaceProfile RoutePauseSurfaceProfile { get; }
         public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
         public bool UsesLoading => LoadingMode != SessionOperationalRouteLoadingMode.None;
         public string TransitionProfileLabel => TransitionProfile != null && !string.IsNullOrWhiteSpace(TransitionProfile.name) ? TransitionProfile.name.Trim() : string.Empty;
@@ -94,12 +97,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             AutoScenesToUnload != null &&
             Audio.IsValid &&
             ActivitySavePolicy.IsValid &&
+            RoutePauseSurfaceProfile.IsValid &&
             (CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry || !string.IsNullOrWhiteSpace(HandoffSessionStateId));
 
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', loadActivitySaveOnEnter='{ActivitySavePolicy.LoadActivitySaveOnEnter}', saveActivityOnExit='{ActivitySavePolicy.SaveActivityOnExit}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', loadActivitySaveOnEnter='{ActivitySavePolicy.LoadActivitySaveOnEnter}', saveActivityOnExit='{ActivitySavePolicy.SaveActivityOnExit}', routePauseSurface='{RoutePauseSurfaceProfile}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}'"
                 : "<none>";
         }
 

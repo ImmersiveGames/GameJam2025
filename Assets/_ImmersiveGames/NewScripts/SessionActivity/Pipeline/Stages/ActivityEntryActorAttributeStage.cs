@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;

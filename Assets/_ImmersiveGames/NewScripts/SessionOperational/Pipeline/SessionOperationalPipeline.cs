@@ -57,7 +57,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private const string DefaultPipelineId = "SessionOperationalPipeline.v0";
         private const string RouteActivitySnapshotSchemaId = "progression.route_activity.object_snapshot.v1";
 
-        private readonly SessionOperationalRuntimeState _state = new();
         private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy = new();
         private readonly OperationalFactRecorder _factRecorder;
         private readonly SessionOperationalRoutePlanResolver _routePlanResolver = new();
@@ -107,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             _factRecorder = new OperationalFactRecorder(
-                _state,
+                State,
                 _sessionOperationalPipelineId,
                 _stageOrderPolicy);
 
@@ -149,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _routeMaterializationBoundary = new OperationalRouteMaterializationBoundary(_factRecorder);
         }
 
-        public SessionOperationalRuntimeState State => _state;
+        public SessionOperationalRuntimeState State { get; } = new();
 
         public bool TryQaSaveCurrentActivitySnapshot(
             string sessionStateId,
@@ -959,7 +958,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "route operation start ignored because the identity payload is incomplete.");
             }
 
-            _state.Reset(
+            State.Reset(
                 _sessionOperationalPipelineId,
                 normalizedRouteIdentity,
                 normalizedRouteOperationId,

@@ -15,15 +15,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         [Tooltip("Tipo semantico simples do dano emitido por esta fonte. Ex.: direct, projectile, hazard.")]
         [SerializeField] private string damageKind = "direct";
 
-        private ActorId _sourceActorId;
-        private ActorInstanceRuntimeId _sourceActorInstanceRuntimeId;
         private SessionActivityIdentity _activityIdentity;
-        private bool _isConfigured;
 
-        public ActorId SourceActorId => _sourceActorId;
-        public ActorInstanceRuntimeId SourceActorInstanceRuntimeId => _sourceActorInstanceRuntimeId;
+        public ActorId SourceActorId { get; private set; }
+        public ActorInstanceRuntimeId SourceActorInstanceRuntimeId { get; private set; }
         public SessionActivityIdentity ActivityIdentity => _activityIdentity;
-        public bool IsConfigured => _isConfigured;
+        public bool IsConfigured { get; private set; }
 
         public void Configure(
             ActorId sourceActorId,
@@ -47,14 +44,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 throw new InvalidOperationException("ActorDamageSourceEndpoint requires a valid SessionActivityIdentity.");
             }
 
-            _sourceActorId = sourceActorId;
-            _sourceActorInstanceRuntimeId = sourceActorInstanceRuntimeId;
+            SourceActorId = sourceActorId;
+            SourceActorInstanceRuntimeId = sourceActorInstanceRuntimeId;
             _activityIdentity = activityIdentity;
-            _isConfigured = true;
+            IsConfigured = true;
 
             DebugUtility.LogVerbose(
                 typeof(ActorDamageSourceEndpoint),
-                $"event='ActorDamageSourceConfigured' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorDamageSourceConfigured' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{SourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 
@@ -63,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             IActorDamageableEndpoint target,
             out ActorDamageSourceResult result)
         {
-            if (!_isConfigured)
+            if (!IsConfigured)
             {
                 result = ActorDamageSourceResult.Fail(
                     intent.SourceActorId,
@@ -89,14 +86,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 return false;
             }
 
-            if (intent.SourceActorId != _sourceActorId)
+            if (intent.SourceActorId != SourceActorId)
             {
                 result = ActorDamageSourceResult.Reject(intent, "foreign_source_actor_id");
                 LogRejected(intent, result.Reason);
                 return false;
             }
 
-            if (intent.SourceActorInstanceRuntimeId != _sourceActorInstanceRuntimeId)
+            if (intent.SourceActorInstanceRuntimeId != SourceActorInstanceRuntimeId)
             {
                 result = ActorDamageSourceResult.Reject(intent, "foreign_source_actor_instance_id");
                 LogRejected(intent, result.Reason);

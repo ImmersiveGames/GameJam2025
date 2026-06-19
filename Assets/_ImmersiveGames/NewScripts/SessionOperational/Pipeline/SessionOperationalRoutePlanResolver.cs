@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
@@ -62,7 +63,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ValidateAuthoringOrFail(route, persistentScenesPolicy);
 
             string activeSceneName = ResolveSceneName(route.ActiveSceneKey, nameof(route.ActiveSceneKey));
-            var loadPlan = ResolveRouteLoadPlanOrFail(route, persistentScenesPolicy, activeSceneName);
+            var pauseSurfaceProfile = ResolveRoutePauseSurfaceProfileOrFail(route);
+            var loadPlan = ResolveRouteLoadPlanOrFail(route, persistentScenesPolicy, activeSceneName, pauseSurfaceProfile);
             var unloadPlan = ResolveRouteUnloadPlanOrFail(
                 route,
                 persistentScenesPolicy,
@@ -92,7 +94,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 route.RouteParticipantSetDefinition,
                 audioCommand,
                 route.SurfacePresentationProfile,
-                route.ActivityPresentationProfile);
+                route.ActivityPresentationProfile,
+                pauseSurfaceProfile);
 
             if (!plan.IsValid)
             {
@@ -104,6 +107,33 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 loadPlan.ActiveSceneImplicitLoad,
                 route.UnloadPreviousRouteOwnedScenes,
                 unloadPlan.ExplicitScenesToUnload);
+        }
+
+        private static RoutePauseSurfaceProfile ResolveRoutePauseSurfaceProfileOrFail(OperationalRouteAsset route)
+        {
+            if (route.RoutePauseSurfaceProfile == null)
+            {
+                return new RoutePauseSurfaceProfile(
+                    new RoutePauseSurfaceId("route.pause.surface.none"),
+                    RoutePauseSurfaceMode.None,
+                    RoutePauseSurfacePreloadPolicy.None,
+                    null,
+                    default,
+                    default,
+                    false,
+                    default,
+                    default,
+                    default,
+                    default);
+            }
+
+            if (!route.RoutePauseSurfaceProfile.TryValidate(out string validationReason))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalRoute][RoutePauseSurface] invalid route pause surface profile routeIdentity='{route.RouteIdentity}' profile='{route.RoutePauseSurfaceProfile.name}' reason='{validationReason}'.");
+            }
+
+            return route.RoutePauseSurfaceProfile.ToProfile();
         }
 
         private static SessionOperationalRouteAudioCommand ResolveAudioCommandOrFail(OperationalRouteAsset route)
@@ -130,7 +160,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private static SessionOperationalRouteLoadPlan ResolveRouteLoadPlanOrFail(
             OperationalRouteAsset route,
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
-            string activeSceneName)
+            string activeSceneName,
+            RoutePauseSurfaceProfile pauseSurfaceProfile)
         {
             IReadOnlyList<SceneKeyAsset> explicitScenesToLoad = route.ScenesToLoad ?? Array.Empty<SceneKeyAsset>();
             HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrEmpty(persistentScenesPolicy);
@@ -141,6 +172,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             AppendActiveSceneKeyToLoadPlan(route.ActiveSceneKey, finalScenesToLoad, dedupe);
             AppendAdditionalSceneKeysToLoadPlan(
+                explicitScenesToLoad,
+                finalScenesToLoad,
+                dedupe,
+                persistentSceneSet,
+                normalizedActiveSceneName);
+            AppendRoutePauseSurfaceSceneToLoadPlan(
+                route,
+                pauseSurfaceProfile,
                 explicitScenesToLoad,
                 finalScenesToLoad,
                 dedupe,
@@ -261,6 +300,45 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 finalScenesToUnload.Add(sceneKey);
+            }
+        }
+
+        private static void AppendRoutePauseSurfaceSceneToLoadPlan(
+            OperationalRouteAsset route,
+            RoutePauseSurfaceProfile pauseSurfaceProfile,
+            IReadOnlyList<SceneKeyAsset> explicitScenesToLoad,
+            List<SceneKeyAsset> finalScenesToLoad,
+            HashSet<string> dedupe,
+            HashSet<string> persistentSceneSet,
+            string activeSceneName)
+        {
+            if (!pauseSurfaceProfile.IsValid || !pauseSurfaceProfile.UsesScene)
+            {
+                return;
+            }
+
+            string sceneName = ResolveSceneName(pauseSurfaceProfile.SceneKey, "routePauseSurfaceProfile.surfaceScene");
+            if (persistentSceneSet.Contains(sceneName))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalRoute][RoutePauseSurface] pause surface scene cannot be runtime persistent scene='{sceneName}' routeIdentity='{route.RouteIdentity}' surfaceId='{pauseSurfaceProfile.SurfaceId}'.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(activeSceneName) && string.Equals(sceneName, activeSceneName, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalRoute][RoutePauseSurface] pause surface scene cannot be active route scene routeIdentity='{route.RouteIdentity}' scene='{sceneName}' surfaceId='{pauseSurfaceProfile.SurfaceId}'.");
+            }
+
+            if (ContainsScene(explicitScenesToLoad, sceneName))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalRoute][RoutePauseSurface] pause surface scene must be declared only by RoutePauseSurfaceProfile, not scenesToLoad routeIdentity='{route.RouteIdentity}' scene='{sceneName}' surfaceId='{pauseSurfaceProfile.SurfaceId}'.");
+            }
+
+            if (dedupe.Add(sceneName))
+            {
+                finalScenesToLoad.Add(pauseSurfaceProfile.SceneKey);
             }
         }
 

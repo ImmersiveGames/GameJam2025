@@ -19,7 +19,6 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
         [SerializeField] private bool enableGlobalEvents = true;
 
         private ISkinService _skinService;
-        private IActor _ownerActor;
         private IHasSkin _skinOwner;
 
         // Eventos locais (Service Locator pattern)
@@ -37,7 +36,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
         private bool _isRegistered;
 
         private bool IsInitialized { get; set; }
-        public IActor OwnerActor => _ownerActor;
+        public IActor OwnerActor { get; private set; }
 
         private void Awake()
         {
@@ -92,7 +91,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void FindDependencies()
         {
-            _ownerActor = GetComponentInParent<IActor>();
+            OwnerActor = GetComponentInParent<IActor>();
             _skinOwner = GetComponentInParent<IHasSkin>();
 
             if (_skinOwner == null)
@@ -106,12 +105,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void RegisterWithDependencyManager()
         {
-            if (_ownerActor == null || string.IsNullOrEmpty(_ownerActor.ActorId))
+            if (OwnerActor == null || string.IsNullOrEmpty(OwnerActor.ActorId))
             {
                 return;
             }
 
-            _objectId = _ownerActor.ActorId;
+            _objectId = OwnerActor.ActorId;
 
             try
             {
@@ -151,7 +150,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
             _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinCollectionUpdateBinding ??= new EventBinding<SkinCollectionUpdateEvent>(OnGlobalSkinCollectionUpdate);
 
-            if (_ownerActor != null)
+            if (OwnerActor != null)
             {
                 //FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _ownerActor);
                 //FilteredEventBus<SkinCollectionUpdateEvent>.Register(_skinCollectionUpdateBinding, _ownerActor);
@@ -161,7 +160,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
 
         private void UnregisterGlobalEventListeners()
         {
-            if (!_globalEventsRegistered || _ownerActor == null)
+            if (!_globalEventsRegistered || OwnerActor == null)
             {
                 return;
             }
@@ -211,7 +210,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
                 return;
             }
 
-            _skinService.Initialize(defaultSkinCollection, _skinOwner.ModelTransform, _ownerActor);
+            _skinService.Initialize(defaultSkinCollection, _skinOwner.ModelTransform, OwnerActor);
             IsInitialized = true;
         }
 
@@ -231,7 +230,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
                 return;
             }
 
-            IReadOnlyList<GameObject> createdInstances = _skinService.ApplyConfig(config, _ownerActor);
+            IReadOnlyList<GameObject> createdInstances = _skinService.ApplyConfig(config, OwnerActor);
 
             NotifySkinApplied(config);
             NotifySkinInstancesCreated(config.ModelType, createdInstances);
@@ -252,7 +251,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
             }
 
             IReadOnlyDictionary<ModelType, IReadOnlyList<GameObject>> createdByType =
-                _skinService.ApplyCollection(newCollection, _ownerActor);
+                _skinService.ApplyCollection(newCollection, OwnerActor);
 
             NotifySkinCollectionApplied(newCollection);
 
@@ -306,10 +305,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
                 return;
             }
 
-            var skinEvent = new SkinEvents(config, _ownerActor);
+            var skinEvent = new SkinEvents(config, OwnerActor);
             EventBus<SkinEvents>.Raise(skinEvent);
 
-            if (_ownerActor != null)
+            if (OwnerActor != null)
             {
                 //FilteredEventBus<SkinEvents>.RaiseFiltered(skinEvent, _ownerActor);
             }
@@ -324,10 +323,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
                 return;
             }
 
-            var collectionEvent = new SkinCollectionUpdateEvent(collection, _ownerActor);
+            var collectionEvent = new SkinCollectionUpdateEvent(collection, OwnerActor);
             EventBus<SkinCollectionUpdateEvent>.Raise(collectionEvent);
 
-            if (_ownerActor != null)
+            if (OwnerActor != null)
             {
                 //FilteredEventBus<SkinCollectionUpdateEvent>.RaiseFiltered(collectionEvent, _ownerActor);
             }
@@ -348,10 +347,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Controllers
                 return;
             }
 
-            var instancesEvent = new SkinInstancesCreatedEvent(modelType, instances.ToArray(), _ownerActor);
+            var instancesEvent = new SkinInstancesCreatedEvent(modelType, instances.ToArray(), OwnerActor);
             EventBus<SkinInstancesCreatedEvent>.Raise(instancesEvent);
 
-            if (_ownerActor != null)
+            if (OwnerActor != null)
             {
                 //FilteredEventBus<SkinInstancesCreatedEvent>.RaiseFiltered(instancesEvent, _ownerActor);
             }

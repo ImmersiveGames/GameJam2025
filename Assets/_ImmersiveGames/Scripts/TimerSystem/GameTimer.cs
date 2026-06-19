@@ -32,7 +32,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private float _configuredDuration;
         private float _remainingTime;
-        private bool _sessionActive;
         private bool _isPaused;
         private bool _autoStartLocked;
         private int _lastLoggedSecond = -1;
@@ -44,10 +43,10 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         public float RemainingTime => Mathf.Max(_remainingTime, 0f);
 
         /// <summary>Indica se há uma sessão de contagem ativa.</summary>
-        public bool HasActiveSession => _sessionActive;
+        public bool HasActiveSession { get; private set; }
 
         /// <summary>Indica se o cronômetro está contando no momento.</summary>
-        public bool IsRunning => _sessionActive && !_isPaused;
+        public bool IsRunning => HasActiveSession && !_isPaused;
 
         private IGameManager ResolvedGameManager => _gameManager ?? GameManager.Instance;
         private GameConfig Config => _gameConfig ?? ResolvedGameManager?.GameConfig;
@@ -138,7 +137,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         {
             TryStartWhenPlaying();
 
-            if (!_sessionActive || _isPaused)
+            if (!HasActiveSession || _isPaused)
             {
                 return;
             }
@@ -158,7 +157,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         /// <summary>Inicia uma nova sessão utilizando o valor configurado.</summary>
         private void StartSession()
         {
-            if (_sessionActive)
+            if (HasActiveSession)
             {
                 return;
             }
@@ -179,7 +178,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
             PrepareTimer(duration);
 
             _remainingTime = duration;
-            _sessionActive = true;
+            HasActiveSession = true;
             _isPaused = false;
             _lastLoggedSecond = Mathf.CeilToInt(_remainingTime);
 
@@ -203,7 +202,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void PauseSession()
         {
-            if (!_sessionActive || _isPaused)
+            if (!HasActiveSession || _isPaused)
             {
                 return;
             }
@@ -221,7 +220,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void ResumeSession()
         {
-            if (!_sessionActive || !_isPaused || _remainingTime <= 0f)
+            if (!HasActiveSession || !_isPaused || _remainingTime <= 0f)
             {
                 return;
             }
@@ -240,7 +239,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void HandleTimeEnded()
         {
-            if (!_sessionActive)
+            if (!HasActiveSession)
             {
                 return;
             }
@@ -265,7 +264,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
             _timer?.Stop();
 
-            _sessionActive = false;
+            HasActiveSession = false;
             _isPaused = false;
             _lastLoggedSecond = -1;
 
@@ -343,7 +342,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void LogWholeSecond()
         {
-            if (!_sessionActive)
+            if (!HasActiveSession)
             {
                 return;
             }
@@ -360,7 +359,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
 
         private void TryStartWhenPlaying()
         {
-            if (_sessionActive || _autoStartLocked)
+            if (HasActiveSession || _autoStartLocked)
             {
                 return;
             }
@@ -377,7 +376,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                     return;
                 }
 
-                if (_sessionActive)
+                if (HasActiveSession)
                 {
                     ResumeSession();
                 }
@@ -386,7 +385,7 @@ namespace _ImmersiveGames.Scripts.TimerSystem
                     StartSession();
                 }
             }
-            else if (_sessionActive)
+            else if (HasActiveSession)
             {
                 PauseSession();
             }

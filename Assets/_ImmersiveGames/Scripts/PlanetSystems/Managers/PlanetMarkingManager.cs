@@ -26,13 +26,12 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
         private static PlanetMarkingManager _instance;
         public static PlanetMarkingManager Instance => _instance ??= new PlanetMarkingManager();
 
-        private MarkPlanet _currentlyMarkedPlanet;
         private EventBinding<PlanetMarkedEvent> _markedBinding;
         private EventBinding<PlanetUnmarkedEvent> _unmarkedBinding;
 
-        public MarkPlanet CurrentlyMarkedPlanet => _currentlyMarkedPlanet;
-        public IActor CurrentlyMarkedPlanetActor => _currentlyMarkedPlanet?.PlanetActor;
-        public bool HasMarkedPlanet => _currentlyMarkedPlanet != null;
+        public MarkPlanet CurrentlyMarkedPlanet { get; private set; }
+        public IActor CurrentlyMarkedPlanetActor => CurrentlyMarkedPlanet?.PlanetActor;
+        public bool HasMarkedPlanet => CurrentlyMarkedPlanet != null;
 
         private PlanetMarkingManager()
         {
@@ -50,15 +49,15 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
 
         private void OnPlanetMarked(PlanetMarkedEvent markedEvent)
         {
-            var previousMarked = _currentlyMarkedPlanet;
+            var previousMarked = CurrentlyMarkedPlanet;
 
             // Garante unicidade: se j� havia um planeta marcado diferente, desmarca.
-            if (_currentlyMarkedPlanet != null && _currentlyMarkedPlanet != markedEvent.MarkPlanet)
+            if (CurrentlyMarkedPlanet != null && CurrentlyMarkedPlanet != markedEvent.MarkPlanet)
             {
-                _currentlyMarkedPlanet.Unmark();
+                CurrentlyMarkedPlanet.Unmark();
             }
 
-            _currentlyMarkedPlanet = markedEvent.MarkPlanet;
+            CurrentlyMarkedPlanet = markedEvent.MarkPlanet;
 
             // Notifica outros sistemas sobre a troca de marca��o.
             EventBus<PlanetMarkingChangedEvent>.Raise(
@@ -69,9 +68,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
 
         private void OnPlanetUnmarked(PlanetUnmarkedEvent unmarkedEvent)
         {
-            if (_currentlyMarkedPlanet == unmarkedEvent.MarkPlanet)
+            if (CurrentlyMarkedPlanet == unmarkedEvent.MarkPlanet)
             {
-                _currentlyMarkedPlanet = null;
+                CurrentlyMarkedPlanet = null;
             }
         }
 
@@ -101,9 +100,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
         /// </summary>
         public void ClearAllMarks()
         {
-            if (_currentlyMarkedPlanet != null)
+            if (CurrentlyMarkedPlanet != null)
             {
-                _currentlyMarkedPlanet.Unmark();
+                CurrentlyMarkedPlanet.Unmark();
             }
         }
 
@@ -125,7 +124,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
                 _unmarkedBinding = null;
             }
 
-            _currentlyMarkedPlanet = null;
+            CurrentlyMarkedPlanet = null;
         }
     }
 }

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 695508dc8fa04bd5a01d0d90f3d02ad7, type: 3}
+  m_Name: ActivityPauseContentProfile_Activity01
+  m_EditorClassIdentifier: Assembly-CSharp::_ImmersiveGames.NewScripts.SessionActivity.Authoring.ActivityPauseContentProfileAsset
+  profileId: activity.pause.content.default
+  entries:
+  - slotId: pause.slot.objectives
+    prefab: {fileID: 7093320872770900839, guid: 3df10552311f30843a49e53475ab09de, type: 3}
+    required: 1

@@ -17,11 +17,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         protected RuntimeAttributeContext runtimeAttributeContext;
         protected IActor actor;
 
-        private bool _initialized;
-        private bool _destroyed;
-
         public IActor Actor => actor;
-        public bool IsInitialized => _initialized;
+        public bool IsInitialized { get; private set; }
 
         protected virtual void Awake()
         {
@@ -45,7 +42,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         protected virtual void TryInitialize()
         {
-            if (_initialized || actor == null)
+            if (IsInitialized || actor == null)
             {
                 return;
             }
@@ -64,7 +61,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return;
             }
 
-            _initialized = true;
+            IsInitialized = true;
             DebugUtility.LogVerbose<RuntimeAttributeBridgeBase>(
                 $"✅ Component inicializado para {actor.ActorId}",
                 DebugUtility.Colors.CrucialInfo);
@@ -76,8 +73,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
         protected virtual void OnDestroy()
         {
-            _destroyed = true;
-            if (_initialized)
+            IsDestroyed = true;
+            if (IsInitialized)
             {
                 OnServiceDispose();
             }
@@ -85,7 +82,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             orchestrator = null;
         }
 
-        public bool IsDestroyed => _destroyed;
+        public bool IsDestroyed { get; private set; }
         public RuntimeAttributeContext GetResourceSystem()
         {
             return runtimeAttributeContext;

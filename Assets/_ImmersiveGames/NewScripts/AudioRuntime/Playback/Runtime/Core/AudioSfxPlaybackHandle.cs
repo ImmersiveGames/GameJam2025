@@ -19,12 +19,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         private string _cueName;
         private string _modeLabel;
         private string _reason;
-        private bool _isValid;
         private bool _isStopping;
         private bool _destroyOwnerOnComplete;
 
-        public bool IsValid => _isValid;
-        public bool IsPlaying => _isValid && _source != null && _source.isPlaying;
+        public bool IsValid { get; private set; }
+        public bool IsPlaying => IsValid && _source != null && _source.isPlaying;
 
         public void Initialize(
             EntityId cueId,
@@ -44,14 +43,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             _reason = reason.TrimToOrDefault("unspecified");
             _destroyOwnerOnComplete = destroyOwnerOnComplete;
             _onCompleted = onCompleted;
-            _isValid = true;
+            IsValid = true;
             _isStopping = false;
             enabled = true;
         }
 
         public void Stop(float fadeOutSeconds = 0f)
         {
-            if (!_isValid)
+            if (!IsValid)
             {
                 return;
             }
@@ -84,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private void Update()
         {
-            if (!_isValid)
+            if (!IsValid)
             {
                 return;
             }
@@ -124,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             while (elapsed < fadeOutSeconds)
             {
-                if (!_isValid || _source == null)
+                if (!IsValid || _source == null)
                 {
                     Complete("fade_aborted");
                     yield break;
@@ -146,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private void OnDestroy()
         {
-            if (_isValid)
+            if (IsValid)
             {
                 Complete("destroyed");
             }
@@ -154,12 +153,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private void Complete(string completionReason)
         {
-            if (!_isValid)
+            if (!IsValid)
             {
                 return;
             }
 
-            _isValid = false;
+            IsValid = false;
             _isStopping = false;
 
             if (_source != null)

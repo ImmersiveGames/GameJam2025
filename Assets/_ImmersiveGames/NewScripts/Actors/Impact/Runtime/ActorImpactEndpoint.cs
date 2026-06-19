@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
@@ -63,22 +62,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
         private readonly IActorImpactTargetResolver _targetResolver = new ActorImpactTargetResolver();
         private readonly IActorImpactEffectEventStream _impactEffectEventStream = new ActorImpactEffectEventStream();
-        private ActorId _impactActorId;
-        private ActorInstanceRuntimeId _impactActorInstanceRuntimeId;
         private ActorId _ownerActorId;
         private ActorInstanceRuntimeId _ownerActorInstanceRuntimeId;
         private string _configuredImpactKind;
         private IActorImpactDamageApplicationAdapter _damageApplicationAdapter;
         private IActorImpactReturnHandler _returnHandler;
-        private bool _isConfigured;
         private bool _impactRegisteredInCurrentLease;
 
-        public ActorId ImpactActorId => _impactActorId;
-        public ActorInstanceRuntimeId ImpactActorInstanceRuntimeId => _impactActorInstanceRuntimeId;
+        public ActorId ImpactActorId { get; private set; }
+        public ActorInstanceRuntimeId ImpactActorInstanceRuntimeId { get; private set; }
         public ActorId OwnerActorId => _ownerActorId;
         public ActorInstanceRuntimeId OwnerActorInstanceRuntimeId => _ownerActorInstanceRuntimeId;
         public string ImpactKind => string.IsNullOrWhiteSpace(_configuredImpactKind) ? impactKind.TrimToEmpty() : _configuredImpactKind;
-        public bool IsConfigured => _isConfigured;
+        public bool IsConfigured { get; private set; }
 
         public void Configure(
             ActorId impactActorId,
@@ -108,24 +104,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 throw new InvalidOperationException("ActorImpactEndpoint requires a valid impact kind.");
             }
 
-            _impactActorId = impactActorId;
-            _impactActorInstanceRuntimeId = impactActorInstanceRuntimeId;
+            ImpactActorId = impactActorId;
+            ImpactActorInstanceRuntimeId = impactActorInstanceRuntimeId;
             _ownerActorId = ownerActorId;
             _ownerActorInstanceRuntimeId = ownerActorInstanceRuntimeId;
             _configuredImpactKind = resolvedImpactKind;
             _impactRegisteredInCurrentLease = false;
-            _isConfigured = true;
+            IsConfigured = true;
 
             ConfigureColliderRelays(source, reason);
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactEndpointConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' targetLayerMask='{targetLayerMask.value}' requireTargetActorForRegisteredImpact='{requireTargetActorForRegisteredImpact}' ignoreSelfActor='{ignoreSelfActor}' ignoreOwnerActor='{ignoreOwnerActor}' singleImpact='{registerSingleImpactUntilReconfigured}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorImpactEndpointConfigured' impactActorId='{ImpactActorId}' impactActorInstanceRuntimeId='{ImpactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' targetLayerMask='{targetLayerMask.value}' requireTargetActorForRegisteredImpact='{requireTargetActorForRegisteredImpact}' ignoreSelfActor='{ignoreSelfActor}' ignoreOwnerActor='{ignoreOwnerActor}' singleImpact='{registerSingleImpactUntilReconfigured}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactEndpointReady' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorImpactEndpointReady' impactActorId='{ImpactActorId}' impactActorInstanceRuntimeId='{ImpactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' impactKind='{ImpactKind}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
         }
 
@@ -139,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactDamageApplicationConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' adapterConfigured='{_damageApplicationAdapter != null && _damageApplicationAdapter.IsConfigured}' applyDamageOnRegisteredImpact='{applyDamageOnRegisteredImpact}' impactDamageAmount='{impactDamageAmount:0.###}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorImpactDamageApplicationConfigured' impactActorId='{ImpactActorId}' impactActorInstanceRuntimeId='{ImpactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' adapterConfigured='{_damageApplicationAdapter != null && _damageApplicationAdapter.IsConfigured}' applyDamageOnRegisteredImpact='{applyDamageOnRegisteredImpact}' impactDamageAmount='{impactDamageAmount:0.###}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 _damageApplicationAdapter != null && _damageApplicationAdapter.IsConfigured ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -152,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactReturnHandlerConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' handlerConfigured='{_returnHandler != null && _returnHandler.IsConfigured}' requestReturnAfterRegisteredImpact='{requestReturnAfterRegisteredImpact}' requireDamageApplicationBeforeReturn='{requireDamageApplicationBeforeReturn}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorImpactReturnHandlerConfigured' impactActorId='{ImpactActorId}' impactActorInstanceRuntimeId='{ImpactActorInstanceRuntimeId}' ownerActorId='{_ownerActorId}' ownerActorInstanceRuntimeId='{_ownerActorInstanceRuntimeId}' handlerConfigured='{_returnHandler != null && _returnHandler.IsConfigured}' requestReturnAfterRegisteredImpact='{requestReturnAfterRegisteredImpact}' requireDamageApplicationBeforeReturn='{requireDamageApplicationBeforeReturn}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 _returnHandler != null && _returnHandler.IsConfigured ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -224,7 +220,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorImpactEndpoint),
-                    $"event='ActorImpactColliderRelayConfigurationSkipped' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' reason='relay_install_disabled' source='{source.TrimToEmpty()}' triggerReason='{reason.TrimToEmpty()}'",
+                    $"event='ActorImpactColliderRelayConfigurationSkipped' impactActorId='{ImpactActorId}' impactActorInstanceRuntimeId='{ImpactActorInstanceRuntimeId}' reason='relay_install_disabled' source='{source.TrimToEmpty()}' triggerReason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -272,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactEndpoint),
-                $"event='ActorImpactColliderRelaysConfigured' impactActorId='{_impactActorId}' impactActorInstanceRuntimeId='{_impactActorInstanceRuntimeId}' observedColliderCount='{observedCount}' configuredRelayCount='{configuredCount}' skippedColliderCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorImpactColliderRelaysConfigured' impactActorId='{ImpactActorId}' impactActorInstanceRuntimeId='{ImpactActorInstanceRuntimeId}' observedColliderCount='{observedCount}' configuredRelayCount='{configuredCount}' skippedColliderCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 configuredCount > 0 ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
@@ -326,7 +322,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string reason,
             out ActorImpactResult result)
         {
-            if (!_isConfigured)
+            if (!IsConfigured)
             {
                 result = ActorImpactResult.Reject("impact_endpoint_not_configured");
                 LogRejected(default, default, source, reason, result.Reason);
@@ -355,8 +351,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
                 out var target);
 
             ActorImpactIntent intent = new(
-                _impactActorId,
-                _impactActorInstanceRuntimeId,
+                ImpactActorId,
+                ImpactActorInstanceRuntimeId,
                 _ownerActorId,
                 _ownerActorInstanceRuntimeId,
                 target.TargetActorId,
@@ -581,8 +577,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             }
 
             if (ignoreSelfActor &&
-                target.TargetActorId == _impactActorId &&
-                target.TargetActorInstanceRuntimeId == _impactActorInstanceRuntimeId)
+                target.TargetActorId == ImpactActorId &&
+                target.TargetActorInstanceRuntimeId == ImpactActorInstanceRuntimeId)
             {
                 reason = "impact_target_is_self_actor";
                 return true;

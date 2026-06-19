@@ -178,6 +178,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 sessionParticipationContext,
                 ResolveActorMaterializationSeedEntriesFromPlan(command.RouteCommand.Plan),
                 command.LoadedSnapshotPayloadContext,
+                ResolveRoutePauseSurfaceContextOrFail(command),
                 command.RouteCommand.UsesTransition,
                 command.RouteCommand.TransitionProfile,
                 command.LoadingCommand.LoadingMode == SessionOperationalRouteLoadingMode.Profile,
@@ -311,9 +312,71 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             int loadedSnapshotPayloadSourceEntrySequence = command.HasLoadedSnapshotPayloadContext
                 ? command.LoadedSnapshotPayloadContext.Payload.SourceEntrySequence
                 : 0;
+            var routePauseSurfaceContext = ResolveRoutePauseSurfaceContextOrFail(command);
             DebugUtility.LogVerbose(typeof(OperationalConsumerEntryAndReadinessStage),
-                $"handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadRecordCount='{loadedSnapshotPayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'.",
+                $"handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}' routePauseSurface='{(routePauseSurfaceContext.HasSurface ? "present" : "absent")}' routePauseSurfaceScene='{(routePauseSurfaceContext.HasSurface ? routePauseSurfaceContext.SceneName : "<none>")}' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadRecordCount='{loadedSnapshotPayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static SessionActivityRoutePauseSurfaceContext ResolveRoutePauseSurfaceContextOrFail(
+            OperationalConsumerEntryAndReadinessCommand command)
+        {
+            var profile = command.RouteCommand.RoutePauseSurfaceProfile;
+            if (!profile.IsValid || profile.IsDisabled || !profile.UsesScene)
+            {
+                return SessionActivityRoutePauseSurfaceContext.None(command.Source, command.Reason);
+            }
+
+            var inputModeOnPause = MapPauseInputModeOrFail(profile.InputModeOnPause, command);
+            var inputModeOnResume = MapResumeInputModeOrFail(profile.InputModeOnResume, command);
+            var context = new SessionActivityRoutePauseSurfaceContext(
+                true,
+                profile.SurfaceId.ToString(),
+                profile.SceneName,
+                profile.OverlayRootId.ToString(),
+                profile.ActivityContentRootId.ToString(),
+                command.RouteIdentity,
+                command.RouteOperationId,
+                command.TransitionId,
+                command.RouteSequence,
+                inputModeOnPause,
+                inputModeOnResume,
+                command.Source,
+                command.Reason);
+
+            if (!context.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][RoutePauseSurface] route pause surface context invalid routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' context='{context}'.");
+            }
+
+            return context;
+        }
+
+        private static SessionActivityInputModeKind MapPauseInputModeOrFail(
+            SessionOperationalInputModeKind inputMode,
+            OperationalConsumerEntryAndReadinessCommand command)
+        {
+            if (inputMode == SessionOperationalInputModeKind.PauseOverlay)
+            {
+                return SessionActivityInputModeKind.PauseOverlay;
+            }
+
+            throw new InvalidOperationException(
+                $"[FATAL][Config][SessionOperationalPipeline][RoutePauseSurface] unsupported pause input mode routeIdentity='{command.RouteIdentity}' inputModeOnPause='{inputMode}'.");
+        }
+
+        private static SessionActivityInputModeKind MapResumeInputModeOrFail(
+            SessionOperationalInputModeKind inputMode,
+            OperationalConsumerEntryAndReadinessCommand command)
+        {
+            if (inputMode == SessionOperationalInputModeKind.ActivityDefault)
+            {
+                return SessionActivityInputModeKind.ActivityGameplay;
+            }
+
+            throw new InvalidOperationException(
+                $"[FATAL][Config][SessionOperationalPipeline][RoutePauseSurface] unsupported resume input mode routeIdentity='{command.RouteIdentity}' inputModeOnResume='{inputMode}'.");
         }
 
         private static string FormatPlayerParticipationSeedOutcome(PlayerParticipationOutcome outcome)

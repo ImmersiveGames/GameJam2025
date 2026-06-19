@@ -122,6 +122,132 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             return $"hasRouteFadeProfile='{HasRouteFadeProfile}' routeFadeProfile='{(RouteFadeProfile != null ? RouteFadeProfile.name : "<none>")}' hasRouteLoadingProfile='{HasRouteLoadingProfile}' routeLoadingProfile='{(RouteLoadingProfile != null ? RouteLoadingProfile.name : "<none>")}'";
         }
     }
+
+
+    public readonly struct SessionActivityRoutePauseSurfaceContext : IEquatable<SessionActivityRoutePauseSurfaceContext>
+    {
+        public SessionActivityRoutePauseSurfaceContext(
+            bool hasSurface,
+            string surfaceId,
+            string sceneName,
+            string overlayRootId,
+            string activityContentRootId,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            SessionActivityInputModeKind inputModeOnPause,
+            SessionActivityInputModeKind inputModeOnResume,
+            string source,
+            string reason)
+        {
+            HasSurface = hasSurface;
+            SurfaceId = surfaceId.TrimToEmpty();
+            SceneName = sceneName.TrimToEmpty();
+            OverlayRootId = overlayRootId.TrimToEmpty();
+            ActivityContentRootId = activityContentRootId.TrimToEmpty();
+            RouteIdentity = routeIdentity.TrimToEmpty();
+            RouteOperationId = routeOperationId.TrimToEmpty();
+            TransitionId = transitionId.TrimToEmpty();
+            RouteSequence = routeSequence < 0 ? 0 : routeSequence;
+            InputModeOnPause = inputModeOnPause;
+            InputModeOnResume = inputModeOnResume;
+            Source = source.TrimToEmpty();
+            Reason = reason.TrimToEmpty();
+        }
+
+        public bool HasSurface { get; }
+        public string SurfaceId { get; }
+        public string SceneName { get; }
+        public string OverlayRootId { get; }
+        public string ActivityContentRootId { get; }
+        public string RouteIdentity { get; }
+        public string RouteOperationId { get; }
+        public string TransitionId { get; }
+        public int RouteSequence { get; }
+        public SessionActivityInputModeKind InputModeOnPause { get; }
+        public SessionActivityInputModeKind InputModeOnResume { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            !HasSurface ||
+            (!string.IsNullOrWhiteSpace(SurfaceId) &&
+             !string.IsNullOrWhiteSpace(SceneName) &&
+             !string.IsNullOrWhiteSpace(OverlayRootId) &&
+             !string.IsNullOrWhiteSpace(ActivityContentRootId) &&
+             !string.IsNullOrWhiteSpace(RouteIdentity) &&
+             !string.IsNullOrWhiteSpace(RouteOperationId) &&
+             !string.IsNullOrWhiteSpace(TransitionId) &&
+             RouteSequence > 0 &&
+             InputModeOnPause == SessionActivityInputModeKind.PauseOverlay &&
+             InputModeOnResume == SessionActivityInputModeKind.ActivityGameplay &&
+             !string.IsNullOrWhiteSpace(Source));
+
+        public static SessionActivityRoutePauseSurfaceContext None(string source, string reason)
+        {
+            return new SessionActivityRoutePauseSurfaceContext(
+                false,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                0,
+                SessionActivityInputModeKind.Unknown,
+                SessionActivityInputModeKind.Unknown,
+                source,
+                reason);
+        }
+
+        public bool Equals(SessionActivityRoutePauseSurfaceContext other)
+        {
+            return HasSurface == other.HasSurface &&
+                string.Equals(SurfaceId, other.SurfaceId, StringComparison.Ordinal) &&
+                string.Equals(SceneName, other.SceneName, StringComparison.Ordinal) &&
+                string.Equals(OverlayRootId, other.OverlayRootId, StringComparison.Ordinal) &&
+                string.Equals(ActivityContentRootId, other.ActivityContentRootId, StringComparison.Ordinal) &&
+                string.Equals(RouteIdentity, other.RouteIdentity, StringComparison.Ordinal) &&
+                string.Equals(RouteOperationId, other.RouteOperationId, StringComparison.Ordinal) &&
+                string.Equals(TransitionId, other.TransitionId, StringComparison.Ordinal) &&
+                RouteSequence == other.RouteSequence &&
+                InputModeOnPause == other.InputModeOnPause &&
+                InputModeOnResume == other.InputModeOnResume;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityRoutePauseSurfaceContext other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = HasSurface ? 1 : 0;
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SurfaceId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(SceneName ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(OverlayRootId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(ActivityContentRootId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteIdentity ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(RouteOperationId ?? string.Empty);
+                hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(TransitionId ?? string.Empty);
+                hashCode = hashCode * 397 ^ RouteSequence;
+                hashCode = hashCode * 397 ^ (int)InputModeOnPause;
+                hashCode = hashCode * 397 ^ (int)InputModeOnResume;
+                return hashCode;
+            }
+        }
+
+        public override string ToString()
+        {
+            return HasSurface && IsValid
+                ? $"surfaceId='{SurfaceId}', sceneName='{SceneName}', overlayRootId='{OverlayRootId}', activityContentRootId='{ActivityContentRootId}', routeIdentity='{RouteIdentity}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', inputModeOnPause='{InputModeOnPause}', inputModeOnResume='{InputModeOnResume}'"
+                : "<none>";
+        }
+    }
     public readonly struct SessionActivityEntryHandoff : IEquatable<SessionActivityEntryHandoff>
     {
         public SessionActivityEntryHandoff(
@@ -132,6 +258,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionParticipationContext sessionParticipationContext,
             IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
             SessionActivityRouteTransitionContext routeTransitionContext,
+            SessionActivityRoutePauseSurfaceContext routePauseSurfaceContext,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             string source,
             string reason)
@@ -143,6 +270,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionParticipationContext = sessionParticipationContext;
             ActorMaterializationPlanEntries = actorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             RouteTransitionContext = routeTransitionContext;
+            RoutePauseSurfaceContext = routePauseSurfaceContext;
             LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
             Source = source.TrimToEmpty();
             Reason = reason.TrimToEmpty();
@@ -155,6 +283,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionParticipationContext SessionParticipationContext { get; }
         public IReadOnlyList<SessionActivityActorMaterializationPlanEntry> ActorMaterializationPlanEntries { get; }
         public SessionActivityRouteTransitionContext RouteTransitionContext { get; }
+        public SessionActivityRoutePauseSurfaceContext RoutePauseSurfaceContext { get; }
         public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -165,6 +294,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int SessionParticipationSelectionCount => SessionParticipationContext?.SelectionCount ?? 0;
         public int SessionParticipationParticipantCount => SessionParticipationContext?.ParticipantCount ?? 0;
         public int ActorMaterializationPlanEntryCount => CountMaterializationPlanEntries(ActorMaterializationPlanEntries);
+        public bool HasRoutePauseSurfaceContext => RoutePauseSurfaceContext.HasSurface && RoutePauseSurfaceContext.IsValid;
         public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
 
         public bool HasResolvedActivity =>
@@ -180,6 +310,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             HasSessionParticipationContext &&
             !string.IsNullOrWhiteSpace(Source) &&
+            RoutePauseSurfaceContext.IsValid &&
             (HasResolvedActivity || IsEntryOnly);
 
         public bool Equals(SessionActivityEntryHandoff other)
@@ -192,6 +323,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 SessionParticipationRevision == other.SessionParticipationRevision &&
                 ActorMaterializationPlanEntryCount == other.ActorMaterializationPlanEntryCount &&
                 RouteTransitionContext.Equals(other.RouteTransitionContext) &&
+                RoutePauseSurfaceContext.Equals(other.RoutePauseSurfaceContext) &&
                 LoadedSnapshotPayloadContext.HasPayload == other.LoadedSnapshotPayloadContext.HasPayload &&
                 string.Equals(Source, other.Source, StringComparison.Ordinal) &&
                 string.Equals(Reason, other.Reason, StringComparison.Ordinal);
@@ -214,6 +346,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 hashCode = hashCode * 397 ^ SessionParticipationRevision;
                 hashCode = hashCode * 397 ^ ActorMaterializationPlanEntryCount;
                 hashCode = hashCode * 397 ^ RouteTransitionContext.GetHashCode();
+                hashCode = hashCode * 397 ^ RoutePauseSurfaceContext.GetHashCode();
                 hashCode = hashCode * 397 ^ (LoadedSnapshotPayloadContext.HasPayload ? 1 : 0);
                 hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
                 hashCode = hashCode * 397 ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
@@ -235,7 +368,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                     : "activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>'";
 
             return
-                $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
+                $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}', routePauseSurface='{(HasRoutePauseSurfaceContext ? "present" : "absent")}', routePauseSurfaceScene='{(HasRoutePauseSurfaceContext ? RoutePauseSurfaceContext.SceneName : "<none>")}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
 
         public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right)

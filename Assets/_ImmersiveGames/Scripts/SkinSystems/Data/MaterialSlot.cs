@@ -14,13 +14,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
 
         // Cache dos materiais originais (um por renderer)
         private Material[][] _originalMaterials;
-        private Material _currentAppliedMaterial;
         private bool _isInitialized;
 
         public Renderer[] TargetRenderers => targetRenderers;
         public int MaterialIndex => materialIndex;
         public MaterialGroupConfig MaterialGroup => materialGroup;
-        public Material CurrentAppliedMaterial => _currentAppliedMaterial;
+        public Material CurrentAppliedMaterial { get; private set; }
 
         public bool IsValid => targetRenderers is { Length: > 0 } &&
             materialGroup != null;
@@ -62,7 +61,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                 return;
             }
 
-            _currentAppliedMaterial = material;
+            CurrentAppliedMaterial = material;
 
             foreach (var renderer in targetRenderers)
             {
@@ -122,7 +121,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                 }
             }
 
-            _currentAppliedMaterial = null;
+            CurrentAppliedMaterial = null;
         }
 
         /// <summary>
@@ -180,7 +179,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Data
                 rendererCount = targetRenderers?.Length ?? 0,
                 materialIndex = materialIndex,
                 groupName = materialGroup?.GroupName ?? "None",
-                currentMaterial = _currentAppliedMaterial?.name ?? "None",
+                currentMaterial = CurrentAppliedMaterial?.name ?? "None",
                 isValid = IsValid,
                 canApply = CanApply()
             };

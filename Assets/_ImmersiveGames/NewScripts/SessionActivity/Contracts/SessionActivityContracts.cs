@@ -398,6 +398,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int activityOrdinal,
             ActivityContentMode activityContentMode,
             ActivityContentProfileAsset activityContentProfile,
+            ActivityPauseContentProfileAsset activityPauseContentProfile,
             ActivityWindowMode activationWindowMode,
             SceneKeyAsset activationWindowAdditiveSceneKey,
             ActivityWindowMode deactivationWindowMode,
@@ -413,6 +414,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             ActivityContentMode = activityContentMode;
             ActivityContentProfile = activityContentProfile;
+            ActivityPauseContentProfile = activityPauseContentProfile;
             ActivationWindowMode = activationWindowMode;
             ActivationWindowAdditiveSceneKey = activationWindowAdditiveSceneKey;
             DeactivationWindowMode = deactivationWindowMode;
@@ -429,6 +431,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int ActivityOrdinal { get; }
         public ActivityContentMode ActivityContentMode { get; }
         public ActivityContentProfileAsset ActivityContentProfile { get; }
+        public ActivityPauseContentProfileAsset ActivityPauseContentProfile { get; }
         public bool HasGameplayContent => ActivityContentMode == ActivityContentMode.Profile;
         public ActivityWindowMode ActivationWindowMode { get; }
         public SceneKeyAsset ActivationWindowAdditiveSceneKey { get; }
@@ -449,6 +452,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool HasNextActivity => !string.IsNullOrWhiteSpace(NextActivityId);
         public bool HasActivityContentProfile => ActivityContentProfile != null;
+        public bool HasActivityPauseContentProfile => ActivityPauseContentProfile != null;
         public string ActivityContentProfileId => HasActivityContentProfile ? ActivityContentProfile.ContentProfileId : string.Empty;
         public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
         public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
@@ -462,7 +466,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public override string ToString()
         {
             return
-                $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+                $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activityPauseContentProfile='{(HasActivityPauseContentProfile ? ActivityPauseContentProfile.name : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
     }
 
@@ -483,7 +487,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PauseSimulation = 12,
         ResumeSimulation = 13,
         CloseForRouteExit = 14,
-        ResetSession = 15
+        ResetSession = 15,
+        PauseToggleRequested = 16
     }
 
     public enum SessionActivityPendingOperationKind
@@ -1010,8 +1015,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface ISessionActivityPauseOverlayAdapter
     {
-        void Show(SessionActivityIdentity identity, string source, string reason);
-        void Hide(SessionActivityIdentity identity, string source, string reason);
+        void Show(
+            SessionActivityIdentity identity,
+            SessionActivityRoutePauseSurfaceContext context,
+            string source,
+            string reason);
+
+        void Hide(
+            SessionActivityIdentity identity,
+            SessionActivityRoutePauseSurfaceContext context,
+            string source,
+            string reason);
     }
 
     public enum SessionActivityInputModeKind
@@ -1029,21 +1043,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             string source,
             string reason)
+            : this(kind, identity, default, source, reason)
+        {
+        }
+
+        public SessionActivityInputModeCommand(
+            SessionActivityInputModeKind kind,
+            SessionActivityIdentity identity,
+            SessionActivityRoutePauseSurfaceContext routePauseSurfaceContext,
+            string source,
+            string reason)
         {
             Kind = kind;
             Identity = identity;
+            RoutePauseSurfaceContext = routePauseSurfaceContext;
             Source = source.TrimToEmpty();
             Reason = reason.TrimToEmpty();
         }
 
         public SessionActivityInputModeKind Kind { get; }
         public SessionActivityIdentity Identity { get; }
+        public SessionActivityRoutePauseSurfaceContext RoutePauseSurfaceContext { get; }
+        public bool HasRoutePauseSurfaceContext => RoutePauseSurfaceContext.HasSurface;
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Kind != SessionActivityInputModeKind.Unknown &&
             Identity.IsValid &&
+            RoutePauseSurfaceContext.HasSurface &&
+            RoutePauseSurfaceContext.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
     }
 

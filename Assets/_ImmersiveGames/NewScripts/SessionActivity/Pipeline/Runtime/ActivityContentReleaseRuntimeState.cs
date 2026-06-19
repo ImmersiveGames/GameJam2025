@@ -2,13 +2,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 {
     internal sealed class ActivityContentReleaseRuntimeState
     {
-        private SessionActivityPipeline.PendingActivityContentReleaseContext _pendingReleaseContext;
-        private bool _isAwaitingContinuation;
 
-        public SessionActivityPipeline.PendingActivityContentReleaseContext PendingReleaseContext => _pendingReleaseContext;
-        public bool IsAwaitingContinuation => _isAwaitingContinuation;
+        public SessionActivityPipeline.PendingActivityContentReleaseContext PendingReleaseContext { get; private set; }
+        public bool IsAwaitingContinuation { get; private set; }
 
-        public bool HasPendingReleaseContext => _pendingReleaseContext is { IsValid: true };
+        public bool HasPendingReleaseContext => PendingReleaseContext is { IsValid: true };
 
         public void SetPendingReleaseContext(
             SessionActivityPipeline.PendingActivityContentReleaseContext context,
@@ -17,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string source,
             string reason)
         {
-            _pendingReleaseContext = context;
+            PendingReleaseContext = context;
         }
 
         public void ClearPendingReleaseContext(
@@ -26,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string source,
             string reason)
         {
-            _pendingReleaseContext = null;
+            PendingReleaseContext = null;
         }
 
         public void SetAwaitingContinuation(
@@ -36,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string source,
             string reason)
         {
-            _isAwaitingContinuation = value;
+            IsAwaitingContinuation = value;
         }
     }
 }

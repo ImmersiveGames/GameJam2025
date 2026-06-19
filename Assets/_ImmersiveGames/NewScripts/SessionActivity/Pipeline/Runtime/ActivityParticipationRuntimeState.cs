@@ -5,30 +5,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 {
     internal sealed class ActivityParticipationRuntimeState
     {
-        private ActivityParticipationContext _currentParticipationContext;
-        private PlayerSessionParticipationContext _currentSessionParticipationContext;
 
-        public ActivityParticipationContext CurrentParticipationContext => _currentParticipationContext;
-        public PlayerSessionParticipationContext CurrentSessionParticipationContext => _currentSessionParticipationContext;
+        public ActivityParticipationContext CurrentParticipationContext { get; private set; }
+        public PlayerSessionParticipationContext CurrentSessionParticipationContext { get; private set; }
 
         public void StoreCurrentParticipationContext(ActivityParticipationContext context)
         {
-            _currentParticipationContext = context;
+            CurrentParticipationContext = context;
         }
 
         public void StoreCurrentSessionParticipationContext(PlayerSessionParticipationContext context)
         {
-            _currentSessionParticipationContext = context;
+            CurrentSessionParticipationContext = context;
         }
 
         public void ClearCurrentParticipationContext()
         {
-            _currentParticipationContext = default;
+            CurrentParticipationContext = default;
         }
 
         public void ClearCurrentSessionParticipationContext()
         {
-            _currentSessionParticipationContext = default;
+            CurrentSessionParticipationContext = default;
         }
     }
 }

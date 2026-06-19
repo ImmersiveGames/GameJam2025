@@ -34,6 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     index + 1,
                     current.ActivityContentMode,
                     current.ActivityContentProfile,
+                    current.ActivityPauseContentProfile,
                     current.ActivationWindowMode,
                     current.ActivationWindowAdditiveSceneKey,
                     current.DeactivationWindowMode,

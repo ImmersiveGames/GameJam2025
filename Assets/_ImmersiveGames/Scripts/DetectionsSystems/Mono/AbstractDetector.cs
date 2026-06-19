@@ -10,7 +10,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
     public abstract class AbstractDetector : MonoBehaviour, IDetector
     {
-        private IActor _owner;
         private EventBinding<DetectionEnterEvent> _enterBinding;
         private EventBinding<DetectionExitEvent> _exitBinding;
         private readonly HashSet<IDetectable> _detectedItems = new();
@@ -20,8 +19,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         protected virtual void Awake()
         {
-            _owner = GetComponent<IActor>();
-            if (_owner == null)
+            Owner = GetComponent<IActor>();
+            if (Owner == null)
             {
                 DebugUtility.LogError<AbstractDetector>($"Componente IActor n�o encontrado em {gameObject.name}");
                 return;
@@ -44,7 +43,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             ClearCache();
         }
 
-        public IActor Owner => _owner;
+        public IActor Owner { get; private set; }
 
         // M�todos abstratos para classes concretas implementarem
         public abstract void OnDetected(IDetectable detectable, DetectionType detectionType);

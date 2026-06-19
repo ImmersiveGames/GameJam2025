@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using _ImmersiveGames.NewScripts.UnityUtils;
@@ -10,10 +9,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
     public sealed class ActorContactDamageColliderRelay : MonoBehaviour
     {
         private ActorContactDamageEndpoint _endpoint;
-        private Collider _collider;
 
-        public bool IsConfigured => _endpoint != null && _collider != null;
-        public Collider RelayCollider => _collider;
+        public bool IsConfigured => _endpoint != null && RelayCollider != null;
+        public Collider RelayCollider { get; private set; }
 
         public void Configure(
             ActorContactDamageEndpoint endpoint,
@@ -22,11 +20,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             string reason)
         {
             _endpoint = endpoint;
-            _collider = relayCollider;
+            RelayCollider = relayCollider;
 
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageColliderRelay),
-                $"event='ActorContactDamageColliderRelayConfigured' relay='{name}' collider='{(_collider == null ? string.Empty : _collider.name)}' endpoint='{(_endpoint == null ? string.Empty : _endpoint.name)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageColliderRelayConfigured' relay='{name}' collider='{(RelayCollider == null ? string.Empty : RelayCollider.name)}' endpoint='{(_endpoint == null ? string.Empty : _endpoint.name)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 

@@ -13,7 +13,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
         private readonly string _reason;
         private IDisposable _subscription;
         private IActorAttributeUiSink _sink;
-        private bool _disposed;
 
         internal ActorAttributeUiBindingHandle(
             ActorAttributeUiBindingTarget target,
@@ -31,11 +30,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
             _reason = reason.TrimToEmpty();
         }
 
-        public bool IsDisposed => _disposed;
+        public bool IsDisposed { get; private set; }
 
         internal void ApplyChangedValue(ActorAttributeChangedEvent changedEvent)
         {
-            if (_disposed || _sink == null)
+            if (IsDisposed || _sink == null)
             {
                 return;
             }
@@ -62,12 +61,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI
 
         public void Dispose()
         {
-            if (_disposed)
+            if (IsDisposed)
             {
                 return;
             }
 
-            _disposed = true;
+            IsDisposed = true;
 
             if (_sink != null)
             {

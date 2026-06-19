@@ -1,5 +1,3 @@
-using System;
-
 namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 {
     public static class ActorDamagePolicy

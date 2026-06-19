@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -13,8 +14,6 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
     public sealed class PreferencesService : IPreferencesStateService
     {
         private readonly IAudioSettingsService _audioSettings;
-        private readonly AudioDefaultsAsset _audioDefaults;
-        private readonly VideoDefaultsAsset _videoDefaults;
         private AudioPreferencesSnapshot _currentSnapshot;
         private VideoPreferencesSnapshot _currentVideoSnapshot;
 
@@ -24,14 +23,14 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             VideoDefaultsAsset videoDefaults)
         {
             _audioSettings = audioSettings ?? throw new ArgumentNullException(nameof(audioSettings));
-            _audioDefaults = audioDefaults ?? throw new ArgumentNullException(nameof(audioDefaults));
-            _videoDefaults = videoDefaults ?? throw new ArgumentNullException(nameof(videoDefaults));
+            AudioDefaults = audioDefaults ?? throw new ArgumentNullException(nameof(audioDefaults));
+            VideoDefaults = videoDefaults ?? throw new ArgumentNullException(nameof(videoDefaults));
         }
 
         public bool HasSnapshot => _currentSnapshot != null;
         public bool HasVideoSnapshot => _currentVideoSnapshot != null;
-        public AudioDefaultsAsset AudioDefaults => _audioDefaults;
-        public VideoDefaultsAsset VideoDefaults => _videoDefaults;
+        public AudioDefaultsAsset AudioDefaults { get; }
+        public VideoDefaultsAsset VideoDefaults { get; }
 
         public AudioPreferencesSnapshot CurrentSnapshot =>
             _currentSnapshot ?? throw new InvalidOperationException("[FATAL][Preferences] Current audio snapshot requested before initialization.");
@@ -189,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             var supported = new List<Vector2Int>();
             var seen = new HashSet<Vector2Int>();
 
-            foreach (var preset in _videoDefaults.ResolutionPresets)
+            foreach (var preset in VideoDefaults.ResolutionPresets)
             {
                 if (!IsSupportedVideoResolution(preset))
                 {
@@ -213,8 +212,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         private Vector2Int ResolveFallbackVideoResolution()
         {
             var defaultPreset = new Vector2Int(
-                _videoDefaults.DefaultResolutionWidth,
-                _videoDefaults.DefaultResolutionHeight);
+                VideoDefaults.DefaultResolutionWidth,
+                VideoDefaults.DefaultResolutionHeight);
 
             if (IsSupportedVideoResolution(defaultPreset))
             {
@@ -241,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             var supported = new List<Vector2Int>();
             var seen = new HashSet<Vector2Int>();
 
-            foreach (var preset in _videoDefaults.ResolutionPresets)
+            foreach (var preset in VideoDefaults.ResolutionPresets)
             {
                 if (!IsSupportedVideoResolution(preset))
                 {
@@ -265,16 +264,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             }
 
             Resolution[] resolutions = Screen.resolutions;
-            for (int i = 0; i < resolutions.Length; i++)
-            {
-                var resolution = resolutions[i];
-                if (resolution.width == preset.x && resolution.height == preset.y)
-                {
-                    return true;
-                }
-            }
+            return resolutions.Any(resolution => resolution.width == preset.x && resolution.height == preset.y);
 
-            return false;
         }
 
         private static bool HasSameAudioValues(AudioPreferencesSnapshot left, AudioPreferencesSnapshot right)

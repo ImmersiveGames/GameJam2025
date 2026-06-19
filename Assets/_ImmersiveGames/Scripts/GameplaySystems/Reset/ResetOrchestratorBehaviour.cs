@@ -46,7 +46,6 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         private IOldLegacySimulationGateService _gate;
 
         private int _requestSerial;
-        private bool _inProgress;
 
         private EventBinding<OldGameResetRequestedEvent> _resetRequestedBinding;
 
@@ -60,7 +59,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         private readonly List<GameObject> _sceneRoots = new(64);
         private readonly List<object> _sceneParticipants = new(256);
 
-        public bool IsResetInProgress => _inProgress;
+        public bool IsResetInProgress { get; private set; }
 
         private void Awake()
         {
@@ -131,7 +130,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         public Task<bool> RequestResetAsync(ResetRequest request)
         {
             // Pol�tica simples: se j� existe reset rodando, ignora.
-            if (_inProgress)
+            if (IsResetInProgress)
             {
                 if (logVerbose)
                 {
@@ -143,7 +142,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                 return Task.FromResult(false);
             }
 
-            _inProgress = true;
+            IsResetInProgress = true;
             _requestSerial++;
 
             return RunResetAsync(request, _requestSerial);
@@ -225,7 +224,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
                         this);
                 }
 
-                _inProgress = false;
+                IsResetInProgress = false;
                 _targets.Clear();
                 _participants.Clear();
                 _monoBuffer.Clear();

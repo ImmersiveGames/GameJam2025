@@ -14,8 +14,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         private readonly string _menuMapName;
         private readonly string _playerMapName;
 
-        private InputModeRequestKind _currentMode = InputModeRequestKind.Unspecified;
-
         public InputModeService(string playerMapName, string menuMapName)
         {
             _playerMapName = playerMapName.TrimToEmpty();
@@ -59,32 +57,32 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
 
             string resolvedReason = reason.TrimToOrDefault("InputMode/Unknown");
-            switch (_currentMode)
+            switch (CurrentMode)
             {
                 case InputModeRequestKind.FrontendMenu:
-                    ApplyModeToPlayerInput(_currentMode, _menuMapName, playerInput, resolvedReason);
+                    ApplyModeToPlayerInput(CurrentMode, _menuMapName, playerInput, resolvedReason);
                     return;
 
                 case InputModeRequestKind.Gameplay:
-                    ApplyModeToPlayerInput(_currentMode, _playerMapName, playerInput, resolvedReason);
+                    ApplyModeToPlayerInput(CurrentMode, _playerMapName, playerInput, resolvedReason);
                     return;
 
                 case InputModeRequestKind.PauseOverlay:
                 case InputModeRequestKind.InputLocked:
                     DebugUtility.Log(typeof(InputModeService),
-                        $"InputModeCurrentModeAppliedToPlayerInput inputMode='{_currentMode}' reason='{resolvedReason}' target='state_only' playerInput='{playerInput.name}'.",
+                        $"InputModeCurrentModeAppliedToPlayerInput inputMode='{CurrentMode}' reason='{resolvedReason}' target='state_only' playerInput='{playerInput.name}'.",
                         DebugUtility.Colors.Info);
                     return;
 
                 case InputModeRequestKind.Unspecified:
                 default:
                     HardFailFastH1.Trigger(typeof(InputModeService),
-                        $"[FATAL][H1][InputModes] Current InputModeRequestKind '{_currentMode}' cannot be applied to PlayerInput '{playerInput.name}' reason='{resolvedReason}'.");
+                        $"[FATAL][H1][InputModes] Current InputModeRequestKind '{CurrentMode}' cannot be applied to PlayerInput '{playerInput.name}' reason='{resolvedReason}'.");
                     return;
             }
         }
 
-        public InputModeRequestKind CurrentMode => _currentMode;
+        public InputModeRequestKind CurrentMode { get; private set; } = InputModeRequestKind.Unspecified;
 
         private void HandleRequest(InputModeRequestKind mode, string reason)
         {
@@ -101,14 +99,14 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     return;
 
                 case InputModeRequestKind.PauseOverlay:
-                    _currentMode = mode;
+                    CurrentMode = mode;
                     DebugUtility.Log(typeof(InputModeService),
                         $"InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='pause overlay does not switch action maps in Base 1.1 operational scope'.",
                         DebugUtility.Colors.Info);
                     return;
 
                 case InputModeRequestKind.InputLocked:
-                    _currentMode = mode;
+                    CurrentMode = mode;
                     DebugUtility.Log(typeof(InputModeService),
                         $"InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='input locked policy does not switch action maps'.",
                         DebugUtility.Colors.Info);
@@ -186,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 }
             }
 
-            _currentMode = mode;
+            CurrentMode = mode;
             DebugUtility.Log(typeof(InputModeService),
                 $"InputModeApplied inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' observedPlayerInputs='{observedCount}' switchedPlayerInputs='{switchedCount}'.",
                 DebugUtility.Colors.Success);

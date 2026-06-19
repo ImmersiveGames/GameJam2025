@@ -12,7 +12,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
     {
         [SerializeField] protected DetectionType myDetectionType;
 
-        private IActor _owner;
         private EventBinding<DetectionEnterEvent> _enterBinding;
         private EventBinding<DetectionExitEvent> _exitBinding;
 
@@ -23,9 +22,9 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
         protected virtual void Awake()
         {
             // Permite que detect�veis posicionados em objetos filhos utilizem o ator definido no pai.
-            _owner = GetComponent<IActor>() ?? GetComponentInParent<IActor>();
+            Owner = GetComponent<IActor>() ?? GetComponentInParent<IActor>();
 
-            if (_owner == null)
+            if (Owner == null)
             {
                 DebugUtility.LogError<AbstractDetectable>($"Componente IActor n�o encontrado em {gameObject.name}");
                 return;
@@ -49,7 +48,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
         protected virtual void OnEnable()
         {
-            if (_owner == null || myDetectionType == null)
+            if (Owner == null || myDetectionType == null)
             {
                 return;
             }
@@ -84,7 +83,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             }
         }
 
-        public IActor Owner => _owner;
+        public IActor Owner { get; private set; }
 
         // M�todos abstratos para classes concretas implementarem
         public abstract void OnEnterDetection(IDetector detector, DetectionType detectionType);

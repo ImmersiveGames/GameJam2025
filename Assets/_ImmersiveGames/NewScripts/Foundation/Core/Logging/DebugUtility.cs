@@ -52,11 +52,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             public DebugLevel Level { get; }
         }
 
-        private static bool _globalDebugEnabled = true;
-        private static bool _verboseLoggingEnabled = true;
-        private static bool _logFallbacks = true;
-        private static bool _repeatedCallVerboseEnabled = true;
-        private static DebugLevel _defaultDebugLevel = DebugLevel.Logs;
         private static string _lastPolicyKey;
         private static int _lastPolicyFrame = -1;
         private static bool _hasAppliedPolicy;
@@ -134,31 +129,31 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
         #region Configuracoes
 
-        public static bool IsGlobalDebugEnabled => _globalDebugEnabled;
-        public static bool IsVerboseLoggingEnabled => _verboseLoggingEnabled;
-        public static bool IsFallbacksEnabled => _logFallbacks;
-        public static bool IsRepeatedCallVerboseEnabled => _repeatedCallVerboseEnabled;
-        public static DebugLevel DefaultDebugLevel => _defaultDebugLevel;
+        public static bool IsGlobalDebugEnabled { get; private set; } = true;
+        public static bool IsVerboseLoggingEnabled { get; private set; } = true;
+        public static bool IsFallbacksEnabled { get; private set; } = true;
+        public static bool IsRepeatedCallVerboseEnabled { get; private set; } = true;
+        public static DebugLevel DefaultDebugLevel { get; private set; } = DebugLevel.Logs;
 
         public static void SetGlobalDebugState(bool enabled)
         {
-            _globalDebugEnabled = enabled;
+            IsGlobalDebugEnabled = enabled;
         }
         public static void SetVerboseLogging(bool enabled)
         {
-            _verboseLoggingEnabled = enabled;
+            IsVerboseLoggingEnabled = enabled;
         }
         public static void SetLogFallbacks(bool enabled)
         {
-            _logFallbacks = enabled;
+            IsFallbacksEnabled = enabled;
         }
         public static void SetRepeatedCallVerbose(bool enabled)
         {
-            _repeatedCallVerboseEnabled = enabled;
+            IsRepeatedCallVerboseEnabled = enabled;
         }
         public static bool GetRepeatedCallVerbose()
         {
-            return _repeatedCallVerboseEnabled;
+            return IsRepeatedCallVerboseEnabled;
         }
 
         public static void DisableVerboseForType(Type type)
@@ -172,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
         public static void SetDefaultDebugLevel(DebugLevel level)
         {
-            _defaultDebugLevel = level;
+            DefaultDebugLevel = level;
         }
         public static void RegisterScriptDebugLevel(Type type, DebugLevel level)
         {
@@ -308,7 +303,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         {
             lock (_verboseLogLock)
             {
-                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !_logFallbacks || !ShouldLog(type, null, DebugLevel.Verbose))
+                if (!IsVerboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !IsFallbacksEnabled || !ShouldLog(type, null, DebugLevel.Verbose))
                 {
                     return;
                 }
@@ -364,7 +359,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             var type = typeof(T);
             lock (_verboseLogLock)
             {
-                if (!_verboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !_logFallbacks || !ShouldLog(type, instance, DebugLevel.Verbose))
+                if (!IsVerboseLoggingEnabled || _disabledVerboseTypes.Contains(type) || isFallback && !IsFallbacksEnabled || !ShouldLog(type, instance, DebugLevel.Verbose))
                 {
                     return;
                 }
@@ -384,7 +379,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
         private static bool ShouldLog(Type type, object instance, DebugLevel messageLevel)
         {
-            if (!_globalDebugEnabled)
+            if (!IsGlobalDebugEnabled)
             {
                 return false;
             }
@@ -397,7 +392,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             if (type == null)
             {
-                return (int)_defaultDebugLevel >= (int)messageLevel;
+                return (int)DefaultDebugLevel >= (int)messageLevel;
             }
 
             // Precedencia 2: override runtime por tipo.
@@ -432,7 +427,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
             attributeLevel = Attribute.GetCustomAttribute(type, typeof(DebugLevelAttribute)) is DebugLevelAttribute attr
                 ? attr.Level
-                : _defaultDebugLevel;
+                : DefaultDebugLevel;
 
             _attributeLevels[type] = attributeLevel;
             return attributeLevel;
@@ -448,7 +443,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             string typeNamespace = type?.Namespace;
             if (string.IsNullOrWhiteSpace(typeNamespace))
             {
-                match = new NamespaceRuleMatch(false, string.Empty, string.Empty, _defaultDebugLevel);
+                match = new NamespaceRuleMatch(false, string.Empty, string.Empty, DefaultDebugLevel);
                 _matchedNamespaceRules[type] = match;
                 return false;
             }
@@ -464,7 +459,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 }
             }
 
-            match = new NamespaceRuleMatch(false, string.Empty, string.Empty, _defaultDebugLevel);
+            match = new NamespaceRuleMatch(false, string.Empty, string.Empty, DefaultDebugLevel);
             _matchedNamespaceRules[type] = match;
             return false;
         }
@@ -571,11 +566,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 return;
             }
 
-            _globalDebugEnabled = globalDebugEnabled;
-            _verboseLoggingEnabled = verboseEnabled;
-            _logFallbacks = fallbacksEnabled;
-            _repeatedCallVerboseEnabled = repeatedVerboseEnabled;
-            _defaultDebugLevel = defaultLevel;
+            IsGlobalDebugEnabled = globalDebugEnabled;
+            IsVerboseLoggingEnabled = verboseEnabled;
+            IsFallbacksEnabled = fallbacksEnabled;
+            IsRepeatedCallVerboseEnabled = repeatedVerboseEnabled;
+            DefaultDebugLevel = defaultLevel;
 
             _activeNamespaceRules.Clear();
             if (namespaceRules != null)
@@ -768,7 +763,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             bool isRepeat = _callTracker.Contains(trackerKey);
             if (isRepeat)
             {
-                if (!deduplicate && _repeatedCallVerboseEnabled)
+                if (!deduplicate && IsRepeatedCallVerboseEnabled)
                 {
                     if (_repeatedCallTracker.Add(trackerKey) && !ShouldSuppressRepeatedCallWarning(type, message))
                     {
@@ -785,7 +780,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 
         private static void LogRepeatedCallVerbose(Type type, string message, int frame)
         {
-            if (!_verboseLoggingEnabled || !_repeatedCallVerboseEnabled)
+            if (!IsVerboseLoggingEnabled || !IsRepeatedCallVerboseEnabled)
             {
                 return;
             }

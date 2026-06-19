@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.UnityUtils;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 

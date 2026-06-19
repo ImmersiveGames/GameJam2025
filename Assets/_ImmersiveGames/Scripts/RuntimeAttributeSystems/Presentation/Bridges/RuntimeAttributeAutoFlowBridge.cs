@@ -18,11 +18,10 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
         private Coroutine _pendingResumeRoutine;
         private int _manualPauseCount;
         private int _automaticPauseCount;
-        private bool _autoResumeAllowed;
 
         public bool HasAutoFlowService => _autoFlow != null;
         public bool IsAutoFlowActive => _autoFlow is { IsPaused: false };
-        public bool AutoResumeAllowed => _autoResumeAllowed;
+        public bool AutoResumeAllowed { get; private set; }
         public bool StartPaused => startPaused;
 
         // Executa depois do RuntimeAttributeController (-80) e antes de behaviours dependentes (ex.: EaterBehavior em 20).
@@ -45,7 +44,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             }
 
             _autoFlow = new RuntimeAttributeAutoFlowService(runtimeAttributeContext, startPaused);
-            _autoResumeAllowed = !startPaused;
+            AutoResumeAllowed = !startPaused;
             runtimeAttributeContext.ResourceChanging += HandleResourceChanging;
             runtimeAttributeContext.ResourceChanged += HandleResourceChanged;
 
@@ -89,7 +88,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
             _manualPauseCount = 0;
             _automaticPauseCount = 0;
-            _autoResumeAllowed = !startPaused;
+            AutoResumeAllowed = !startPaused;
 
             return Task.CompletedTask;
         }
@@ -106,7 +105,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 
             _manualPauseCount = 0;
             _automaticPauseCount = 0;
-            _autoResumeAllowed = !startPaused;
+            AutoResumeAllowed = !startPaused;
 
             if (_autoFlow != null)
             {
@@ -167,9 +166,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             }
 
             // Assim que o jogador solicitar a retomada manual, liberamos o autorresume.
-            if (!_autoResumeAllowed)
+            if (!AutoResumeAllowed)
             {
-                _autoResumeAllowed = true;
+                AutoResumeAllowed = true;
             }
 
             if (_manualPauseCount > 0)
@@ -229,7 +228,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
             CancelPendingResume();
             _manualPauseCount = 0;
             _automaticPauseCount = 0;
-            _autoResumeAllowed = false;
+            AutoResumeAllowed = false;
 
             _autoFlow?.Dispose();
             _autoFlow = null;
@@ -293,7 +292,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return;
             }
 
-            if (!_autoResumeAllowed)
+            if (!AutoResumeAllowed)
             {
                 DebugUtility.LogVerbose<RuntimeAttributeAutoFlowBridge>(
                     $"⏸️ AutoFlow permanece pausado (StartPaused ativo) após alteração de {context.RuntimeAttributeType}.",
@@ -328,7 +327,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return;
             }
 
-            if (!_autoResumeAllowed)
+            if (!AutoResumeAllowed)
             {
                 DebugUtility.LogVerbose<RuntimeAttributeAutoFlowBridge>(
                     "⏸️ AutoFlow permaneceu pausado por configuração startPaused.",
@@ -358,7 +357,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 yield break;
             }
 
-            if (!_autoResumeAllowed)
+            if (!AutoResumeAllowed)
             {
                 yield break;
             }

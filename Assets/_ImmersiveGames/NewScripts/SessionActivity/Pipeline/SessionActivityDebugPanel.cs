@@ -112,6 +112,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             host.RestartCurrentActivity();
         }
 
+        [ContextMenu("RequestPauseToggle")]
+        public void RequestPauseToggle()
+        {
+            EnsureHost();
+            host.RequestPauseToggle();
+        }
+
         [ContextMenu("CompleteActivationWindow")]
         public void CompleteActivationWindow()
         {
@@ -264,6 +271,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 GUILayout.Space(SectionSpacing);
 
                 bool canCompleteActivationWindow = CanCompleteActivationWindow();
+                bool canRequestPauseToggle = CanRequestPauseToggle();
                 bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
                 bool canRestartCurrentActivity = CanRestartCurrentActivity();
                 bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
@@ -274,6 +282,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
                 {
                     CompleteActivationWindow();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canRequestPauseToggle;
+                string pauseToggleLabel = IsHostStateAvailable() && host.State.CurrentExecutionState == ActivityExecutionState.Paused
+                    ? "PauseToggle / Resume"
+                    : "PauseToggle / Pause";
+                if (GUILayout.Button(pauseToggleLabel, _buttonStyle))
+                {
+                    RequestPauseToggle();
                 }
                 GUI.enabled = true;
 
@@ -576,6 +596,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             return !host.State.CurrentPendingOperation.IsValid &&
                 host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+        }
+
+        private bool CanRequestPauseToggle()
+        {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
+            return !host.State.CurrentPendingOperation.IsValid &&
+                host.State.CurrentIdentity.IsValid &&
+                host.State.CurrentStage == SessionActivityStage.ActivityRunning &&
+                (host.State.CurrentExecutionState == ActivityExecutionState.Running ||
+                 host.State.CurrentExecutionState == ActivityExecutionState.Paused);
         }
 
         private bool CanRestartCurrentActivity()

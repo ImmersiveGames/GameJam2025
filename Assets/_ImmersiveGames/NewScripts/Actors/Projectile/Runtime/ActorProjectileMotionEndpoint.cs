@@ -11,18 +11,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     [DisallowMultipleComponent]
     public sealed class ActorProjectileMotionEndpoint : MonoBehaviour, IPoolableObject
     {
-        private ActorProjectileMotionStrategyKind _motionStrategy = ActorProjectileMotionStrategyKind.Unknown;
-        private Vector3 _motionDirection = Vector3.zero;
-        private Vector3 _velocity = Vector3.zero;
-        private float _linearSpeed;
-        private bool _isMotionConfigured;
         private bool _hasLoggedMotionTickAdvanced;
 
-        public bool IsMotionConfigured => _isMotionConfigured;
-        public ActorProjectileMotionStrategyKind MotionStrategy => _motionStrategy;
-        public float LinearSpeed => _linearSpeed;
-        public Vector3 MotionDirection => _motionDirection;
-        public Vector3 Velocity => _velocity;
+        public bool IsMotionConfigured { get; private set; }
+        public ActorProjectileMotionStrategyKind MotionStrategy { get; private set; } = ActorProjectileMotionStrategyKind.Unknown;
+        public float LinearSpeed { get; private set; }
+        public Vector3 MotionDirection { get; private set; } = Vector3.zero;
+        public Vector3 Velocity { get; private set; } = Vector3.zero;
 
         public bool TryConfigureMotion(
             ActorProjectileMotionBootstrap bootstrap,
@@ -50,16 +45,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            _motionStrategy = bootstrap.Strategy;
-            _motionDirection = bootstrap.Direction.normalized;
-            _linearSpeed = bootstrap.Speed;
-            _velocity = _motionDirection * _linearSpeed;
-            _isMotionConfigured = true;
+            MotionStrategy = bootstrap.Strategy;
+            MotionDirection = bootstrap.Direction.normalized;
+            LinearSpeed = bootstrap.Speed;
+            Velocity = MotionDirection * LinearSpeed;
+            IsMotionConfigured = true;
             _hasLoggedMotionTickAdvanced = false;
 
             DebugUtility.Log(
                 typeof(ActorProjectileMotionEndpoint),
-                $"event='ActorProjectileMotionConfigured' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{_motionStrategy}' linearSpeed='{_linearSpeed:0.###}' direction='{FormatVector(_motionDirection)}' velocity='{FormatVector(_velocity)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
+                $"event='ActorProjectileMotionConfigured' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{MotionStrategy}' linearSpeed='{LinearSpeed:0.###}' direction='{FormatVector(MotionDirection)}' velocity='{FormatVector(Velocity)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'.",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -87,12 +82,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         private void Update()
         {
-            if (!_isMotionConfigured || _motionStrategy != ActorProjectileMotionStrategyKind.Linear)
+            if (!IsMotionConfigured || MotionStrategy != ActorProjectileMotionStrategyKind.Linear)
             {
                 return;
             }
 
-            var delta = _velocity * Time.deltaTime;
+            var delta = Velocity * Time.deltaTime;
             if (delta.sqrMagnitude <= 0f)
             {
                 return;
@@ -109,17 +104,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             _hasLoggedMotionTickAdvanced = true;
             DebugUtility.Log(
                 typeof(ActorProjectileMotionEndpoint),
-                $"event='ActorProjectileMotionTickAdvanced' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{_motionStrategy}' linearSpeed='{_linearSpeed:0.###}' direction='{FormatVector(_motionDirection)}' delta='{FormatVector(delta)}' positionBefore='{FormatVector(before)}' positionAfter='{FormatVector(transform.position)}' source='{nameof(ActorProjectileMotionEndpoint)}' reason='projectile_motion_tick_advanced'.",
+                $"event='ActorProjectileMotionTickAdvanced' actorId='{ResolveActorId()}' actorInstanceRuntimeId='{ResolveActorInstanceRuntimeId()}' motionStrategy='{MotionStrategy}' linearSpeed='{LinearSpeed:0.###}' direction='{FormatVector(MotionDirection)}' delta='{FormatVector(delta)}' positionBefore='{FormatVector(before)}' positionAfter='{FormatVector(transform.position)}' source='{nameof(ActorProjectileMotionEndpoint)}' reason='projectile_motion_tick_advanced'.",
                 DebugUtility.Colors.Info);
         }
 
         private void ClearMotionState(string reason, bool log)
         {
-            _motionStrategy = ActorProjectileMotionStrategyKind.Unknown;
-            _motionDirection = Vector3.zero;
-            _velocity = Vector3.zero;
-            _linearSpeed = 0f;
-            _isMotionConfigured = false;
+            MotionStrategy = ActorProjectileMotionStrategyKind.Unknown;
+            MotionDirection = Vector3.zero;
+            Velocity = Vector3.zero;
+            LinearSpeed = 0f;
+            IsMotionConfigured = false;
             _hasLoggedMotionTickAdvanced = false;
 
             if (!log)

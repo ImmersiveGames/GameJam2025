@@ -34,13 +34,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         [SerializeField] private ActorDamageSourceEndpoint damageSourceEndpoint;
 
         private readonly Dictionary<ActorInstanceRuntimeId, float> _nextAllowedDamageByReceiver = new();
-        private ActorId _sourceActorId;
         private ActorInstanceRuntimeId _sourceActorInstanceRuntimeId;
         private SessionActivityIdentity _activityIdentity;
-        private bool _isConfigured;
 
-        public bool IsConfigured => _isConfigured;
-        public ActorId SourceActorId => _sourceActorId;
+        public bool IsConfigured { get; private set; }
+        public ActorId SourceActorId { get; private set; }
         public ActorInstanceRuntimeId SourceActorInstanceRuntimeId => _sourceActorInstanceRuntimeId;
         public SessionActivityIdentity ActivityIdentity => _activityIdentity;
 
@@ -72,18 +70,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 throw new InvalidOperationException("ActorContactDamageEndpoint requires a configured ActorDamageSourceEndpoint.");
             }
 
-            _sourceActorId = sourceActorId;
+            SourceActorId = sourceActorId;
             _sourceActorInstanceRuntimeId = sourceActorInstanceRuntimeId;
             _activityIdentity = activityIdentity;
             damageSourceEndpoint = sourceEndpoint;
-            _isConfigured = true;
+            IsConfigured = true;
             _nextAllowedDamageByReceiver.Clear();
 
             ConfigureColliderRelays(source, reason);
 
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageEndpoint),
-                $"event='ActorContactDamageEndpointConfigured' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageAmount='{damageAmount:0.###}' damageKind='{damageKind.TrimToEmpty()}' targetLayerMask='{targetLayerMask.value}' cooldownSecondsPerReceiver='{cooldownSecondsPerReceiver:0.###}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageEndpointConfigured' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' damageAmount='{damageAmount:0.###}' damageKind='{damageKind.TrimToEmpty()}' targetLayerMask='{targetLayerMask.value}' cooldownSecondsPerReceiver='{cooldownSecondsPerReceiver:0.###}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
         }
 
@@ -131,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
         private bool TryApplyContactDamage(GameObject targetObject, Collider targetCollider, string source, string reason)
         {
-            if (!_isConfigured || damageSourceEndpoint == null || !damageSourceEndpoint.IsConfigured)
+            if (!IsConfigured || damageSourceEndpoint == null || !damageSourceEndpoint.IsConfigured)
             {
                 LogRejected(null, targetObject, targetCollider, "contact_damage_endpoint_not_configured", source, reason);
                 return false;
@@ -187,12 +185,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageEndpoint),
-                $"event='ActorContactDamageDetected' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{targetActorId}' targetActorInstanceRuntimeId='{targetActorInstanceRuntimeId}' targetObject='{ResolveObjectName(targetObject)}' targetCollider='{ResolveColliderName(targetCollider)}' receiver='{ResolveReceiverName(damageableEndpoint)}' damageAmount='{normalizedDamageAmount:0.###}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageDetected' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{targetActorId}' targetActorInstanceRuntimeId='{targetActorInstanceRuntimeId}' targetObject='{ResolveObjectName(targetObject)}' targetCollider='{ResolveColliderName(targetCollider)}' receiver='{ResolveReceiverName(damageableEndpoint)}' damageAmount='{normalizedDamageAmount:0.###}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
 
             ActorDamageSourceIntent intent = new(
                 _activityIdentity,
-                _sourceActorId,
+                SourceActorId,
                 _sourceActorInstanceRuntimeId,
                 targetActorId,
                 targetActorInstanceRuntimeId,
@@ -203,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageEndpoint),
-                $"event='ActorContactDamageRegistered' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{targetActorId}' targetActorInstanceRuntimeId='{targetActorInstanceRuntimeId}' receiver='{ResolveReceiverName(damageableEndpoint)}' rawDamageAmount='{normalizedDamageAmount:0.###}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageRegistered' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{targetActorId}' targetActorInstanceRuntimeId='{targetActorInstanceRuntimeId}' receiver='{ResolveReceiverName(damageableEndpoint)}' rawDamageAmount='{normalizedDamageAmount:0.###}' damageKind='{damageKind.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
 
             if (!damageSourceEndpoint.TryEmitDamageIntent(intent, damageableEndpoint, out var result) || result.Rejected || result.Failed)
@@ -216,7 +214,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageEndpoint),
-                $"event='ActorContactDamageApplied' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{targetActorId}' targetActorInstanceRuntimeId='{targetActorInstanceRuntimeId}' receiver='{ResolveReceiverName(damageableEndpoint)}' rawDamageAmount='{normalizedDamageAmount:0.###}' changedFact='{result.HasChangedFact}' thresholdFacts='{result.HasThresholdFacts}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageApplied' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{targetActorId}' targetActorInstanceRuntimeId='{targetActorInstanceRuntimeId}' receiver='{ResolveReceiverName(damageableEndpoint)}' rawDamageAmount='{normalizedDamageAmount:0.###}' changedFact='{result.HasChangedFact}' thresholdFacts='{result.HasThresholdFacts}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
 
             return true;
@@ -228,7 +226,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorContactDamageEndpoint),
-                    $"event='ActorContactDamageColliderRelayConfigurationSkipped' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' outcomeReason='relay_install_disabled' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                    $"event='ActorContactDamageColliderRelayConfigurationSkipped' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' outcomeReason='relay_install_disabled' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -270,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageEndpoint),
-                $"event='ActorContactDamageColliderRelaysConfigured' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' observedColliderCount='{colliders.Length}' configuredRelayCount='{configuredCount}' skippedColliderCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageColliderRelaysConfigured' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' observedColliderCount='{colliders.Length}' configuredRelayCount='{configuredCount}' skippedColliderCount='{skippedCount}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Success);
         }
 
@@ -364,7 +362,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorContactDamageEndpoint),
-                $"event='ActorContactDamageRejected' sourceActorId='{_sourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{ResolveReceiverActorId(damageableEndpoint)}' targetActorInstanceRuntimeId='{ResolveReceiverActorInstanceRuntimeId(damageableEndpoint)}' targetObject='{ResolveObjectName(targetObject)}' targetCollider='{ResolveColliderName(targetCollider)}' receiver='{ResolveReceiverName(damageableEndpoint)}' outcomeReason='{outcomeReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorContactDamageRejected' sourceActorId='{SourceActorId}' sourceActorInstanceRuntimeId='{_sourceActorInstanceRuntimeId}' targetActorId='{ResolveReceiverActorId(damageableEndpoint)}' targetActorInstanceRuntimeId='{ResolveReceiverActorInstanceRuntimeId(damageableEndpoint)}' targetObject='{ResolveObjectName(targetObject)}' targetCollider='{ResolveColliderName(targetCollider)}' receiver='{ResolveReceiverName(damageableEndpoint)}' outcomeReason='{outcomeReason.TrimToEmpty()}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Warning);
         }
 

@@ -128,7 +128,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         private readonly Dictionary<ActorInstanceRuntimeId, SessionActivityPipeline.ActorAttributeCapabilityState> _activeActorAttributeCapabilitiesByActorInstanceId = new();
         private readonly HashSet<ActorInstanceRuntimeId> _activeActorParticipationsByActorInstanceRuntimeId = new();
         private readonly Dictionary<ActorId, PlayerActivityParticipantBinding> _activePlayerParticipantBindingsByActorId = new();
-        private PlayerActivityParticipationContext _currentActivityParticipationContext;
         private ActorInventoryFeedResult _currentActorInventoryFeedResult;
 
         public int ActivePresentationCount => _activeActorPresentationByActorInstanceId.Count;
@@ -136,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public int ActiveParticipationCount => _activeActorParticipationsByActorInstanceRuntimeId.Count;
         public int ActivePlayerParticipantBindingCount => _activePlayerParticipantBindingsByActorId.Count;
         public bool HasActorInventoryFeedResult => _currentActorInventoryFeedResult.IsValid;
-        public PlayerActivityParticipationContext CurrentActivityParticipationContext => _currentActivityParticipationContext;
+        public PlayerActivityParticipationContext CurrentActivityParticipationContext { get; private set; }
 
         public bool TryGetActivePresentationHandle(
             ActorInstanceRuntimeId actorInstanceRuntimeId,
@@ -346,7 +345,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
         public void StoreActivityParticipationExitCorrelation(PlayerActivityParticipationContext context)
         {
-            _currentActivityParticipationContext = context;
+            CurrentActivityParticipationContext = context;
             _activePlayerParticipantBindingsByActorId.Clear();
 
             if (context is not { IsValid: true, Participants: { Count: > 0 } })
@@ -386,7 +385,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return ActivityActorParticipationExitBindingResolutionResult.RejectedInvalidActor("actor_id_missing_in_actor_participation_record");
             }
 
-            if (_currentActivityParticipationContext is not { IsValid: true })
+            if (CurrentActivityParticipationContext is not { IsValid: true })
             {
                 string reason = _activePlayerParticipantBindingsByActorId.Count > 0
                     ? "active_binding_index_without_valid_context"
@@ -394,7 +393,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return ActivityActorParticipationExitBindingResolutionResult.RejectedStale(reason);
             }
 
-            var contextIdentity = _currentActivityParticipationContext.SessionActivityIdentity;
+            var contextIdentity = CurrentActivityParticipationContext.SessionActivityIdentity;
             if (!IsSameActivityCycle(contextIdentity, expectedIdentity))
             {
                 if (IsSamePipelineSessionActivity(contextIdentity, expectedIdentity))
@@ -413,11 +412,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                     ActivityActorParticipationExitBindingResolutionSourceKind.ActiveIndex);
             }
 
-            if (_currentActivityParticipationContext.Participants != null)
+            if (CurrentActivityParticipationContext.Participants != null)
             {
-                for (int index = 0; index < _currentActivityParticipationContext.Participants.Count; index++)
+                for (int index = 0; index < CurrentActivityParticipationContext.Participants.Count; index++)
                 {
-                    var candidate = _currentActivityParticipationContext.Participants[index];
+                    var candidate = CurrentActivityParticipationContext.Participants[index];
                     if (!candidate.IsValid || !candidate.RequiresPlayerActor || !candidate.ActorId.IsValid)
                     {
                         continue;
@@ -474,7 +473,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
             _activeActorParticipationsByActorInstanceRuntimeId.Clear();
             _activePlayerParticipantBindingsByActorId.Clear();
-            _currentActivityParticipationContext = null;
+            CurrentActivityParticipationContext = null;
             _currentActorInventoryFeedResult = default;
         }
 

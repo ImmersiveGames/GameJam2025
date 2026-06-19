@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Foundation;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.UI

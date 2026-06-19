@@ -29,9 +29,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         private readonly string _pipelineId;
         private readonly string _sessionStateId;
         private readonly string _activityId;
-        private readonly int _activityOrdinal;
-        private readonly int _entrySequence;
-        private readonly SessionActivityStage _stage;
         private readonly string _source;
         private readonly string _reason;
 
@@ -48,9 +45,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             _pipelineId = pipelineId.TrimToEmpty();
             _sessionStateId = sessionStateId.TrimToEmpty();
             _activityId = activityId.TrimToEmpty();
-            _activityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
-            _entrySequence = entrySequence < 0 ? 0 : entrySequence;
-            _stage = stage;
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            Stage = stage;
             _source = source.TrimToEmpty();
             _reason = reason.TrimToEmpty();
         }
@@ -58,9 +55,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         public string PipelineId => _pipelineId ?? string.Empty;
         public string SessionStateId => _sessionStateId ?? string.Empty;
         public string ActivityId => _activityId ?? string.Empty;
-        public int ActivityOrdinal => _activityOrdinal;
-        public int EntrySequence => _entrySequence;
-        public SessionActivityStage Stage => _stage;
+        public int ActivityOrdinal { get; }
+        public int EntrySequence { get; }
+        public SessionActivityStage Stage { get; }
         public string Source => _source ?? string.Empty;
         public string Reason => _reason ?? string.Empty;
 

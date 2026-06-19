@@ -15,7 +15,6 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         private const string DefaultStrategyId = "SimplePresetStrategy";
 
         private readonly DefenseTargetMode _targetMode;
-        private readonly DefenseRole _preferredRole;
         private readonly Dictionary<string, DefenseRole> _cachedRoles;
 
         public SimplePlanetDefenseStrategy(
@@ -23,7 +22,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
             string customStrategyId = DefaultStrategyId)
         {
             _targetMode = targetMode;
-            _preferredRole = ResolvePreferredRole(targetMode);
+            TargetRole = ResolvePreferredRole(targetMode);
             StrategyId = string.IsNullOrWhiteSpace(customStrategyId) ? DefaultStrategyId : customStrategyId;
             _cachedRoles = new Dictionary<string, DefenseRole>(StringComparer.OrdinalIgnoreCase);
         }
@@ -36,7 +35,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
         /// <summary>
         /// Role preferido com base no modo selecionado.
         /// </summary>
-        public DefenseRole TargetRole => _preferredRole;
+        public DefenseRole TargetRole { get; }
 
         /// <summary>
         /// Não altera contexto; mantém neutralidade com presets existentes.
@@ -105,7 +104,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 case DefenseTargetMode.PreferEater:
                     return identifierRole != DefenseRole.Unknown ? identifierRole : DefenseRole.Eater;
                 default:
-                    return _preferredRole;
+                    return TargetRole;
             }
         }
 

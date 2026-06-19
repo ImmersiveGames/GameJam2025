@@ -96,6 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 activityCameraPreparationExecutor,
                 pendingOperationRunner,
                 _pipeline,
+                new ActivityPauseContentAdapter(),
                 canonicalPlayerInputActionsAsset,
                 _pipeline.ActivityActorExitRuntimeState,
                 actorAttributeEventStream,
@@ -107,6 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             // See SA-19B0-Bridge-Surface-Freeze.md and SA-19 plan.
             // Next: restructure so that EntryPipeline is created with narrow contracts and attached at construction time (SA-19B2).
             _pipeline.AttachEntryPipeline(activityEntryPipeline);
+            EnsurePauseToggleInputAdapterOrFail(canonicalPlayerInputActionsAsset);
 
             _globalsRegistered = true;
             try
@@ -211,6 +213,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return canonicalActionsAsset;
+        }
+
+        private void EnsurePauseToggleInputAdapterOrFail(InputActionAsset canonicalPlayerInputActionsAsset)
+        {
+            if (canonicalPlayerInputActionsAsset == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] canonicalPlayerInputActionsAsset obrigatorio ausente para PauseToggle input adapter.");
+            }
+
+            var adapter = _host.GetComponent<SessionActivityPauseToggleInputAdapter>();
+            if (adapter == null)
+            {
+                adapter = _host.gameObject.AddComponent<SessionActivityPauseToggleInputAdapter>();
+            }
+
+            adapter.Initialize(_host, canonicalPlayerInputActionsAsset);
         }
 
         private void RegisterGlobalsOrFail()

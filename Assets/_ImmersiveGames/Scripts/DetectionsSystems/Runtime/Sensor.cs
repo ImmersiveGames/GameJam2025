@@ -15,7 +15,6 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private readonly List<IDetectable> _detected = new();
         private readonly List<IDetectable> _currentDetections = new(); // Lista tempor�ria reutilizada para armazenar detec��es no frame atual
         private readonly List<IDetectable> _cleanupBuffer = new(); // Buffer reaproveitado para evitar GC por frame
-        private readonly Transform _origin;
         private readonly IDetector _detector;
 
         // Cache por objeto por frame - mais espec�fico
@@ -23,18 +22,17 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private readonly Dictionary<IDetectable, int> _exitEventFrameCache = new();
 
         private float _timer;
-        private bool _isEnabled = true;
 
         public SensorConfig Config { get; }
         private DetectionType DetectionType => Config.DetectionType;
         public ReadOnlyCollection<IDetectable> CurrentlyDetected => _detected.AsReadOnly();
         public bool IsDetecting => _detected.Count > 0;
-        public bool IsEnabled => _isEnabled;
-        public Transform Origin => _origin;
+        public bool IsEnabled { get; private set; } = true;
+        public Transform Origin { get; }
 
         public Sensor(Transform origin, IDetector detector, SensorConfig config)
         {
-            _origin = origin;
+            Origin = origin;
             _detector = detector;
             Config = config;
 
@@ -44,7 +42,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public void Update(float deltaTime)
         {
-            if (!_isEnabled)
+            if (!IsEnabled)
             {
                 return;
             }
@@ -62,12 +60,12 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         public void SetEnabled(bool enabled)
         {
-            if (_isEnabled == enabled)
+            if (IsEnabled == enabled)
             {
                 return;
             }
 
-            _isEnabled = enabled;
+            IsEnabled = enabled;
 
             if (!enabled)
             {
@@ -89,7 +87,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private void DetectUsingPhysics()
         {
-            int hits = Physics.OverlapSphereNonAlloc(_origin.position, Config.Radius, _results, Config.TargetLayer);
+            int hits = Physics.OverlapSphereNonAlloc(Origin.position, Config.Radius, _results, Config.TargetLayer);
 
             for (int i = 0; i < hits; i++)
             {
@@ -200,8 +198,8 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private bool IsInCone(Vector3 targetPosition)
         {
-            var coneWorldDirection = _origin.TransformDirection(Config.ConeDirection);
-            var directionToTarget = (targetPosition - _origin.position).normalized;
+            var coneWorldDirection = Origin.TransformDirection(Config.ConeDirection);
+            var directionToTarget = (targetPosition - Origin.position).normalized;
             float angleToTarget = Vector3.Angle(coneWorldDirection, directionToTarget);
             return angleToTarget <= Config.ConeAngle / 2f;
         }
@@ -238,7 +236,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private bool IsWithinRadius(Vector3 targetPosition)
         {
             float maxDistanceSqr = Config.Radius * Config.Radius;
-            float distanceSqr = (_origin.position - targetPosition).sqrMagnitude;
+            float distanceSqr = (Origin.position - targetPosition).sqrMagnitude;
             return distanceSqr <= maxDistanceSqr;
         }
 
@@ -379,7 +377,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 
         private Vector3 GetConeWorldDirection()
         {
-            return _origin.TransformDirection(Config.ConeDirection);
+            return Origin.TransformDirection(Config.ConeDirection);
         }
 
         public Vector3[] GetConeEdgeDirections()
@@ -413,7 +411,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 float currentAngle = -Config.ConeAngle / 2 + segmentAngle * i;
                 var rotation = Quaternion.AngleAxis(currentAngle, Vector3.up);
                 var segmentDirection = rotation * coneWorldDirection;
-                points.Add(_origin.position + segmentDirection * Config.Radius);
+                points.Add(Origin.position + segmentDirection * Config.Radius);
             }
 
             return points.ToArray();

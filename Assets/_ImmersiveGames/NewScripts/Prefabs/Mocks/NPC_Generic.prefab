@@ -182,7 +182,7 @@ MonoBehaviour:
   damageKind: contact
   targetLayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 128
   cooldownSecondsPerReceiver: 0.5
   detectTriggerEnter: 1
   detectCollisionEnter: 1

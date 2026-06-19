@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using _ImmersiveGames.NewScripts.SessionOperational.Authoring;
 using _ImmersiveGames.NewScripts.UnityUtils;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -140,6 +141,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         // Perfil declarativo de apresentação de activity; não executa câmera por si só.
         [SerializeField] private ActivityPresentationProfileAsset activityPresentationProfile;
 
+        [Header("Route Pause Surface")]
+        // Perfil declarativo da surface de pause route-scoped; não decide pause/resume.
+        [SerializeField] private RoutePauseSurfaceProfileAsset routePauseSurfaceProfile;
+
         public string RouteIdentity => routeIdentity.TrimToEmpty();
         public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile TransitionProfile => transitionProfile;
@@ -163,6 +168,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool StopPreviousRouteAudio => stopPreviousRouteAudio;
         public SurfacePresentationProfileAsset SurfacePresentationProfile => surfacePresentationProfile;
         public ActivityPresentationProfileAsset ActivityPresentationProfile => activityPresentationProfile;
+        public RoutePauseSurfaceProfileAsset RoutePauseSurfaceProfile => routePauseSurfaceProfile;
         public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
         public bool UsesLoading => LoadingMode != SessionOperationalRouteLoadingMode.None;
         public string LoadingProfileLabel => loadingProfile != null && !string.IsNullOrWhiteSpace(loadingProfile.ProfileId) ? loadingProfile.ProfileId.Trim() : string.Empty;
@@ -408,6 +414,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
+            if (routePauseSurfaceProfile != null &&
+                !routePauseSurfaceProfile.TryValidate(out string routePauseSurfaceValidationReason))
+            {
+                errorMessage = $"route_pause_surface_profile_invalid:{routePauseSurfaceValidationReason} routeIdentity='{RouteIdentity}' profile='{routePauseSurfaceProfile.name}'.";
+                return false;
+            }
+
             errorMessage = string.Empty;
             return true;
         }
@@ -449,6 +462,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (TryFindSceneConflict(scenesToUnload, persistentSceneSet, nameof(scenesToUnload), RouteIdentity, out errorMessage))
             {
                 return false;
+            }
+
+            if (routePauseSurfaceProfile != null)
+            {
+                var pauseProfile = routePauseSurfaceProfile.ToProfile();
+                if (pauseProfile.UsesScene &&
+                    persistentSceneSet.Contains(pauseProfile.SceneName))
+                {
+                    errorMessage = $"routePauseSurfaceProfile cannot reference runtime persistent scene='{pauseProfile.SceneName}' routeIdentity='{RouteIdentity}' policyId='{persistentScenesPolicy.PolicyId}' profile='{routePauseSurfaceProfile.name}'.";
+                    return false;
+                }
             }
 
             errorMessage = string.Empty;
@@ -602,6 +626,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public PlayerSetDefinitionAsset RouteParticipantSetDefinition => Plan.RouteParticipantSetDefinition;
         public SurfacePresentationProfileAsset SurfacePresentationProfile => Plan.SurfacePresentationProfile;
         public ActivityPresentationProfileAsset ActivityPresentationProfile => Plan.ActivityPresentationProfile;
+        public RoutePauseSurfaceProfile RoutePauseSurfaceProfile => Plan.RoutePauseSurfaceProfile;
         public bool UsesTransition => Plan.UsesTransition;
         public string TransitionProfileLabel => Plan.TransitionProfileLabel;
 
@@ -616,7 +641,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', routeAudioMode='{Audio.RouteAudioMode}', routeAudioTiming='{Audio.RouteAudioTiming}', routeAudioCue='{Audio.RouteAudioCueName}', stopPreviousRouteAudio='{Audio.StopPreviousRouteAudio}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', loadActivitySaveOnEnter='{ActivitySavePolicy.LoadActivitySaveOnEnter}', saveActivityOnExit='{ActivitySavePolicy.SaveActivityOnExit}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', routeAudioMode='{Audio.RouteAudioMode}', routeAudioTiming='{Audio.RouteAudioTiming}', routeAudioCue='{Audio.RouteAudioCueName}', stopPreviousRouteAudio='{Audio.StopPreviousRouteAudio}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', loadActivitySaveOnEnter='{ActivitySavePolicy.LoadActivitySaveOnEnter}', saveActivityOnExit='{ActivitySavePolicy.SaveActivityOnExit}', routePauseSurface='{RoutePauseSurfaceProfile}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
 

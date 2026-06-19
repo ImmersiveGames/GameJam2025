@@ -6,8 +6,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public sealed class SessionActivityCatalog
     {
-        private readonly IReadOnlyList<SessionActivityDefinition> _definitions;
-        private readonly ActivityCatalogAdvanceAtEndMode _advanceAtEndMode;
 
         public SessionActivityCatalog(IEnumerable<SessionActivityDefinition> definitions, ActivityCatalogAdvanceAtEndMode advanceAtEndMode = ActivityCatalogAdvanceAtEndMode.StopAtEnd)
         {
@@ -39,20 +37,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
 
-            _definitions = materialized;
+            Definitions = materialized;
             if (advanceAtEndMode != ActivityCatalogAdvanceAtEndMode.StopAtEnd &&
                 advanceAtEndMode != ActivityCatalogAdvanceAtEndMode.LoopToFirst)
             {
                 throw new InvalidOperationException($"SessionActivityCatalog advanceAtEndMode '{advanceAtEndMode}' is unsupported.");
             }
 
-            _advanceAtEndMode = advanceAtEndMode;
+            AdvanceAtEndMode = advanceAtEndMode;
         }
 
-        public IReadOnlyList<SessionActivityDefinition> Definitions => _definitions;
-        public ActivityCatalogAdvanceAtEndMode AdvanceAtEndMode => _advanceAtEndMode;
+        public IReadOnlyList<SessionActivityDefinition> Definitions { get; }
+        public ActivityCatalogAdvanceAtEndMode AdvanceAtEndMode { get; }
 
-        public string Summary => string.Join(" | ", _definitions.Select(definition => definition.ToString()));
+        public string Summary => string.Join(" | ", Definitions.Select(definition => definition.ToString()));
 
         public bool TryGetFirst(out SessionActivityDefinition definition)
         {
@@ -75,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!current.HasNextActivity)
             {
-                if (_advanceAtEndMode != ActivityCatalogAdvanceAtEndMode.LoopToFirst)
+                if (AdvanceAtEndMode != ActivityCatalogAdvanceAtEndMode.LoopToFirst)
                 {
                     next = default;
                     return false;
@@ -86,9 +84,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return hasFirst;
             }
 
-            for (int index = 0; index < _definitions.Count; index++)
+            for (int index = 0; index < Definitions.Count; index++)
             {
-                var candidate = _definitions[index];
+                var candidate = Definitions[index];
                 if (string.Equals(candidate.ActivityId, current.NextActivityId, StringComparison.OrdinalIgnoreCase))
                 {
                     next = candidate;
@@ -96,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
 
-            if (_advanceAtEndMode == ActivityCatalogAdvanceAtEndMode.LoopToFirst)
+            if (AdvanceAtEndMode == ActivityCatalogAdvanceAtEndMode.LoopToFirst)
             {
                 bool hasFirst = TryGetFirst(out next) && next.IsValid;
                 wrapped = hasFirst;
@@ -120,9 +118,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public bool TryGetByOrdinal(int ordinal, out SessionActivityDefinition definition)
         {
-            for (int index = 0; index < _definitions.Count; index++)
+            for (int index = 0; index < Definitions.Count; index++)
             {
-                var candidate = _definitions[index];
+                var candidate = Definitions[index];
                 if (candidate.ActivityOrdinal == ordinal)
                 {
                     definition = candidate;

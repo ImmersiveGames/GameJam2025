@@ -4,9 +4,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SessionActivitySimulationGate
     {
-        private readonly ActivityExecutionBlockingState _state = new();
 
-        public ActivityExecutionBlockingState State => _state;
+        public ActivityExecutionBlockingState State { get; } = new();
 
         public ActivityExecutionBlockingResult Execute(ActivityExecutionBlockingCommand command)
         {
@@ -39,9 +38,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 return Reject(command, "gate_identity_missing", "Activity gate identity is missing.");
             }
 
-            if (_state.ActivityBlocked)
+            if (State.ActivityBlocked)
             {
-                if (_state.ActivityIdentity.MatchesActivityScope(command.Identity))
+                if (State.ActivityIdentity.MatchesActivityScope(command.Identity))
                 {
                     return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionBlocked, "Activity simulation already blocked. Idempotent no-op applied.");
                 }
@@ -49,8 +48,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 return Reject(command, "stale_or_foreign_gate_command", "Activity simulation block belongs to a different identity.");
             }
 
-            _state.ActivityBlocked = true;
-            _state.ActivityIdentity = command.Identity;
+            State.ActivityBlocked = true;
+            State.ActivityIdentity = command.Identity;
             return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionBlocked, "Activity simulation blocked.");
         }
 
@@ -61,18 +60,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 return Reject(command, "gate_identity_missing", "Activity gate identity is missing.");
             }
 
-            if (!_state.ActivityBlocked)
+            if (!State.ActivityBlocked)
             {
                 return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionReleased, "Activity simulation already released. Idempotent no-op applied.");
             }
 
-            if (!_state.ActivityIdentity.MatchesActivityScope(command.Identity))
+            if (!State.ActivityIdentity.MatchesActivityScope(command.Identity))
             {
                 return Reject(command, "stale_or_foreign_gate_command", "Activity simulation release belongs to a different identity.");
             }
 
-            _state.ActivityBlocked = false;
-            _state.ActivityIdentity = default;
+            State.ActivityBlocked = false;
+            State.ActivityIdentity = default;
             return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionReleased, "Activity simulation released.");
         }
 
@@ -83,9 +82,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 return Reject(command, "gate_identity_missing", "Session gate identity is missing.");
             }
 
-            if (_state.SessionBlocked)
+            if (State.SessionBlocked)
             {
-                if (_state.SessionIdentity.MatchesSessionScope(command.Identity))
+                if (State.SessionIdentity.MatchesSessionScope(command.Identity))
                 {
                     return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionBlocked, "Session simulation already blocked. Idempotent no-op applied.");
                 }
@@ -93,8 +92,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 return Reject(command, "stale_or_foreign_gate_command", "Session simulation block belongs to a different identity.");
             }
 
-            _state.SessionBlocked = true;
-            _state.SessionIdentity = command.Identity;
+            State.SessionBlocked = true;
+            State.SessionIdentity = command.Identity;
             return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionBlocked, "Session simulation blocked.");
         }
 
@@ -105,18 +104,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                 return Reject(command, "gate_identity_missing", "Session gate identity is missing.");
             }
 
-            if (!_state.SessionBlocked)
+            if (!State.SessionBlocked)
             {
                 return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionReleased, "Session simulation already released. Idempotent no-op applied.");
             }
 
-            if (!_state.SessionIdentity.MatchesSessionScope(command.Identity))
+            if (!State.SessionIdentity.MatchesSessionScope(command.Identity))
             {
                 return Reject(command, "stale_or_foreign_gate_command", "Session simulation release belongs to a different identity.");
             }
 
-            _state.SessionBlocked = false;
-            _state.SessionIdentity = default;
+            State.SessionBlocked = false;
+            State.SessionIdentity = default;
             return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionReleased, "Session simulation released.");
         }
 
@@ -166,10 +165,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             return new SimulationGateSnapshot(
                 command.Kind,
                 command.Identity,
-                _state.SessionBlocked,
-                _state.SessionIdentity,
-                _state.ActivityBlocked,
-                _state.ActivityIdentity,
+                State.SessionBlocked,
+                State.SessionIdentity,
+                State.ActivityBlocked,
+                State.ActivityIdentity,
                 fact,
                 command.Source,
                 command.Reason,
@@ -178,8 +177,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
         private void UpdateDiagnostics(SimulationGateFact fact, SimulationGateSnapshot snapshot)
         {
-            _state.LastFact = fact;
-            _state.LastSnapshot = snapshot;
+            State.LastFact = fact;
+            State.LastSnapshot = snapshot;
         }
 
         private static void LogCommand(ActivityExecutionBlockingCommand command)

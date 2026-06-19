@@ -11,9 +11,13 @@ Este ADR não substitui os ADRs de `SessionOperational`, `SessionActivity`, `Pla
 Este ADR deve orientar auditoria e cortes incrementais posteriores.
 
 
-### Status adicional — congelamento parcial registrado
+### Status adicional — congelamentos parciais registrados
 
 Em `2026-06-17`, este ADR recebeu um congelamento parcial do trilho funcional até `ADR0007-E4B3-FIX1`. O congelamento registra `PASS funcional` histórico para damage/impact/effect event/return-to-pool, mas mantém `NewScriptsv4.zip` como `PARTIAL` para assets/prefabs até fechar as dívidas de target actor requirement e prefab hygiene.
+
+Em `2026-06-18`, este ADR recebeu um segundo congelamento parcial para `ADR0007-E6A/FIX2`. O congelamento registra `PASS funcional direcionado` para contact damage receiver-only com self guard, projectile damage preservado e publicação canônica de eventos de atributo pelo owner da mutação. A base ativa deste registro é `NewScriptsv6.zip`.
+
+Ainda em `2026-06-18`, após smoke direcionado adicional, este ADR congelou `ADR0007-E6A-FIX3-TrimToEmptyHygiene` como `CLOSED / PASS por ausência de regressão funcional` e congelou `ADR0007-E6B-ContactDamageLayerReceiverValidation` como `CLOSED / PASS funcional direcionado`. Este fechamento valida a higiene `TrimToEmpty`, a rejeição por layer, a rejeição por ausência de `ActorDamageableEndpoint`, o dano por contato válido em player e a preservação do trilho projectile/impact/damage/return. No-op por defesa/resistência/invulnerabilidade permanece como débito futuro de evidência porque essa policy ainda não existe.
 
 ---
 
@@ -1001,6 +1005,327 @@ ActorImpactReturnCompleted >= 1
 ActorImpactTargetResolveSkipped pode existir,
 mas impacto sem target actor não pode virar ActorImpactRegistered quando requireTargetActorForRegisteredImpact=true.
 ```
+
+
+---
+
+## Congelamento parcial — ADR0007-E6A Contact Damage, Attribute Event Publishing e Layer/Receiver Validation
+
+### Status do congelamento
+
+Data de registro: `2026-06-18`.  
+Base ativa: `NewScriptsv6.zip`.  
+Evidência ativa inicial: smoke/log enviado junto de `NewScriptsv6.zip` (`Texto colado.txt`).  
+Evidência ativa complementar: smoke/log direcionado de damage/projétil/contact/layer (`Texto colado.txt`) enviado após ajuste de layers dos NPCs.  
+Objetivo deste bloco: congelar o estado funcional validado para `ADR0007-E6A`, `ADR0007-E6A-FIX2`, `ADR0007-E6A-FIX3` e `ADR0007-E6B`, sem transformar backlog futuro em `PASS` indevido.
+
+Resultado consolidado:
+
+```text
+CLOSED / PASS funcional direcionado para ADR0007-E6A-FIX2.
+CLOSED / PASS por ausência de regressão funcional para ADR0007-E6A-FIX3.
+CLOSED / PASS funcional direcionado para ADR0007-E6B layer/receiver validation.
+No-op por defesa/resistência/invulnerabilidade permanece como débito futuro de evidência.
+Self-contact direto por objeto artificial não é exigência para este fechamento; projectile owner/self guard é evidência indireta suficiente para o trilho projectile.
+```
+
+Este congelamento é direcionado ao trilho de damage/contact/projectile/attribute event publishing e às invalidações de layer/receiver. Não deve ser lido como PASS global de `SessionActivity`.
+
+---
+
+### Cortes congelados neste bloco
+
+| Corte | Estado congelado | Observação |
+|---|---|---|
+| `ADR0007-E4B4` | `CLOSED / PASS funcional parcial` | Target actor requirement e projectile prefab hygiene preservaram projectile impact/damage/effect/return. A policy `requireTargetActorForRegisteredImpact=true` ficou ativa; colisão sem actor segue como cenário específico de smoke futuro, se necessário. |
+| `ADR0007-E6A` | `CLOSED / PASS funcional direcionado` | Contact damage receiver-only com self guard configurado em actors authored fora do trilho de spawn. |
+| `ADR0007-E6A-FIX1` | `SUPERSEDED` | Moveu publicação para o receiver, mas ainda não era o owner correto final. Foi substituído pelo `FIX2`. |
+| `ADR0007-E6A-FIX2` | `CLOSED / PASS funcional direcionado` | `ActorAttributeEndpoint` é o owner da publicação de `ActorAttributeChangedEvent` e thresholds após mutação real. |
+| `ADR0007-E6A-FIX3` | `CLOSED / PASS por ausência de regressão funcional` | Higiene para remover helpers locais `Normalize` e usar `TrimToEmpty()`. Não há evento runtime de PASS esperado; o critério é ausência de compile/runtime regression e preservação de damage/projétil/contact. |
+| `ADR0007-E6B` | `CLOSED / PASS funcional direcionado` | Validação dirigida de layer filtering, receiver ausente e contato válido contra player. |
+
+---
+
+### Fechamento dos itens 1 a 6
+
+| Item | Estado congelado | Evidência / decisão |
+|---:|---|---|
+| 1 | `CLOSED` | `TrimToEmpty` é higiene por ausência de helpers locais duplicados. Não deve aparecer evento de PASS runtime; o fechamento é por ausência de regressão funcional após smoke. |
+| 2 | `DEFERRED / FUTURE EVIDENCE` | No-op por defesa, resistência, invulnerabilidade ou mutation policy ainda não pode ser exercitado porque não existe layer/policy que impeça ou transforme dano. O princípio fica congelado: hit pode não gerar mutação; se não houver mutação real, não deve haver `ChangedEvent`. |
+| 3 | `CLOSED / INDIRECT EVIDENCE` | Self/owner guard do trilho projectile é considerado suficiente neste corte: projectile é configurado com `ignoreSelfActor=True` e `ignoreOwnerActor=True`, e os impactos válidos registrados são contra NPCs, não contra o owner/spawner. Self-contact direto exigiria objeto artificial específico e não é bloqueador atual. |
+| 4 | `CLOSED / PASS funcional direcionado` | Layer filtering foi exercitado: contatos em layer não permitido geraram `contact_target_layer_not_allowed` e não aplicaram dano. |
+| 5 | `CLOSED / PASS funcional direcionado` | Receiver ausente foi exercitado: NPC configurado para aceitar projectile detectou objeto no layer permitido, mas rejeitou porque o projectile não possui `ActorDamageableEndpoint`, com `contact_target_damageable_missing_or_not_configured`. |
+| 6 | `CLOSED / PASS funcional direcionado` | Contato válido foi exercitado: NPC com layer permitido contra player gerou `ActorContactDamageDetected`, `ActorContactDamageRegistered`, `ActorDamageSourceIntentEmitted`, `ActorDamageIntentApplied`, `ActorAttributeMutationIntentApplied`, `ActorAttributeChangedEventPublished`, `ActorAttributeImageFillApplied` e `ActorContactDamageApplied`. |
+
+---
+
+### Fluxo funcional congelado para contact damage
+
+O fluxo validado para dano por contato authored fora do trilho de spawn é:
+
+```text
+ActorContactDamageEndpoint
+-> filtra targetLayerMask
+-> resolve ActorDamageableEndpoint no objeto colidido
+-> ignora receiver que pertence ao mesmo ActorInstanceRuntimeId do source
+-> ActorDamageSourceEndpoint do source
+-> ActorDamageableEndpoint do receiver
+-> ActorAttributeMutationReceiverEndpoint
+-> ActorAttributeEndpoint
+-> ActorAttributeChangedEvent, se houve mutação real
+-> ActorAttributeThresholdCrossedEvent, se houve cruzamento
+-> ActorAttributeEventStream
+-> HUD binding, quando houver binding ativo para o atributo
+```
+
+Ownership congelado:
+
+| Responsabilidade | Owner congelado |
+|---|---|
+| Detectar contato físico authored fora do pool | `ActorContactDamageEndpoint` |
+| Encaminhar contato de collider filho/presentation | `ActorContactDamageColliderRelay` |
+| Rejeitar target por layer não permitido | `ActorContactDamageEndpoint` |
+| Rejeitar target sem damageable configurado | `ActorContactDamageEndpoint` |
+| Rejeitar self-hit por mesma runtime instance | `ActorContactDamageEndpoint` usando `ActorInstanceRuntimeId` |
+| Emitir intenção de dano | `ActorDamageSourceEndpoint` |
+| Traduzir dano em intenção de mutação | `ActorDamageableEndpoint` |
+| Receber mutação externa | `ActorAttributeMutationReceiverEndpoint` |
+| Alterar valor de atributo | `ActorAttributeEndpoint` |
+| Publicar evento observável de atributo | `ActorAttributeEndpoint` após commit real |
+| Consumir evento para HUD | `ActorAttributeUiBindingRuntime` / sinks de UI |
+
+Invariante congelado:
+
+```text
+Hit/contact/impact/source podem gerar intenção.
+Quem altera o valor do atributo é quem publica o resultado observável.
+Pode existir hit sem mutação.
+Pode existir damage intent rejeitado, absorvido ou transformado sem changed event quando houver policy para isso.
+```
+
+---
+
+### Fluxo funcional congelado para projectile damage após FIX2/FIX3
+
+O fluxo de projectile/impact permanece preservado, mas sem publicação de atributo no adapter de impact:
+
+```text
+ActorProjectileFireEndpoint
+-> RuntimeSpawnedActor projectile
+-> ActorImpactEndpoint
+-> ActorImpactDamageApplicationAdapter
+-> ActorDamageSourceEndpoint do owner actor
+-> ActorDamageableEndpoint do target actor
+-> ActorAttributeMutationReceiverEndpoint
+-> ActorAttributeEndpoint
+-> ActorAttributeChangedEvent, se houve mutação real
+-> ActorAttributeThresholdCrossedEvent, se houve cruzamento
+-> ActorImpactEffectEventPublished
+-> ActorProjectileImpactReturnHandler
+-> ActorProjectileSpawnRuntimeState
+-> PoolService.Return
+```
+
+Regra congelada:
+
+```text
+ActorImpactDamageApplicationAdapter não publica ActorAttributeChangedEvent.
+ActorDamageSourceEndpoint não publica ActorAttributeChangedEvent.
+ActorDamageableEndpoint não publica ActorAttributeChangedEvent.
+ActorAttributeMutationReceiverEndpoint não publica ActorAttributeChangedEvent.
+ActorAttributeEndpoint publica o resultado observável da mutação real.
+```
+
+---
+
+### Evidência funcional congelada por smoke/log
+
+O smoke complementar validou estabilidade geral:
+
+```text
+error CS = 0
+FATAL = 0
+Exception = 0
+route_transition_failed = 0
+checkpointStatus='Failed' = 0
+RejectedForeign / RejectedStale indevido = 0
+```
+
+O trilho de projectile/impact permaneceu funcional:
+
+```text
+ActorProjectileSpawnedFromPool = 3
+ActorImpactTargetResolved = 2
+ActorImpactRegistered = 2
+ActorImpactDamageApplicationApplied = 2
+ActorImpactEffectEventPublished = 2
+ActorProjectileSpawnedRuntimeObjectReturned = 2
+ActorProjectileImpactReturnAccepted = 2
+ActorImpactReturnCompleted = 2
+```
+
+A ordem preservada é:
+
+```text
+impact
+-> damage
+-> attribute event
+-> threshold event quando aplicável
+-> impact effect event
+-> return técnico ao pool
+```
+
+O trilho de contact damage layer/receiver validou:
+
+```text
+ActorContactDamageRejected = 5
+contact_target_layer_not_allowed = 4
+contact_target_damageable_missing_or_not_configured = 1
+ActorContactDamageDetected = 1
+ActorContactDamageRegistered = 1
+ActorContactDamageApplied = 1
+```
+
+Caso `layer permitido`, mas receiver ausente:
+
+```text
+npc.route.generic.01
+-> targetObject='Green Projectile::actor.projectile.runtime.spawn.pool::Presentation'
+-> outcomeReason='contact_target_damageable_missing_or_not_configured'
+-> sem ActorDamageIntentApplied
+-> sem ActorAttributeMutationIntentApplied
+```
+
+Caso `layer não permitido`:
+
+```text
+npc.generic.01 / npc.route.generic.01
+-> targetObject projectile, Cube ou Herald em layer não permitido
+-> outcomeReason='contact_target_layer_not_allowed'
+-> sem damage
+```
+
+Caso `layer permitido + ActorDamageableEndpoint configurado`:
+
+```text
+npc.generic.01
+-> targetActorId='actor.player.primary'
+-> ActorContactDamageDetected
+-> ActorContactDamageRegistered
+-> ActorDamageSourceIntentEmitted
+-> ActorDamageIntentApplied
+-> ActorAttributeMutationIntentApplied
+-> ActorAttributeChangedEventPublished
+-> ActorAttributeImageFillApplied currentValue=90 fillAmount=0.9
+-> ActorContactDamageApplied
+```
+
+Isso fecha a inconsistência anterior em que o player recebia dano por contato, mas a HUD não reagia.
+
+---
+
+### Correção arquitetural congelada pelo FIX2
+
+A correção aceita é:
+
+```text
+ActorAttributeEndpoint
+-> aplica command/mutation
+-> decide se houve alteração real
+-> gera ActorAttributeChangedFact
+-> avalia thresholds
+-> publica ActorAttributeChangedEvent somente quando houve mudança real
+-> publica ActorAttributeThresholdCrossedEvent somente quando houve cruzamento real
+```
+
+A correção substitui o shape incorreto anterior:
+
+```text
+ActorImpactDamageApplicationAdapter publicando atributo
+SessionActivityPipeline republicando atributo para QA/host
+ActorAttributeMutationReceiverEndpoint publicando atributo
+```
+
+Esses caminhos não são owners corretos da publicação de atributo.
+
+---
+
+### Higiene `TrimToEmpty` congelada
+
+`ADR0007-E6A-FIX3-TrimToEmptyHygiene` remove helpers locais duplicados como:
+
+```csharp
+private static string Normalize(string value)
+{
+    return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+}
+```
+
+e substitui por:
+
+```csharp
+value.TrimToEmpty()
+```
+
+Status:
+
+```text
+CLOSED / PASS por ausência de regressão funcional.
+Não há evento runtime esperado para esta higiene.
+Não reintroduzir Normalize local duplicado em novos cortes.
+Usar TrimToEmpty() onde aplicável.
+```
+
+Exceções que não fazem parte desta higiene:
+
+```text
+Vector3.Normalize()
+TryNormalize(float...)
+NormalizeAdapterSegment(...)
+NormalizeContext(...)
+NormalizeForEditor()
+```
+
+---
+
+### Invariantes novos congelados
+
+Não regredir estes pontos:
+
+```text
+Contact damage não depende de target actor específico como Player ou NPC.
+Contact damage exige layer permitido, ActorDamageableEndpoint configurado e self guard.
+Projectile impact exige target actor resolvido quando requireTargetActorForRegisteredImpact=true.
+Projectile comum não é DamageSource canônico; source canônico é o owner actor.
+Projectile comum continua inócuo para contact damage se não possuir ActorDamageableEndpoint.
+ActorContactDamageEndpoint não publica atributo.
+ActorImpactDamageApplicationAdapter não publica atributo.
+SessionActivityPipeline não publica atributo runtime para compensar bridge QA.
+ActorAttributeMutationReceiverEndpoint não usa stream fallback privado silencioso.
+ActorAttributeEndpoint é o owner de commit e publicação observável.
+Changed event só deve representar mudança real.
+Threshold event só deve representar cruzamento real.
+HUD consome stream canônico e não conhece a origem da mutação.
+Não reintroduzir Normalize local duplicado; usar TrimToEmpty().
+```
+
+---
+
+### Backlog restante após este congelamento
+
+| Ordem | Item | Status | Observação |
+|---:|---|---|---|
+| 1 | `Contact cooldown directed smoke` | `PENDING` | Cooldown por receiver ainda não foi exercitado de forma dirigida. |
+| 2 | `Damage no-op / blocked mutation evidence` | `FUTURE` | Depende de defense/resistance/invulnerability/mutation policy. Não há mecanismo atual para impedir ou transformar dano de modo canônico. |
+| 3 | `Layer taxonomy / hurtbox authoring contract` | `PENDING DESIGN` | O filtro por layer funciona; ainda falta consolidar layers finais como `Damageable`, `Hurtbox`, `Projectile`, `Environment` e evitar `Everything` onde não for intencional. |
+| 4 | `Impact target without Actor rejection smoke` | `OPTIONAL / TARGETED` | `requireTargetActorForRegisteredImpact=true` está ativo; falta smoke específico contra objeto sem Actor se isso virar prioridade. |
+| 5 | `Direct self-contact artificial smoke` | `OPTIONAL / TARGETED` | Projectile owner/self guard já é evidência indireta suficiente para este corte. Smoke direto exigiria objeto artificial. |
+| 6 | `Impact effect adapter minimal` | `PENDING FEATURE` | `ActorImpactEffectEventPublished` existe; falta consumer real de áudio/VFX. |
+| 7 | `Health lifecycle minimal` | `PENDING FEATURE` | Health zero ainda só publica threshold/evento; morte/defeated/revive pertencem a endpoint/policy própria. |
+| 8 | `Damage rules` | `PENDING FEATURE` | Damage type efetivo, resistance, critical, armor, invulnerability, friendly-fire/team policy. |
+| 9 | `Destructibles / non-actor damageable` | `FUTURE` | Objetos simples ou one-shot destructibles sem Actor ficam para fase avançada. |
+| 10 | `Rollback / undo` | `FUTURE` | Reversão histórica, snapshots e debug rewind dependem de estabilização das camadas anteriores. |
+| 11 | `Observability hygiene` | `LOW DEBT` | Alguns logs pós-return ainda podem trazer ids vazios, por exemplo cleanup de motion depois do pool return. |
 
 
 ## Open questions

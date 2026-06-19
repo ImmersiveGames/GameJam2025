@@ -19,8 +19,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         private IOldLegacySimulationGateService _gate;
         private readonly HashSet<IGameplayExecutionParticipant> _participants = new();
 
-        private bool _isExecutionAllowed = true;
-        public bool IsExecutionAllowed => _isExecutionAllowed;
+        public bool IsExecutionAllowed { get; private set; } = true;
 
         private string _sceneName;
 
@@ -47,7 +46,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             if (logStateChanges)
             {
                 DebugUtility.LogVerbose<GameplayExecutionCoordinator>(
-                    $"Coordinator inicializado para a cena '{_sceneName}'. IsExecutionAllowed={_isExecutionAllowed}");
+                    $"Coordinator inicializado para a cena '{_sceneName}'. IsExecutionAllowed={IsExecutionAllowed}");
             }
         }
 
@@ -86,7 +85,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
             if (_participants.Add(participant))
             {
-                participant.SetExecutionAllowed(_isExecutionAllowed);
+                participant.SetExecutionAllowed(IsExecutionAllowed);
             }
         }
 
@@ -109,23 +108,23 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         {
             bool allowed = isOpen;
 
-            if (!forceReapplyToParticipants && _isExecutionAllowed == allowed)
+            if (!forceReapplyToParticipants && IsExecutionAllowed == allowed)
             {
                 return;
             }
 
-            _isExecutionAllowed = allowed;
+            IsExecutionAllowed = allowed;
 
             foreach (var p in _participants)
             {
                 try
                 {
-                    p?.SetExecutionAllowed(_isExecutionAllowed);
+                    p?.SetExecutionAllowed(IsExecutionAllowed);
                 }
                 catch (Exception ex)
                 {
                     DebugUtility.LogWarning<GameplayExecutionCoordinator>(
-                        $"Falha ao aplicar ExecutionAllowed={_isExecutionAllowed} em participante. Ex={ex.Message}",
+                        $"Falha ao aplicar ExecutionAllowed={IsExecutionAllowed} em participante. Ex={ex.Message}",
                         this);
                 }
             }
@@ -133,8 +132,8 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             if (logStateChanges)
             {
                 DebugUtility.Log<GameplayExecutionCoordinator>(
-                    $"ExecutionAllowed => {_isExecutionAllowed}. Participants={_participants.Count}",
-                    _isExecutionAllowed ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
+                    $"ExecutionAllowed => {IsExecutionAllowed}. Participants={_participants.Count}",
+                    IsExecutionAllowed ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning,
                     this);
             }
         }

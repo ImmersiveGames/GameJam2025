@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             SessionParticipationContext sessionParticipationContext,
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> actorMaterializationSeedEntries,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
+            SessionActivityRoutePauseSurfaceContext routePauseSurfaceContext,
             bool hasRouteFadeProfile,
             SceneTransitionProfile routeFadeProfile,
             bool hasRouteLoadingProfile,
@@ -37,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             SessionParticipationContext = sessionParticipationContext;
             ActorMaterializationSeedEntries = actorMaterializationSeedEntries ?? Array.Empty<PlayerSetDefinitionAsset.PlayerActorResolvedEntry>();
             LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
+            RoutePauseSurfaceContext = routePauseSurfaceContext;
             HasRouteFadeProfile = hasRouteFadeProfile;
             RouteFadeProfile = routeFadeProfile;
             HasRouteLoadingProfile = hasRouteLoadingProfile;
@@ -51,6 +53,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> ActorMaterializationSeedEntries { get; }
         public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
         public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
+        public SessionActivityRoutePauseSurfaceContext RoutePauseSurfaceContext { get; }
+        public bool HasRoutePauseSurfaceContext => RoutePauseSurfaceContext.HasSurface && RoutePauseSurfaceContext.IsValid;
         public bool HasRouteFadeProfile { get; }
         public SceneTransitionProfile RouteFadeProfile { get; }
         public bool HasRouteLoadingProfile { get; }
@@ -60,6 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             HasSessionParticipationContext &&
+            RoutePauseSurfaceContext.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
     }
 

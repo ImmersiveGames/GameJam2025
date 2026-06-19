@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
-using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {

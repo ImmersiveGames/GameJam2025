@@ -25,14 +25,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         private PlayerInput _boundPlayerInput;
         private ActorId _actorId;
         private ActorInstanceRuntimeId _actorInstanceRuntimeId;
-        private bool _prepared;
         private int _commandSequence;
         private bool _moveInactiveDispatchLogged;
         private int _lastResolvedBindingCount;
         private int _lastSkippedBindingCount;
 
         public Transform Transform => transform;
-        public bool IsPrepared => _prepared;
+        public bool IsPrepared { get; private set; }
         public IReadOnlyList<ActorCommandInputBinding> Bindings => commandBindings;
 
         public void PrepareInputBindings(PlayerInput playerInput, string context)
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 throw new InvalidOperationException("PlayerActorCommandInputHub.PrepareInputBindings requires non-null PlayerInput.");
             }
 
-            _prepared = false;
+            IsPrepared = false;
             _boundPlayerInput = null;
             _commandSinks.Clear();
             UnregisterActionSubscriptions();
@@ -57,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 DebugUtility.Colors.Info);
             ResolveBindingsOrFail(context);
 
-            _prepared = true;
+            IsPrepared = true;
 
             DebugUtility.LogVerbose(
                 typeof(PlayerActorCommandInputHub),
@@ -120,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             _actorId = default;
             _actorInstanceRuntimeId = default;
             _resolvedBindings.Clear();
-            _prepared = false;
+            IsPrepared = false;
             _commandSequence = 0;
             _moveInactiveDispatchLogged = false;
         }
@@ -144,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
         private void Update()
         {
-            if (!_prepared || _resolvedBindings.Count == 0 || !TryGetCommandSink(ActorCommandId.Move, out _))
+            if (!IsPrepared || _resolvedBindings.Count == 0 || !TryGetCommandSink(ActorCommandId.Move, out _))
             {
                 return;
             }

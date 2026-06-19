@@ -228,6 +228,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(OperationalRouteSetupStage),
+                $"RoutePauseSurfacePlanReady routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' routePauseSurface='{routeCommand.RoutePauseSurfaceProfile}' source='{routeCommand.Source}' reason='{routeCommand.Reason}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(OperationalRouteSetupStage),
                 $"command='OperationalRouteCommand' routeIdentity='{routeCommand.RouteIdentity}' activeScene='{setupCommand.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey?.name ?? string.Empty}' activeSceneImplicitLoad='{setupCommand.PlanResolution.ActiveSceneImplicitLoad}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' completionHandoff='{routeCommand.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(routeCommand.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(routeCommand.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(setupCommand.PlanResolution.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(routeCommand.FinalScenesToUnload)}] source='{routeCommand.Source}' reason='{routeCommand.Reason}'.",
                 DebugUtility.Colors.Info);
 

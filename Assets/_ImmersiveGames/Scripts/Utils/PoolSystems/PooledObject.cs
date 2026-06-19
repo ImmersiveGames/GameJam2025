@@ -6,7 +6,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
     public abstract class PooledObject : MonoBehaviour, IPoolable
     {
         private PoolableObjectData _config;
-        private ObjectPool _pool;
         private float _currentLifetime;
         private bool _isRegisteredInLifetimeManager;
 
@@ -15,7 +14,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         public virtual void Configure(PoolableObjectData config, ObjectPool pool, IActor spawner = null)
         {
             _config = config;
-            _pool = pool;
+            GetPool = pool;
             _currentLifetime = config.Lifetime;
             _isRegisteredInLifetimeManager = false;
             Spawner = spawner;
@@ -26,7 +25,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 
         public virtual void Activate(Vector3 position, Vector3? direction = null, IActor spawner = null)
         {
-            if (_config == null || _pool == null)
+            if (_config == null || GetPool == null)
             {
                 DebugUtility.LogError<PooledObject>($"Object '{name}' not configured properly.", this);
                 return;
@@ -119,6 +118,6 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             return _config as T;
         }
-        public ObjectPool GetPool => _pool;
+        public ObjectPool GetPool { get; private set; }
     }
 }

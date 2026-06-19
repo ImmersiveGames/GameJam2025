@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Activity 01
   activityContentMode: 1
   activityContentProfile: {fileID: 11400000, guid: 3cfa61fd5289440409d64151175a7895, type: 2}
+  activityPauseContentProfile: {fileID: 11400000, guid: 5efb6a1b106c27b48ae833c57a1c94bf, type: 2}
   activationWindowMode: 1
   activationWindowAdditiveSceneKey: {fileID: 11400000, guid: 768100d2c3662204c8dc1eacb7c7908e, type: 2}
   deactivationWindowMode: 1
@@ -24,4 +25,3 @@ MonoBehaviour:
   nextActivityTransitionProfileSource: 1
   nextActivityTransitionContinuePolicy: 1
   nextActivityTransitionProfileOverride: {fileID: 11400000, guid: b41597450c1f98947b4f546e46f7cafd, type: 2}
-  playerSetDefinition: {fileID: 11400000, guid: 599fec6669bb27444952e15513357943, type: 2}

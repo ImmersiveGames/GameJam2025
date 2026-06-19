@@ -61,11 +61,10 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
         private IGameplayExecutionCoordinator _coordinator;
         private bool _registered;
-        private bool _isAllowed = true;
 
         private bool _autoCollectedOnce;
 
-        public bool IsExecutionAllowed => _isAllowed;
+        public bool IsExecutionAllowed { get; private set; } = true;
 
         private void Awake()
         {
@@ -96,12 +95,12 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
         public void SetExecutionAllowed(bool allowed)
         {
-            if (_isAllowed == allowed)
+            if (IsExecutionAllowed == allowed)
             {
                 return;
             }
 
-            _isAllowed = allowed;
+            IsExecutionAllowed = allowed;
 
             bool enable = allowed;
 

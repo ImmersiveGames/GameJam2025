@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.UnityUtils;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     internal static class InputModesDefaults

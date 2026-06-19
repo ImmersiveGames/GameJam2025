@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Actors.Impact.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
@@ -40,7 +39,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         private IActorProjectileFireAudioAdapter _fireAudioAdapter;
         private string _spawnAdapterName = string.Empty;
         private string _fireAudioAdapterName = string.Empty;
-        private bool _projectileFireEnabled;
         private readonly Dictionary<ActorProjectileFireModeId, float> _nextAllowedFireTimeByMode = new();
 
         public ActorProjectileFireEndpointId EndpointId => new(endpointId.TrimToEmpty());
@@ -49,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         public ActorProjectileProfileId ProfileId => fireProfile == null ? default : fireProfile.ProfileId;
         public ActorProjectileFireModeId DefaultFireModeId => fireProfile == null ? default : fireProfile.DefaultFireModeId;
         public bool IsRequired => required;
-        public bool IsProjectileFireEnabled => _projectileFireEnabled;
+        public bool IsProjectileFireEnabled { get; private set; }
         public bool HasSpawnAdapter => _spawnAdapter != null;
         public string SpawnAdapterName => _spawnAdapterName.TrimToEmpty();
         public bool HasFireAudioAdapter => _fireAudioAdapter != null;
@@ -113,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public void SetProjectileFireEnabled(bool enabled)
         {
-            _projectileFireEnabled = enabled;
+            IsProjectileFireEnabled = enabled;
         }
 
         public ActorCommandDispatchResult AcceptCommand(ActorCommandEnvelope command)
@@ -130,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(invalidReason);
             }
 
-            if (!_projectileFireEnabled)
+            if (!IsProjectileFireEnabled)
             {
                 DebugUtility.LogVerbose(
                     typeof(ActorProjectileFireEndpoint),

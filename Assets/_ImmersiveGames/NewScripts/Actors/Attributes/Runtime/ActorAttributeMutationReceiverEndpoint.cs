@@ -12,15 +12,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
     {
         [SerializeField] private ActorAttributeEndpoint attributeEndpoint;
 
-        private ActorId _actorId;
-        private ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private SessionActivityIdentity _activityIdentity;
-        private bool _isConfigured;
 
-        public ActorId ActorId => _actorId;
-        public ActorInstanceRuntimeId ActorInstanceRuntimeId => _actorInstanceRuntimeId;
+        public ActorId ActorId { get; private set; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; private set; }
         public SessionActivityIdentity ActivityIdentity => _activityIdentity;
-        public bool IsConfigured => _isConfigured;
+        public bool IsConfigured { get; private set; }
 
         public void Configure(
             ActorId actorId,
@@ -51,14 +48,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             }
 
             attributeEndpoint = endpoint;
-            _actorId = actorId;
-            _actorInstanceRuntimeId = actorInstanceRuntimeId;
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             _activityIdentity = activityIdentity;
-            _isConfigured = true;
+            IsConfigured = true;
 
             DebugUtility.LogVerbose(
                 typeof(ActorAttributeMutationReceiverEndpoint),
-                $"event='ActorAttributeMutationReceiverConfigured' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' attributeEndpointPresent='{attributeEndpoint != null}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorAttributeMutationReceiverConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' attributeEndpointPresent='{attributeEndpoint != null}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 
@@ -66,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             ActorAttributeMutationIntent intent,
             out ActorAttributeMutationResult result)
         {
-            if (!_isConfigured || attributeEndpoint == null)
+            if (!IsConfigured || attributeEndpoint == null)
             {
                 result = ActorAttributeMutationResult.Fail(
                     intent.ActorId,
@@ -84,14 +81,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            if (intent.ActorId != _actorId)
+            if (intent.ActorId != ActorId)
             {
                 result = ActorAttributeMutationResult.Reject(intent, "foreign_actor_id");
                 LogRejected(intent, result.Reason);
                 return false;
             }
 
-            if (intent.ActorInstanceRuntimeId != _actorInstanceRuntimeId)
+            if (intent.ActorInstanceRuntimeId != ActorInstanceRuntimeId)
             {
                 result = ActorAttributeMutationResult.Reject(intent, "foreign_actor_instance_id");
                 LogRejected(intent, result.Reason);
@@ -132,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorAttributeMutationReceiverEndpoint),
-                $"event='ActorAttributeMutationIntentRejected' actorId='{intent.ActorId}' actorInstanceRuntimeId='{intent.ActorInstanceRuntimeId}' expectedActorId='{_actorId}' expectedActorInstanceRuntimeId='{_actorInstanceRuntimeId}' attributeId='{intent.AttributeId}' operation='{intent.Operation}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'",
+                $"event='ActorAttributeMutationIntentRejected' actorId='{intent.ActorId}' actorInstanceRuntimeId='{intent.ActorInstanceRuntimeId}' expectedActorId='{ActorId}' expectedActorInstanceRuntimeId='{ActorInstanceRuntimeId}' attributeId='{intent.AttributeId}' operation='{intent.Operation}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'",
                 DebugUtility.Colors.Warning);
         }
 

@@ -71,6 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActivityRetainedParticipantLookup _activityRetainedParticipantLookup;
         private readonly ISessionActivityPendingOperationRunner _pendingOperationRunner;
         private readonly ISessionActivityPendingOperationCallback _pendingOperationCallback;
+        private readonly ISessionActivityPauseContentAdapter _pauseContentAdapter;
         private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
@@ -84,6 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ActivityEntryInventoryRuntimeState _activityInventoryRuntimeState = new();
         private readonly ActivityParticipationRuntimeState _activityParticipationRuntimeState = new();
         private readonly ActivityActorAttributeUiBindingRuntimeState _activityActorAttributeUiBindingRuntimeState = new();
+        private readonly ActivityPauseContentRuntimeState _activityPauseContentRuntimeState = new();
         private IReadOnlyList<SessionActivityActorMaterializationPlanEntry> _currentActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
         private PendingContentLoadContext _pendingContentLoadContext;
 
@@ -105,6 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             IActivityCameraPreparationExecutor activityCameraPreparationExecutor,
             ISessionActivityPendingOperationRunner pendingOperationRunner,
             ISessionActivityPendingOperationCallback pendingOperationCallback,
+            ISessionActivityPauseContentAdapter pauseContentAdapter,
             InputActionAsset canonicalPlayerInputActionsAsset,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
             IActorAttributeEventStream actorAttributeEventStream,
@@ -140,6 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activityCameraPreparationExecutor = activityCameraPreparationExecutor ?? throw new ArgumentNullException(nameof(activityCameraPreparationExecutor));
             _pendingOperationRunner = pendingOperationRunner ?? throw new ArgumentNullException(nameof(pendingOperationRunner));
             _pendingOperationCallback = pendingOperationCallback ?? throw new ArgumentNullException(nameof(pendingOperationCallback));
+            _pauseContentAdapter = pauseContentAdapter ?? throw new ArgumentNullException(nameof(pauseContentAdapter));
             _canonicalPlayerInputActionsAsset = canonicalPlayerInputActionsAsset ?? throw new ArgumentNullException(nameof(canonicalPlayerInputActionsAsset));
             _activityActorExitRuntimeState = activityActorExitRuntimeState ?? throw new ArgumentNullException(nameof(activityActorExitRuntimeState));
             _actorAttributeEventStream = actorAttributeEventStream ?? throw new ArgumentNullException(nameof(actorAttributeEventStream));
@@ -212,6 +216,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActivityEntryCommand command,
             SessionActivityDefinition definition,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
+            SessionActivityRoutePauseSurfaceContext routePauseSurfaceContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -284,6 +289,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (!setupInfrastructureResult.Completed || !setupInfrastructureResult.IsValid)
                 {
                     throw new InvalidOperationException($"ActivityEntryPipeline setup infrastructure failed. reason='{setupInfrastructureResult.Reason}' identity='{setupInfrastructureResult.Identity}'.");
+                }
+
+                var pauseContentResult = ActivityEntryPauseContentStage.Bind(
+                    setupStartedIdentity,
+                    definition.ActivityPauseContentProfile,
+                    routePauseSurfaceContext,
+                    _pauseContentAdapter,
+                    _activityPauseContentRuntimeState,
+                    facts,
+                    snapshots,
+                    command.Source,
+                    command.Reason);
+                if (!pauseContentResult.IsValid)
+                {
+                    throw new InvalidOperationException($"ActivityEntryPipeline pause content binding failed. reason='{pauseContentResult.Reason}' identity='{pauseContentResult.Identity}'.");
                 }
 
                 var participantBindingResult = ExecuteParticipantBinding(
@@ -491,6 +511,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"owner='ActivityEntryPipeline' block='setup_readiness_orchestration' resultKind='Failed' error='{exception.Message}'");
                 throw;
             }
+        }
+
+        public ActivityPauseContentReleaseResult ReleaseCurrentActivityPauseContent(
+            SessionActivityIdentity identity,
+            SessionActivityRoutePauseSurfaceContext routePauseSurfaceContext,
+            string source,
+            string reason)
+        {
+            return ActivityEntryPauseContentStage.Release(
+                identity,
+                routePauseSurfaceContext,
+                _pauseContentAdapter,
+                _activityPauseContentRuntimeState,
+                source,
+                reason);
         }
 
         private ActivityObjectExitCorrelationBundle BuildActivityObjectExitCorrelationBundle()

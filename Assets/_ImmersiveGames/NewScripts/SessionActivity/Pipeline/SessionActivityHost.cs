@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
@@ -23,7 +22,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         [SerializeField] private bool qaObserveAsyncStateChanges = true;
         [SerializeField] private float qaObserveIntervalSeconds = 0.1f;
 
-        private SessionActivityCatalog _catalog;
         private SessionActivityPipeline _pipeline;
         private string _lastObservedStateToken = string.Empty;
         private float _nextObserveAt;
@@ -31,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public event Action StateObservedChanged;
 
         public SessionActivityRuntimeState State => _pipeline?.State;
-        public SessionActivityCatalog Catalog => _catalog;
+        public SessionActivityCatalog Catalog { get; private set; }
         public ActivityExecutionBlockingState GateState => _pipeline?.GateState;
         internal bool HasPipeline => _pipeline != null;
 
@@ -168,6 +166,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsurePipeline();
             SessionActivityHostQaCommandSurface.RequestPause(_pipeline);
+        }
+
+        public void RequestPauseToggle()
+        {
+            EnsurePipeline();
+            SessionActivityHostQaCommandSurface.RequestPauseToggle(_pipeline);
+        }
+
+        public void RequestPauseToggle(string source, string reason)
+        {
+            EnsurePipeline();
+            SessionActivityHostQaCommandSurface.RequestPauseToggle(_pipeline, source, reason);
         }
 
         public void RequestResume()
@@ -371,7 +381,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string BuildHostBanner()
         {
-            return $"initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
+            return $"initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}' catalog='{Catalog.Summary}'";
         }
 
         private string BuildStateObservationToken()
@@ -417,7 +427,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         internal void BindComposition(SessionActivityCatalog catalog, SessionActivityPipeline pipeline)
         {
-            _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
             DebugUtility.LogVerbose(typeof(SessionActivityHost), BuildHostBanner());
         }

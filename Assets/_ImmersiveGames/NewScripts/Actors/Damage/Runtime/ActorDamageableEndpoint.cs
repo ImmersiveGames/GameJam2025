@@ -17,18 +17,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         [Tooltip("Atributo alvo que recebera o dano como subtracao. Ex.: PlayerAttributeDefinitionHealth.")]
         [SerializeField] private ActorAttributeDefinitionAsset targetAttributeDefinition;
 
-        private ActorId _actorId;
-        private ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private SessionActivityIdentity _activityIdentity;
-        private ActorAttributeId _targetAttributeId;
         private ActorAttributeMutationReceiverEndpoint _mutationReceiver;
-        private bool _isConfigured;
 
-        public ActorId ActorId => _actorId;
-        public ActorInstanceRuntimeId ActorInstanceRuntimeId => _actorInstanceRuntimeId;
+        public ActorId ActorId { get; private set; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; private set; }
         public SessionActivityIdentity ActivityIdentity => _activityIdentity;
-        public ActorAttributeId TargetAttributeId => _targetAttributeId;
-        public bool IsConfigured => _isConfigured;
+        public ActorAttributeId TargetAttributeId { get; private set; }
+        public bool IsConfigured { get; private set; }
 
         public void Configure(
             ActorId actorId,
@@ -64,16 +60,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 throw new InvalidOperationException("ActorDamageableEndpoint requires targetAttributeDefinition with a valid ActorAttributeId.");
             }
 
-            _actorId = actorId;
-            _actorInstanceRuntimeId = actorInstanceRuntimeId;
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             _activityIdentity = activityIdentity;
-            _targetAttributeId = targetAttributeId;
+            TargetAttributeId = targetAttributeId;
             _mutationReceiver = mutationReceiver;
-            _isConfigured = true;
+            IsConfigured = true;
 
             DebugUtility.LogVerbose(
                 typeof(ActorDamageableEndpoint),
-                $"event='ActorDamageableConfigured' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' targetAttributeId='{_targetAttributeId}' mutationReceiverPresent='{_mutationReceiver != null}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorDamageableConfigured' actorId='{ActorId}' actorInstanceRuntimeId='{ActorInstanceRuntimeId}' activityId='{_activityIdentity.ActivityId}' entrySequence='{_activityIdentity.EntrySequence}' targetAttributeId='{TargetAttributeId}' mutationReceiverPresent='{_mutationReceiver != null}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 
@@ -81,12 +77,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
             ActorDamageIntent intent,
             out ActorDamageResult result)
         {
-            if (!_isConfigured || _mutationReceiver == null || !_mutationReceiver.IsConfigured)
+            if (!IsConfigured || _mutationReceiver == null || !_mutationReceiver.IsConfigured)
             {
                 result = ActorDamageResult.Fail(
                     intent.TargetActorId,
                     intent.TargetActorInstanceRuntimeId,
-                    _targetAttributeId,
+                    TargetAttributeId,
                     intent.RawDamageAmount,
                     0f,
                     "damageable_not_configured");
@@ -95,35 +91,35 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             if (!intent.IsValid)
             {
-                result = ActorDamageResult.Reject(intent, _targetAttributeId, 0f, "damage_intent_invalid");
+                result = ActorDamageResult.Reject(intent, TargetAttributeId, 0f, "damage_intent_invalid");
                 LogRejected(intent, result.Reason);
                 return false;
             }
 
-            if (intent.TargetActorId != _actorId)
+            if (intent.TargetActorId != ActorId)
             {
-                result = ActorDamageResult.Reject(intent, _targetAttributeId, 0f, "foreign_actor_id");
+                result = ActorDamageResult.Reject(intent, TargetAttributeId, 0f, "foreign_actor_id");
                 LogRejected(intent, result.Reason);
                 return false;
             }
 
-            if (intent.TargetActorInstanceRuntimeId != _actorInstanceRuntimeId)
+            if (intent.TargetActorInstanceRuntimeId != ActorInstanceRuntimeId)
             {
-                result = ActorDamageResult.Reject(intent, _targetAttributeId, 0f, "foreign_actor_instance_id");
+                result = ActorDamageResult.Reject(intent, TargetAttributeId, 0f, "foreign_actor_instance_id");
                 LogRejected(intent, result.Reason);
                 return false;
             }
 
             if (!MatchesRequiredActivityIdentity(intent.ActivityIdentity, _activityIdentity))
             {
-                result = ActorDamageResult.Reject(intent, _targetAttributeId, 0f, "foreign_or_stale_activity_identity");
+                result = ActorDamageResult.Reject(intent, TargetAttributeId, 0f, "foreign_or_stale_activity_identity");
                 LogRejected(intent, result.Reason);
                 return false;
             }
 
             if (!ActorDamagePolicy.TryResolveEffectiveDamage(intent, out float effectiveDamageAmount, out string policyReason))
             {
-                result = ActorDamageResult.Reject(intent, _targetAttributeId, 0f, policyReason);
+                result = ActorDamageResult.Reject(intent, TargetAttributeId, 0f, policyReason);
                 LogRejected(intent, result.Reason);
                 return false;
             }
@@ -132,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 intent.ActivityIdentity,
                 intent.TargetActorId,
                 intent.TargetActorInstanceRuntimeId,
-                _targetAttributeId,
+                TargetAttributeId,
                 effectiveDamageAmount,
                 intent.Source,
                 intent.Reason);
@@ -142,8 +138,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
                 mutationResult.Failed)
             {
                 result = mutationResult.Rejected
-                    ? ActorDamageResult.Reject(intent, _targetAttributeId, effectiveDamageAmount, mutationResult.Reason)
-                    : ActorDamageResult.Fail(intent, _targetAttributeId, effectiveDamageAmount, mutationResult.Reason);
+                    ? ActorDamageResult.Reject(intent, TargetAttributeId, effectiveDamageAmount, mutationResult.Reason)
+                    : ActorDamageResult.Fail(intent, TargetAttributeId, effectiveDamageAmount, mutationResult.Reason);
 
                 if (result.Rejected)
                 {
@@ -159,13 +155,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
 
             result = ActorDamageResult.AppliedResult(
                 intent,
-                _targetAttributeId,
+                TargetAttributeId,
                 effectiveDamageAmount,
                 mutationResult);
 
             DebugUtility.LogVerbose(
                 typeof(ActorDamageableEndpoint),
-                $"event='ActorDamageIntentApplied' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' targetAttributeId='{_targetAttributeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' effectiveDamageAmount='{effectiveDamageAmount:0.###}' changedFact='{mutationResult.HasChangedFact}' thresholdFactCount='{(mutationResult.HasApplyResult ? mutationResult.ApplyResult.ThresholdFactCount : 0)}' source='{intent.Source}' reason='{intent.Reason}'",
+                $"event='ActorDamageIntentApplied' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' targetAttributeId='{TargetAttributeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' effectiveDamageAmount='{effectiveDamageAmount:0.###}' changedFact='{mutationResult.HasChangedFact}' thresholdFactCount='{(mutationResult.HasApplyResult ? mutationResult.ApplyResult.ThresholdFactCount : 0)}' source='{intent.Source}' reason='{intent.Reason}'",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -174,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             DebugUtility.LogVerbose(
                 typeof(ActorDamageableEndpoint),
-                $"event='ActorDamageIntentRejected' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' expectedActorId='{_actorId}' expectedActorInstanceRuntimeId='{_actorInstanceRuntimeId}' targetAttributeId='{_targetAttributeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'",
+                $"event='ActorDamageIntentRejected' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' expectedActorId='{ActorId}' expectedActorInstanceRuntimeId='{ActorInstanceRuntimeId}' targetAttributeId='{TargetAttributeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'",
                 DebugUtility.Colors.Warning);
         }
 
@@ -182,7 +178,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Damage.Runtime
         {
             DebugUtility.LogWarning(
                 typeof(ActorDamageableEndpoint),
-                $"event='ActorDamageIntentFailed' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' targetAttributeId='{_targetAttributeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'");
+                $"event='ActorDamageIntentFailed' targetActorId='{intent.TargetActorId}' targetActorInstanceRuntimeId='{intent.TargetActorInstanceRuntimeId}' targetAttributeId='{TargetAttributeId}' rawDamageAmount='{intent.RawDamageAmount:0.###}' outcomeReason='{reason.TrimToEmpty()}' source='{intent.Source}' reason='{intent.Reason}'");
         }
 
         private static bool MatchesRequiredActivityIdentity(

@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
-using _ImmersiveGames.NewScripts.UnityUtils;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -53,9 +52,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     request.RouteFadeProfile,
                     request.HasRouteLoadingProfile && request.RouteLoadingProfile != null,
                     request.RouteLoadingProfile),
+                request.RoutePauseSurfaceContext,
                 request.LoadedSnapshotPayloadContext,
                 request.Source,
                 request.Reason);
+
+            DebugUtility.LogVerbose(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
+                $"event='RoutePauseSurfaceContextForwardedToSessionActivity' sessionStateId='{request.SessionStateId}' routePauseSurface='{(request.HasRoutePauseSurfaceContext ? "present" : "absent")}' routePauseSurfaceScene='{(request.HasRoutePauseSurfaceContext ? request.RoutePauseSurfaceContext.SceneName : "<none>")}' source='{request.Source}' reason='{request.Reason}'.");
 
             var activityResult = receiver.StartFromPreparedHandoff(handoff, request.Source, request.Reason);
             if (!activityResult.IsValid)

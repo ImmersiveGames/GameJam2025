@@ -1181,6 +1181,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityEntryCommand command,
             SessionActivityDefinition definition,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
+            SessionActivityRoutePauseSurfaceContext routePauseSurfaceContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryContentLoadResult BeginContentLoad(

@@ -22,24 +22,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
         private CharacterController _characterController;
         private Rigidbody _rigidbody;
-        private bool _movementEnabled;
         private Vector2 _moveInput;
 
         public Transform Transform => transform;
-        public bool IsMovementEnabled => _movementEnabled;
+        public bool IsMovementEnabled { get; private set; }
 
         private void Awake()
         {
             _characterController = GetComponent<CharacterController>();
             _rigidbody = GetComponent<Rigidbody>();
-            _movementEnabled = false;
+            IsMovementEnabled = false;
         }
 
         private void OnDisable()
         {
             // Fail-safe local: garante bloqueio técnico ao desabilitar o objeto.
             // O lifecycle de controle continua sendo decidido pelo pipeline.
-            _movementEnabled = false;
+            IsMovementEnabled = false;
             _moveInput = Vector2.zero;
             HaltHorizontalVelocity();
         }
@@ -66,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
         public void SetMovementEnabled(bool enabled)
         {
-            _movementEnabled = enabled;
+            IsMovementEnabled = enabled;
 
             if (!enabled)
             {
@@ -146,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             var inputBefore = _moveInput;
             var velocityBefore = _rigidbody != null ? _rigidbody.linearVelocity : Vector3.zero;
             var angularVelocityBefore = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
-            bool movementEnabledBefore = _movementEnabled;
+            bool movementEnabledBefore = IsMovementEnabled;
 
             ClearMovementState();
 
@@ -154,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             var angularVelocityAfter = _rigidbody != null ? _rigidbody.angularVelocity : Vector3.zero;
 
             DebugUtility.LogVerbose(typeof(PlayerMovementController),
-                $"event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{_movementEnabled}' hasRigidbody='{_rigidbody != null}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.",
+                $"event='PlayerMovementTransientStateProfileApplied' actorId='{context.ActorId}' actorInstanceRuntimeId='{context.ActorInstanceRuntimeId}' resetIntent='{context.ResetIntent}' resetStateProfile='{context.StateProfileKind}' movementProfileKind='{movementProfileKind}' movementProfileSource='{movementProfileSource}' movementInputBefore='{inputBefore}' movementInputAfter='{_moveInput}' movementEnabledBefore='{movementEnabledBefore}' movementEnabledAfter='{IsMovementEnabled}' hasRigidbody='{_rigidbody != null}' velocityBefore='{velocityBefore}' velocityAfter='{velocityAfter}' angularVelocityBefore='{angularVelocityBefore}' angularVelocityAfter='{angularVelocityAfter}' source='{context.Source}' reason='{context.Reason}'.",
                 DebugUtility.Colors.Info, this);
         }
 
@@ -183,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                     $"movement_endpoint_has_no_sink_for_command='{command.CommandId}' valueKind='{command.Value.ValueKind}' trigger='{command.Value.TriggerKind}'.");
             }
 
-            if (!_movementEnabled)
+            if (!IsMovementEnabled)
             {
                 return ActorCommandDispatchResult.RejectedInactive("movement_endpoint_inactive");
             }
@@ -194,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
         private void TickMovement(float deltaTime)
         {
-            if (!_movementEnabled)
+            if (!IsMovementEnabled)
             {
                 HaltHorizontalVelocity();
                 return;

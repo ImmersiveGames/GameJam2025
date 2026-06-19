@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private string displayName;
         [SerializeField] private ActivityContentMode activityContentMode = ActivityContentMode.None;
         [SerializeField] private ActivityContentProfileAsset activityContentProfile;
+        [SerializeField] private ActivityPauseContentProfileAsset activityPauseContentProfile;
         [SerializeField] private ActivityWindowMode activationWindowMode = ActivityWindowMode.None;
         [SerializeField] private SceneKeyAsset activationWindowAdditiveSceneKey;
         [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
@@ -26,7 +27,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public string DisplayName => displayName.TrimToEmpty();
         public ActivityContentMode ActivityContentMode => activityContentMode;
         public ActivityContentProfileAsset ActivityContentProfile => activityContentProfile;
+        public ActivityPauseContentProfileAsset ActivityPauseContentProfile => activityPauseContentProfile;
         public bool HasActivityContentProfile => activityContentProfile != null;
+        public bool HasActivityPauseContentProfile => activityPauseContentProfile != null;
         public bool HasGameplayContent => activityContentMode == ActivityContentMode.Profile;
         public ActivityWindowMode ActivationWindowMode => activationWindowMode;
         public SceneKeyAsset ActivationWindowAdditiveSceneKey => activationWindowAdditiveSceneKey;
@@ -62,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             }
 
             ValidateActivityContentOrThrow();
+            ValidateActivityPauseContentOrThrow();
 
             if (activationWindowMode == ActivityWindowMode.AdditiveScene &&
                 activationWindowAdditiveSceneKey == null)
@@ -126,6 +130,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 nextActivityTransitionProfileOverride.ValidateOrThrow($"ActivityAsset:{name}");
             }
 
+        }
+
+
+        private void ValidateActivityPauseContentOrThrow()
+        {
+            if (activityPauseContentProfile == null)
+            {
+                return;
+            }
+
+            activityPauseContentProfile.ValidateOrThrow($"ActivityAsset:{name}:ActivityPauseContentProfile");
         }
 
         private void ValidateActivityContentOrThrow()

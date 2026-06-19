@@ -13,10 +13,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
     public sealed class ActorImpactColliderRelay : MonoBehaviour
     {
         private ActorImpactEndpoint _endpoint;
-        private Collider _collider;
 
         public bool IsConfigured => _endpoint != null;
-        public Collider RelayCollider => _collider;
+        public Collider RelayCollider { get; private set; }
 
         public void Configure(
             ActorImpactEndpoint endpoint,
@@ -25,11 +24,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Impact.Runtime
             string reason)
         {
             _endpoint = endpoint;
-            _collider = relayCollider != null ? relayCollider : GetComponent<Collider>();
+            RelayCollider = relayCollider != null ? relayCollider : GetComponent<Collider>();
 
             DebugUtility.LogVerbose(
                 typeof(ActorImpactColliderRelay),
-                $"event='ActorImpactColliderRelayConfigured' relay='{name}' collider='{(_collider != null ? _collider.name : string.Empty)}' endpoint='{(_endpoint != null ? _endpoint.name : string.Empty)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
+                $"event='ActorImpactColliderRelayConfigured' relay='{name}' collider='{(RelayCollider != null ? RelayCollider.name : string.Empty)}' endpoint='{(_endpoint != null ? _endpoint.name : string.Empty)}' source='{source.TrimToEmpty()}' reason='{reason.TrimToEmpty()}'",
                 DebugUtility.Colors.Info);
         }
 

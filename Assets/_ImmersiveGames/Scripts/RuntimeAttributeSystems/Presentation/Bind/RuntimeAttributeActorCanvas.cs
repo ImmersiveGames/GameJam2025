@@ -36,9 +36,8 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
 
         private readonly Dictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> _actorSlots = new();
         private ObjectPool<RuntimeAttributeUISlot> _pool;
-        private string _canvasIdResolved;
 
-        public string CanvasId => _canvasIdResolved;
+        public string CanvasId { get; private set; }
         public virtual AttributeCanvasType Type => attributeCanvasType;
         public AttributeCanvasInitializationState State { get; private set; }
         public DependencyInjectionState InjectionState { get; set; }
@@ -98,21 +97,21 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
                 var actor = GetComponentInParent<IActor>();
                 if (actor != null && !string.IsNullOrEmpty(actor.ActorId))
                 {
-                    _canvasIdResolved = $"{actor.ActorId}_Canvas";
+                    CanvasId = $"{actor.ActorId}_Canvas";
                 }
                 else
                 {
-                    _canvasIdResolved = idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString();
+                    CanvasId = idFactory?.GenerateId(gameObject) ?? Guid.NewGuid().ToString();
                 }
             }
             else
             {
-                _canvasIdResolved = canvasId;
+                CanvasId = canvasId;
             }
 
-            if (string.IsNullOrEmpty(_canvasIdResolved))
+            if (string.IsNullOrEmpty(CanvasId))
             {
-                _canvasIdResolved = gameObject.name;
+                CanvasId = gameObject.name;
             }
         }
 

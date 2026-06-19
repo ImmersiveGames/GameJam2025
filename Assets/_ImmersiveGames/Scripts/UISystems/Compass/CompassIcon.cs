@@ -20,7 +20,6 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         [Tooltip("Rótulo opcional para exibir a distância até o alvo.")]
         public TextMeshProUGUI distanceLabel;
 
-        private ICompassTrackable _target;
         private CompassTargetVisualConfig _visualConfig;
 
         // Suporte a ícones dinâmicos de planetas
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         /// <summary>
         /// Alvo rastreável associado a este ícone.
         /// </summary>
-        public ICompassTrackable Target => _target;
+        public ICompassTrackable Target { get; private set; }
 
         /// <summary>
         /// Inicializa o ícone com o alvo e a configuração visual correspondente.
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         /// <param name="visualConfig">Configuração visual aplicada ao ícone.</param>
         public void Initialize(ICompassTrackable target, CompassTargetVisualConfig visualConfig)
         {
-            _target = target;
+            Target = target;
             _visualConfig = visualConfig;
             _baseScale = rectTransform != null ? rectTransform.localScale : Vector3.one;
 
@@ -103,13 +102,13 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
 
         private void SetupPlanetBindings()
         {
-            if (_target == null || _target.Transform == null)
+            if (Target == null || Target.Transform == null)
             {
                 Debug.LogWarning("[CompassIcon] Target inválido para modo PlanetResourceIcon.");
                 return;
             }
 
-            _planetMaster = _target.Transform.GetComponentInParent<PlanetsMaster>();
+            _planetMaster = Target.Transform.GetComponentInParent<PlanetsMaster>();
             if (_planetMaster == null)
             {
                 Debug.LogWarning("[CompassIcon] Nenhum PlanetsMaster encontrado no alvo do planeta. Usando fallback estático se disponível.");

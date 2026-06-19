@@ -15,12 +15,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         private string _activeSessionStateId = string.Empty;
         private string _activeActivityId = string.Empty;
         private int _activeEntrySequence;
-        private ActivityCapabilityPermissionSnapshot _snapshot =
-            new(
-                default,
-                Array.Empty<ActivityCapabilityPermissionBinding>());
 
-        public ActivityCapabilityPermissionSnapshot Snapshot => _snapshot;
+        public ActivityCapabilityPermissionSnapshot Snapshot { get; private set; } = new(
+            default,
+            Array.Empty<ActivityCapabilityPermissionBinding>());
 
         public void BeginPermissionScope(string pipelineId, string sessionStateId, string activityId, int entrySequence)
         {
@@ -192,7 +190,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             string message)
         {
             ActivityCapabilityPermissionFact fact = new(command, outcomeKind, outcomeCode, message);
-            _snapshot = new ActivityCapabilityPermissionSnapshot(
+            Snapshot = new ActivityCapabilityPermissionSnapshot(
                 fact,
                 BuildBindingsSnapshot());
             return fact;

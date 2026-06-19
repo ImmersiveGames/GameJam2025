@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Damage.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.UnityUtils;
@@ -49,6 +48,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             var result = RequirePipeline(pipeline).PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
             LogResult(pipeline, "RequestPause", result);
+        }
+
+        public static void RequestPauseToggle(SessionActivityPipeline pipeline)
+        {
+            var result = RequirePipeline(pipeline).PauseToggleRequested(QaSource("RequestPauseToggle"), QaReason("RequestPauseToggle"));
+            LogResult(pipeline, "RequestPauseToggle", result);
+        }
+
+        public static void RequestPauseToggle(SessionActivityPipeline pipeline, string source, string reason)
+        {
+            string resolvedSource = source.TrimToOrDefault(QaSource("RequestPauseToggle"));
+            string resolvedReason = reason.TrimToOrDefault(QaReason("RequestPauseToggle"));
+            var result = RequirePipeline(pipeline).PauseToggleRequested(resolvedSource, resolvedReason);
+            LogResult(pipeline, "RequestPauseToggle", result);
         }
 
         public static void RequestResume(SessionActivityPipeline pipeline)
